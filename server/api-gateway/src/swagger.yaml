@@ -1,0 +1,29 @@
+openapi: 1.0.0
+info:
+  title: Backend API
+  description: API for managing users
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000  
+    description: API-GATEWAY server
+  - url: https://api.example.com 
+    description: Production API server
+    variables:
+      environment:
+        default: "production"
+        description: Environment variable for the production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT  # Defines that the API uses JWT Bearer Token for authorization
+
+security:
+  - bearerAuth: []  # Applies bearerAuth globally, meaning all endpoints require JWT tokens for authentication
+
+paths:
+  # Define your API paths here (e.g., user management, etc.)
+  # Example:
