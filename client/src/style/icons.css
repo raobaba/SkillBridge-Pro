@@ -1,0 +1,335 @@
+@font-face {
+  font-family: 'icomoon';
+  src: url('../assets/fonts/icomoon.eot?n6iz6');
+  src: url('../assets/fonts/icomoon.eot?n6iz6#iefix')
+      format('embedded-opentype'),
+    url('../assets/fonts/icomoon.ttf?n6iz6') format('truetype'),
+    url('../assets/fonts/icomoon.woff?n6iz6') format('woff'),
+    url('../assets/fonts/icomoon.svg?n6iz6#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^='icon-'],
+[class*=' icon-'] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-notification:before {
+  content: "\e900";
+}
+
+.icon-export-edit-icon:before {
+  content: "\e901";
+}
+
+.icon-info-2:before {
+  content: "\e902";
+}
+
+.icon-Release:before {
+  content: "\e903";
+}
+
+.icon-icon-download:before {
+  content: "\e904";
+}
+
+.icon-no-internet:before {
+  content: "\e905";
+}
+
+.icon-List-View:before {
+  content: "\e906";
+}
+
+.icon-planned-outage:before {
+  content: "\e907";
+}
+
+.icon-log-out:before {
+  content: "\e908";
+}
+
+.icon-Provider-State:before {
+  content: "\e909";
+}
+
+.icon-Claim-Number:before {
+  content: "\e90a";
+}
+
+.icon-URL-not-found1:before {
+  content: "\e90b";
+}
+
+.icon-icon-minus-round:before {
+  content: "\e90c";
+}
+
+.icon-icon-plus-round:before {
+  content: "\e90d";
+}
+
+.icon-Tile-View:before {
+  content: "\e90e";
+}
+
+.icon-Delete:before {
+  content: "\e90f";
+}
+
+.icon-Edit-Iocn:before {
+  content: "\e910";
+}
+
+.icon-sort-icon:before {
+  content: "\e911";
+}
+
+.icon-Edit:before {
+  content: "\e912";
+}
+
+.icon-Provider-TIN:before {
+  content: "\e913";
+}
+
+.icon-Model-Score:before {
+  content: "\e914";
+}
+
+.icon-POS:before {
+  content: "\e915";
+}
+
+.icon-Bill-Type:before {
+  content: "\e916";
+}
+
+.icon-Claim-Date:before {
+  content: "\e917";
+}
+
+.icon-Member-State:before {
+  content: "\e918";
+}
+
+.icon-Pillar:before {
+  content: "\e919";
+}
+
+.icon-URL-not-found:before {
+  content: "\e91a";
+}
+
+.icon-System-Administrator:before {
+  content: "\e91b";
+}
+
+.icon-System-is-unavailable:before {
+  content: "\e91c";
+}
+
+.icon-Provider-NPI-2:before {
+  content: "\e91d";
+}
+
+.icon-Provider-NPI-single:before {
+  content: "\e91e";
+}
+
+.icon-Diagnosis-Hx:before {
+  content: "\e91f";
+}
+
+.icon-claim-line:before {
+  content: "\e920";
+}
+
+.icon-attach:before {
+  content: "\e921";
+}
+
+.icon-more:before {
+  content: "\e922";
+}
+
+.icon-reply:before {
+  content: "\e923";
+}
+
+.icon-Star-Filled:before {
+  content: "\e924";
+}
+
+.icon-Star-Outline:before {
+  content: "\e925";
+}
+
+.icon-check:before {
+  content: "\e926";
+}
+
+.icon-Search:before {
+  content: "\e927";
+}
+
+.icon-right-tick:before {
+  content: "\e928";
+  color: #059669;
+}
+
+.icon-star:before {
+  content: "\e929";
+  color: #a5a5a5;
+}
+
+.icon-angle-left:before {
+  content: "\e92a";
+  color: #c4c4c4;
+}
+
+.icon-add-icon:before {
+  content: "\e92b";
+}
+
+.icon-Amount:before {
+  content: "\e92c";
+}
+
+.icon-Audit-date:before {
+  content: "\e92d";
+}
+
+.icon-Audit:before {
+  content: "\e92e";
+}
+
+.icon-checkbox-empty:before {
+  content: "\e92f";
+}
+
+.icon-checkbox-empty-1:before {
+  content: "\e930";
+}
+
+.icon-checkbox-enable:before {
+  content: "\e931";
+}
+
+.icon-Claim-Form-Type:before {
+  content: "\e932";
+}
+
+.icon-Claim:before {
+  content: "\e933";
+}
+
+.icon-Code:before {
+  content: "\e934";
+}
+
+.icon-comments:before {
+  content: "\e935";
+}
+
+.icon-documents:before {
+  content: "\e936";
+}
+
+.icon-downloads:before {
+  content: "\e937";
+}
+
+.icon-export:before {
+  content: "\e938";
+}
+
+.icon-filter-icon:before {
+  content: "\e939";
+}
+
+.icon-grid-position:before {
+  content: "\e93a";
+}
+
+.icon-grid:before {
+  content: "\e93b";
+}
+
+.icon-info:before {
+  content: "\e93c";
+}
+
+.icon-lob:before {
+  content: "\e93d";
+}
+
+.icon-playlists:before {
+  content: "\e93e";
+}
+
+.icon-profile:before {
+  content: "\e93f";
+}
+
+.icon-Provider-Name:before {
+  content: "\e940";
+}
+
+.icon-Provider-NPI:before {
+  content: "\e941";
+}
+
+.icon-Provider-Speciality:before {
+  content: "\e942";
+}
+
+.icon-settings:before {
+  content: "\e943";
+}
+
+.icon-Share:before {
+  content: "\e944";
+}
+
+.icon-state:before {
+  content: "\e945";
+}
+
+.icon-sub-filter:before {
+  content: "\e946";
+}
+
+.icon-Tagged:before {
+  content: "\e947";
+}
+
+.icon-timeframe:before {
+  content: "\e948";
+}
+
+.icon-toggle-disable:before {
+  content: "\e949";
+}
+
+.icon-toggle-enable:before {
+  content: "\e94a";
+}
+
+.icon-transfer-workflow:before {
+  content: "\e94b";
+}
