@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import { Users, Briefcase, Star, ArrowRight } from "lucide-react";
 import SignIn from "../components/SignIn";
 import SignUp from "../components/SignUp";
+import { useNavigate } from "react-router-dom";
 
 const Authentication = () => {
   const [isSignIn, setIsSignIn] = useState(true);
+  const navigate = useNavigate();
   const switchMode = () => setIsSignIn(!isSignIn);
 
   const features = [
@@ -27,17 +29,25 @@ const Authentication = () => {
 
   return (
     <div className='min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative'>
-
       {/* Navbar */}
       <nav className='absolute top-0 left-0 right-0 z-20 p-4 lg:p-6'>
         <div className='flex items-center justify-between max-w-7xl mx-auto'>
-          <div className='text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'>
+          <div
+            onClick={() => navigate("/")}
+            className='text-xl cursor-pointer font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'
+          >
             SkillBridge
           </div>
           <div className='hidden lg:flex items-center space-x-6 text-sm'>
-            <a href='#' className='hover:text-blue-400 transition-colors'>Home</a>
-            <a href='#' className='hover:text-blue-400 transition-colors'>About</a>
-            <a href='#' className='hover:text-blue-400 transition-colors'>Contact</a>
+            <a href='#' className='hover:text-blue-400 transition-colors'>
+              Home
+            </a>
+            <a href='#' className='hover:text-blue-400 transition-colors'>
+              About
+            </a>
+            <a href='#' className='hover:text-blue-400 transition-colors'>
+              Contact
+            </a>
           </div>
         </div>
       </nav>
@@ -50,12 +60,10 @@ const Authentication = () => {
       {/* Main Content Positioned to Bottom */}
       <div className='flex-grow flex flex-col justify-end'>
         <div className='flex flex-col lg:flex-row'>
-
           {/* Left Panel (Info) */}
           <div className='hidden lg:flex lg:w-1/2 p-6 lg:p-10 items-start'>
             <div className='max-w-lg mx-auto w-full'>
               <div className='flex flex-col gap-6'>
-
                 {/* Illustration */}
                 <div className='relative'>
                   <div className='w-full h-48 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center border border-white/10'>
@@ -136,7 +144,6 @@ const Authentication = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
