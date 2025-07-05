@@ -1,17 +1,23 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "description": "Microservices server with API Gateway",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "install:all": "npm install && cd api-gateway && npm install",
+    "start": "concurrently \"npm run start:gateway\"",
+    "start:gateway": "cd api-gateway && npm start"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "description": "",
   "dependencies": {
-    "dotenv": "^17.0.1",
-    "pg": "^8.16.3"
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
   }
 }

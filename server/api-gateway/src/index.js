@@ -1,27 +1,46 @@
-const app = require("./server");
-const cloudinary = require("cloudinary").v2;
-const PORT = process.env.PORT || 3000;
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import dotenv from 'dotenv';
+import connectDB from './config/db.js';
 
-// UncaughtException Error
-process.on("uncaughtException", (err) => {
-  console.log(`Error: ${err.message}`);
-  process.exit(1);
+dotenv.config();
+
+const app = express();
+
+connectDB();
+
+const swaggerDocument = YAML.load('./swagger.yaml');
+
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors());
+app.use(helmet());
+app.use(morgan('dev'));
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
+app.use(limiter);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK', message: 'API Gateway is running 🚀' });
 });
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_SECRET_KEY,
-});
+// TODO: Add your routes here
+// import userRoutes from './src/routes/user.routes.js';
+// app.use('/api/users', userRoutes);
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on PORT http://localhost:${PORT}`);
-});
-
-// Unhandled Promise Rejection
-process.on("unhandledRejection", (err) => {
-  console.log(`Error: ${err.message}`);
-  server.close(() => {
-    process.exit(1);
-  });
+// Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });
