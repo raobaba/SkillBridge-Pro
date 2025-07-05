@@ -1,17 +1,4 @@
-/**
- * --------------------------------------------------------
- * File        : configureStore.dev.jsx
- * Description : Sets up the Redux store with persistence, middleware, and logging.
- * Authors     : Developer team
- * Created On  : 2025-04-30
- * Updated On  : 2025-04-30
- * --------------------------------------------------------
- * Notes:
- * - Uses Redux Toolkit for concise and powerful store setup.
- * - Integrates redux-persist to persist state in localStorage.
- * - redux-logger middleware logs actions and state for debugging.
- * - Prevents serialization issues for redux-persist internal actions.
- */
+
 
 
 import { configureStore } from "@reduxjs/toolkit";

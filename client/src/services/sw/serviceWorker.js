@@ -1,17 +1,4 @@
-/**
- * --------------------------------------------------------
- * File        : serviceWorkerRegistration.js
- * Description : Handles registration, update, and validation of the service worker
- *               for enabling Progressive Web App (PWA) capabilities and offline support.
- * Authors     : Developer team
- * Created On  : 2025-04-15
- * Updated On  : 2025-04-30
- * --------------------------------------------------------
- * Notes:
- * - Registers service worker only in production environments.
- * - Includes logic for localhost development handling and update events.
- * - Fallbacks provided for missing or invalid service workers.
- */
+
 
 const isLocalhost = Boolean(
   window.location.hostname === "localhost" ||

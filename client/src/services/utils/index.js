@@ -1,18 +1,3 @@
-/**
- * --------------------------------------------------------
- * File        : utils.js
- * Description : Common utility functions used across the app for formatting,
- *               validation, token management, string parsing, and more.
- * Authors     : Developer team
- * Created On  : 2025-04-15
- * Updated On  : 2025-04-30
- * --------------------------------------------------------
- * Notes:
- * - Includes helpers like number formatting, date formatting, text width measurement.
- * - Provides token storage and retrieval using sessionStorage.
- * - Used globally for simplifying repetitive tasks.
- */
-
 import moment from "moment";
 import { find, trim } from "lodash";
 import { TOKEN_KEY } from "../constants";
@@ -26,7 +11,7 @@ const getTestId = (text) => {
 const dateRangeFormat = (startDate, endDate) => {
   if (startDate && endDate) {
     let dateString = `${moment(startDate).format("MM.DD.YYYY")} - ${moment(
-      endDate,
+      endDate
     ).format("MM.DD.YYYY")}`;
     return dateString;
   }
@@ -172,7 +157,7 @@ const getToken = () => {
 };
 const validateEmail = (email) => {
   const pattern = new RegExp(
-    /^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i,
+    /^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i
   );
   return pattern.test(email);
 };

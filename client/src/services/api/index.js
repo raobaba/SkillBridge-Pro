@@ -1,17 +1,3 @@
-/**
- * --------------------------------------------------------
- * File        : fetchFromApiServer.js
- * Description : Central utility for making HTTP requests to the API server
- *               using Axios with automatic header and token management.
- * Authors     : Developer team
- * Created On  : 2025-04-15
- * Updated On  : 2025-04-30
- * --------------------------------------------------------
- * Notes:
- * - Supports GET, POST, DELETE, PUT, PATCH, and MULTIPART requests.
- * - Automatically includes authorization tokens from storage.
- * - Uses a 10-minute timeout by default.
- */
 
 
 import axios from "axios";

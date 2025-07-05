@@ -1,16 +1,3 @@
-/**
- * --------------------------------------------------------
- * File        : index.js
- * Description : Exports components for easy import in other parts of the application.
- * 
- * Notes:
- * - Exports a variety of loader components like `FullScreenLoader`, `CircularLoader`, and `DotLoader`.
- * - Includes utility components like `Header`, `DialogBox`, and `Acknowledge`.
- * - `ContentLoader` is commented out, possibly not in use.
- * --------------------------------------------------------
- */
-
-
 
 import FullScreenLoader from "./loader/FullScreen";
 import Header from "./header";
