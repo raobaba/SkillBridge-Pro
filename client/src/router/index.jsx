@@ -9,6 +9,7 @@ import Unauthorized from "./Unauthorized";
 // Lazy loaded pages
 const Home = lazy(() => import("../pages/Home"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
+const Authentication = lazy(()=>import("../modules/authentication/container"))
 
 const Routing = () => {
   return (
@@ -17,7 +18,7 @@ const Routing = () => {
       <Suspense fallback={<CircularLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
-          
+            <Route path="/auth" element={<Authentication />} />
           <Route
             path="/dashboard/*"
             element={

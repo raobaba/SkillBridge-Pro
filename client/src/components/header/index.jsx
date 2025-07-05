@@ -1,143 +1,101 @@
-/**
- * --------------------------------------------------------
- * File        : Header.js
- * Description : A header component that renders a logo, navigation buttons (FAQs, Contact Us), 
- *               and includes mobile responsiveness features. It also includes a timeout functionality 
- *               that will trigger a logout after a certain period of inactivity.
- * --------------------------------------------------------
- * Notes:
- * - The header is fixed at the top and contains a logo and two buttons: "FAQs" and "Contact Us".
- * - It features a mobile menu that can be toggled, showing a simplified navigation for mobile users.
- * - The `inactivityTime` function detects user inactivity (mouse movement or key press) and logs out
- * 
- */
-
-
-
-import React, { useEffect, useState } from "react";
+// components/Navbar.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  Avatar,
-  LinkButton,
-} from "../../ui-controls";
-import { LogoLogin } from "../../assets";
+  Code,
+  Menu,
+  X,
+} from "lucide-react";
 
-const Header = ({ children, isDisabled, user }) => {
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+const Navbar = () => {
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const inactivityTime = () => {
-    let time = 0;
-    window.onload = resetTimer;
-    // DOM Events
-    document.onmousemove = resetTimer;
-    document.onkeydown = resetTimer;
-    function resetTimer() {
-      clearTimeout(time);
-      time = setTimeout(
-        () => {
-          // logOut();
-          // window.location.reload();
-        },
-        60000 * parseInt(import.meta.env.VITE_APP_LOGOUT_TIMEOUT),
-      );
-    }
-  };
-
-  useEffect(() => {
-    inactivityTime();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const menuItems = [
+    { label: "Features", link: "#features" },
+    { label: "How it Works", link: "#how-it-works" },
+    { label: "Testimonials", link: "#testimonials" },
+    { label: "Pricing", link: "#pricing" },
+  ];
 
   return (
-    <>
-      <nav className="h-13 bg-primary-theme fixed top-0 z-10 w-full flex justify-between">
-        <div className="flex px-6 w-[100%]">
+    <nav className='fixed top-0 left-0 w-full z-50 bg-black/20 backdrop-blur-sm border-b border-white/10'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='flex justify-between items-center h-16'>
           {/* Logo */}
-          <div className="grid ">
-            <Avatar
-              size="lg"
-              title="logo"
-              isRounded={false}
-              isDisabled={isDisabled}
-              src={LogoLogin}
-              imgStyle={"!h-10 w-full"}
-            />
+          <div className='flex items-center space-x-2'>
+            <div className='w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center'>
+              <Code className='w-5 h-5 text-white' />
+            </div>
+            <span className='hidden sm:inline text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+              SkillBridge Pro
+            </span>
           </div>
 
-          <div className="flex-grow"></div>
-
-          <div className="4xl:mt-5 relative w-auto flex-none ">
-            <div className="relative hidden h-14 items-center justify-end sm:flex">
-              <LinkButton
-                isDisabled={isDisabled}
-                isActive={true}
-                label={`FAQs`}
-                btnStyle={"btn-style !text-white !p-2 text-txt-md-14"}
-                onClick={() => {
-                  window.open("/faq", "_blank");
-                }}
-              />
-
-              <LinkButton
-                isDisabled={isDisabled}
-                isActive={true}
-                label={`Contact Us`}
-                btnStyle={
-                  "btn-style text-txt-14 !text-white !p-2 text-txt-md-14"
-                }
-                onClick={() => {
-                  window.open("/contact-us", "_blank");
-                }}
-              />
-            </div>
-            <div className="absolute top-2.5 right-0.2 sm:hidden">
-              <button
-                onClick={() => setShowMobileMenu(true)}
-                className="text-white"
+          {/* Desktop Menu */}
+          <div className='hidden md:flex items-center space-x-8'>
+            {menuItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.link}
+                className='text-gray-300 hover:text-white transition-colors'
               >
-                ☰
-              </button>
-            </div>
+                {item.label}
+              </a>
+            ))}
+            <button
+              onClick={() => navigate("/auth")}
+              className='text-gray-300 hover:text-white transition-colors'
+            >
+              Sign In
+            </button>
+            <button className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105'>
+              Get Started
+            </button>
+          </div>
 
-            {showMobileMenu && (
-              <div className="bg-opacity-60 bg-black-100 fixed inset-0 z-50 flex justify-end sm:hidden">
-                <div className="w-2/3 max-w-xs space-y-4 bg-white p-6 ml-6">
-                  <button
-                    className="mb-4 text-right font-bold text-sky-950"
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    ✕ Close
-                  </button>
-                  <div className="mt-4">
-                    <LinkButton
-                      isDisabled={isDisabled}
-                      isActive={true}
-                      label={`FAQs`}
-                      btnStyle={"btn-style text-txt-md-14"}
-                      onClick={() => {
-                        window.open("/faq", "_blank");
-                      }}
-                    />
-                  </div>
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className='md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors'
+            aria-label='Toggle Menu'
+          >
+            {isMenuOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+          </button>
+        </div>
+      </div>
 
-                  <div>
-                    <LinkButton
-                      isDisabled={isDisabled}
-                      isActive={true}
-                      label={`Contact Us`}
-                      btnStyle={"btn-style text-txt-14 text-txt-md-14"}
-                      onClick={() => {
-                        window.open("/contact-us", "_blank");
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* Mobile Dropdown */}
+      {isMenuOpen && (
+        <div className='md:hidden bg-black/90 backdrop-blur-sm border-t border-white/10'>
+          <div className='px-4 py-4 space-y-3'>
+            {menuItems.map((item, index) => (
+              <a
+                key={index}
+                href={item.link}
+                onClick={() => setIsMenuOpen(false)}
+                className='block text-gray-300 hover:text-white transition-colors'
+              >
+                {item.label}
+              </a>
+            ))}
+            <button
+              className='block text-gray-300 hover:text-white transition-colors'
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/auth");
+              }}
+            >
+              Sign In
+            </button>
+            <button className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300'>
+              Get Started
+            </button>
           </div>
         </div>
-      </nav>
-    </>
+      )}
+    </nav>
   );
 };
 
-export default Header;
+export default Navbar;
