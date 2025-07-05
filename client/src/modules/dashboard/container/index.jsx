@@ -9,7 +9,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const user = {
     name: "Rajan",
-    role: "project-ownerd",
+    role: "admin",
   };
 
   useEffect(() => {

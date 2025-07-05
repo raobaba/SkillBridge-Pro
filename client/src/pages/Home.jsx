@@ -116,11 +116,11 @@ export default function Home() {
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='flex justify-between items-center h-16'>
             {/* Logo */}
-            <div className='flex items-center space-x-2 flex-shrink-0 min-w-0'>
+            <div className='flex items-center space-x-2'>
               <div className='w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center'>
                 <Code className='w-5 h-5 text-white' />
               </div>
-              <span className='text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent truncate'>
+              <span className='hidden sm:inline text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
                 SkillBridge Pro
               </span>
             </div>
