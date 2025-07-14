@@ -1,0 +1,2 @@
+2025-07-13T23:38:22.764Z [ERROR] GET /api/v1/users/profile 500 - Internal server error
+2025-07-13T23:46:11.563Z [ERROR] GET /api/v1/users/profile 401 - Invalid token payload

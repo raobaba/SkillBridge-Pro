@@ -1,0 +1,18 @@
+openapi: 3.0.0
+info:
+  title: API Gateway
+  version: 1.0.0
+  description: Entry point for all services
+
+servers:
+  - url: http://localhost:3000
+    description: API Gateway
+
+paths: {}  # Leave this empty or add gateway-specific routes
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

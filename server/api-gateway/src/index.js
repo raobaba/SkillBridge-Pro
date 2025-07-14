@@ -1,46 +1,107 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
-import rateLimit from 'express-rate-limit';
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
-import dotenv from 'dotenv';
-import connectDB from './config/db.js';
-
-dotenv.config();
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const path = require("path");
+const helmet = require("helmet");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+const proxy = require("express-http-proxy");
+const logger = require("./utils/logger.utils");
+const errorMiddleware = require("./middlewares/error.middleware");
+const rabbitMQClient = require("./config/rabbitmq");
 
 const app = express();
+const port = Number(process.env.PORT || 3000);
 
-connectDB();
+// Load Swagger YAML files
+const apiGatewaySwagger = YAML.load(
+  path.join(__dirname, "swagger", "gateway.swagger.yaml")
+);
+const userSwagger = YAML.load(
+  path.join(__dirname, "swagger", "user.swagger.yaml")
+);
 
-const swaggerDocument = YAML.load('./swagger.yaml');
+// Combine Swagger docs
+const combinedSwagger = {
+  openapi: "3.0.0",
+  info: {
+    title: "SkillBridge API Gateway",
+    version: "1.0.0",
+    description: "Unified API documentation for all microservices",
+  },
+  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers],
+  paths: { ...apiGatewaySwagger.paths, ...userSwagger.paths },
+  components: {
+    schemas: {
+      ...(apiGatewaySwagger.components?.schemas || {}),
+      ...(userSwagger.components?.schemas || {}),
+    },
+    securitySchemes: {
+      ...(apiGatewaySwagger.components?.securitySchemes || {}),
+      ...(userSwagger.components?.securitySchemes || {}),
+    },
+  },
+  security: [{ bearerAuth: [] }],
+};
 
-app.use(express.json());
-app.use(cookieParser());
-app.use(cors());
+// Middleware
 app.use(helmet());
-app.use(morgan('dev'));
+app.use(cors());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+// Logging middleware
+app.use(logger.dev, logger.combined);
+
+// Static files
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// Proxy configuration
+const API_USER_URL = process.env.API_USER_URL || "http://localhost:3001";
+
+// Mount proxy at root `/` and forward full original path to user-service
+app.use(
+  "/api/v1/users",
+  proxy(API_USER_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    userResDecorator: async (proxyRes, proxyResData) => proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+
+// Error middleware must be after proxy
+app.use(errorMiddleware);
+
+// Swagger UI docs
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(combinedSwagger));
+
+// Start server
+const startServer = async () => {
+  try {
+    await rabbitMQClient.connect();
+    app.listen(port, () => {
+      console.log(`🚀 API Gateway running at http://localhost:${port}`);
+    });
+  } catch (err) {
+    console.error("❌ Failed to start server:", err);
+    process.exit(1);
+  }
+};
+
+// Graceful shutdown
+process.on("SIGINT", () => {
+  console.log("🔌 Server shutting down...");
+  process.exit();
 });
-app.use(limiter);
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'API Gateway is running 🚀' });
+process.on("SIGTERM", () => {
+  console.log("💀 Server terminated.");
+  process.exit();
 });
 
-// TODO: Add your routes here
-// import userRoutes from './src/routes/user.routes.js';
-// app.use('/api/users', userRoutes);
-
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running at http://localhost:${PORT}`);
-});
+startServer();
