@@ -38,6 +38,8 @@ const userTable = pgTable("users", {
   stackoverflowUrl: text("stackoverflow_url"),
   portfolioScore: integer("portfolio_score"),
   isEmailVerified: boolean("is_email_verified").default(false),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpire: timestamp("reset_password_expire"),
   notificationPrefs: json("notification_prefs").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -99,6 +101,38 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set({ isEmailVerified: true })
+      .where(eq(userTable.id, id))
+      .returning();
+    return user;
+  }
+
+  static async getUserByResetToken(hashedToken) {
+    const [user] = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.resetPasswordToken, hashedToken));
+    return user;
+  }
+
+  static async setResetPasswordToken(id, tokenHash, expireTime) {
+    const [user] = await db
+      .update(userTable)
+      .set({
+        resetPasswordToken: tokenHash,
+        resetPasswordExpire: expireTime,
+      })
+      .where(eq(userTable.id, id))
+      .returning();
+    return user;
+  }
+  
+  static async clearResetPasswordToken(id) {
+    const [user] = await db
+      .update(userTable)
+      .set({
+        resetPasswordToken: null,
+        resetPasswordExpire: null,
+      })
       .where(eq(userTable.id, id))
       .returning();
     return user;

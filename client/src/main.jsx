@@ -10,7 +10,7 @@ import App from "./App.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <ToastContainer hideProgressBar={true} position="bottom-right" />
+    <ToastContainer hideProgressBar={true} position='top-right' />
     <App />
-  </StrictMode>,
+  </StrictMode>
 );

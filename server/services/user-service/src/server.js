@@ -34,7 +34,7 @@ app.use(passport.session());
 app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
-app.use('/api/v1/users', userRouter);
+app.use('/api/v1/user', userRouter);
 app.use('/api/v1/auth', authRouter);
 
 // ❌ Handle Undefined Routes (Optional)

@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: User Service API
-  description: API for user registration, login, profile management, email verification, and OAuth updates
+  description: API for user registration, login, profile management, password reset, email verification, and OAuth updates
   version: 1.0.0
 
 servers:
@@ -17,10 +17,7 @@ paths:
         content:
           application/json:
             schema:
-              required:
-                - name
-                - email
-                - password
+              required: [name, email, password]
               properties:
                 name:
                   type: string
@@ -42,9 +39,7 @@ paths:
         content:
           application/json:
             schema:
-              required:
-                - email
-                - password
+              required: [email, password]
               properties:
                 email:
                   type: string
@@ -89,9 +84,24 @@ paths:
         "200":
           description: User deleted
 
+  /api/v1/users/verify-email:
+    get:
+      summary: Verify email using token
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified
+        "400":
+          description: Invalid or expired token
+
   /api/v1/users/verify-email/{id}:
     get:
-      summary: Verify user's email
+      summary: Verify email using user ID (fallback)
       parameters:
         - name: id
           in: path
@@ -104,6 +114,70 @@ paths:
         "404":
           description: User not found
 
+  /api/v1/users/forgot-password:
+    post:
+      summary: Send password reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Reset email sent
+        "404":
+          description: User not found
+
+  /api/v1/users/reset-password/{token}:
+    put:
+      summary: Reset password using token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [newPassword]
+              properties:
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password reset successful
+        "400":
+          description: Invalid or expired token
+
+  /api/v1/users/change-password:
+    put:
+      summary: Change password (logged-in user)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password changed
+        "401":
+          description: Invalid current password
+
   /api/v1/users/oauth:
     put:
       summary: Update OAuth details
@@ -114,9 +188,7 @@ paths:
         content:
           application/json:
             schema:
-              required:
-                - oauthProvider
-                - oauthId
+              required: [oauthProvider, oauthId]
               properties:
                 oauthProvider:
                   type: string

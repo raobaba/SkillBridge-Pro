@@ -1,23 +1,4 @@
-/**
- * --------------------------------------------------------
- * File        : checkApiResponse.jsx
- * Description : A Higher Order Component (HOC) that wraps any
- *               component and adds error handling for API
- *               responses. It listens to axios responses and
- *               displays an error dialog when specific HTTP
- *               status codes (like 404, 500, etc.) are returned.
- *               The error dialog provides a custom message
- *               based on the status code.
- * Authors     : Developer team
- * Created On  : 2025-04-30
- * Updated On  : 2025-04-30
- * --------------------------------------------------------
- * Notes:
- * - The HOC uses axios interceptors to capture errors from API requests.
- * - Based on the HTTP status, it sets an appropriate error message and icon.
- * - Errors are displayed in a custom dialog using the `Acknowledge` component.
- * - Errors include status codes like 404, 401, 503, and 500
- */
+
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";

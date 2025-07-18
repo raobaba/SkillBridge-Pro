@@ -61,13 +61,28 @@ const API_USER_URL = process.env.API_USER_URL || "http://localhost:3001";
 
 // Mount proxy at root `/` and forward full original path to user-service
 app.use(
-  "/api/v1/users",
+  "/api/v1/user",
   proxy(API_USER_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",
     parseReqBody: true,
     proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
     userResDecorator: async (proxyRes, proxyResData) => proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+app.use(
+  "/api/v1/auth",
+  proxy(API_USER_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
     onError: (err, req, res) => {
       res.status(500).json({ message: "Proxy error", error: err.message });
     },

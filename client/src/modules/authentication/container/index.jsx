@@ -3,12 +3,14 @@ import { Users, Briefcase, Star, ArrowRight } from "lucide-react";
 import SignIn from "../components/SignIn";
 import SignUp from "../components/SignUp";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import Circular from "../../../components/loader/Circular";
 
 const Authentication = () => {
   const [isSignIn, setIsSignIn] = useState(true);
   const navigate = useNavigate();
   const switchMode = () => setIsSignIn(!isSignIn);
-
+  const { loading } = useSelector((state) => state.user);
   const features = [
     {
       icon: <Users className='w-6 h-6' />,
@@ -29,6 +31,7 @@ const Authentication = () => {
 
   return (
     <div className='min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative'>
+      {loading && <Circular />}
       {/* Navbar */}
       <nav className='absolute top-0 left-0 right-0 z-20 p-4 lg:p-6'>
         <div className='flex items-center justify-between max-w-7xl mx-auto'>
@@ -123,7 +126,7 @@ const Authentication = () => {
 
           {/* Right Panel (Form) */}
           <div className='w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-8'>
-            <div className='w-full max-w-md h-[77vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20'>
+            <div className='w-full max-w-md h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20'>
               <div className='bg-black/30 border border-white/10 backdrop-blur-md rounded-2xl p-6 lg:p-8 shadow-xl'>
                 <h2 className='text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'>
                   {isSignIn ? "Welcome Back 👋" : "Join SkillBridge 🚀"}

@@ -1,5 +1,3 @@
-
-
 import axios from "axios";
 import { getToken } from "../utils";
 
@@ -32,6 +30,7 @@ const fetchApiWrapper = (
   Authorization,
 ) => {
   const url = import.meta.env.VITE_APP_API_URL + uri;
+  console.log("API CALL:", url);
   const config = getHeaderConfig(requestType, options, Authorization);
   if (requestType === "GET") {
     return axios({ url, method: "get", ...config });

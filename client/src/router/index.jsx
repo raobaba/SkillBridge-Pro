@@ -9,27 +9,39 @@ import Unauthorized from "./Unauthorized";
 // Lazy loaded pages
 const Home = lazy(() => import("../pages/Home"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
-const Authentication = lazy(()=>import("../modules/authentication/container"))
-
+const Authentication = lazy(
+  () => import("../modules/authentication/container")
+);
+const VerifyEmail = lazy(
+  () => import("../modules/authentication/components/VerifyEmail")
+);
+const ResetPassword = lazy(
+  () => import("../modules/authentication/components/ResetPassword")
+);
+const ForgotPassword = lazy(
+  () => import("../modules/authentication/components/ForgotPassword")
+);
 const Routing = () => {
   return (
     <Router>
       <AppLogout />
       <Suspense fallback={<CircularLoader />}>
         <Routes>
-          <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Authentication />} />
+          <Route path='/' element={<Home />} />
+          <Route path='/auth' element={<Authentication />} />
+          <Route path='/verify-email' element={<VerifyEmail />} />
+          <Route path='/reset-password' element={<ResetPassword />} />
+          <Route path='/forgot-password' element={<ForgotPassword />} />
           <Route
-            path="/dashboard/*"
+            path='/dashboard/*'
             element={
-              <PrivateRoute screen="DASHBOARD_ACCESS">
+              <PrivateRoute screen='DASHBOARD_ACCESS'>
                 <Dashboard />
               </PrivateRoute>
             }
           />
-
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="*" element={<Error404 />} />
+          <Route path='/unauthorized' element={<Unauthorized />} />
+          <Route path='*' element={<Error404 />} />
         </Routes>
       </Suspense>
     </Router>
