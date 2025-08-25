@@ -148,26 +148,45 @@ const loginUser = async (req, res) => {
     }
 
     const user = await UserModel.getUserByEmail(email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    console.log("user", user);
+    if (!user) {
       return new ErrorHandler("Invalid credentials", 401).sendError(res);
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    console.log("isPasswordMatch", isPasswordMatch);
+    if (!isPasswordMatch) {
+      return new ErrorHandler("Invalid credentials", 401).sendError(res);
+    }
+
+    if (!user.isEmailVerified) {
+      return new ErrorHandler(
+        "Please verify your email to login",
+        403
+      ).sendError(res);
     }
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "7d",
-      }
+      { expiresIn: "7d" }
     );
 
-    res
-      .status(200)
-      .json({ success: true, status: 200, message: "Login successful", token, user });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Login successful",
+      token,
+      user,
+    });
   } catch (error) {
     console.error("Login Error:", error);
-    res
-      .status(500)
-      .json({ success: false, status: 500, message: "Login failed", error: error.message });
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Login failed",
+      error: error.message,
+    });
   }
 };
 
@@ -217,9 +236,12 @@ const forgetPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("Forget Password Error:", error);
-    res
-      .status(500)
-      .json({ success: false, status: 500, message: "Reset failed", error: error.message });
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Reset failed",
+      error: error.message,
+    });
   }
 };
 
@@ -249,14 +271,19 @@ const resetPassword = async (req, res) => {
       resetPasswordExpire: null,
     });
 
-    res
-      .status(200)
-      .json({ success: true, status: 200, message: "Password reset successfully" });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Password reset successfully",
+    });
   } catch (error) {
     console.error("Reset Password Error:", error);
-    res
-      .status(500)
-      .json({ success: false, status: 500, message: "Reset failed", error: error.message });
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Reset failed",
+      error: error.message,
+    });
   }
 };
 
@@ -282,14 +309,19 @@ const changePassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await UserModel.updatePassword(userId, hashedPassword);
 
-    res
-      .status(200)
-      .json({ success: true, status: 200, message: "Password updated successfully" });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Password updated successfully",
+    });
   } catch (error) {
     console.error("Change Password Error:", error);
-    res
-      .status(500)
-      .json({ success: false, status: 500, message: "Update failed", error: error.message });
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Update failed",
+      error: error.message,
+    });
   }
 };
 
@@ -321,9 +353,12 @@ const updateUserProfile = async (req, res) => {
     const updateData = req.body;
     const updatedUser = await UserModel.updateProfile(userId, updateData);
 
-    res
-      .status(200)
-      .json({ success: true, status: 200, message: "Profile updated", user: updatedUser });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Profile updated",
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("Update profile error:", error);
     res.status(500).json({
@@ -339,9 +374,11 @@ const deleteUser = async (req, res) => {
   try {
     const userId = req.user.userId;
     await UserModel.deleteUser(userId);
-    res
-      .status(200)
-      .json({ success: true, status: 200, message: "User deleted successfully" });
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "User deleted successfully",
+    });
   } catch (error) {
     console.error("Delete user error:", error);
     res.status(500).json({

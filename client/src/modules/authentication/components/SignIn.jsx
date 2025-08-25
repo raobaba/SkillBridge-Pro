@@ -53,7 +53,7 @@ const SignIn = ({ switchMode }) => {
   };
 
   const handleOAuthClick = (provider) => {
-    window.location.href = `http://localhost:3000/api/v1/auth/${provider}`;
+    window.location.href = `${import.meta.env.VITE_APP_API_URL}api/v1/auth/${provider}`;
   };
 
   return (

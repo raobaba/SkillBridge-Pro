@@ -6,34 +6,9 @@
     "auditLog": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\.e29a220e9dd3a5d0a4c4c63acc368a3971829a4b-audit.json",
     "files": [
         {
-            "date": 1752399274651,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-13.log",
-            "hash": "c05c3cc49eeceb2a0412d6c93eb38e0b48f093721e77d2136fbb9dd8c0a007ec"
-        },
-        {
-            "date": 1752449453186,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-14.log",
-            "hash": "689dc086df1d74044e3a110ddca49a078edc10e7dac4e9ca4c6841ebbe2e0b72"
-        },
-        {
-            "date": 1752541798388,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-15.log",
-            "hash": "defb91c6520b2254430dc71aab66d09b12ee42ede30cb2afab37a2f6edf9a80f"
-        },
-        {
-            "date": 1752625941119,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-16.log",
-            "hash": "e3d88ee49e6f335e538985ce9d3c4aba71d5d74b2fad495f98a2ff6fad8a8c61"
-        },
-        {
-            "date": 1752708871893,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-17.log",
-            "hash": "c1079bedf13544f9f74ed4a306c4b2032b96fcdf23cf15a6f4e35edb3ecc6314"
-        },
-        {
-            "date": 1752799021020,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-07-18.log",
-            "hash": "b7d1f3ef6527b9523fe6338dad95efeab6319b57850dcdc6a2a3b4dffb629ee4"
+            "date": 1756159424155,
+            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-08-26.log",
+            "hash": "89ccae187492e3db57fb073718b1e1d4f8d25263e653593eaf86ca07d25da588"
         }
     ],
     "hashType": "sha256"

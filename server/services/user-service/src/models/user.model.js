@@ -10,7 +10,7 @@ const {
   uuid,
 } = require("drizzle-orm/pg-core");
 
-const { eq } = require("drizzle-orm");
+const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 
@@ -125,7 +125,7 @@ class UserModel {
       .returning();
     return user;
   }
-  
+
   static async clearResetPasswordToken(id) {
     const [user] = await db
       .update(userTable)

@@ -6,8 +6,9 @@ export const loginUserApi = async (data) => {
 };
 
 export const registerUserApi = async (data) => {
+  console.log("data", data);
   const url = `api/v1/user/register`;
-  return await fetchFromApiServer("POST", url, data); 
+  return await fetchFromApiServer("POST", url, data);
 };
 
 export const logoutUserApi = async () => {
@@ -21,7 +22,7 @@ export const changeCurrentPassword = async (data) => {
 };
 
 export const forgetPassword = async (data) => {
-  const url = `api/v1/user/forgot-password`; 
+  const url = `api/v1/user/forgot-password`;
   return await fetchFromApiServer("POST", url, data);
 };
 

@@ -1,12 +1,19 @@
-import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { Github, Linkedin, Mail } from "lucide-react"; // Import icons
+import React, { useState, useEffect } from "react";
+import { Eye, EyeOff, Github, Linkedin, Mail } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser, clearAuthState } from "../slice/userSlice";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
-// SignUp Component
 const SignUp = ({ switchMode }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { loading, error, message } = useSelector((state) => state.user);
+
   const [showPassword, setShowPassword] = useState(false);
+  const [signInFailed, setSignInFailed] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     role: "",
     domains: "",
@@ -15,20 +22,77 @@ const SignUp = ({ switchMode }) => {
     password: "",
   });
 
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+      dispatch(clearAuthState());
+    }
+  }, [message, dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      setSignInFailed(true);
+      dispatch(clearAuthState());
+    }
+  }, [error, dispatch]);
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
+  //  name, email, role, domains, experience, availability, password
+  const validateForm = () => {
+    console.log("formData", formData);
+    const { name, email, role, domains, experience, availability, password } =
+      formData;
 
-  const handleSubmit = (e) => {
+    if (
+      !name ||
+      !email ||
+      !role ||
+      !domains ||
+      !experience ||
+      !availability ||
+      !password
+    ) {
+      toast.error("All fields are required");
+      return false;
+    }
+
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      toast.error("Invalid email format");
+      return false;
+    }
+
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Sign up data:", formData);
+
+    if (!validateForm()) return;
+
+    try {
+      const result = await dispatch(registerUser(formData));
+      if (result?.payload?.status === 201) {
+        switchMode();
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      toast.error("Something went wrong, please try again.");
+    }
   };
 
   const handleOAuthClick = (provider) => {
-    window.location.href = `http://localhost:3000/api/v1/auth/${provider}`;
+    window.location.href = `${import.meta.env.VITE_APP_API_URL}api/v1/auth/${provider}`;
   };
 
   return (
@@ -40,8 +104,8 @@ const SignUp = ({ switchMode }) => {
           </label>
           <input
             type='text'
-            name='fullName'
-            value={formData.fullName}
+            name='name'
+            value={formData.name}
             onChange={handleChange}
             required
             placeholder='Enter your full name'
@@ -75,15 +139,9 @@ const SignUp = ({ switchMode }) => {
             required
             className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
           >
-            <option value='' className='bg-gray-800 text-white'>
-              Select Role
-            </option>
-            <option value='developer' className='bg-gray-800 text-white'>
-              Developer
-            </option>
-            <option value='startup' className='bg-gray-800 text-white'>
-              Startup
-            </option>
+            <option value=''>Select Role</option>
+            <option value='developer'>Developer</option>
+            <option value='startup'>Startup</option>
           </select>
         </div>
 
@@ -96,8 +154,8 @@ const SignUp = ({ switchMode }) => {
             name='experience'
             value={formData.experience}
             onChange={handleChange}
-            required
             min={0}
+            required
             placeholder='0'
             className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
           />
@@ -129,15 +187,9 @@ const SignUp = ({ switchMode }) => {
             required
             className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
           >
-            <option value='full-time' className='bg-gray-800 text-white'>
-              Full-time
-            </option>
-            <option value='part-time' className='bg-gray-800 text-white'>
-              Part-time
-            </option>
-            <option value='freelance' className='bg-gray-800 text-white'>
-              Freelance
-            </option>
+            <option value='full-time'>Full-time</option>
+            <option value='part-time'>Part-time</option>
+            <option value='freelance'>Freelance</option>
           </select>
         </div>
       </div>
@@ -165,9 +217,10 @@ const SignUp = ({ switchMode }) => {
 
       <button
         onClick={handleSubmit}
+        disabled={loading}
         className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
       >
-        Create Account
+        {loading ? "Creating Account..." : "Create Account"}
       </button>
 
       <p className='text-center text-sm text-gray-400'>
@@ -180,7 +233,7 @@ const SignUp = ({ switchMode }) => {
         </span>
       </p>
 
-      {/* Social Login Section */}
+      {/* OAuth Buttons */}
       <div className='space-y-4'>
         <div className='relative'>
           <div className='absolute inset-0 flex items-center'>
@@ -192,6 +245,7 @@ const SignUp = ({ switchMode }) => {
             </span>
           </div>
         </div>
+
         <div className='grid grid-cols-3 gap-3'>
           <button
             onClick={() => handleOAuthClick("github")}
@@ -200,6 +254,7 @@ const SignUp = ({ switchMode }) => {
             <Github size={16} />
             <span className='hidden sm:inline'>GitHub</span>
           </button>
+
           <button
             onClick={() => handleOAuthClick("google")}
             className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
@@ -207,6 +262,7 @@ const SignUp = ({ switchMode }) => {
             <Mail size={16} />
             <span className='hidden sm:inline'>Google</span>
           </button>
+
           <button
             onClick={() => handleOAuthClick("linkedin")}
             className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
