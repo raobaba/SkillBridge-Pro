@@ -9,8 +9,8 @@ import "react-toastify/dist/ReactToastify.css";
 import App from "./App.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>
+  <>
     <ToastContainer hideProgressBar={true} position='top-right' />
     <App />
-  </StrictMode>
+  </>
 );

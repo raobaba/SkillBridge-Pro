@@ -1,2 +1,4 @@
 2025-08-27T09:35:47.236Z [ERROR] POST /api/v1/user/register 500 - Internal server error
 2025-08-27T09:37:41.377Z [ERROR] POST /api/v1/user/login 500 - Internal server error
+2025-08-27T09:42:02.862Z [ERROR] POST /api/v1/user/login 500 - Internal server error
+2025-08-27T09:42:04.453Z [ERROR] POST /api/v1/user/login 500 - Internal server error

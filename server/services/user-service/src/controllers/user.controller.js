@@ -396,7 +396,6 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const userId = req.user.userId;
@@ -443,6 +442,33 @@ const updateOAuth = async (req, res) => {
   }
 };
 
+// controllers/logout.controller.js
+const logoutUser = async (req, res) => {
+  try {
+    // If you use cookies for JWT, clear the cookie
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    // Otherwise, just respond with success for client to remove token
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Logout Error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Logout failed",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -454,4 +480,5 @@ module.exports = {
   changePassword,
   forgetPassword,
   resetPassword,
+  logoutUser,
 };

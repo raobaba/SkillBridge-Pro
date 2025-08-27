@@ -1,2 +1,8 @@
 2025-08-27T09:36:44.752Z [ERROR] PUT /api/v1/user/profile 401 - Access denied. No credentials sent!
 2025-08-27T09:36:46.789Z [ERROR] PUT /api/v1/user/profile 401 - Access denied. No credentials sent!
+2025-08-27T11:46:29.701Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!
+2025-08-27T11:46:31.597Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!
+2025-08-27T12:03:37.369Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!
+2025-08-27T12:04:12.885Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!
+2025-08-27T12:52:12.949Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!
+2025-08-27T12:52:21.922Z [ERROR] POST /api/v1/user/logout 401 - Access denied. No credentials sent!

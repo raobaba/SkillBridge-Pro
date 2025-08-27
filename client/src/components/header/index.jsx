@@ -1,15 +1,22 @@
 // components/Navbar.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Code,
-  Menu,
-  X,
-} from "lucide-react";
+import { Code, Menu, X, User } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import ConfirmModal from "../modal/ConfirmModal";
+import { logOut } from "../../modules/authentication/slice/userSlice";
+import { getToken } from "../../services/utils";
 
 const Navbar = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isAvatarBroken, setIsAvatarBroken] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const user = useSelector((state) => state.user.user);
+  const token = getToken();
+  const dropdownRef = useRef(null);
 
   const menuItems = [
     { label: "Features", link: "#features" },
@@ -17,6 +24,36 @@ const Navbar = () => {
     { label: "Testimonials", link: "#testimonials" },
     { label: "Pricing", link: "#pricing" },
   ];
+
+  const userDropdownItems = [
+    { label: "Profile", action: () => navigate("/profile") },
+    { label: "Dashboard", action: () => navigate("/dashboard") },
+    { label: "Notifications", action: () => navigate("/notifications") },
+    { label: "Settings", action: () => navigate("/settings") },
+    { label: "Portfolio Sync", action: () => navigate("/portfolio-sync") },
+    {
+      label: "Logout",
+      action: () => setIsLogoutModalOpen(true),
+    },
+  ];
+
+  const handleLogout = async () => {
+    await dispatch(logOut());
+    setIsLogoutModalOpen(false);
+    navigate("/auth");
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <nav className='fixed top-0 left-0 w-full z-50 bg-black/20 backdrop-blur-sm border-b border-white/10'>
@@ -43,15 +80,57 @@ const Navbar = () => {
                 {item.label}
               </a>
             ))}
-            <button
-              onClick={() => navigate("/auth")}
-              className='text-gray-300 hover:text-white cursor-pointer transition-colors'
-            >
-              Sign In
-            </button>
-            <button className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105'>
-              Get Started
-            </button>
+
+            {token ? (
+              // User Avatar and Dropdown
+              <div className='relative' ref={dropdownRef}>
+                {!isAvatarBroken && user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className='w-10 h-10 rounded-full cursor-pointer border-2 border-white/20'
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    onError={() => setIsAvatarBroken(true)}
+                  />
+                ) : (
+                  <div
+                    className='w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center cursor-pointer border-2 border-white/20'
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  >
+                    <User className='w-6 h-6 text-white' />
+                  </div>
+                )}
+
+                {isUserDropdownOpen && (
+                  <div className='absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50'>
+                    {userDropdownItems.map((item, index) => (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          item.action();
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className='px-4 py-2 text-gray-300 hover:bg-white/10 cursor-pointer transition-colors'
+                      >
+                        {item.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate("/auth")}
+                  className='text-gray-300 hover:text-white cursor-pointer transition-colors'
+                >
+                  Sign In
+                </button>
+                <button className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105'>
+                  Get Started
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -60,7 +139,11 @@ const Navbar = () => {
             className='md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors'
             aria-label='Toggle Menu'
           >
-            {isMenuOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+            {isMenuOpen ? (
+              <X className='w-6 h-6' />
+            ) : (
+              <Menu className='w-6 h-6' />
+            )}
           </button>
         </div>
       </div>
@@ -79,23 +162,49 @@ const Navbar = () => {
                 {item.label}
               </a>
             ))}
-            <button
-              className='block text-gray-300 hover:text-white transition-colors'
-              onClick={() => {
-                setIsMenuOpen(false);
-                navigate("/auth");
-              }}
-            >
-              Sign In
-            </button>
-            <button className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300'>
-              Get Started
-            </button>
+
+            {user ? (
+              userDropdownItems.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => {
+                    item.action();
+                    setIsMenuOpen(false);
+                  }}
+                  className='block text-gray-300 hover:text-white transition-colors cursor-pointer'
+                >
+                  {item.label}
+                </div>
+              ))
+            ) : (
+              <>
+                <button
+                  className='block text-gray-300 hover:text-white transition-colors'
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    navigate("/auth");
+                  }}
+                >
+                  Sign In
+                </button>
+                <button className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300'>
+                  Get Started
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        title='Logout Confirmation'
+        message='Are you sure you want to logout?'
+        onConfirm={handleLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </nav>
   );
 };
 
-export default Navbar;
+export default React.memo(Navbar);

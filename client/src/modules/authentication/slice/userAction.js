@@ -6,14 +6,8 @@ export const loginUserApi = async (data) => {
 };
 
 export const registerUserApi = async (data) => {
-  console.log("data", data);
   const url = `api/v1/user/register`;
   return await fetchFromApiServer("POST", url, data);
-};
-
-export const logoutUserApi = async () => {
-  const url = `api/v1/user/logout`;
-  return await fetchFromApiServer("GET", url);
 };
 
 export const changeCurrentPassword = async (data) => {
@@ -54,4 +48,9 @@ export const emailVerification = async (token) => {
 export const updateOAuthDetailsApi = async (data) => {
   const url = `api/v1/user/oauth`;
   return await fetchFromApiServer("PUT", url, data);
+};
+
+export const logoutApi = async () => {
+  const url = `api/v1/user/logout`;
+  return await fetchFromApiServer("POST", url);
 };

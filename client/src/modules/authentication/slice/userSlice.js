@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   loginUserApi,
   registerUserApi,
-  logoutUserApi,
   updateUserProfileApi,
   getUserProfileApi,
   deleteUserProfileApi,
@@ -11,7 +10,9 @@ import {
   changeCurrentPassword,
   resetPassword,
   forgetPassword,
+  logoutApi,
 } from "./userAction";
+import { removeToken, setToken } from "../../../services/utils";
 
 // Initial state
 const initialState = {
@@ -27,9 +28,12 @@ export const loginUser = createAsyncThunk(
   async (data, { rejectWithValue }) => {
     try {
       const response = await loginUserApi(data);
+      if (response.data?.token) setToken(response.data.token);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error?.response?.data || "Login failed");
+      return rejectWithValue(
+        error?.response?.data || { message: "Login failed" }
+      );
     }
   }
 );
@@ -42,18 +46,6 @@ export const registerUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error?.response?.data || "Registration failed");
-    }
-  }
-);
-
-export const logoutUser = createAsyncThunk(
-  "user/logout",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await logoutUserApi();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Logout failed");
     }
   }
 );
@@ -158,6 +150,22 @@ export const resetPassPassword = createAsyncThunk(
   }
 );
 
+// Logout
+export const logOut = createAsyncThunk(
+  "user/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      await logoutApi(); // optional backend call
+      removeToken();
+      return {}; // reset state
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Logout failed" }
+      );
+    }
+  }
+);
+
 const userSlice = createSlice({
   name: "user",
   initialState,
@@ -210,21 +218,21 @@ const userSlice = createSlice({
       })
 
       // Logout
-      .addCase(logoutUser.pending, (state) => {
+      .addCase(logOut.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.message = null;
       })
-      .addCase(logoutUser.fulfilled, (state) => {
+      .addCase(logOut.fulfilled, (state) => {
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
         state.message = "Logout successful";
         state.error = null;
       })
-      .addCase(logoutUser.rejected, (state, action) => {
+      .addCase(logOut.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message || "Logout failed";
+        state.error = action.payload?.message || "Logout failed";
         state.message = null;
       })
 

@@ -3,9 +3,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { persistStore } from "redux-persist";
 import Routing from "./router";
-import { NoInternet } from "./components";
 import store from "../src/redux/store/configureStore";
-
 export const AppContext = createContext();
 
 const persistor = persistStore(store);
@@ -29,7 +27,6 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        {!hasInternet && <NoInternet />}
         <Routing />
       </PersistGate>
     </Provider>

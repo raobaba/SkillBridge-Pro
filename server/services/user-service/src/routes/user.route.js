@@ -23,5 +23,6 @@ userRouter.put("/oauth", authenticate, userController.updateOAuth);
 userRouter.put("/change-password", authenticate, userController.changePassword);
 userRouter.post("/forgot-password", userController.forgetPassword);
 userRouter.put("/reset-password/:token", userController.resetPassword);
+userRouter.post("/logout", authenticate, userController.logoutUser);
 
 module.exports = userRouter;

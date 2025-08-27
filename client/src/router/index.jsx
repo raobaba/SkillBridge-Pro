@@ -2,7 +2,6 @@ import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { CircularLoader } from "../components";
 import PrivateRoute from "./PrivateRoute";
-import AppLogout from "./AppLogout";
 import Error404 from "./Error404";
 import Unauthorized from "./Unauthorized";
 
@@ -24,7 +23,6 @@ const ForgotPassword = lazy(
 const Routing = () => {
   return (
     <Router>
-      <AppLogout />
       <Suspense fallback={<CircularLoader />}>
         <Routes>
           <Route path='/' element={<Home />} />
