@@ -8,11 +8,15 @@ const {
   integer,
   json,
   uuid,
+  pgEnum,
 } = require("drizzle-orm/pg-core");
 
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
+
+// Define enum for roles
+const roleEnum = pgEnum("role", ["developer", "project-owner", "admin"]);
 
 const userTable = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -41,8 +45,12 @@ const userTable = pgTable("users", {
   resetPasswordToken: text("reset_password_token"),
   resetPasswordExpire: timestamp("reset_password_expire"),
   notificationPrefs: json("notification_prefs").default({}),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  role: roleEnum("role").default("developer").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 class UserModel {
@@ -165,14 +173,57 @@ class UserModel {
     return user;
   }
 
-  static async updateProfile(id, profile) {
-    const [user] = await db
-      .update(userTable)
-      .set(profile)
-      .where(eq(userTable.id, id))
-      .returning();
-    return user;
+static async updateProfile(id, profile) {
+  const updateData = { ...profile };
+
+  // 🔒 Never allow immutable fields
+  delete updateData.id;
+  delete updateData.uuid;
+  delete updateData.createdAt;
+
+  // ✅ Always let DB handle updatedAt
+  updateData.updatedAt = new Date();
+
+  // ✅ Ensure JSON fields are real objects/arrays, not strings
+  if (typeof updateData.skills === "string") {
+    try {
+      updateData.skills = JSON.parse(updateData.skills);
+    } catch {
+      updateData.skills = {};
+    }
   }
+
+  if (typeof updateData.badges === "string") {
+    try {
+      updateData.badges = JSON.parse(updateData.badges);
+    } catch {
+      updateData.badges = [];
+    }
+  }
+
+  if (typeof updateData.notificationPrefs === "string") {
+    try {
+      updateData.notificationPrefs = JSON.parse(updateData.notificationPrefs);
+    } catch {
+      updateData.notificationPrefs = {};
+    }
+  }
+
+  // ✅ Normalize resetPasswordExpire if present
+  if (updateData.resetPasswordExpire) {
+    const date = new Date(updateData.resetPasswordExpire);
+    updateData.resetPasswordExpire = isNaN(date) ? null : date;
+  }
+
+  const [user] = await db
+    .update(userTable)
+    .set(updateData)
+    .where(eq(userTable.id, id))
+    .returning();
+
+  return user;
+}
+
 }
 
 module.exports = {

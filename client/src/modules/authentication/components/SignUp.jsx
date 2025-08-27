@@ -139,9 +139,18 @@ const SignUp = ({ switchMode }) => {
             required
             className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
           >
-            <option value=''>Select Role</option>
-            <option value='developer'>Developer</option>
-            <option value='startup'>Startup</option>
+            <option className='bg-black text-white' value=''>
+              Select Role
+            </option>
+            <option className='bg-black text-white' value='developer'>
+              Developer
+            </option>
+            <option className='bg-black text-white' value='admin'>
+              Admin
+            </option>
+            <option className='bg-black text-white' value='project-owner'>
+              Project Onwer
+            </option>
           </select>
         </div>
 
@@ -187,9 +196,15 @@ const SignUp = ({ switchMode }) => {
             required
             className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
           >
-            <option value='full-time'>Full-time</option>
-            <option value='part-time'>Part-time</option>
-            <option value='freelance'>Freelance</option>
+            <option className='bg-black text-white' value='full-time'>
+              Full-time
+            </option>
+            <option className='bg-black text-white' value='part-time'>
+              Part-time
+            </option>
+            <option className='bg-black text-white' value='freelance'>
+              Freelance
+            </option>
           </select>
         </div>
       </div>

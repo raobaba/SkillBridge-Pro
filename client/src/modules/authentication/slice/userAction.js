@@ -46,8 +46,8 @@ export const deleteUserProfileApi = async () => {
   return await fetchFromApiServer("DELETE", url);
 };
 
-export const emailVerification = async (id) => {
-  const url = `api/v1/user/verify-email/${id}`;
+export const emailVerification = async (token) => {
+  const url = `api/v1/user/verify-email?token=${token}`;
   return await fetchFromApiServer("GET", url);
 };
 

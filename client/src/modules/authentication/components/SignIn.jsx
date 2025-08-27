@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Github, Linkedin, Mail } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, clearAuthState } from "../slice/userSlice";
-
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+
 const SignIn = ({ switchMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -15,6 +15,7 @@ const SignIn = ({ switchMode }) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
+    role: "developer", // ✅ default role
   });
 
   useEffect(() => {
@@ -59,6 +60,7 @@ const SignIn = ({ switchMode }) => {
   return (
     <div className='space-y-6'>
       <form onSubmit={handleSubmit} className='space-y-4'>
+        {/* Email */}
         <div>
           <label className='block mb-2 text-sm font-medium text-gray-300'>
             Email
@@ -74,6 +76,30 @@ const SignIn = ({ switchMode }) => {
           />
         </div>
 
+         {/* Role Dropdown */}
+        <div>
+          <label className='block mb-2 text-sm font-medium text-gray-300'>
+            Role
+          </label>
+          <select
+            name='role'
+            value={formData.role}
+            onChange={handleChange}
+            className='w-full bg-white/10 px-4 py-3 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
+          >
+            <option className='bg-black text-white' value='developer'>
+              Developer
+            </option>
+            <option className='bg-black text-white' value='project-owner'>
+              Project Owner
+            </option>
+            <option className='bg-black text-white' value='admin'>
+              Admin
+            </option>
+          </select>
+        </div>
+
+        {/* Password */}
         <div className='relative'>
           <label className='block mb-2 text-sm font-medium text-gray-300'>
             Password
@@ -94,7 +120,7 @@ const SignIn = ({ switchMode }) => {
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </div>
 
-          {/* 🔥 Show "Forgot Password?" only on loginFailed */}
+          {/* 🔥 Forgot password if login failed */}
           {loginFailed && (
             <div className='mt-2 text-right'>
               <p
@@ -106,7 +132,6 @@ const SignIn = ({ switchMode }) => {
             </div>
           )}
         </div>
-
         <button
           type='submit'
           disabled={loading}
@@ -126,7 +151,7 @@ const SignIn = ({ switchMode }) => {
         </span>
       </p>
 
-      {/* Social Login */}
+      {/* Social login unchanged */}
       <div className='space-y-4'>
         <div className='relative'>
           <div className='absolute inset-0 flex items-center'>

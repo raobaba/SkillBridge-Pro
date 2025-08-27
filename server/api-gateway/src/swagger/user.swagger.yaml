@@ -9,7 +9,7 @@ servers:
     description: Local User Server
 
 paths:
-  /api/v1/users/register:
+  /api/v1/user/register:
     post:
       summary: Register a new user
       requestBody:
@@ -17,21 +17,42 @@ paths:
         content:
           application/json:
             schema:
-              required: [name, email, password]
+              type: object
               properties:
                 name:
                   type: string
+                  example: Rajan Kumar
                 email:
                   type: string
+                  format: email
+                  example: raorajan9576@gmail.com
+                role:
+                  type: string
+                  enum: [developer, project-owner, admin]
+                  default: developer # 👈 default role
+                  example: developer
+                domains:
+                  type: string
+                  example: "web, ai-ml"
+                experience:
+                  type: string
+                  example: "3 years"
+                availability:
+                  type: string
+                  enum: [full-time, part-time, freelance]
+                  default: full-time
+                  example: full-time
                 password:
                   type: string
+                  format: password
+                  example: rajan@123
       responses:
         "201":
           description: User registered successfully
-        "409":
-          description: User already exists
+        "400":
+          description: Bad request
 
-  /api/v1/users/login:
+  /api/v1/user/login:
     post:
       summary: Login a user
       requestBody:
@@ -39,19 +60,27 @@ paths:
         content:
           application/json:
             schema:
-              required: [email, password]
+              required: [email, password, role]
               properties:
                 email:
                   type: string
+                  format: email
+                  example: raorajan9576@gmail.com
+                role:
+                  type: string
+                  enum: [developer, project-owner, admin]
+                  default: developer # 👈 default role
+                  example: developer
                 password:
                   type: string
+                  example: rajan@123
       responses:
         "200":
           description: Login successful
         "401":
           description: Invalid credentials
 
-  /api/v1/users/profile:
+  /api/v1/user/profile:
     get:
       summary: Get user profile
       security:
@@ -59,11 +88,20 @@ paths:
       responses:
         "200":
           description: User profile returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
         "404":
           description: User not found
+        "500":
+          description: Internal server error
 
     put:
       summary: Update user profile
+      description: Update editable profile fields (does not allow email, password, ID, or system fields)
       security:
         - bearerAuth: []
       requestBody:
@@ -71,10 +109,18 @@ paths:
         content:
           application/json:
             schema:
-              type: object
+              $ref: "#/components/schemas/UserUpdate"
       responses:
         "200":
-          description: Profile updated
+          description: Profile updated successfully
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
 
     delete:
       summary: Delete user profile
@@ -82,9 +128,15 @@ paths:
         - bearerAuth: []
       responses:
         "200":
-          description: User deleted
+          description: User deleted successfully
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
 
-  /api/v1/users/verify-email:
+  /api/v1/user/verify-email:
     get:
       summary: Verify email using token
       parameters:
@@ -99,7 +151,7 @@ paths:
         "400":
           description: Invalid or expired token
 
-  /api/v1/users/verify-email/{id}:
+  /api/v1/user/verify-email/{id}:
     get:
       summary: Verify email using user ID (fallback)
       parameters:
@@ -114,7 +166,7 @@ paths:
         "404":
           description: User not found
 
-  /api/v1/users/forgot-password:
+  /api/v1/user/forgot-password:
     post:
       summary: Send password reset email
       requestBody:
@@ -132,7 +184,7 @@ paths:
         "404":
           description: User not found
 
-  /api/v1/users/reset-password/{token}:
+  /api/v1/user/reset-password/{token}:
     put:
       summary: Reset password using token
       parameters:
@@ -156,7 +208,7 @@ paths:
         "400":
           description: Invalid or expired token
 
-  /api/v1/users/change-password:
+  /api/v1/user/change-password:
     put:
       summary: Change password (logged-in user)
       security:
@@ -178,7 +230,7 @@ paths:
         "401":
           description: Invalid current password
 
-  /api/v1/users/oauth:
+  /api/v1/user/oauth:
     put:
       summary: Update OAuth details
       security:
@@ -259,3 +311,60 @@ components:
         updatedAt:
           type: string
           format: date-time
+    UserUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Rajan Kumar
+        bio:
+          type: string
+          example: Full Stack Developer
+        avatarUrl:
+          type: string
+          example: https://example.com/avatar.png
+        domainPreferences:
+          type: string
+          example: web, ai-ml
+        skills:
+          type: object
+          example: {"javascript": "advanced", "react": "intermediate"}
+        experience:
+          type: string
+          example: 3 years
+        location:
+          type: string
+          example: Nagpur, Maharashtra
+        availability:
+          type: string
+          example: full-time
+        resumeUrl:
+          type: string
+          example: https://example.com/resume.pdf
+        xp:
+          type: integer
+          example: 0
+        badges:
+          type: array
+          items:
+            type: string
+          example: ["Top Performer"]
+        level:
+          type: integer
+          example: 1
+        githubUrl:
+          type: string
+          example: https://github.com/raobaba
+        linkedinUrl:
+          type: string
+          example: https://www.linkedin.com/in/kumar-rajan
+        stackoverflowUrl:
+          type: string
+          example: https://stackoverflow.com/users/123456
+        portfolioScore:
+          type: integer
+          example: 0
+        notificationPrefs:
+          type: object
+          example: {"email": true, "sms": false}
+      required: []

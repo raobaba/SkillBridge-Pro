@@ -3,6 +3,8 @@ const { Pool } = require("pg");
 const { migrate } = require("drizzle-orm/node-postgres/migrator");
 require("dotenv").config();
 
+let pool;
+
 const dbConfig = {
   host: process.env.DB_HOST,
   port: Number(process.env.DB_PORT) || 5432,
@@ -15,37 +17,71 @@ const dbConfig = {
   connectionTimeoutMillis: Number(process.env.DB_POOL_CONNECTION_TIMEOUT) || 10000,
 };
 
-
 const createPool = () => {
-  const pool = new Pool(dbConfig);
+  pool = new Pool(dbConfig);
 
   pool.on("error", (err) => {
-    console.error("Unexpected error on idle client", err);
-    if (err.code === "ETIMEDOUT" || err.code === "PROTOCOL_CONNECTION_LOST") {
-      console.log("Attempting to reconnect...");
-      setTimeout(createPool, 3000);
+    console.error("❌ Unexpected error on idle client:", err);
+
+    if (
+      err.code === "ETIMEDOUT" ||
+      err.code === "PROTOCOL_CONNECTION_LOST" ||
+      err.code === "ECONNRESET"
+    ) {
+      console.log("⚠️ Lost DB connection. Attempting to reconnect...");
+      reconnectPool();
     }
   });
 
   return pool;
 };
 
-const pool = createPool();
+const reconnectPool = (retries = 5, delay = 3000) => {
+  let attempts = 0;
+
+  const tryReconnect = async () => {
+    if (attempts >= retries) {
+      console.error("❌ Failed to reconnect to DB after max retries.");
+      return;
+    }
+
+    try {
+      pool = createPool();
+      const client = await pool.connect();
+      client.release();
+      console.log("✅ Reconnected to DB successfully!");
+    } catch (err) {
+      attempts++;
+      console.error(`Reconnect attempt ${attempts} failed:`, err.message);
+      setTimeout(tryReconnect, delay);
+    }
+  };
+
+  tryReconnect();
+};
+
+// Initialize Pool + Drizzle
+createPool();
 const db = drizzle(pool, {
   logger: process.env.DB_LOGGING === "true",
 });
 
-
-const testConnection = async () => {
-  try {
-    const client = await pool.connect();
-    console.log("🚀 Database connected successfully!");
-    client.release();
-    return true;
-  } catch (error) {
-    console.error("❌ Database connection failed:", error);
-    return false;
+const testConnection = async (retries = 3, delay = 2000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect();
+      console.log("🚀 Database connected successfully!");
+      client.release();
+      return true;
+    } catch (error) {
+      console.error(`❌ DB connection failed (Attempt ${i + 1}/${retries}):`, error.message);
+      if (i < retries - 1) {
+        await new Promise((res) => setTimeout(res, delay));
+        console.log("🔄 Retrying DB connection...");
+      }
+    }
   }
+  return false;
 };
 
 const runMigrations = async () => {
@@ -62,13 +98,17 @@ const initializeDatabase = async () => {
   const isConnected = await testConnection();
   if (isConnected) {
     await runMigrations();
+  } else {
+    console.error("🚫 Could not initialize DB. Check connection settings.");
   }
 };
 
 const closeConnection = async () => {
   console.log("🔴 Closing database connection...");
-  await pool.end();
-  console.log("✅ Database connection closed.");
+  if (pool) {
+    await pool.end();
+    console.log("✅ Database connection closed.");
+  }
 };
 
 process.on("SIGINT", async () => {

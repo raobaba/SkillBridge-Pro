@@ -81,46 +81,33 @@ const registerUser = async (req, res) => {
 
 const verifyEmail = async (req, res) => {
   try {
-    const token = req.query.token;
-    const userId = req.params.id;
+    const { token } = req.query;
 
-    let user;
-
-    if (token) {
-      // Verify by token (from email link)
-      user = await UserModel.getUserByResetToken(token);
-      if (!user || user.resetPasswordExpire < new Date()) {
-        return res.status(400).json({
-          success: false,
-          status: 400,
-          message: "Invalid or expired verification token",
-        });
-      }
-      // Mark email verified and clear token/expiry
-      await UserModel.updateUser(user.id, {
-        isEmailVerified: true,
-        resetPasswordToken: null,
-        resetPasswordExpire: null,
-      });
-    } else if (userId) {
-      // Verify by userId param (legacy)
-      user = await UserModel.verifyEmail(userId);
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          status: 404,
-          message: "User not found for verification",
-        });
-      }
-    } else {
+    if (!token) {
       return res.status(400).json({
         success: false,
         status: 400,
-        message: "Verification token or user ID required",
+        message: "Verification token is required",
       });
     }
 
-    res.status(200).json({
+    const user = await UserModel.getUserByResetToken(token);
+
+    if (!user || user.resetPasswordExpire < new Date()) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Invalid or expired verification token",
+      });
+    }
+
+    await UserModel.updateUser(user.id, {
+      isEmailVerified: true,
+      resetPasswordToken: null,
+      resetPasswordExpire: null,
+    });
+
+    return res.status(200).json({
       success: true,
       status: 200,
       message: "Email verified successfully",
@@ -128,7 +115,7 @@ const verifyEmail = async (req, res) => {
     });
   } catch (error) {
     console.error("Email verification error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       status: 500,
       message: "Email verification failed",
@@ -139,35 +126,72 @@ const verifyEmail = async (req, res) => {
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    if (!email || !password) {
-      return new ErrorHandler("Please enter email and password", 400).sendError(
-        res
-      );
+    if (!email || !password || !role) {
+      return new ErrorHandler(
+        "Please enter email, password, and role",
+        400
+      ).sendError(res);
     }
 
+    // ✅ Fetch user by email
     const user = await UserModel.getUserByEmail(email);
     console.log("user", user);
     if (!user) {
       return new ErrorHandler("Invalid credentials", 401).sendError(res);
     }
 
+    // ✅ Check role
+    if (user.role !== role) {
+      return new ErrorHandler(
+        "Role mismatch. Please check your role.",
+        403
+      ).sendError(res);
+    }
+
+    // ✅ Check password
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     console.log("isPasswordMatch", isPasswordMatch);
     if (!isPasswordMatch) {
       return new ErrorHandler("Invalid credentials", 401).sendError(res);
     }
 
+    // 🚨 If email not verified → send verification email again
     if (!user.isEmailVerified) {
-      return new ErrorHandler(
-        "Please verify your email to login",
-        403
-      ).sendError(res);
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+
+      await UserModel.updateUser(user.id, {
+        resetPasswordToken: verificationToken,
+        resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000), // 15 min
+      });
+
+      const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
+      const emailBody = {
+        from: process.env.EMAIL_USER,
+        to: user.email,
+        subject: "Verify Your Email",
+        html: `
+          <p>Hello ${user.name},</p>
+          <p>Please verify your email to login:</p>
+          <a href="${verificationUrl}" style="color:blue;">Verify Email</a>
+          <p>This link will expire in 15 minutes.</p>
+        `,
+      };
+
+      await sendMail(emailBody);
+
+      return res.status(403).json({
+        success: false,
+        status: 403,
+        message:
+          "Email not verified. A new verification link has been sent to your email.",
+      });
     }
 
+    // ✅ Generate JWT including role
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -350,7 +374,9 @@ const getUserProfile = async (req, res) => {
 const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const updateData = req.body;
+    const updateData = { ...req.body };
+
+    // ✅ Model already sanitizes timestamps, no need to handle here
     const updatedUser = await UserModel.updateProfile(userId, updateData);
 
     res.status(200).json({
@@ -369,6 +395,7 @@ const updateUserProfile = async (req, res) => {
     });
   }
 };
+
 
 const deleteUser = async (req, res) => {
   try {
