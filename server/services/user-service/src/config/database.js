@@ -5,17 +5,31 @@ require("dotenv").config();
 
 let pool;
 
-const dbConfig = {
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT) || 5432,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
-  max: Number(process.env.DB_POOL_MAX) || 20,
-  idleTimeoutMillis: Number(process.env.DB_POOL_IDLE_TIMEOUT) || 30000,
-  connectionTimeoutMillis: Number(process.env.DB_POOL_CONNECTION_TIMEOUT) || 10000,
-};
+// Prefer DATABASE_URL if present, fallback to individual vars
+const dbConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: Number(process.env.DB_POOL_MAX) || 20,
+      idleTimeoutMillis: Number(process.env.DB_POOL_IDLE_TIMEOUT) || 30000,
+      connectionTimeoutMillis:
+        Number(process.env.DB_POOL_CONNECTION_TIMEOUT) || 20000, // bumped to 20s
+      keepAlive: true,
+    }
+  : {
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT) || 5432,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl:
+        process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
+      max: Number(process.env.DB_POOL_MAX) || 20,
+      idleTimeoutMillis: Number(process.env.DB_POOL_IDLE_TIMEOUT) || 30000,
+      connectionTimeoutMillis:
+        Number(process.env.DB_POOL_CONNECTION_TIMEOUT) || 20000,
+      keepAlive: true,
+    };
 
 const createPool = () => {
   pool = new Pool(dbConfig);
@@ -74,7 +88,10 @@ const testConnection = async (retries = 3, delay = 2000) => {
       client.release();
       return true;
     } catch (error) {
-      console.error(`❌ DB connection failed (Attempt ${i + 1}/${retries}):`, error.message);
+      console.error(
+        `❌ DB connection failed (Attempt ${i + 1}/${retries}):`,
+        error.message
+      );
       if (i < retries - 1) {
         await new Promise((res) => setTimeout(res, delay));
         console.log("🔄 Retrying DB connection...");
@@ -110,6 +127,17 @@ const closeConnection = async () => {
     console.log("✅ Database connection closed.");
   }
 };
+
+// 🔥 Keep-alive ping (to prevent Neon free-tier idle disconnects)
+setInterval(async () => {
+  if (!pool) return;
+  try {
+    await pool.query("SELECT 1");
+    console.log("🟢 DB keep-alive ping");
+  } catch (err) {
+    console.error("⚠️ Keep-alive ping failed:", err.message);
+  }
+}, 5 * 60 * 1000); // every 5 minutes
 
 process.on("SIGINT", async () => {
   await closeConnection();

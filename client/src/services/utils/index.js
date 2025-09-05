@@ -15,6 +15,7 @@ const getToken = () => {
   }
   return "";
 };
+
 const removeToken = () => {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem(TOKEN_KEY);

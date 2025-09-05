@@ -3,15 +3,17 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const session = require("express-session");
+const fileUpload = require("express-fileupload");
 const passport = require("passport");
 const HttpException = require("./utils/HttpException.utils");
 const errorMiddleware = require("./middleware/error.middleware");
 const logger = require("./utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
+const cloudinary = require("cloudinary").v2;
 
-const userRouter = require('./routes/user.route');
-const authRouter = require('./routes/auth.route');
-require("./config/passport"); 
+const userRouter = require("./routes/user.route");
+const authRouter = require("./routes/auth.route");
+require("./config/passport");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -20,11 +22,25 @@ const PORT = process.env.PORT || 3001;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'default_secret',
-  resave: false,
-  saveUninitialized: true,
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "default_secret",
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+
+app.use(
+  fileUpload({
+    useTempFiles: true,
+  })
+);
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET_KEY,
+});
 
 // 🧠 Passport Setup
 app.use(passport.initialize());
@@ -34,8 +50,8 @@ app.use(passport.session());
 app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
-app.use('/api/v1/user', userRouter);
-app.use('/api/v1/auth', authRouter);
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/auth", authRouter);
 
 // ❌ Handle Undefined Routes (Optional)
 // app.all("*", (req, res, next) => {

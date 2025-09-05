@@ -27,7 +27,7 @@ export const resetPassword = async ({ token, password }) => {
 
 export const updateUserProfileApi = async (formData) => {
   const url = `api/v1/user/profile`;
-  return await fetchFromApiServer("PUT", url, formData);
+  return await fetchFromApiServer("MULTIPART_PUT", url, formData);
 };
 
 export const getUserProfileApi = async () => {

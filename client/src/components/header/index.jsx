@@ -14,7 +14,8 @@ const Navbar = () => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isAvatarBroken, setIsAvatarBroken] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-  const user = useSelector((state) => state.user.user);
+  const user = useSelector((state) => state.user?.user);
+  console.log("user", user);
   const token = getToken();
   const dropdownRef = useRef(null);
 
@@ -84,10 +85,10 @@ const Navbar = () => {
             {token ? (
               // User Avatar and Dropdown
               <div className='relative' ref={dropdownRef}>
-                {!isAvatarBroken && user.avatarUrl ? (
+                {!isAvatarBroken && user?.avatarUrl ? (
                   <img
-                    src={user.avatarUrl}
-                    alt={user.name}
+                    src={user?.avatarUrl}
+                    alt={user?.name}
                     className='w-10 h-10 rounded-full cursor-pointer border-2 border-white/20'
                     onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                     onError={() => setIsAvatarBroken(true)}

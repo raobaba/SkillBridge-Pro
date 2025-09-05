@@ -8,6 +8,9 @@ import Unauthorized from "./Unauthorized";
 // Lazy loaded pages
 const Home = lazy(() => import("../pages/Home"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
+const Profile = lazy(
+  () => import("../modules/authentication/components/Profile")
+);
 const Authentication = lazy(
   () => import("../modules/authentication/container")
 );
@@ -27,6 +30,7 @@ const Routing = () => {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/auth' element={<Authentication />} />
+          <Route path='/profile' element={<Profile />} />
           <Route path='/verify-email' element={<VerifyEmail />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />

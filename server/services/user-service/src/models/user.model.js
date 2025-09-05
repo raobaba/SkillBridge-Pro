@@ -46,6 +46,7 @@ const userTable = pgTable("users", {
   resetPasswordExpire: timestamp("reset_password_expire"),
   notificationPrefs: json("notification_prefs").default({}),
   role: roleEnum("role").default("developer").notNull(),
+  isDeleted: boolean("is_deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
@@ -63,7 +64,7 @@ class UserModel {
     const [user] = await db
       .select()
       .from(userTable)
-      .where(eq(userTable.id, id));
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)));
     return user;
   }
 
@@ -71,7 +72,7 @@ class UserModel {
     const [user] = await db
       .select()
       .from(userTable)
-      .where(eq(userTable.uuid, uuid));
+      .where(and(eq(userTable.uuid, uuid), eq(userTable.isDeleted, false)));
     return user;
   }
 
@@ -79,7 +80,7 @@ class UserModel {
     const [user] = await db
       .select()
       .from(userTable)
-      .where(eq(userTable.email, email));
+      .where(and(eq(userTable.email, email), eq(userTable.isDeleted, false)));
     return user;
   }
 
@@ -87,21 +88,25 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set(userObject)
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
 
   static async deleteUser(id) {
     const [user] = await db
-      .delete(userTable)
+      .update(userTable)
+      .set({ isDeleted: true })
       .where(eq(userTable.id, id))
       .returning();
     return user;
   }
 
   static async getAllUsers() {
-    const users = await db.select().from(userTable);
+    const users = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.isDeleted, false));
     return users;
   }
 
@@ -109,7 +114,7 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set({ isEmailVerified: true })
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
@@ -118,7 +123,12 @@ class UserModel {
     const [user] = await db
       .select()
       .from(userTable)
-      .where(eq(userTable.resetPasswordToken, hashedToken));
+      .where(
+        and(
+          eq(userTable.resetPasswordToken, hashedToken),
+          eq(userTable.isDeleted, false)
+        )
+      );
     return user;
   }
 
@@ -129,7 +139,7 @@ class UserModel {
         resetPasswordToken: tokenHash,
         resetPasswordExpire: expireTime,
       })
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
@@ -141,7 +151,7 @@ class UserModel {
         resetPasswordToken: null,
         resetPasswordExpire: null,
       })
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
@@ -150,7 +160,7 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set(oauthDetails)
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
@@ -159,7 +169,7 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set({ password: newPassword })
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
@@ -168,62 +178,61 @@ class UserModel {
     const [user] = await db
       .update(userTable)
       .set({ resumeUrl: url })
-      .where(eq(userTable.id, id))
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
       .returning();
     return user;
   }
 
-static async updateProfile(id, profile) {
-  const updateData = { ...profile };
+  static async updateProfile(id, profile) {
+    const updateData = { ...profile };
 
-  // 🔒 Never allow immutable fields
-  delete updateData.id;
-  delete updateData.uuid;
-  delete updateData.createdAt;
+    // 🔒 Never allow immutable fields
+    delete updateData.id;
+    delete updateData.uuid;
+    delete updateData.createdAt;
 
-  // ✅ Always let DB handle updatedAt
-  updateData.updatedAt = new Date();
+    // ✅ Always let DB handle updatedAt
+    updateData.updatedAt = new Date();
 
-  // ✅ Ensure JSON fields are real objects/arrays, not strings
-  if (typeof updateData.skills === "string") {
-    try {
-      updateData.skills = JSON.parse(updateData.skills);
-    } catch {
-      updateData.skills = {};
+    // ✅ Ensure JSON fields are real objects/arrays, not strings
+    if (typeof updateData.skills === "string") {
+      try {
+        updateData.skills = JSON.parse(updateData.skills);
+      } catch {
+        updateData.skills = {};
+      }
     }
-  }
 
-  if (typeof updateData.badges === "string") {
-    try {
-      updateData.badges = JSON.parse(updateData.badges);
-    } catch {
-      updateData.badges = [];
+    if (typeof updateData.badges === "string") {
+      try {
+        updateData.badges = JSON.parse(updateData.badges);
+      } catch {
+        updateData.badges = [];
+      }
     }
-  }
 
-  if (typeof updateData.notificationPrefs === "string") {
-    try {
-      updateData.notificationPrefs = JSON.parse(updateData.notificationPrefs);
-    } catch {
-      updateData.notificationPrefs = {};
+    if (typeof updateData.notificationPrefs === "string") {
+      try {
+        updateData.notificationPrefs = JSON.parse(updateData.notificationPrefs);
+      } catch {
+        updateData.notificationPrefs = {};
+      }
     }
+
+    // ✅ Normalize resetPasswordExpire if present
+    if (updateData.resetPasswordExpire) {
+      const date = new Date(updateData.resetPasswordExpire);
+      updateData.resetPasswordExpire = isNaN(date) ? null : date;
+    }
+
+    const [user] = await db
+      .update(userTable)
+      .set(updateData)
+      .where(and(eq(userTable.id, id), eq(userTable.isDeleted, false)))
+      .returning();
+
+    return user;
   }
-
-  // ✅ Normalize resetPasswordExpire if present
-  if (updateData.resetPasswordExpire) {
-    const date = new Date(updateData.resetPasswordExpire);
-    updateData.resetPasswordExpire = isNaN(date) ? null : date;
-  }
-
-  const [user] = await db
-    .update(userTable)
-    .set(updateData)
-    .where(eq(userTable.id, id))
-    .returning();
-
-  return user;
-}
-
 }
 
 module.exports = {

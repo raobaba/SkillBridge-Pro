@@ -35,9 +35,11 @@ import {
   TrendingDown,
 } from "lucide-react";
 import Navbar from "../../../components/header/dashboard";
+import { useSelector } from "react-redux";
 export default function DeveloperView() {
   const [activeTab, setActiveTab] = useState("overview");
   const [notifications, setNotifications] = useState(8);
+  const user = useSelector((state) => state.user.user);
   const [messages, setMessages] = useState(3);
 
   // Mock data for dashboard
@@ -181,7 +183,7 @@ export default function DeveloperView() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Header */}
-      <Navbar notifications={notifications} messages={messages} />
+      <Navbar notifications={notifications} messages={messages} data={user} />
 
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Welcome Section */}
@@ -516,10 +518,11 @@ export default function DeveloperView() {
               <Search className='w-5 h-5 text-blue-400' />
               <span className='text-sm'>Find Projects</span>
             </button>
-            <button className='flex items-center space-x-2 p-3 bg-green-500/20 hover:bg-green-500/30 rounded-lg transition-colors'>
-              <Plus className='w-5 h-5 text-green-400' />
-              <span className='text-sm'>Create Project</span>
+            <button className='flex items-center space-x-2 p-3 bg-pink-500/20 hover:bg-pink-500/30 rounded-lg transition-colors'>
+              <Briefcase className='w-5 h-5 text-pink-400' />
+              <span className='text-sm'>My Applications</span>
             </button>
+
             <button className='flex items-center space-x-2 p-3 bg-purple-500/20 hover:bg-purple-500/30 rounded-lg transition-colors'>
               <BookOpen className='w-5 h-5 text-purple-400' />
               <span className='text-sm'>Learn Skills</span>

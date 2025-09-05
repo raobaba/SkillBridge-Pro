@@ -1,0 +1,13 @@
+2025-09-05T00:06:11.322Z [ERROR] POST /api/v1/user/login 500 - Internal server error
+2025-09-05T00:19:00.865Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:19:03.927Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:19:13.591Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:48:14.073Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:48:18.761Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:48:21.677Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:52:11.690Z [ERROR] PUT /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:52:38.093Z [ERROR] PUT /api/v1/user/profile 500 - Internal server error
+2025-09-05T00:53:10.125Z [ERROR] PUT /api/v1/user/profile 500 - Internal server error
+2025-09-05T01:01:20.709Z [ERROR] PUT /api/v1/user/profile 500 - Internal server error
+2025-09-05T01:13:44.150Z [ERROR] GET /api/v1/user/profile 500 - Internal server error
+2025-09-05T01:13:46.822Z [ERROR] GET /api/v1/user/profile 500 - Internal server error

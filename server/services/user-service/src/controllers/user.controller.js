@@ -4,7 +4,9 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { sendMail } = require("../utils/sendEmail");
 const ErrorHandler = require("../utils/errorHandler");
-
+const { uploadToCloudinary } = require("../utils/uploadToCloudinary.utils");
+const { uploadFileToSupabase } = require("../utils/uploadFile.utils");
+const { supabase } = require("../utils/supabase.utils");
 require("dotenv").config();
 
 const registerUser = async (req, res) => {
@@ -353,10 +355,44 @@ const getUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     const user = await UserModel.getUserById(userId);
+
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, status: 404, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    // Avatar signed URL
+    if (user.avatarUrl) {
+      const { data, error } = await supabase.storage
+        .from("upload")
+        .createSignedUrl(user.avatarUrl, 60 * 60); // 1 hour
+      if (!error) user.avatarUrl = data.signedUrl;
+    }
+
+    // Parse JSON if it's a string
+    if (typeof user.resumeUrl === "string") {
+      try {
+        user.resumeUrl = JSON.parse(user.resumeUrl);
+      } catch (e) {
+        console.error("Failed to parse resumeUrl:", e);
+        user.resumeUrl = null;
+      }
+    }
+
+    // If resume is present → generate signed URL
+    if (user.resumeUrl?.path) {
+      const { data, error } = await supabase.storage
+        .from("upload")
+        .createSignedUrl(user.resumeUrl.path, 60 * 60); // 1 hour
+      if (!error) {
+        user.resumeUrl = {
+          url: data.signedUrl,
+          originalName: user.resumeUrl.originalName,
+        };
+      }
     }
 
     res.status(200).json({ success: true, status: 200, user });
@@ -374,9 +410,29 @@ const getUserProfile = async (req, res) => {
 const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const updateData = { ...req.body };
+    let updateData = { ...req.body };
 
-    // ✅ Model already sanitizes timestamps, no need to handle here
+    // Avatar upload
+    if (req.files?.avatar) {
+      const avatarUpload = await uploadFileToSupabase(
+        req.files.avatar,
+        "avatars"
+      );
+      updateData.avatarUrl = avatarUpload.path; // ✅ save path
+    }
+
+    // Resume upload
+    if (req.files?.resume) {
+      const resumeUpload = await uploadFileToSupabase(
+        req.files.resume,
+        "resumes"
+      );
+      updateData.resumeUrl = {
+        path: resumeUpload.path,
+        originalName: resumeUpload.originalName,
+      };
+    }
+
     const updatedUser = await UserModel.updateProfile(userId, updateData);
 
     res.status(200).json({

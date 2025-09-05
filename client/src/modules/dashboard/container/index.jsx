@@ -6,11 +6,8 @@ import ProjectOwnerView from "../components/ProjectOwnerView";
 import AnalyticsDashboard from "../components/AnalyticsDashboard";
 
 const Dashboard = () => {
+  const user = useSelector((state) => state.user.user);
   const navigate = useNavigate();
-  const user = {
-    name: "Rajan",
-    role: "admin",
-  };
 
   useEffect(() => {
     if (!user) {
