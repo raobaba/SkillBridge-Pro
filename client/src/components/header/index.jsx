@@ -64,14 +64,7 @@ const Navbar = () => {
             <div className='w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center'>
               <Code className='w-5 h-5 text-white' />
             </div>
-            <span
-              className='
-                        font-bold 
-                        bg-gradient-to-r from-blue-400 to-purple-400 
-                        bg-clip-text text-transparent 
-                        hidden sm:inline md:text-2xl lg:text-3xl
-                        '
-            >
+            <span className='font-bold bg-gradient-to-r from-blue-400 to-purple-400             bg-clip-text text-transparent hidden sm:inline md:text-2xl lg:text-3xl'>
               SkillBridge Pro
             </span>
           </div>

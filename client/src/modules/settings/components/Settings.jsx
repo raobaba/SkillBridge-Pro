@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
-export default function Settings() {
+export default function SettingsPage() {
   const user = useSelector((state) => state.user?.user) || {};
 
   // Initialize state with user data or default/static values
@@ -63,7 +63,7 @@ export default function Settings() {
         <Navbar data={user} isSearchBar={false} />
         <div className='max-w-6xl mx-auto px-4 py-8'>
           <h1 className='text-4xl font-bold text-white drop-shadow-lg mb-6'>
-            Settings
+            SettingsPage
           </h1>
 
           {/* Two-column layout */}

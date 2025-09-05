@@ -8,9 +8,7 @@ import Unauthorized from "./Unauthorized";
 // Lazy loaded pages
 const Home = lazy(() => import("../pages/Home"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
-const Profile = lazy(
-  () => import("../modules/authentication/components/Profile")
-);
+const Profile = lazy(() => import("../modules/profile/components/ProfilePage"));
 const Authentication = lazy(
   () => import("../modules/authentication/container")
 );
@@ -23,13 +21,9 @@ const ResetPassword = lazy(
 const ForgotPassword = lazy(
   () => import("../modules/authentication/components/ForgotPassword")
 );
-const Notifications = lazy(
-  () => import("../modules/dashboard/components/Notifications")
-);
-const Settings = lazy(() => import("../modules/dashboard/components/Settings"));
-const PortfolioSync = lazy(
-  () => import("../modules/dashboard/components/PortfolioSync")
-);
+const Notifications = lazy(() => import("../modules/notifications/container"));
+const Settings = lazy(() => import("../modules/settings/container"));
+const PortfolioSync = lazy(() => import("../modules/portfolioSync/container"));
 const Routing = () => {
   return (
     <Router>

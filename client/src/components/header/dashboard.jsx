@@ -9,7 +9,6 @@ export default function Navbar({
   data,
   isSearchBar = true,
 }) {
-
   return (
     <header className='bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
@@ -21,14 +20,9 @@ export default function Navbar({
               <Code className='w-5 h-5 text-white' />
             </div>
             <span
-              className='
-                        font-bold 
-                        bg-gradient-to-r from-blue-400 to-purple-400 
-                        bg-clip-text text-transparent 
-                        hidden sm:inline md:text-2xl lg:text-3xl
-                      '
+              className='font-bold bg-gradient-to-r from-blue-400 to-purple-400             bg-clip-text text-transparent hidden sm:inline md:text-2xl lg:text-3xl'
             >
-             SkillBridge Pro
+              SkillBridge Pro
             </span>
           </Link>
 

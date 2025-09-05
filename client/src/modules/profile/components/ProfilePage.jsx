@@ -27,7 +27,7 @@ import {
   updateUserProfile,
   deleteUser,
   clearAuthState,
-} from "../slice/userSlice";
+} from "../slice/profileSlice";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header/dashboard";

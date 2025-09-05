@@ -4,7 +4,6 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const { sendMail } = require("../utils/sendEmail");
 const ErrorHandler = require("../utils/errorHandler");
-const { uploadToCloudinary } = require("../utils/uploadToCloudinary.utils");
 const { uploadFileToSupabase } = require("../utils/uploadFile.utils");
 const { supabase } = require("../utils/supabase.utils");
 require("dotenv").config();

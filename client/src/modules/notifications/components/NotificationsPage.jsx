@@ -6,7 +6,7 @@ import { Badge } from "../../../components/ui/Badge";
 import { Footer } from "../../../components/ui/Footer";
 import { useSelector } from "react-redux";
 
-export default function Notifications() {
+export default function NotificationsPage() {
   const user = useSelector((state) => state.user?.user);
   const [list, setList] = useState([
     {

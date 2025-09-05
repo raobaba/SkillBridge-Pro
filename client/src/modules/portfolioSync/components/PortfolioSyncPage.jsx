@@ -6,7 +6,7 @@ import { Badge } from "../../../components/ui/Badge";
 import { Github, Linkedin, FileText, RefreshCw } from "lucide-react";
 import { useSelector } from "react-redux";
 
-export default function PortfolioSync() {
+export default function PortfolioSyncPage() {
   const user = useSelector((state) => state.user?.user);
   // Example user integration data
   const data = {
