@@ -12,23 +12,22 @@ import Cross from "./icons/cross.svg";
 import ReferralImg from "./icons/referral-logo.svg";
 import PaymentLogo from "./icons/logo-payment.svg";
 import RightIcon from "./icons/RightIcon.svg";
-import PaymentStatusIcon from "./images/payment-success.svg"
-import SoftStar from "./icons/soft-star.svg"
-import CalendarIcon from './icons/Calendar.svg'
-import InfoAdmin from './icons/InfoAdmin.svg'
-import ApprovedAvatar from './icons/ApprovedAvatar.svg'
-import Location from './icons/location.svg'
-import InfoAdmin1 from './icons/InfoAdmin1.svg'
-import locationIcon from './icons/locationIcon.svg'
-import Wallet from './icons/Wallet.svg'
-import TicketStar from './icons/Ticket-Star.svg'
-import UploadIcon from './icons/UploadIcon.svg'
-import ImageIcon from "./icons/ImageIcon.svg"
-import PdfIcon from "./icons/PdfIcon.svg"
-import CloseIcon from "./icons/CloseIcon.svg"
+import PaymentStatusIcon from "./images/payment-success.svg";
+import SoftStar from "./icons/soft-star.svg";
+import CalendarIcon from "./icons/Calendar.svg";
+import InfoAdmin from "./icons/InfoAdmin.svg";
+import ApprovedAvatar from "./icons/ApprovedAvatar.svg";
+import Location from "./icons/location.svg";
+import InfoAdmin1 from "./icons/InfoAdmin1.svg";
+import locationIcon from "./icons/locationIcon.svg";
+import Wallet from "./icons/Wallet.svg";
+import TicketStar from "./icons/Ticket-Star.svg";
+import UploadIcon from "./icons/UploadIcon.svg";
+import ImageIcon from "./icons/ImageIcon.svg";
+import PdfIcon from "./icons/PdfIcon.svg";
+import CloseIcon from "./icons/CloseIcon.svg";
 import FileIcon from "./images/Work.png";
 import LinkIcon from "./images/Link.png";
-
 
 export {
   Logo,
@@ -60,5 +59,5 @@ export {
   PdfIcon,
   CloseIcon,
   FileIcon,
-  LinkIcon
+  LinkIcon,
 };

@@ -364,15 +364,17 @@ const getUserProfile = async (req, res) => {
       });
     }
 
-    // Avatar signed URL
+    // ✅ Avatar signed URL
     if (user.avatarUrl) {
       const { data, error } = await supabase.storage
         .from("upload")
         .createSignedUrl(user.avatarUrl, 60 * 60); // 1 hour
-      if (!error) user.avatarUrl = data.signedUrl;
+      if (!error) {
+        user.avatarUrl = data.signedUrl;
+      }
     }
 
-    // Parse JSON if it's a string
+    // ✅ ResumeUrl might be JSON or null
     if (typeof user.resumeUrl === "string") {
       try {
         user.resumeUrl = JSON.parse(user.resumeUrl);
@@ -382,7 +384,6 @@ const getUserProfile = async (req, res) => {
       }
     }
 
-    // If resume is present → generate signed URL
     if (user.resumeUrl?.path) {
       const { data, error } = await supabase.storage
         .from("upload")
@@ -395,10 +396,10 @@ const getUserProfile = async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, status: 200, user });
+    return res.status(200).json({ success: true, status: 200, user });
   } catch (error) {
     console.error("Get profile error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       status: 500,
       message: "Failed to fetch profile",
@@ -412,30 +413,39 @@ const updateUserProfile = async (req, res) => {
     const userId = req.user.userId;
     let updateData = { ...req.body };
 
-    // Avatar upload
-    if (req.files?.avatar) {
-      const avatarUpload = await uploadFileToSupabase(
-        req.files.avatar,
-        "avatars"
-      );
-      updateData.avatarUrl = avatarUpload.path; // ✅ save path
+    const isInvalidUrl = (value) =>
+      typeof value === "string" &&
+      (value.startsWith("http") || value.includes("?token="));
+
+    if (updateData.avatarUrl && isInvalidUrl(updateData.avatarUrl)) {
+      delete updateData.avatarUrl;
     }
 
-    // Resume upload
+    if (updateData.resumeUrl && isInvalidUrl(updateData.resumeUrl)) {
+      delete updateData.resumeUrl;
+    }
+
+    if (req.files?.avatar) {
+      const avatarUpload = await uploadFileToSupabase(req.files.avatar, "avatars");
+      updateData.avatarUrl = avatarUpload.path; 
+    }
+
     if (req.files?.resume) {
-      const resumeUpload = await uploadFileToSupabase(
-        req.files.resume,
-        "resumes"
-      );
-      updateData.resumeUrl = {
+      const resumeUpload = await uploadFileToSupabase(req.files.resume, "resumes");
+      updateData.resumeUrl = JSON.stringify({
         path: resumeUpload.path,
         originalName: resumeUpload.originalName,
-      };
+      });
+    }
+
+    // Parse skills if coming as string
+    if (updateData.skills && typeof updateData.skills === "string") {
+      updateData.skills = JSON.parse(updateData.skills);
     }
 
     const updatedUser = await UserModel.updateProfile(userId, updateData);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       status: 200,
       message: "Profile updated",
@@ -443,7 +453,7 @@ const updateUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Update profile error:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       status: 500,
       message: "Failed to update profile",

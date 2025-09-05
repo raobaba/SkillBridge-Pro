@@ -23,6 +23,13 @@ const ResetPassword = lazy(
 const ForgotPassword = lazy(
   () => import("../modules/authentication/components/ForgotPassword")
 );
+const Notifications = lazy(
+  () => import("../modules/dashboard/components/Notifications")
+);
+const Settings = lazy(() => import("../modules/dashboard/components/Settings"));
+const PortfolioSync = lazy(
+  () => import("../modules/dashboard/components/PortfolioSync")
+);
 const Routing = () => {
   return (
     <Router>
@@ -41,7 +48,14 @@ const Routing = () => {
                 <Dashboard />
               </PrivateRoute>
             }
-          />
+          ></Route>
+          {/* Nested Dashboard Pages */}
+          <Route path='/notifications' element={<Notifications />} />
+          <Route path='/settings' element={<Settings />} />
+          <Route path='/portfolio-sync' element={<PortfolioSync />} />
+          {/* Add more nested routes here, e.g. */}
+          {/* <Route path="projects" element={<Projects />} /> */}
+          {/* <Route path="tasks" element={<Tasks />} /> */}
           <Route path='/unauthorized' element={<Unauthorized />} />
           <Route path='*' element={<Error404 />} />
         </Routes>

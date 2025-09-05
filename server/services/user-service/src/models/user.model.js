@@ -40,6 +40,7 @@ const userTable = pgTable("users", {
   githubUrl: text("github_url"),
   linkedinUrl: text("linkedin_url"),
   stackoverflowUrl: text("stackoverflow_url"),
+  portfolioUrl: text("portfolio_url"),
   portfolioScore: integer("portfolio_score"),
   isEmailVerified: boolean("is_email_verified").default(false),
   resetPasswordToken: text("reset_password_token"),
