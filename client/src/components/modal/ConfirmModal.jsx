@@ -1,6 +1,21 @@
-import React from "react";
+import React, { useEffect } from "react";
+import Button from "../Button";
 
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
+  // Disable body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"; // Prevent scrolling
+    } else {
+      document.body.style.overflow = "auto"; // Restore scrolling
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
@@ -9,18 +24,22 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
         <h2 className='text-xl font-semibold mb-4 text-center'>{title}</h2>
         <p className='mb-6 text-center'>{message}</p>
         <div className='flex justify-center gap-4 w-full'>
-          <button
+          <Button
             onClick={onCancel}
-            className='px-6 py-2 rounded-lg border border-gray-500 hover:bg-gray-700 transition'
+            variant='outline'
+            size='md'
+            className='w-full'
           >
             No
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onConfirm}
-            className='px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 transition'
+            variant='default'
+            size='md'
+            className='w-full'
           >
             Yes
-          </button>
+          </Button>
         </div>
       </div>
     </div>

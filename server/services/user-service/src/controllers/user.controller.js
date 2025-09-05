@@ -190,6 +190,38 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // ✅ Generate signed URLs for avatarUrl
+    if (user.avatarUrl) {
+      const { data, error } = await supabase.storage
+        .from("upload")
+        .createSignedUrl(user.avatarUrl, 60 * 60); // 1 hour
+      if (!error) {
+        user.avatarUrl = data.signedUrl;
+      }
+    }
+
+    // ✅ Parse and generate signed URL for resumeUrl
+    if (typeof user.resumeUrl === "string") {
+      try {
+        user.resumeUrl = JSON.parse(user.resumeUrl);
+      } catch (e) {
+        console.error("Failed to parse resumeUrl:", e);
+        user.resumeUrl = null;
+      }
+    }
+
+    if (user.resumeUrl?.path) {
+      const { data, error } = await supabase.storage
+        .from("upload")
+        .createSignedUrl(user.resumeUrl.path, 60 * 60); // 1 hour
+      if (!error) {
+        user.resumeUrl = {
+          url: data.signedUrl,
+          originalName: user.resumeUrl.originalName,
+        };
+      }
+    }
+
     // ✅ Generate JWT including role
     const token = jwt.sign(
       { userId: user.id, email: user.email, role: user.role },
@@ -425,12 +457,18 @@ const updateUserProfile = async (req, res) => {
     }
 
     if (req.files?.avatar) {
-      const avatarUpload = await uploadFileToSupabase(req.files.avatar, "avatars");
-      updateData.avatarUrl = avatarUpload.path; 
+      const avatarUpload = await uploadFileToSupabase(
+        req.files.avatar,
+        "avatars"
+      );
+      updateData.avatarUrl = avatarUpload.path;
     }
 
     if (req.files?.resume) {
-      const resumeUpload = await uploadFileToSupabase(req.files.resume, "resumes");
+      const resumeUpload = await uploadFileToSupabase(
+        req.files.resume,
+        "resumes"
+      );
       updateData.resumeUrl = JSON.stringify({
         path: resumeUpload.path,
         originalName: resumeUpload.originalName,

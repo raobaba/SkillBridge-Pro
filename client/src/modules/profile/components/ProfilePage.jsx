@@ -502,11 +502,14 @@ export default function ProfilePage() {
               <Button variant='default'>
                 <Save className='w-4 h-4 mr-1' /> Save
               </Button>
-              <Button variant='outline'>
+              <Button onClick={() => navigate("/settings")} variant='outline'>
                 <Settings className='w-4 h-4 mr-1' /> Settings
               </Button>
-              <Button variant='outline'>
-                <Trash className='w-4 h-4 mr-1' /> Delete
+              <Button
+                onClick={() => navigate("/notifications")}
+                variant='outline'
+              >
+                <Trash className='w-4 h-4 mr-1' /> Notifications
               </Button>
               <Button variant='outline'>
                 <Plus className='w-4 h-4 mr-1' /> Add Info

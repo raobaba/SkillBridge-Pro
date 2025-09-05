@@ -4,9 +4,11 @@ import { forgetPassPassword, clearAuthState } from "../slice/userSlice";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import Circular from "../../../components/loader/Circular";
+import { Input, Button } from "../../../components";
+
 const ForgotPassword = () => {
   const dispatch = useDispatch();
-  const navigate = useNavigate(); // ✅ Add useNavigate
+  const navigate = useNavigate();
   const { loading, error, message } = useSelector((state) => state.user);
   const [email, setEmail] = useState("");
 
@@ -41,37 +43,34 @@ const ForgotPassword = () => {
         </p>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
-          <div>
-            <label className='block mb-2 text-sm font-medium text-gray-300'>
-              Email Address
-            </label>
-            <input
-              type='email'
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder='you@example.com'
-              className='w-full bg-white/10 px-4 py-3 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-            />
-          </div>
+          <Input
+            type='email'
+            label='Email Address'
+            placeholder='you@example.com'
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className='w-full'
+          />
 
-          <button
+          <Button
             type='submit'
             disabled={loading}
             className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
           >
             {loading ? "Sending..." : "Send Reset Link"}
-          </button>
+          </Button>
         </form>
 
         <div className='mt-6 text-center text-sm text-gray-400'>
           Remember your password?{" "}
-          <button
+          <Button
+            variant='link'
             onClick={() => navigate("/auth")}
-            className='text-blue-400 hover:underline'
+            className='text-blue-400 hover:underline p-0'
           >
             Sign In
-          </button>
+          </Button>
         </div>
       </div>
     </div>

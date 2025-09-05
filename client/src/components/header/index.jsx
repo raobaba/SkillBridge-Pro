@@ -2,18 +2,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Code, Menu, X, User } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import ConfirmModal from "../modal/ConfirmModal";
-import { logOut } from "../../modules/authentication/slice/userSlice";
+import { useSelector } from "react-redux";
 import { getToken } from "../../services/utils";
 
-const Navbar = () => {
-  const dispatch = useDispatch();
+const Navbar = ({ onLogoutClick }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isAvatarBroken, setIsAvatarBroken] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const user = useSelector((state) => state.user?.user);
   const token = getToken();
   const dropdownRef = useRef(null);
@@ -33,15 +29,9 @@ const Navbar = () => {
     { label: "Portfolio Sync", action: () => navigate("/portfolio-sync") },
     {
       label: "Logout",
-      action: () => setIsLogoutModalOpen(true),
+      action: () => onLogoutClick(),
     },
   ];
-
-  const handleLogout = async () => {
-    await dispatch(logOut());
-    setIsLogoutModalOpen(false);
-    navigate("/auth");
-  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -195,14 +185,6 @@ const Navbar = () => {
           </div>
         </div>
       )}
-
-      <ConfirmModal
-        isOpen={isLogoutModalOpen}
-        title='Logout Confirmation'
-        message='Are you sure you want to logout?'
-        onConfirm={handleLogout}
-        onCancel={() => setIsLogoutModalOpen(false)}
-      />
     </nav>
   );
 };

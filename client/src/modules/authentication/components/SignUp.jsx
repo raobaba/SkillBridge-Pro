@@ -4,14 +4,13 @@ import { useDispatch, useSelector } from "react-redux";
 import { registerUser, clearAuthState } from "../slice/userSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Input, Button } from "../../../components";
 
 const SignUp = ({ switchMode }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, message } = useSelector((state) => state.user);
-
   const [showPassword, setShowPassword] = useState(false);
-  const [signInFailed, setSignInFailed] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,20 +31,18 @@ const SignUp = ({ switchMode }) => {
   useEffect(() => {
     if (error) {
       toast.error(error);
-      setSignInFailed(true);
       dispatch(clearAuthState());
     }
   }, [error, dispatch]);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
   };
-  //  name, email, role, domains, experience, availability, password
+
   const validateForm = () => {
-    console.log("formData", formData);
     const { name, email, role, domains, experience, availability, password } =
       formData;
 
@@ -77,14 +74,11 @@ const SignUp = ({ switchMode }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     try {
       const result = await dispatch(registerUser(formData));
-      if (result?.payload?.status === 201) {
-        switchMode();
-      }
+      if (result?.payload?.status === 201) switchMode();
     } catch (err) {
       console.error("Registration error:", err);
       toast.error("Something went wrong, please try again.");
@@ -98,145 +92,90 @@ const SignUp = ({ switchMode }) => {
   return (
     <div className='space-y-6'>
       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Full Name
-          </label>
-          <input
-            type='text'
-            name='name'
-            value={formData.name}
-            onChange={handleChange}
-            required
-            placeholder='Enter your full name'
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-        </div>
-
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Email
-          </label>
-          <input
-            type='email'
-            name='email'
-            value={formData.email}
-            onChange={handleChange}
-            required
-            placeholder='Enter your email'
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-        </div>
-
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Role
-          </label>
-          <select
-            name='role'
-            value={formData.role}
-            onChange={handleChange}
-            required
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          >
-            <option className='bg-black text-white' value=''>
-              Select Role
-            </option>
-            <option className='bg-black text-white' value='developer'>
-              Developer
-            </option>
-            <option className='bg-black text-white' value='admin'>
-              Admin
-            </option>
-            <option className='bg-black text-white' value='project-owner'>
-              Project Onwer
-            </option>
-          </select>
-        </div>
-
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Experience (years)
-          </label>
-          <input
-            type='number'
-            name='experience'
-            value={formData.experience}
-            onChange={handleChange}
-            min={0}
-            required
-            placeholder='0'
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-        </div>
-
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Preferred Domains
-          </label>
-          <input
-            type='text'
-            name='domains'
-            value={formData.domains}
-            onChange={handleChange}
-            required
-            placeholder='Web Dev, AI/ML, Mobile...'
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-        </div>
-
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Availability
-          </label>
-          <select
-            name='availability'
-            value={formData.availability}
-            onChange={handleChange}
-            required
-            className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          >
-            <option className='bg-black text-white' value='full-time'>
-              Full-time
-            </option>
-            <option className='bg-black text-white' value='part-time'>
-              Part-time
-            </option>
-            <option className='bg-black text-white' value='freelance'>
-              Freelance
-            </option>
-          </select>
-        </div>
-      </div>
-
-      <div className='relative'>
-        <label className='block mb-2 text-sm font-medium text-gray-300'>
-          Password
-        </label>
-        <input
-          type={showPassword ? "text" : "password"}
-          name='password'
-          value={formData.password}
+        <Input
+          label='Full Name'
+          name='name'
+          value={formData.name}
           onChange={handleChange}
+          placeholder='Enter your full name'
           required
-          placeholder='Create a strong password'
-          className='w-full bg-white/10 px-3 py-2.5 rounded-lg border border-white/20 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
         />
-        <div
-          className='absolute top-9 right-3 cursor-pointer text-gray-400 hover:text-white transition-colors'
-          onClick={() => setShowPassword(!showPassword)}
-        >
-          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-        </div>
+        <Input
+          type='email'
+          label='Email'
+          name='email'
+          value={formData.email}
+          onChange={handleChange}
+          placeholder='Enter your email'
+          required
+        />
+        <Input
+          label='Role'
+          name='role'
+          type='select'
+          value={formData.role}
+          onChange={handleChange}
+          options={[
+            { value: "", label: "Select Role" },
+            { value: "developer", label: "Developer" },
+            { value: "admin", label: "Admin" },
+            { value: "project-owner", label: "Project Owner" },
+          ]}
+          required
+        />
+        <Input
+          type='number'
+          label='Experience (years)'
+          name='experience'
+          value={formData.experience}
+          onChange={handleChange}
+          min={0}
+          placeholder='0'
+          required
+        />
+        <Input
+          label='Preferred Domains'
+          name='domains'
+          value={formData.domains}
+          onChange={handleChange}
+          placeholder='Web Dev, AI/ML, Mobile...'
+          required
+        />
+        <Input
+          label='Availability'
+          name='availability'
+          type='select'
+          value={formData.availability}
+          onChange={handleChange}
+          options={[
+            { value: "full-time", label: "Full-time" },
+            { value: "part-time", label: "Part-time" },
+            { value: "freelance", label: "Freelance" },
+          ]}
+          required
+        />
       </div>
 
-      <button
+      <Input
+        type={showPassword ? "text" : "password"}
+        label='Password'
+        name='password'
+        value={formData.password}
+        onChange={handleChange}
+        placeholder='Create a strong password'
+        showToggle={true}
+        isVisible={showPassword}
+        onToggle={() => setShowPassword(!showPassword)}
+        required
+      />
+
+      <Button
         onClick={handleSubmit}
         disabled={loading}
         className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
       >
         {loading ? "Creating Account..." : "Create Account"}
-      </button>
+      </Button>
 
       <p className='text-center text-sm text-gray-400'>
         Already have an account?{" "}
@@ -262,29 +201,27 @@ const SignUp = ({ switchMode }) => {
         </div>
 
         <div className='grid grid-cols-3 gap-3'>
-          <button
+          <Button
             onClick={() => handleOAuthClick("github")}
             className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
           >
             <Github size={16} />
             <span className='hidden sm:inline'>GitHub</span>
-          </button>
-
-          <button
+          </Button>
+          <Button
             onClick={() => handleOAuthClick("google")}
             className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
           >
             <Mail size={16} />
             <span className='hidden sm:inline'>Google</span>
-          </button>
-
-          <button
+          </Button>
+          <Button
             onClick={() => handleOAuthClick("linkedin")}
             className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
           >
             <Linkedin size={16} />
             <span className='hidden sm:inline'>LinkedIn</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,15 +1,3 @@
-/**
- * --------------------------------------------------------
- * File        : Circular.jsx
- * Description : Displays a circular loading animation using Lottie.
- * 
- * Notes:
- * - Uses Lottie to render a bounce loader animation in the center of the screen.
- * - The animation is looped and autoplayed on component mount, and cleaned up on unmount.
- * --------------------------------------------------------
- */
-
-
 import React, { useEffect, useRef } from "react";
 import lottie from "lottie-web";
 import bounceLoader from "../../assets/animation/loader.json";

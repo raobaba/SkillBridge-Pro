@@ -4,18 +4,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser, clearAuthState } from "../slice/userSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { Input, Button } from "../../../components";
 
 const SignIn = ({ switchMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { loading, error, message } = useSelector((state) => state.user);
+
   const [loginFailed, setLoginFailed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    role: "developer", // ✅ default role
+    role: "developer",
   });
 
   useEffect(() => {
@@ -44,13 +46,9 @@ const SignIn = ({ switchMode }) => {
     e.preventDefault();
     dispatch(loginUser(formData))
       .then((res) => {
-        if (res?.payload?.status === 200) {
-          navigate("/");
-        }
+        if (res?.payload?.status === 200) navigate("/");
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch(console.log);
   };
 
   const handleOAuthClick = (provider) => {
@@ -61,22 +59,17 @@ const SignIn = ({ switchMode }) => {
     <div className='space-y-6'>
       <form onSubmit={handleSubmit} className='space-y-4'>
         {/* Email */}
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Email
-          </label>
-          <input
-            type='email'
-            name='email'
-            value={formData.email}
-            onChange={handleChange}
-            required
-            placeholder='Enter your email'
-            className='w-full bg-white/10 px-4 py-3 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-        </div>
+        <Input
+          type='email'
+          label='Email'
+          name='email'
+          placeholder='Enter your email'
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
 
-         {/* Role Dropdown */}
+        {/* Role Dropdown */}
         <div>
           <label className='block mb-2 text-sm font-medium text-gray-300'>
             Role
@@ -100,45 +93,39 @@ const SignIn = ({ switchMode }) => {
         </div>
 
         {/* Password */}
-        <div className='relative'>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Password
-          </label>
-          <input
-            type={showPassword ? "text" : "password"}
-            name='password'
-            value={formData.password}
-            onChange={handleChange}
-            required
-            placeholder='Enter your password'
-            className='w-full bg-white/10 px-4 py-3 rounded-lg border border-white/20 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          />
-          <div
-            className='absolute top-9 right-3 cursor-pointer text-gray-400 hover:text-white transition-colors'
-            onClick={() => setShowPassword(!showPassword)}
-          >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-          </div>
+        <Input
+          type={showPassword ? "text" : "password"}
+          label='Password'
+          name='password'
+          placeholder='Enter your password'
+          value={formData.password}
+          onChange={handleChange}
+          required
+          showToggle={true}
+          isVisible={showPassword}
+          onToggle={() => setShowPassword(!showPassword)}
+        />
 
-          {/* 🔥 Forgot password if login failed */}
-          {loginFailed && (
-            <div className='mt-2 text-right'>
-              <p
-                onClick={() => navigate("/forgot-password")}
-                className='text-sm text-blue-400 hover:underline cursor-pointer'
-              >
-                Forgot Password?
-              </p>
-            </div>
-          )}
-        </div>
-        <button
+        {/* Forgot Password if login failed */}
+        {loginFailed && (
+          <div className='mt-2 text-right'>
+            <p
+              onClick={() => navigate("/forgot-password")}
+              className='text-sm text-blue-400 hover:underline cursor-pointer'
+            >
+              Forgot Password?
+            </p>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <Button
           type='submit'
           disabled={loading}
           className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
         >
           {loading ? "Signing In..." : "Sign In"}
-        </button>
+        </Button>
       </form>
 
       <p className='text-center text-sm text-gray-400'>
@@ -151,7 +138,7 @@ const SignIn = ({ switchMode }) => {
         </span>
       </p>
 
-      {/* Social login unchanged */}
+      {/* Social Login */}
       <div className='space-y-4'>
         <div className='relative'>
           <div className='absolute inset-0 flex items-center'>

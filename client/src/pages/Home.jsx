@@ -24,11 +24,16 @@ import {
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/header";
 import { Footer } from "../components/ui/Footer";
+import { useDispatch } from "react-redux";
+import { logOut } from "../modules/authentication/slice/userSlice";
+import ConfirmModal from "../components/modal/ConfirmModal";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+
   const [activeFeature, setActiveFeature] = useState(0);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const features = [
     {
@@ -113,10 +118,16 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleLogout = async () => {
+    await dispatch(logOut());
+    setIsLogoutModalOpen(false);
+    navigate("/auth");
+  };
+
   return (
     <div className='min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Navigation */}
-      <Navbar />
+      <Navbar onLogoutClick={() => setIsLogoutModalOpen(true)} />
 
       {/* Hero Section */}
       <section className='relative overflow-hidden pt-20'>
@@ -449,6 +460,13 @@ export default function Home() {
         </div>
       </section>
       <Footer />
+      <ConfirmModal
+        isOpen={isLogoutModalOpen}
+        title='Logout Confirmation'
+        message='Are you sure you want to logout?'
+        onConfirm={handleLogout}
+        onCancel={() => setIsLogoutModalOpen(false)}
+      />
     </div>
   );
 }
