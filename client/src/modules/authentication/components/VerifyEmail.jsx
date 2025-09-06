@@ -3,6 +3,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { verifyEmail, clearAuthState } from "../slice/userSlice";
+import { toast } from "react-toastify";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
@@ -23,16 +24,16 @@ const VerifyEmail = () => {
 
   useEffect(() => {
     if (loading) {
-      setLocalStatus("loading");
+      toast.info("Verifying your email...");
     } else if (message) {
-      setLocalStatus("success");
+      toast.success(message || "Email verified successfully!");
       navigate("/auth");
       dispatch(clearAuthState());
     } else if (error) {
-      setLocalStatus("error");
+      toast.error(error || "Verification failed");
       dispatch(clearAuthState());
     }
-  }, [loading, message, error, dispatch]);
+  }, [loading, message, error, dispatch, navigate]);
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>

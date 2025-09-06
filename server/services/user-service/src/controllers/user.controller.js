@@ -439,10 +439,22 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+const sanitizeNulls = (obj) => {
+  for (const key in obj) {
+    if (obj[key] === "null" || obj[key] === "undefined" || obj[key] === "") {
+      obj[key] = null;
+    }
+  }
+  return obj;
+};
+
 const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId;
     let updateData = { ...req.body };
+
+    // Normalize "null"/"undefined"/"" → null
+    updateData = sanitizeNulls(updateData);
 
     const isInvalidUrl = (value) =>
       typeof value === "string" &&
@@ -473,6 +485,15 @@ const updateUserProfile = async (req, res) => {
         path: resumeUpload.path,
         originalName: resumeUpload.originalName,
       });
+    }
+
+    if (updateData.resetPasswordExpire !== undefined) {
+      if (!updateData.resetPasswordExpire) {
+        updateData.resetPasswordExpire = null;
+      } else {
+        const date = new Date(updateData.resetPasswordExpire);
+        updateData.resetPasswordExpire = isNaN(date) ? null : date;
+      }
     }
 
     // Parse skills if coming as string
