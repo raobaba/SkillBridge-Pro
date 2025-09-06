@@ -30,7 +30,7 @@ import {
 } from "../slice/profileSlice";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
-import Navbar from "../../../components/header/dashboard";
+import Navbar from "../../../components/header";
 
 export default function ProfilePage() {
   const dispatch = useDispatch();

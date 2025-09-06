@@ -34,7 +34,7 @@ import {
   PieChart,
   TrendingDown,
 } from "lucide-react";
-import Navbar from "../../../components/header/dashboard";
+import Navbar from "../../../components/header";
 import { useSelector } from "react-redux";
 
 export default function ProjectOwnerView() {

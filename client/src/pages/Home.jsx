@@ -244,7 +244,7 @@ export default function Home() {
   return (
     <div className='min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Navigation */}
-      <Navbar onLogoutClick={() => setIsLogoutModalOpen(true)} />
+      <Navbar onLogoutClick={() => setIsLogoutModalOpen(true)} isHome={true} />
 
       {/*Hero Section */}
       <Hero heroContent={heroContent} />
@@ -268,6 +268,7 @@ export default function Home() {
       <Pricing pricingContent={pricingContent} />
 
       {/* CTA Section */}
+
       <CallToAction />
       <Footer />
       <ConfirmModal

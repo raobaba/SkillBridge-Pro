@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import Navbar from "../../../components/header/dashboard";
+import Navbar from "../../../components/header";
 import { CheckCircle, Bell, Zap, Code, FileText } from "lucide-react";
 import { Button } from "../../../components/ui/Card";
 import { Badge } from "../../../components/ui/Badge";
