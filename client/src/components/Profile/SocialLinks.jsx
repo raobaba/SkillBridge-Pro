@@ -1,6 +1,6 @@
 import React from "react";
 import { Github, Linkedin, Globe } from "lucide-react";
-import { Input, StackOverflowIcon } from "../ui/Card";
+import { Input, StackOverflowIcon } from "../../components";
 
 export default function SocialLinks({ editing, form, handleChange, userData }) {
   return (

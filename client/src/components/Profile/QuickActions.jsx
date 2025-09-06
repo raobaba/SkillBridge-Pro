@@ -1,6 +1,6 @@
 import React from "react";
 import { Save, Settings, Trash, Plus } from "lucide-react";
-import { Button } from "../ui/Card";
+import { Button } from "../../components";
 
 export default function QuickActions({ navigate, handleSave }) {
   return (

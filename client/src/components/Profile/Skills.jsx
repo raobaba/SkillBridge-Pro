@@ -1,6 +1,6 @@
 import React from "react";
 import { Code, X, Plus } from "lucide-react";
-import { Button } from "../ui/Card";
+import { Button } from "../../components";
 
 export default function Skills({ editing, form, setForm }) {
   return (

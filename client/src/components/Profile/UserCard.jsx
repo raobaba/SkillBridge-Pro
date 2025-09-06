@@ -1,6 +1,6 @@
 import React from "react";
 import { User, Mail, MapPin, Save, X, Settings, Trash } from "lucide-react";
-import { Input, Button } from "../ui/Card";
+import { Input, Button } from "../../components";
 
 export default function UserCard({
   form,

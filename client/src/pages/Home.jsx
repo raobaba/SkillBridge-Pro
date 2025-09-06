@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/header";
-import { Footer } from "../components/ui/Footer";
+import { Footer } from "../components";
 import { useDispatch } from "react-redux";
 import { logOut } from "../modules/authentication/slice/userSlice";
 import ConfirmModal from "../components/modal/ConfirmModal";

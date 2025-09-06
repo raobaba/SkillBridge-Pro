@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import Navbar from "../../../components/header";
-import { Footer } from "../../../components/ui/Footer";
-import { Button } from "../../../components/ui/Card";
-import { Badge } from "../../../components/ui/Badge";
+import { Footer } from "../../../components";
+import { Badge,Button } from "../../../components";
 import { Github, Linkedin, FileText, RefreshCw } from "lucide-react";
 import { useSelector } from "react-redux";
 

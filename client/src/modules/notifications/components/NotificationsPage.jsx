@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import Navbar from "../../../components/header";
 import { CheckCircle, Bell, Zap, Code, FileText } from "lucide-react";
-import { Button } from "../../../components/ui/Card";
-import { Badge } from "../../../components/ui/Badge";
-import { Footer } from "../../../components/ui/Footer";
+import { Badge,Button } from "../../../components";
+import { Footer } from "../../../components";
 import { useSelector } from "react-redux";
 
 export default function NotificationsPage() {
