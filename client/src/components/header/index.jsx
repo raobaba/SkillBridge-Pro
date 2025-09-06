@@ -87,20 +87,17 @@ const Navbar = ({
                 <div
                   className='relative ml-4 hidden sm:block'
                   ref={dropdownRef}
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 >
                   {!isAvatarBroken && user?.avatarUrl ? (
                     <img
                       src={user?.avatarUrl}
                       alt={user?.name || "Profile"}
                       className='w-8 h-8 rounded-full border-2 border-white/20 cursor-pointer'
-                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                       onError={() => setIsAvatarBroken(true)}
                     />
                   ) : (
-                    <div
-                      className='w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20 cursor-pointer'
-                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                    >
+                    <div className='w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20 cursor-pointer'>
                       <User className='w-5 h-5 text-white' />
                     </div>
                   )}
@@ -182,13 +179,16 @@ const Navbar = ({
                 </Button>
 
                 {/* Avatar + Username */}
-                <div className='relative flex items-center' ref={dropdownRef}>
+                <div
+                  className='relative flex items-center'
+                  ref={dropdownRef}
+                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                >
                   {!isAvatarBroken && user?.avatarUrl ? (
                     <img
                       src={user?.avatarUrl}
                       alt={user?.name || "Profile"}
                       className='w-10 h-10 rounded-full border-2 border-white/20 cursor-pointer'
-                      onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                       onError={() => setIsAvatarBroken(true)}
                     />
                   ) : (

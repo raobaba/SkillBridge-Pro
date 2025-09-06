@@ -51,23 +51,25 @@ const ResetPassword = () => {
     }
   }, [error, message, dispatch, navigate]);
 
-  const toggleNewPasswordVisibility = () => setShowNewPassword(!showNewPassword);
-  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
+  const toggleNewPasswordVisibility = () =>
+    setShowNewPassword(!showNewPassword);
+  const toggleConfirmPasswordVisibility = () =>
+    setShowConfirmPassword(!showConfirmPassword);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
+    <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {loading && <Circular />}
-      <div className="bg-black/30 border border-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+      <div className='bg-black/30 border border-white/10 backdrop-blur-md rounded-2xl p-8 shadow-xl w-full max-w-md'>
+        <h2 className='text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'>
           Reset Your Password
         </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className='space-y-4'>
           {/* New Password */}
           <Input
             type={showNewPassword ? "text" : "password"}
-            label="New Password"
-            placeholder="Enter your new password"
+            label='New Password'
+            placeholder='Enter your new password'
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
@@ -79,8 +81,8 @@ const ResetPassword = () => {
           {/* Confirm Password */}
           <Input
             type={showConfirmPassword ? "text" : "password"}
-            label="Confirm Password"
-            placeholder="Confirm your new password"
+            label='Confirm Password'
+            placeholder='Confirm your new password'
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
@@ -90,9 +92,9 @@ const ResetPassword = () => {
           />
 
           <Button
-            type="submit"
+            type='submit'
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]"
+            className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
           >
             {loading ? "Resetting..." : "Reset Password"}
           </Button>

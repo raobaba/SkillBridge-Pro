@@ -8,7 +8,7 @@ import Unauthorized from "./Unauthorized";
 // Lazy loaded pages
 const Home = lazy(() => import("../pages/Home"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
-const Profile = lazy(() => import("../modules/profile/components/ProfilePage"));
+const Profile = lazy(() => import("../modules/profile/container"));
 const Authentication = lazy(
   () => import("../modules/authentication/container")
 );
