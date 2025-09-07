@@ -15,7 +15,8 @@ const Button = ({
   // Variant classes
   const variantClasses = {
     default: "bg-blue-600 text-white hover:bg-blue-700",
-    outline: "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
+    outline:
+      "border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white",
     ghost: "bg-transparent text-blue-600 hover:bg-blue-100",
     link: "bg-transparent text-blue-600 underline hover:text-blue-800",
   };
@@ -32,14 +33,14 @@ const Button = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 
+      className={`flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 cursor-pointer
         ${variantClasses[variant]} ${sizeClasses[size]} 
         ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       {...props}
     >
-      {LeftIcon && <LeftIcon className="w-4 h-4" />}
+      {LeftIcon && <LeftIcon className='w-4 h-4' />}
       {children}
-      {RightIcon && <RightIcon className="w-4 h-4" />}
+      {RightIcon && <RightIcon className='w-4 h-4' />}
     </button>
   );
 };

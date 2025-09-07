@@ -1,5 +1,5 @@
 import React from "react";
-import { FileText } from "lucide-react";
+import { FileText, Briefcase, BarChart2, Star, Target } from "lucide-react";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
@@ -14,6 +14,10 @@ import {
   AccountInfo,
   Notification,
   Progress,
+  PortfolioShowcase,
+  CareerInsights,
+  RecommendedOpportunities,
+  EngagementMetrics,
 } from "../../../components/Profile";
 
 export default function Developer({
@@ -35,6 +39,24 @@ export default function Developer({
   handleAvatarChange,
   navigate,
 }) {
+  const careerInsights = [
+    "Skill Gap Analyzer: Needs improvement in Docker, AWS",
+    "AI Suggestion: Learn GraphQL for upcoming demand",
+  ];
+  const engagementMetrics = [
+    "Weekly XP Growth: +120 XP",
+    "Matchmaking Score: 78%",
+  ];
+
+  const githubProjects = ["Project A", "Project B", "Project C"];
+  const featuredProject = "AI Chatbot Demo";
+
+  const opportunities = [
+    { name: "FinTech App", match: 85 },
+    { name: "Health Tracker", match: 72 },
+    { name: "E-commerce Platform", match: 65 },
+  ];
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Navbar */}
@@ -65,7 +87,7 @@ export default function Developer({
             userData={userData}
           />
 
-          {/* ProfessionalInfo */}
+          {/* Professional Info */}
           <ProfessionalInfo
             editing={editing}
             form={form}
@@ -76,20 +98,14 @@ export default function Developer({
           {/* Resume */}
           <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
             <h2 className='text-xl font-semibold mb-4 flex items-center'>
-              <FileText className='w-5 h-5 mr-2 text-teal-400' /> Resume
+              <FileText className='w-8 h-8 mr-2 text-amber-400' /> Resume
             </h2>
             {editing ? (
               <input
                 id='file'
                 name='file'
                 type='file'
-                accept='
-                      application/pdf,
-                      application/msword,
-                      application/vnd.openxmlformats-officedocument.wordprocessingml.document,
-                      application/vnd.oasis.opendocument.text,
-                      application/rtf,
-                      text/plain'
+                accept='application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,text/plain'
                 onChange={handleResumeChange}
                 className='block text-sm text-gray-300'
               />
@@ -106,6 +122,7 @@ export default function Developer({
               <p className='text-gray-400'>No resume uploaded</p>
             )}
           </div>
+
           {/* Skills */}
           <Skills editing={editing} form={form} setForm={setForm} />
 
@@ -116,24 +133,23 @@ export default function Developer({
             handleChange={handleChange}
             userData={userData}
           />
+
+          <PortfolioShowcase
+            projects={githubProjects}
+            featured={featuredProject}
+          />
         </div>
 
         {/* Right Column - Sidebar */}
         <div className='space-y-6'>
-          {/* Quick Actions */}
           <QuickActions navigate={navigate} handleSave={handleSave} />
-
-          {/* Achievements */}
           <Achievements userData={userData} />
-
-          {/* Account Info */}
           <AccountInfo userData={userData} />
-
-          {/* Notification Preferences */}
           <Notification userData={userData} />
-
-          {/* Progress */}
           <Progress userData={userData} />
+          <RecommendedOpportunities opportunities={opportunities} />
+          <EngagementMetrics metrics={engagementMetrics} />
+          <CareerInsights insights={careerInsights} />
           {/* Confirm Modal */}
           <ConfirmModal
             isOpen={showConfirm}

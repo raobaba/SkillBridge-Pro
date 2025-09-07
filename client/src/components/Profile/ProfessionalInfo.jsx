@@ -1,5 +1,6 @@
 import React from "react";
 import { Input } from "../../components";
+import { Briefcase } from "lucide-react";
 
 export default function ProfessionalInfo({
   editing,
@@ -9,7 +10,10 @@ export default function ProfessionalInfo({
 }) {
   return (
     <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
-      <h2 className='text-xl font-semibold mb-4'>Professional Info</h2>
+      <h2 className='text-xl font-semibold flex items-center gap-2 mb-4'>
+         <Briefcase className="w-8 h-8 text-amber-400" />
+        Professional Info
+      </h2>
       {editing ? (
         <div className='space-y-3'>
           <Input

@@ -63,7 +63,7 @@ const Input = ({
               {placeholder || "Select an option"}
             </option>
             {options.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+              <option className="bg-blue-900 text-white" key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}

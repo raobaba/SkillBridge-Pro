@@ -6,7 +6,7 @@ export default function Skills({ editing, form, setForm }) {
   return (
     <div className="bg-white/5 border border-white/10 rounded-xl p-6">
       <h2 className="text-xl font-semibold mb-4 flex items-center">
-        <Code className="w-5 h-5 mr-2 text-green-400" /> Skills
+        <Code className="w-8 h-8 mr-2 text-amber-400" /> Skills
       </h2>
       <div className="flex flex-wrap gap-2 items-center">
         {Object.entries(form?.skills || {}).map(([skill, level]) => (
