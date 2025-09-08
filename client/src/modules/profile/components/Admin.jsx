@@ -2,15 +2,15 @@ import React, { useState } from "react";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
+import { Shield, BarChart } from "lucide-react";
 import {
   Bio,
   QuickActions,
   UserCard,
   SystemMetrics,
-  SystemStats,
   AnalyticsSnapshot,
-  ReportsPanel,
   DataTable,
+  InfoCard,
 } from "../../../components/Profile";
 
 export default function Admin({
@@ -204,8 +204,30 @@ export default function Admin({
         {/* Right Column */}
         <div className='space-y-6'>
           <QuickActions navigate={handleNavigate} handleSave={handleSave} />
-          <ReportsPanel reports={reportsData} />
-          <SystemStats stats={systemStatsData} />
+
+          <InfoCard
+            icon={<Shield className='w-5 h-5 text-yellow-400' />}
+            title='Reports & Moderation'
+            items={reportsData.map((report) => ({
+              label: report.label,
+              value: (
+                <>
+                  {report.icon ? <span>{report.icon}</span> : null}{" "}
+                  {report.value}
+                </>
+              ),
+            }))}
+            fallback='No reports available.'
+            isKeyValue
+          />
+   
+          <InfoCard
+            icon={<BarChart className='w-5 h-5 text-yellow-400' />}
+            title='System Stats'
+            items={systemStatsData}
+            fallback='No system stats available.'
+            isKeyValue
+          />
           <AnalyticsSnapshot stats={stats} />
           <SystemMetrics metrics={metricsData} />
           <ConfirmModal

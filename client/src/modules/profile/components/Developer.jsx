@@ -1,5 +1,16 @@
 import React from "react";
-import { FileText, Briefcase, BarChart2, Star, Target } from "lucide-react";
+import {
+  FileText,
+  Award,
+  User,
+  Bell,
+  BarChart,
+  Target,
+  Star,
+  BarChart2,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
@@ -10,14 +21,8 @@ import {
   Skills,
   SocialLinks,
   UserCard,
-  Achievements,
-  AccountInfo,
-  Notification,
-  Progress,
   PortfolioShowcase,
-  CareerInsights,
-  RecommendedOpportunities,
-  EngagementMetrics,
+  InfoCard,
 } from "../../../components/Profile";
 
 export default function Developer({
@@ -143,13 +148,85 @@ export default function Developer({
         {/* Right Column - Sidebar */}
         <div className='space-y-6'>
           <QuickActions navigate={navigate} handleSave={handleSave} />
-          <Achievements userData={userData} />
-          <AccountInfo userData={userData} />
-          <Notification userData={userData} />
-          <Progress userData={userData} />
-          <RecommendedOpportunities opportunities={opportunities} />
-          <EngagementMetrics metrics={engagementMetrics} />
-          <CareerInsights insights={careerInsights} />
+          <InfoCard
+            icon={<Award className='w-5 h-5 text-yellow-400' />}
+            title='Achievements'
+            items={userData?.badges || []}
+            fallback='No achievements yet.'
+          />
+          <InfoCard
+            icon={<User className='w-5 h-5 text-yellow-400' />}
+            title='Account Info'
+            items={[
+              { label: "Role", value: userData?.role || "N/A" },
+              {
+                label: "Email Verified",
+                value: userData?.isEmailVerified ? (
+                  <CheckCircle className='inline w-4 h-4 text-green-400' />
+                ) : (
+                  <XCircle className='inline w-4 h-4 text-red-400' />
+                ),
+              },
+              {
+                label: "Joined",
+                value: userData?.createdAt
+                  ? new Date(userData.createdAt).toLocaleDateString()
+                  : "N/A",
+              },
+              {
+                label: "Last Updated",
+                value: userData?.updatedAt
+                  ? new Date(userData.updatedAt).toLocaleDateString()
+                  : "N/A",
+              },
+            ]}
+            isKeyValue
+          />
+          <InfoCard
+            icon={<Bell className='w-5 h-5 text-yellow-400' />}
+            title='Notification Preferences'
+            items={Object.entries(userData?.notificationPrefs || {}).map(
+              ([key, value]) => ({
+                label: key.charAt(0).toUpperCase() + key.slice(1),
+                value: value ? "Enabled" : "Disabled",
+              })
+            )}
+            fallback='No notification preferences set.'
+            isKeyValue
+          />
+          <InfoCard
+            icon={<BarChart className='w-5 h-5 text-yellow-400' />}
+            title='Progress'
+            items={[
+              { label: "XP", value: userData?.xp ?? 0 },
+              { label: "Level", value: userData?.level ?? 0 },
+              {
+                label: "Portfolio Score",
+                value: userData?.portfolioScore ?? 0,
+              },
+            ]}
+            isKeyValue
+          />
+          <InfoCard
+            icon={<Target className='w-5 h-5 text-yellow-400' />}
+            title='Recommended Opportunities'
+            items={opportunities.map(
+              (opp) => `📌 ${opp.name} – Match ${opp.match}%`
+            )}
+            fallback='No recommended opportunities.'
+          />
+          <InfoCard
+            icon={<Star className='w-5 h-5 text-yellow-400' />}
+            title='Engagement Metrics'
+            items={engagementMetrics}
+            fallback='No engagement metrics yet.'
+          />
+          <InfoCard
+            icon={<BarChart2 className='w-5 h-5 text-yellow-400' />}
+            title='Career Insights'
+            items={careerInsights}
+            fallback='No career insights available.'
+          />
           {/* Confirm Modal */}
           <ConfirmModal
             isOpen={showConfirm}

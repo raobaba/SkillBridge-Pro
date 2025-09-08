@@ -1,5 +1,5 @@
-import React,{useState} from "react";
-import { Users, TrendingUp, Target, Zap } from "lucide-react";
+import React, { useState } from "react";
+import { Users, TrendingUp,User,Award,XCircle,CheckCircle, Target, Zap } from "lucide-react";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
@@ -8,15 +8,14 @@ import {
   QuickActions,
   SocialLinks,
   UserCard,
-  Achievements,
-  AccountInfo,
   Projects,
   TeamDomain,
   ProjectOverview,
   DeveloperAccess,
   CollaborationRequests,
   Milestones,
-  DataTable
+  DataTable,
+  InfoCard,
 } from "../../../components/Profile";
 
 export default function ProjectOwner({
@@ -36,7 +35,7 @@ export default function ProjectOwner({
   handleAvatarChange,
   navigate,
 }) {
-    const [userFilter, setUserFilter] = useState("All");
+  const [userFilter, setUserFilter] = useState("All");
   const requests = [
     { name: "David", skill: "UI/UX Designer" },
     { name: "Emma", skill: "Data Scientist" },
@@ -62,13 +61,13 @@ export default function ProjectOwner({
     { label: "Pending", count: 2, color: "#eab308" }, // yellow-400
   ];
 
-    const usersData = [
+  const usersData = [
     { id: 1, name: "Alice Johnson", role: "Developer", status: "Active" },
     { id: 2, name: "Mark Lee", role: "Project Owner", status: "Suspended" },
     { id: 3, name: "Sophia Chen", role: "Admin", status: "Active" },
   ];
 
-    // Filtered data
+  // Filtered data
   const filteredUsers =
     userFilter === "All"
       ? usersData
@@ -79,7 +78,6 @@ export default function ProjectOwner({
     alert(`Suspend/Activate user with id: ${id}`);
   const handleAssignRole = (id, role) =>
     alert(`Assign ${role} to user id: ${id}`);
-
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
@@ -127,52 +125,84 @@ export default function ProjectOwner({
             handleChange={handleChange}
             userData={userData}
           />
-           {/* Manage Users */}
-                    <DataTable
-                      title='Manage Users'
-                      data={filteredUsers}
-                      filterOptions={[...new Set(usersData.map((u) => u.role))]}
-                      filterValue={userFilter}
-                      setFilter={setUserFilter}
-                      columns={[
-                        { label: "Name", key: "name" },
-                        { label: "Role", key: "role" },
-                        { label: "Status", key: "status" },
-                        {
-                          label: "Actions",
-                          render: (user) => (
-                            <div className='flex gap-2'>
-                              <button
-                                onClick={() => handleSuspendUser(user.id)}
-                                className='bg-red-500 px-2 py-1 rounded text-black'
-                              >
-                                {user.status === "Active" ? "Suspend" : "Activate"}
-                              </button>
-                              <select
-                                value={user.role}
-                                onChange={(e) =>
-                                  handleAssignRole(user.id, e.target.value)
-                                }
-                                className='bg-white/10 text-gray-300 px-2 py-1 rounded'
-                              >
-                                {["Developer", "Project Owner", "Admin"].map((role) => (
-                                  <option key={role} value={role}>
-                                    {role}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          ),
-                        },
-                      ]}
-                    />
+          {/* Manage Users */}
+          <DataTable
+            title='Manage Users'
+            data={filteredUsers}
+            filterOptions={[...new Set(usersData.map((u) => u.role))]}
+            filterValue={userFilter}
+            setFilter={setUserFilter}
+            columns={[
+              { label: "Name", key: "name" },
+              { label: "Role", key: "role" },
+              { label: "Status", key: "status" },
+              {
+                label: "Actions",
+                render: (user) => (
+                  <div className='flex gap-2'>
+                    <button
+                      onClick={() => handleSuspendUser(user.id)}
+                      className='bg-red-500 px-2 py-1 rounded text-black'
+                    >
+                      {user.status === "Active" ? "Suspend" : "Activate"}
+                    </button>
+                    <select
+                      value={user.role}
+                      onChange={(e) =>
+                        handleAssignRole(user.id, e.target.value)
+                      }
+                      className='bg-white/10 text-gray-300 px-2 py-1 rounded'
+                    >
+                      {["Developer", "Project Owner", "Admin"].map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
 
         {/* Right Column */}
         <div className='space-y-6'>
           <QuickActions navigate={navigate} handleSave={handleSave} />
-          <Achievements userData={userData} />
-          <AccountInfo userData={userData} />
+          <InfoCard
+            icon={<Award className='w-5 h-5 text-yellow-400' />}
+            title='Achievements'
+            items={userData?.badges || []}
+            fallback='No achievements yet.'
+          />
+          <InfoCard
+            icon={<User className='w-5 h-5 text-yellow-400' />}
+            title='Account Info'
+            items={[
+              { label: "Role", value: userData?.role || "N/A" },
+              {
+                label: "Email Verified",
+                value: userData?.isEmailVerified ? (
+                  <CheckCircle className='inline w-4 h-4 text-green-400' />
+                ) : (
+                  <XCircle className='inline w-4 h-4 text-red-400' />
+                ),
+              },
+              {
+                label: "Joined",
+                value: userData?.createdAt
+                  ? new Date(userData.createdAt).toLocaleDateString()
+                  : "N/A",
+              },
+              {
+                label: "Last Updated",
+                value: userData?.updatedAt
+                  ? new Date(userData.updatedAt).toLocaleDateString()
+                  : "N/A",
+              },
+            ]}
+            isKeyValue
+          />
           <ProjectOverview stats={projectStats} />
           <DeveloperAccess developers={developers} columns={columns} />
           {/* CollaborationRequests */}
