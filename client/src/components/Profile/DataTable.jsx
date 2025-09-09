@@ -2,6 +2,7 @@ import React from "react";
 
 export default function DataTable({
   title,
+  icon,
   data = [],
   columns = [],
   filterOptions = [],
@@ -11,7 +12,11 @@ export default function DataTable({
   return (
     <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 border border-white/10 rounded-2xl p-6 shadow-lg'>
       {/* Title */}
-      <h2 className='text-2xl font-bold text-white mb-6'>{title}</h2>
+      {/* Title with Icon */}
+      <h2 className='text-2xl font-bold text-white mb-6 flex items-center gap-2'>
+        {icon && <span className='text-white'>{icon}</span>}
+        {title}
+      </h2>
 
       {/* Filters */}
       {filterOptions.length > 0 && (

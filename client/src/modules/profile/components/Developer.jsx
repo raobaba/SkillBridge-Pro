@@ -4,10 +4,6 @@ import {
   Award,
   User,
   Bell,
-  BarChart,
-  Target,
-  Star,
-  BarChart2,
   CheckCircle,
   XCircle,
 } from "lucide-react";
@@ -21,7 +17,6 @@ import {
   Skills,
   SocialLinks,
   UserCard,
-  PortfolioShowcase,
   InfoCard,
 } from "../../../components/Profile";
 
@@ -44,24 +39,6 @@ export default function Developer({
   handleAvatarChange,
   navigate,
 }) {
-  const careerInsights = [
-    "Skill Gap Analyzer: Needs improvement in Docker, AWS",
-    "AI Suggestion: Learn GraphQL for upcoming demand",
-  ];
-  const engagementMetrics = [
-    "Weekly XP Growth: +120 XP",
-    "Matchmaking Score: 78%",
-  ];
-
-  const githubProjects = ["Project A", "Project B", "Project C"];
-  const featuredProject = "AI Chatbot Demo";
-
-  const opportunities = [
-    { name: "FinTech App", match: 85 },
-    { name: "Health Tracker", match: 72 },
-    { name: "E-commerce Platform", match: 65 },
-  ];
-
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Navbar */}
@@ -138,11 +115,6 @@ export default function Developer({
             handleChange={handleChange}
             userData={userData}
           />
-
-          <PortfolioShowcase
-            projects={githubProjects}
-            featured={featuredProject}
-          />
         </div>
 
         {/* Right Column - Sidebar */}
@@ -194,39 +166,7 @@ export default function Developer({
             fallback='No notification preferences set.'
             isKeyValue
           />
-          <InfoCard
-            icon={<BarChart className='w-5 h-5 text-yellow-400' />}
-            title='Progress'
-            items={[
-              { label: "XP", value: userData?.xp ?? 0 },
-              { label: "Level", value: userData?.level ?? 0 },
-              {
-                label: "Portfolio Score",
-                value: userData?.portfolioScore ?? 0,
-              },
-            ]}
-            isKeyValue
-          />
-          <InfoCard
-            icon={<Target className='w-5 h-5 text-yellow-400' />}
-            title='Recommended Opportunities'
-            items={opportunities.map(
-              (opp) => `📌 ${opp.name} – Match ${opp.match}%`
-            )}
-            fallback='No recommended opportunities.'
-          />
-          <InfoCard
-            icon={<Star className='w-5 h-5 text-yellow-400' />}
-            title='Engagement Metrics'
-            items={engagementMetrics}
-            fallback='No engagement metrics yet.'
-          />
-          <InfoCard
-            icon={<BarChart2 className='w-5 h-5 text-yellow-400' />}
-            title='Career Insights'
-            items={careerInsights}
-            fallback='No career insights available.'
-          />
+
           {/* Confirm Modal */}
           <ConfirmModal
             isOpen={showConfirm}
