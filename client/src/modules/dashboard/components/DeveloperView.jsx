@@ -38,9 +38,7 @@ import Navbar from "../../../components/header";
 import { useSelector } from "react-redux";
 export default function DeveloperView() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [notifications, setNotifications] = useState(8);
   const user = useSelector((state) => state.user.user);
-  const [messages, setMessages] = useState(3);
 
   // Mock data for dashboard
   const userStats = {
@@ -183,7 +181,7 @@ export default function DeveloperView() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Header */}
-      <Navbar notifications={notifications} messages={messages} data={user} />
+      <Navbar data={user} />
 
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Welcome Section */}

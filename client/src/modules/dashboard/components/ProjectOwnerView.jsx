@@ -39,9 +39,7 @@ import { useSelector } from "react-redux";
 
 export default function ProjectOwnerView() {
   const [activeTab, setActiveTab] = useState("overview");
-  const [notifications, setNotifications] = useState(5);
   const user = useSelector((state) => state.user.user);
-  const [messages, setMessages] = useState(2);
 
   // Mock data for Project Owner dashboard
   const ownerStats = {
@@ -156,7 +154,7 @@ export default function ProjectOwnerView() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Header */}
-      <Navbar notifications={notifications} messages={messages} data={user} />
+      <Navbar data={user} />
 
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Welcome Section */}

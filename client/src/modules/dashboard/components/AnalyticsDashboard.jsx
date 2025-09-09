@@ -30,8 +30,7 @@ import Navbar from "../../../components/header";
 import { useSelector } from "react-redux";
 
 export default function AnalyticsDashboard() {
-  const [notifications, setNotifications] = useState(4);
-  const [messages, setMessages] = useState(1);
+
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const [selectedTimeframe, setSelectedTimeframe] = useState("6m");
@@ -111,7 +110,7 @@ export default function AnalyticsDashboard() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Header */}
-      <Navbar notifications={notifications} messages={messages} data={user} />
+      <Navbar data={user} />
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6'>
         <div className='flex space-x-1 bg-white/5 p-1 rounded-xl border border-white/10'>
           {[

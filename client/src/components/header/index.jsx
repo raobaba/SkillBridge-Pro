@@ -9,8 +9,6 @@ import Button from "../Button";
 
 const Navbar = ({
   onLogoutClick,
-  notifications = 0,
-  messages = 0,
   data = null,
   isSearchBar = false,
   isHome = false,
@@ -20,6 +18,24 @@ const Navbar = ({
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isAvatarBroken, setIsAvatarBroken] = useState(false);
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef(null);
+  const messagesRef = useRef(null);
+  const [notifications, setNotifications] = useState(4);
+  const [messages, setMessages] = useState(1);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
+  const [expandedMessageIndex, setExpandedMessageIndex] = useState(null);
+  const [messageInput, setMessageInput] = useState("");
+  const [messagesList, setMessagesList] = useState(
+    Array(messages)
+      .fill("")
+      .map((_, i) => ({
+        id: i + 1,
+        text: `Preview content for message ${i + 1}`,
+        fullText: `This is the full detailed message content of message ${i + 1}. It contains all the important details you need to know. Here we describe the message context, relevant instructions, and additional information to ensure clarity and understanding. You can read, reply, or take necessary actions based on this content.`,
+        sender: "User",
+      }))
+  );
 
   const token = getToken();
   const userFromRedux = useSelector((state) => state.user?.user);
@@ -43,10 +59,23 @@ const Navbar = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Close user dropdown
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsUserDropdownOpen(false);
       }
+      // Close notifications panel
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setNotificationsOpen(false);
+      }
+      // Close messages panel
+      if (messagesRef.current && !messagesRef.current.contains(event.target)) {
+        setMessagesOpen(false);
+      }
     };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -153,30 +182,139 @@ const Navbar = ({
                 </div>
               )}
               <div className='flex items-center space-x-4'>
-                <Button
-                  variant='ghost'
-                  size='md'
-                  className='relative p-2 rounded-lg'
-                >
-                  <Bell className='w-5 h-5' />
-                  {notifications > 0 && (
-                    <span className='absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-xs rounded-full flex items-center justify-center'>
-                      {notifications}
-                    </span>
+                {/* Notifications */}
+                <div className='relative' ref={notificationsRef}>
+                  <Button
+                    variant='ghost'
+                    size='md'
+                    className='relative p-2 rounded-lg'
+                    onClick={() => setNotificationsOpen((prev) => !prev)}
+                  >
+                    <Bell className='w-5 h-5' />
+                    {notifications > 0 && (
+                      <span className='absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-xs rounded-full flex items-center justify-center'>
+                        {notifications}
+                      </span>
+                    )}
+                  </Button>
+
+                  {/* Notifications Panel */}
+                  {notificationsOpen && (
+                    <div className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'>
+                      <h4 className='text-gray-200 font-semibold mb-2'>
+                        Notifications
+                      </h4>
+                      <div className='max-h-64 overflow-y-auto'>
+                        {[...Array(notifications)].map((_, index) => (
+                          <div
+                            key={index}
+                            onClick={() => {
+                              navigate("/notifications");
+                              setNotificationsOpen(false);
+                            }}
+                            className='px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors'
+                          >
+                            <p className='text-gray-300 text-sm'>
+                              Notification {index + 1}
+                            </p>
+                            <p className='text-gray-400 text-xs'>
+                              Details of the notification...
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigate("/notifications");
+                          setNotificationsOpen(false);
+                        }}
+                        className='w-full cursor-pointer mt-2 text-blue-400 hover:text-blue-500 text-sm'
+                      >
+                        View All
+                      </button>
+                    </div>
                   )}
-                </Button>
-                <Button
-                  variant='ghost'
-                  size='md'
-                  className='relative p-2 rounded-lg'
-                >
-                  <MessageSquare className='w-5 h-5' />
-                  {messages > 0 && (
-                    <span className='absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-xs rounded-full flex items-center justify-center'>
-                      {messages}
-                    </span>
+                </div>
+
+                {/* Messages */}
+                <div className='relative' ref={messagesRef}>
+                  <Button
+                    variant='ghost'
+                    size='md'
+                    className='relative p-2 rounded-lg'
+                    onClick={() => setMessagesOpen((prev) => !prev)}
+                  >
+                    <MessageSquare className='w-5 h-5' />
+                    {messages > 0 && (
+                      <span className='absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-xs rounded-full flex items-center justify-center'>
+                        {messages}
+                      </span>
+                    )}
+                  </Button>
+
+                  {messagesOpen && (
+                    <div className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3 flex flex-col transition-all duration-300 max-h-[80vh]'>
+                      <h4 className='text-gray-200 font-semibold mb-2'>
+                        Messages
+                      </h4>
+
+                      <div className='overflow-y-auto flex-1'>
+                        {messagesList.map((msg, index) => (
+                          <div
+                            key={msg.id}
+                            onClick={() =>
+                              setExpandedMessageIndex(
+                                expandedMessageIndex === index ? null : index
+                              )
+                            }
+                            className={`px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors ${
+                              expandedMessageIndex === index
+                                ? "bg-gray-700"
+                                : ""
+                            }`}
+                          >
+                            <p className='text-gray-300 text-sm'>{`Message ${msg.id}`}</p>
+                            <p className='text-gray-400 text-xs whitespace-pre-wrap'>
+                              {expandedMessageIndex === index
+                                ? msg.fullText
+                                : msg.text}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Input area only when expanded */}
+                      {expandedMessageIndex !== null && (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!messageInput.trim()) return;
+                            const updatedMessages = [...messagesList];
+                            updatedMessages[expandedMessageIndex].fullText +=
+                              "\n" + messageInput;
+                            setMessagesList(updatedMessages);
+                            setMessageInput("");
+                          }}
+                          className='mt-2 flex space-x-2'
+                        >
+                          <input
+                            type='text'
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            placeholder='Type a message...'
+                            className='flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                          />
+                          <button
+                            type='submit'
+                            className='px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium'
+                          >
+                            Send
+                          </button>
+                        </form>
+                      )}
+                    </div>
                   )}
-                </Button>
+                </div>
 
                 {/* Avatar + Username */}
                 <div
@@ -204,7 +342,7 @@ const Navbar = ({
                     </span>
                   )}
 
-                  {/* Dropdown */}
+                  {/* User Dropdown */}
                   {isUserDropdownOpen && (
                     <div className='absolute right-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50'>
                       {userDropdownItems.map((item, index) => (
