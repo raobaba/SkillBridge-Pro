@@ -262,11 +262,13 @@ const Navbar = ({
                         {messagesList.map((msg, index) => (
                           <div
                             key={msg.id}
-                            onClick={() =>
-                              setExpandedMessageIndex(
-                                expandedMessageIndex === index ? null : index
-                              )
-                            }
+                            onClick={() => {
+                              if (expandedMessageIndex === index) {
+                                navigate("/chat"); // redirect when already expanded
+                              } else {
+                                setExpandedMessageIndex(index); // expand message
+                              }
+                            }}
                             className={`px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors ${
                               expandedMessageIndex === index
                                 ? "bg-gray-700"

@@ -1,7 +1,9 @@
 import React from "react";
 import { CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Pricing = ({ pricingContent }) => {
+  const navigate = useNavigate();
   return (
     <section id="pricing" className="py-20 bg-black/20 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +22,7 @@ const Pricing = ({ pricingContent }) => {
           {pricingContent.plans.map((plan, index) => (
             <div
               key={index}
-              className={`relative rounded-2xl p-8 ${
+              className={`relative rounded-2xl p-8 flex flex-col ${
                 plan.popular
                   ? "bg-gradient-to-b from-blue-500/20 to-purple-500/20 border-2 border-blue-400/50"
                   : "bg-white/5 border border-white/10"
@@ -51,13 +53,14 @@ const Pricing = ({ pricingContent }) => {
                 ))}
               </ul>
 
-              {/* CTA Button */}
+              {/* CTA Button always at bottom */}
               <button
-                className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 ${
+                className={`w-full py-3 rounded-lg font-semibold transition-all duration-300 mt-auto ${
                   plan.popular
                     ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                     : "bg-white/10 hover:bg-white/20"
                 }`}
+                onClick={() => navigate("/billing-subscription")}
               >
                 Get Started
               </button>

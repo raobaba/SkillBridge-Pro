@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import Navbar from "../../../components/header";
 import { Footer } from "../../../components";
-import { Badge,Button } from "../../../components";
+import { Badge, Button } from "../../../components";
 import { Github, Linkedin, FileText, RefreshCw } from "lucide-react";
 import { useSelector } from "react-redux";
+import SyncStatusCard from "./SyncStatusCard";
 
 export default function PortfolioSyncPage() {
   const user = useSelector((state) => state.user?.user);
@@ -86,36 +87,7 @@ export default function PortfolioSyncPage() {
 
             {/* Right Column: Sync Controls */}
             <div className='space-y-6'>
-              <section className='bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 space-y-4 flex flex-col items-start'>
-                <h2 className='text-xl font-semibold flex items-center gap-2'>
-                  <RefreshCw className='w-5 h-5 text-yellow-400' /> Sync
-                  Portfolio
-                </h2>
-                <p className='text-gray-300'>
-                  Sync your connected integrations to update your SkillBridge
-                  profile. You can manually trigger a sync anytime.
-                </p>
-                <Button
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className='flex items-center gap-2'
-                >
-                  {syncing ? "Syncing..." : "Sync Now"}
-                  <RefreshCw className='w-4 h-4 animate-spin' />
-                </Button>
-              </section>
-
-              <section className='bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 space-y-4'>
-                <h2 className='text-xl font-semibold'>Last Sync</h2>
-                <p className='text-gray-400'>
-                  Your portfolio was last synced:{" "}
-                  <span className='font-semibold'>2 days ago</span>
-                </p>
-                <p className='text-gray-400'>
-                  Next automatic sync:{" "}
-                  <span className='font-semibold'>In 24 hours</span>
-                </p>
-              </section>
+              <SyncStatusCard userData={user} />
             </div>
           </div>
         </div>

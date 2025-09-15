@@ -24,6 +24,16 @@ const ForgotPassword = lazy(
 const Notifications = lazy(() => import("../modules/notifications/container"));
 const Settings = lazy(() => import("../modules/settings/container"));
 const PortfolioSync = lazy(() => import("../modules/portfolioSync/container"));
+const Project = lazy(() => import("../modules/project/container"));
+const Matchmaking = lazy(() => import("../modules/matchmaking/container"));
+const Gamification = lazy(() => import("../modules/gamification/container"));
+const Chat = lazy(() => import("../modules/chat/container"));
+const BillingSubscription = lazy(() =>
+  import("../modules/billingsubscription/container")
+);
+const AiCareer = lazy(() => import("../modules/aicareer/container"));
+
+
 const Routing = () => {
   return (
     <Router>
@@ -47,9 +57,16 @@ const Routing = () => {
           <Route path='/notifications' element={<Notifications />} />
           <Route path='/settings' element={<Settings />} />
           <Route path='/portfolio-sync' element={<PortfolioSync />} />
-          {/* Add more nested routes here, e.g. */}
-          {/* <Route path="projects" element={<Projects />} /> */}
-          {/* <Route path="tasks" element={<Tasks />} /> */}
+          <Route path='/project' element={<Project />} />
+          <Route path='/matchmaking' element={<Matchmaking />} />
+          <Route path='/gamification' element={<Gamification />} />
+          <Route path='/chat' element={<Chat />} />
+          <Route
+            path='/billing-subscription'
+            element={<BillingSubscription />}
+          />
+          <Route path='/ai-career' element={<AiCareer />} />
+
           <Route path='/unauthorized' element={<Unauthorized />} />
           <Route path='*' element={<Error404 />} />
         </Routes>
