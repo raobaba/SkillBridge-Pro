@@ -3,6 +3,8 @@ import BillingHistory from "../components/BillingHistory";
 import PaymentMethods from "../components/PaymentMethods";
 import SubscriptionPlans from "../components/SubscriptionPlans";
 import Navbar from "../../../components/header";
+import { Footer } from "../../../components/Footer";
+
 
 const BillingSubscription = () => {
   return (
@@ -13,6 +15,7 @@ const BillingSubscription = () => {
         <PaymentMethods />
         <BillingHistory />
       </div>
+      <Footer />
     </>
   );
 };

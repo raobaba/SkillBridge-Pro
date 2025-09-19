@@ -4,6 +4,7 @@ import CareerRecommender from "../components/CareerRecommender";
 import ResumeEnhancer from "../components/ResumeEnhancer";
 import SkillGapAnalyzer from "../components/SkillGapAnalyzer";
 import Navbar from "../../../components/header";
+import { Footer } from "../../../components/Footer";
 
 const AiCareer = () => {
   return (
@@ -14,6 +15,7 @@ const AiCareer = () => {
         <ResumeEnhancer />
         <SkillGapAnalyzer />
       </div>
+      <Footer />
     </>
   );
 };
