@@ -346,13 +346,13 @@ const Leaderboards = () => {
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Users className="w-6 h-6 text-blue-400" />
               Full Leaderboard
-            </h2>
+      </h2>
           </div>
           
           <div className="divide-y divide-white/10">
             {others.map((user, index) => (
               <motion.div
-                key={user.id}
+            key={user.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -400,7 +400,7 @@ const Leaderboards = () => {
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-medium ${getChangeColor(user.change)}`}>
                         {user.change}
-                      </span>
+              </span>
                       <span className="text-xs text-gray-400">{user.lastActive}</span>
                     </div>
                   </div>
@@ -451,7 +451,7 @@ const Leaderboards = () => {
                     <p className="text-2xl font-bold text-white">{selectedUser.streak}</p>
                     <p className="text-xs text-gray-400">Day Streak</p>
                   </div>
-                </div>
+            </div>
 
                 {/* Achievements */}
                 {selectedUser.achievements.length > 0 && (

@@ -216,14 +216,14 @@ const XPBoard = ({
           </div>
           
           {selectedTimeframeData.target && (
-            <div className="relative w-full bg-white/10 rounded-full h-4 overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
+      <div className="relative w-full bg-white/10 rounded-full h-4 overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
                 animate={{ width: `${timeframeProgress}%` }}
                 transition={{ duration: 1, delay: 0.5 }}
-                className="absolute top-0 left-0 h-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
-              />
-            </div>
+          className="absolute top-0 left-0 h-4 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full"
+        />
+      </div>
           )}
         </motion.div>
 
@@ -279,7 +279,7 @@ const XPBoard = ({
               </div>
             </div>
           </motion.div>
-        </div>
+      </div>
 
         {/* Achievements Section */}
         <motion.div
@@ -292,7 +292,7 @@ const XPBoard = ({
             <h3 className="text-xl font-bold text-white">Achievements</h3>
             <span className="text-sm text-gray-300">
               {unlockedAchievements.length} of {achievements.length} unlocked
-            </span>
+        </span>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

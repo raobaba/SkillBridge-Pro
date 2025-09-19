@@ -1,50 +1,367 @@
 import React, { useState } from "react";
-import Navbar from "../../../components/header";
-import { Footer } from "../../../components";
 import { Badge, Button } from "../../../components";
-import { Bell } from "lucide-react";
+import { 
+  Bell, 
+  Mail, 
+  Smartphone, 
+  Clock, 
+  Settings, 
+  CheckCircle, 
+  XCircle,
+  Zap,
+  Code,
+  FileText,
+  User,
+  Shield,
+  Volume2,
+  VolumeX,
+  Save,
+  RotateCcw
+} from "lucide-react";
 
 export default function NotificationSettings() {
-  // Static demo user data
-  const user = {
-    name: "John Doe",
-    notificationPrefs: {
-      email: true,
-      sms: false,
-      push: true,
-      reminders: true,
-    },
-  };
+  // Enhanced notification preferences with more categories
+  const [notifPrefs, setNotifPrefs] = useState({
+    email: true,
+    sms: false,
+    push: true,
+    reminders: true,
+    projectUpdates: true,
+    xpNotifications: true,
+    aiSuggestions: true,
+    profileReminders: false,
+    securityAlerts: true,
+    soundEnabled: true,
+  });
 
-  // Notification state
-  const [notifPrefs, setNotifPrefs] = useState(user.notificationPrefs);
+  // Notification frequency settings
+  const [frequency, setFrequency] = useState({
+    email: "daily",
+    push: "immediate",
+    reminders: "weekly"
+  });
+
+  // Quiet hours settings
+  const [quietHours, setQuietHours] = useState({
+    enabled: false,
+    start: "22:00",
+    end: "08:00"
+  });
 
   const toggleNotif = (type) =>
     setNotifPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
 
-  const handleSaveNotifications = () =>
-    alert("Notifications saved: " + JSON.stringify(notifPrefs, null, 2));
+  const toggleQuietHours = () =>
+    setQuietHours((prev) => ({ ...prev, enabled: !prev.enabled }));
+
+  const handleSaveNotifications = () => {
+    // Simulate API call
+    const settings = {
+      preferences: notifPrefs,
+      frequency,
+      quietHours
+    };
+    console.log("Saving notification settings:", settings);
+    alert("Notification settings saved successfully!");
+  };
+
+  const handleResetToDefault = () => {
+    setNotifPrefs({
+      email: true,
+      sms: false,
+      push: true,
+      reminders: true,
+      projectUpdates: true,
+      xpNotifications: true,
+      aiSuggestions: true,
+      profileReminders: false,
+      securityAlerts: true,
+      soundEnabled: true,
+    });
+    setFrequency({
+      email: "daily",
+      push: "immediate",
+      reminders: "weekly"
+    });
+    setQuietHours({
+      enabled: false,
+      start: "22:00",
+      end: "08:00"
+    });
+  };
+
+  const notificationTypes = [
+    {
+      key: "email",
+      label: "Email Notifications",
+      description: "Receive updates via email",
+      icon: Mail,
+      color: "text-blue-400"
+    },
+    {
+      key: "sms",
+      label: "SMS Notifications",
+      description: "Get text message alerts",
+      icon: Smartphone,
+      color: "text-green-400"
+    },
+    {
+      key: "push",
+      label: "Push Notifications",
+      description: "Browser and mobile push alerts",
+      icon: Bell,
+      color: "text-purple-400"
+    },
+    {
+      key: "reminders",
+      label: "Reminder Notifications",
+      description: "Task and deadline reminders",
+      icon: Clock,
+      color: "text-yellow-400"
+    },
+    {
+      key: "projectUpdates",
+      label: "Project Updates",
+      description: "New project assignments and updates",
+      icon: FileText,
+      color: "text-indigo-400"
+    },
+    {
+      key: "xpNotifications",
+      label: "XP & Gamification",
+      description: "Achievement and progress notifications",
+      icon: Zap,
+      color: "text-orange-400"
+    },
+    {
+      key: "aiSuggestions",
+      label: "AI Suggestions",
+      description: "AI-powered recommendations and insights",
+      icon: Code,
+      color: "text-cyan-400"
+    },
+    {
+      key: "profileReminders",
+      label: "Profile Reminders",
+      description: "Profile completion and update prompts",
+      icon: User,
+      color: "text-pink-400"
+    },
+    {
+      key: "securityAlerts",
+      label: "Security Alerts",
+      description: "Account security and login notifications",
+      icon: Shield,
+      color: "text-red-400"
+    },
+    {
+      key: "soundEnabled",
+      label: "Sound Notifications",
+      description: "Play sounds for notifications",
+      icon: Volume2,
+      color: "text-emerald-400"
+    }
+  ];
 
   return (
-    <section className='bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 space-y-4'>
-      <h2 className='text-xl font-semibold flex items-center gap-2'>
-        <Bell className='w-5 h-5 text-yellow-400' /> Notification Preferences
-      </h2>
-      <div className='flex flex-col space-y-2'>
-        {Object.keys(notifPrefs).map((type) => (
-          <div key={type} className='flex items-center justify-between'>
-            <span className='capitalize'>{type}</span>
-            <Badge
-              variant={notifPrefs[type] ? "success" : "error"}
-              onClick={() => toggleNotif(type)}
-              className='cursor-pointer'
-            >
-              {notifPrefs[type] ? "Enabled" : "Disabled"}
-            </Badge>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+            <Settings className="w-6 h-6 text-white" />
           </div>
-        ))}
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            Notification Settings
+          </h2>
+        </div>
+        <p className="text-gray-300 text-sm">
+          Customize how and when you receive notifications from SkillBridge Pro
+        </p>
       </div>
-      <Button onClick={handleSaveNotifications}>Save Notifications</Button>
-    </section>
+
+      {/* Notification Preferences */}
+      <div className="bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Bell className="w-5 h-5 text-yellow-400" />
+          Notification Preferences
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {notificationTypes.map(({ key, label, description, icon: Icon, color }) => (
+            <div
+              key={key}
+              className="bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-all duration-300 group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className={`w-4 h-4 ${color}`} />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-white">{label}</h4>
+                    <p className="text-xs text-gray-400">{description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toggleNotif(key)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                    notifPrefs[key] 
+                      ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
+                      : 'bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                      notifPrefs[key] ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+              
+              {/* Status Badge */}
+              <div className="flex justify-end">
+                <Badge
+                  variant={notifPrefs[key] ? "success" : "error"}
+                  className="text-xs"
+                >
+                  {notifPrefs[key] ? (
+                    <><CheckCircle className="w-3 h-3 mr-1" /> Enabled</>
+                  ) : (
+                    <><XCircle className="w-3 h-3 mr-1" /> Disabled</>
+                  )}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Frequency Settings */}
+      <div className="bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-blue-400" />
+          Notification Frequency
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">Email Frequency</label>
+            <select
+              value={frequency.email}
+              onChange={(e) => setFrequency(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="immediate">Immediate</option>
+              <option value="daily">Daily Digest</option>
+              <option value="weekly">Weekly Summary</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">Push Notifications</label>
+            <select
+              value={frequency.push}
+              onChange={(e) => setFrequency(prev => ({ ...prev, push: e.target.value }))}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="immediate">Immediate</option>
+              <option value="batched">Batched (Every 15 min)</option>
+              <option value="hourly">Hourly</option>
+            </select>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-300">Reminders</label>
+            <select
+              value={frequency.reminders}
+              onChange={(e) => setFrequency(prev => ({ ...prev, reminders: e.target.value }))}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Quiet Hours */}
+      <div className="bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          {quietHours.enabled ? (
+            <VolumeX className="w-5 h-5 text-red-400" />
+          ) : (
+            <Volume2 className="w-5 h-5 text-green-400" />
+          )}
+          Quiet Hours
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-white">Enable Quiet Hours</h4>
+              <p className="text-sm text-gray-400">Pause notifications during specified hours</p>
+            </div>
+            <button
+              onClick={toggleQuietHours}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                quietHours.enabled 
+                  ? 'bg-gradient-to-r from-red-500 to-pink-500' 
+                  : 'bg-gray-600'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
+                  quietHours.enabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+          
+          {quietHours.enabled && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">Start Time</label>
+                <input
+                  type="time"
+                  value={quietHours.start}
+                  onChange={(e) => setQuietHours(prev => ({ ...prev, start: e.target.value }))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-300">End Time</label>
+                <input
+                  type="time"
+                  value={quietHours.end}
+                  onChange={(e) => setQuietHours(prev => ({ ...prev, end: e.target.value }))}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-end">
+        <Button
+          variant="outline"
+          onClick={handleResetToDefault}
+          className="flex items-center gap-2 hover:scale-105 transition-transform duration-300"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Reset to Default
+        </Button>
+        <Button
+          onClick={handleSaveNotifications}
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 flex items-center gap-2 hover:scale-105 transition-all duration-300"
+        >
+          <Save className="w-4 h-4" />
+          Save Settings
+        </Button>
+      </div>
+    </div>
   );
 }
