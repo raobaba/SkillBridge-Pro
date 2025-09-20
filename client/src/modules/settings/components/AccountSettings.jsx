@@ -1,5 +1,44 @@
-import React from "react";
-import { Lock } from "lucide-react";
+import React, { useState } from "react";
+import { 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  Shield, 
+  Key, 
+  CheckCircle, 
+  AlertCircle, 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Calendar, 
+  Settings, 
+  Save, 
+  RotateCcw, 
+  Trash2, 
+  Download, 
+  Upload, 
+  Bell, 
+  Globe, 
+  Database, 
+  Zap, 
+  Star, 
+  Award, 
+  Activity, 
+  BarChart3, 
+  TrendingUp, 
+  Target, 
+  Clock, 
+  Info, 
+  HelpCircle, 
+  ExternalLink, 
+  Copy, 
+  Share2, 
+  Edit, 
+  Plus, 
+  Minus, 
+  X 
+} from "lucide-react";
 import { Button } from "../../../components";
 
 export default function AccountSettings({
@@ -7,31 +46,285 @@ export default function AccountSettings({
   handleInputChange,
   handleSaveProfile,
 }) {
+  const [showPasswords, setShowPasswords] = useState({
+    password: false,
+    newPassword: false,
+    confirmPassword: false
+  });
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [errors, setErrors] = useState({});
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    handleInputChange(e);
+    
+    if (name === 'newPassword') {
+      setPasswordStrength(calculatePasswordStrength(value));
+    }
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData?.password) newErrors.password = "Current password is required";
+    if (!formData?.newPassword) newErrors.newPassword = "New password is required";
+    if (formData?.newPassword && formData?.newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+    }
+    if (formData?.newPassword !== formData?.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      handleSaveProfile();
+      setIsChangingPassword(false);
+    }, 2000);
+  };
+
+  const getPasswordStrengthColor = (strength) => {
+    if (strength <= 2) return "from-red-500 to-red-600";
+    if (strength <= 3) return "from-yellow-500 to-orange-500";
+    if (strength <= 4) return "from-blue-500 to-blue-600";
+    return "from-green-500 to-green-600";
+  };
+
+  const getPasswordStrengthText = (strength) => {
+    if (strength <= 2) return "Weak";
+    if (strength <= 3) return "Fair";
+    if (strength <= 4) return "Good";
+    return "Strong";
+  };
+
+  const securityFeatures = [
+    { icon: Shield, title: "Two-Factor Authentication", enabled: true, description: "Add an extra layer of security" },
+    { icon: Key, title: "Login Alerts", enabled: true, description: "Get notified of new logins" },
+    { icon: Lock, title: "Session Management", enabled: false, description: "Manage active sessions" },
+    { icon: Database, title: "Data Encryption", enabled: true, description: "Your data is encrypted" }
+  ];
+
+  const accountStats = [
+    { label: "Account Age", value: "2 years", icon: Calendar },
+    { label: "Last Login", value: "2 hours ago", icon: Clock },
+    { label: "Security Score", value: "85%", icon: Shield },
+    { label: "Active Sessions", value: "3", icon: Activity }
+  ];
+
   return (
-    <section className='bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 space-y-4'>
-      <h2 className='text-xl font-semibold flex items-center gap-2'>
-        <Lock className='w-5 h-5 text-pink-400' /> Account Settings
-      </h2>
-      <div className='space-y-3'>
-        {["password", "newPassword", "confirmPassword"].map((field) => (
-          <input
-            key={field}
-            type='password'
-            name={field}
-            value={formData[field]}
-            onChange={handleInputChange}
-            placeholder={
-              field === "password"
-                ? "Current Password"
-                : field === "newPassword"
-                  ? "New Password"
-                  : "Confirm Password"
-            }
-            className='w-full p-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:ring-1 focus:ring-pink-400 focus:outline-none'
-          />
-        ))}
+    <section className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg">
+          <Lock className="w-5 h-5 text-white" />
+        </div>
+        <h2 className="text-xl font-semibold text-white">Account Settings</h2>
       </div>
-      <Button onClick={handleSaveProfile}>Change Password</Button>
+
+      <form onSubmit={handlePasswordSubmit} className="space-y-4">
+        {/* Password Change Section */}
+        <div className="space-y-4">
+          <div>
+            <label className="block text-gray-300 mb-2 text-sm font-medium">Current Password</label>
+            <div className="relative">
+              <input
+                type={showPasswords.password ? "text" : "password"}
+                name="password"
+                value={formData?.password || ""}
+                onChange={handlePasswordChange}
+                placeholder="Enter your current password"
+                className={`w-full p-3 rounded-xl bg-white/10 border text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 ${
+                  errors.password ? "border-red-500" : "border-white/20"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('password')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+              >
+                {showPasswords.password ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
+          </div>
+
+          <div>
+            <label className="block text-gray-300 mb-2 text-sm font-medium">New Password</label>
+            <div className="relative">
+              <input
+                type={showPasswords.newPassword ? "text" : "password"}
+                name="newPassword"
+                value={formData?.newPassword || ""}
+                onChange={handlePasswordChange}
+                placeholder="Enter your new password"
+                className={`w-full p-3 rounded-xl bg-white/10 border text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 ${
+                  errors.newPassword ? "border-red-500" : "border-white/20"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('newPassword')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+              >
+                {showPasswords.newPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            
+            {/* Password Strength Indicator */}
+            {formData?.newPassword && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-gray-400 text-xs">Password Strength</span>
+                  <span className={`text-xs font-medium ${
+                    passwordStrength <= 2 ? "text-red-400" :
+                    passwordStrength <= 3 ? "text-yellow-400" :
+                    passwordStrength <= 4 ? "text-blue-400" : "text-green-400"
+                  }`}>
+                    {getPasswordStrengthText(passwordStrength)}
+                  </span>
+                </div>
+                <div className="w-full h-2 bg-gray-600 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${getPasswordStrengthColor(passwordStrength)} transition-all duration-300`}
+                    style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+            
+            {errors.newPassword && <p className="text-red-400 text-xs mt-1">{errors.newPassword}</p>}
+          </div>
+
+          <div>
+            <label className="block text-gray-300 mb-2 text-sm font-medium">Confirm New Password</label>
+            <div className="relative">
+              <input
+                type={showPasswords.confirmPassword ? "text" : "password"}
+                name="confirmPassword"
+                value={formData?.confirmPassword || ""}
+                onChange={handlePasswordChange}
+                placeholder="Confirm your new password"
+                className={`w-full p-3 rounded-xl bg-white/10 border text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 ${
+                  errors.confirmPassword ? "border-red-500" : "border-white/20"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('confirmPassword')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+              >
+                {showPasswords.confirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button 
+            type="submit" 
+            variant="default" 
+            size="lg"
+            disabled={isChangingPassword}
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 transition-all duration-300"
+          >
+            {isChangingPassword ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Changing...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Change Password
+              </>
+            )}
+          </Button>
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="lg"
+            className="flex-1 hover:scale-105 transition-transform duration-300"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset
+          </Button>
+        </div>
+
+        {/* Advanced Security Options */}
+        {showAdvanced && (
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+            <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4 text-green-400" />
+              Advanced Security
+            </h3>
+            
+            <div className="grid grid-cols-1 gap-3">
+              <button className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-green-400" />
+                  <span className="text-white text-sm font-medium">Enable 2FA</span>
+                </div>
+              </button>
+              
+              <button className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-purple-400" />
+                  <span className="text-white text-sm font-medium">Login History</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Toggle Advanced */}
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 text-sm"
+        >
+          <Settings className="w-4 h-4" />
+          {showAdvanced ? "Hide Advanced" : "Show Advanced"}
+        </button>
+      </form>
     </section>
   );
 }

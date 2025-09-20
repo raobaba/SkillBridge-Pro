@@ -1,63 +1,70 @@
-import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, Github, Linkedin, Mail } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
-import { loginUser, clearAuthState } from "../slice/userSlice";
+import React, { useState, useEffect, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { loginUser } from "../slice/userSlice";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { Input, Button } from "../../../components";
+import OAuthButtons from "../../../components/shared/OAuthButtons";
+import { useAuthForm } from "../../../components/hooks/useAuthForm";
 
 const SignIn = ({ switchMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, error, message } = useSelector((state) => state.user);
-
   const [loginFailed, setLoginFailed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     email: "",
     password: "",
     role: "developer",
-  });
+  };
 
-  useEffect(() => {
-    if (message) {
-      toast.success(message);
-      dispatch(clearAuthState());
+  const {
+    formData,
+    errors,
+    loading,
+    handleChange,
+    handleSubmit,
+    handleAuthStateChange
+  } = useAuthForm(initialFormData, ["email", "password"]);
+
+  // Reset login failed state when user starts typing
+  const handleInputChange = useCallback((e) => {
+    if (loginFailed) {
+      setLoginFailed(false);
     }
-  }, [message, dispatch]);
+    handleChange(e);
+  }, [loginFailed, handleChange]);
 
+  // Handle auth state changes
   useEffect(() => {
-    if (error) {
-      toast.error(error);
+    handleAuthStateChange();
+  }, [handleAuthStateChange]);
+
+  // Track login failures
+  useEffect(() => {
+    if (errors.password || errors.email) {
       setLoginFailed(true);
-      dispatch(clearAuthState());
     }
-  }, [error, dispatch]);
+  }, [errors]);
 
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    dispatch(loginUser(formData))
-      .then((res) => {
-        if (res?.payload?.status === 200) navigate("/");
-      })
-      .catch(console.log);
-  };
-
-  const handleOAuthClick = (provider) => {
-    window.location.href = `${import.meta.env.VITE_APP_API_URL}api/v1/auth/${provider}`;
-  };
+  const onSubmit = useCallback(async (data) => {
+    try {
+      const result = await dispatch(loginUser(data));
+      if (result?.payload?.status === 200) {
+        navigate("/");
+      } else {
+        // Login failed - show forgot password option
+        setLoginFailed(true);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setLoginFailed(true);
+    }
+  }, [dispatch, navigate]);
 
   return (
     <div className='space-y-6'>
-      <form onSubmit={handleSubmit} className='space-y-4'>
+      <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
         {/* Email */}
         <Input
           type='email'
@@ -65,7 +72,8 @@ const SignIn = ({ switchMode }) => {
           name='email'
           placeholder='Enter your email'
           value={formData.email}
-          onChange={handleChange}
+          onChange={handleInputChange}
+          error={errors.email}
           required
         />
 
@@ -94,16 +102,17 @@ const SignIn = ({ switchMode }) => {
 
         {/* Password */}
         <Input
-          type={showPassword ? "text" : "password"}
+          type='password'
           label='Password'
           name='password'
           placeholder='Enter your password'
           value={formData.password}
-          onChange={handleChange}
-          required
+          onChange={handleInputChange}
+          error={errors.password}
           showToggle={true}
           isVisible={showPassword}
           onToggle={() => setShowPassword(!showPassword)}
+          required
         />
 
         {/* Forgot Password if login failed */}
@@ -138,45 +147,8 @@ const SignIn = ({ switchMode }) => {
         </span>
       </p>
 
-      {/* Social Login */}
-      <div className='space-y-4'>
-        <div className='relative'>
-          <div className='absolute inset-0 flex items-center'>
-            <div className='w-full border-t border-white/20'></div>
-          </div>
-          <div className='relative flex justify-center text-sm'>
-            <span className='bg-gray-900 px-3 text-gray-400'>
-              Or continue with
-            </span>
-          </div>
-        </div>
-        <div className='grid grid-cols-3 gap-3'>
-          <button
-            type='button'
-            onClick={() => handleOAuthClick("github")}
-            className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
-          >
-            <Github size={16} />
-            <span className='hidden sm:inline'>GitHub</span>
-          </button>
-          <button
-            type='button'
-            onClick={() => handleOAuthClick("google")}
-            className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
-          >
-            <Mail size={16} />
-            <span className='hidden sm:inline'>Google</span>
-          </button>
-          <button
-            type='button'
-            onClick={() => handleOAuthClick("linkedin")}
-            className='flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-all border border-white/10 hover:border-white/20'
-          >
-            <Linkedin size={16} />
-            <span className='hidden sm:inline'>LinkedIn</span>
-          </button>
-        </div>
-      </div>
+      {/* OAuth Buttons */}
+      <OAuthButtons />
     </div>
   );
 };

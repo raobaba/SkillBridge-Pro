@@ -1,60 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { resetPassPassword, clearAuthState } from "../slice/userSlice";
+import { useDispatch } from "react-redux";
+import { resetPassPassword } from "../slice/userSlice";
 import Circular from "../../../components/loader/Circular";
-import { toast } from "react-toastify";
 import { Input, Button } from "../../../components";
+import { useAuthForm } from "../../../components/hooks/useAuthForm";
 
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, message } = useSelector((state) => state.user);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setPasswordError("");
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError("Passwords do not match");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setPasswordError("Password must be at least 6 characters long");
-      return;
-    }
-
-    dispatch(resetPassPassword({ token, password: newPassword }));
+  const initialFormData = {
+    newPassword: "",
+    confirmPassword: ""
   };
 
-  useEffect(() => {
-    if (passwordError) toast.error(passwordError);
-  }, [passwordError]);
+  const {
+    formData,
+    errors,
+    loading,
+    handleChange,
+    handleSubmit,
+    handleAuthStateChange
+  } = useAuthForm(initialFormData, ["newPassword", "confirmPassword"]);
 
+  // Handle auth state changes
   useEffect(() => {
-    if (error) toast.error(error.message || "Reset failed. Try again.");
-    if (message?.includes("Password reset")) {
-      toast.success(message || "Password reset successful");
+    handleAuthStateChange();
+  }, [handleAuthStateChange]);
+
+  // Navigate to auth page on successful reset
+  useEffect(() => {
+    if (formData.newPassword && formData.confirmPassword && 
+        formData.newPassword === formData.confirmPassword && 
+        !errors.newPassword && !errors.confirmPassword) {
+      // This will be handled by the success message in handleAuthStateChange
+    }
+  }, [formData, errors]);
+
+  const onSubmit = useCallback(async (data) => {
+    try {
+      await dispatch(resetPassPassword({ 
+        token, 
+        password: data.newPassword 
+      }));
+      // Navigate after successful reset
       setTimeout(() => {
-        dispatch(clearAuthState());
         navigate("/auth");
       }, 2000);
+    } catch (error) {
+      console.error("Reset password error:", error);
     }
-  }, [error, message, dispatch, navigate]);
-
-  const toggleNewPasswordVisibility = () =>
-    setShowNewPassword(!showNewPassword);
-  const toggleConfirmPasswordVisibility = () =>
-    setShowConfirmPassword(!showConfirmPassword);
+  }, [dispatch, token, navigate]);
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
@@ -64,31 +66,35 @@ const ResetPassword = () => {
           Reset Your Password
         </h2>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
           {/* New Password */}
           <Input
-            type={showNewPassword ? "text" : "password"}
+            type='password'
             label='New Password'
+            name='newPassword'
             placeholder='Enter your new password'
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            value={formData.newPassword}
+            onChange={handleChange}
+            error={errors.newPassword}
             required
             showToggle={true}
             isVisible={showNewPassword}
-            onToggle={toggleNewPasswordVisibility}
+            onToggle={() => setShowNewPassword(!showNewPassword)}
           />
 
           {/* Confirm Password */}
           <Input
-            type={showConfirmPassword ? "text" : "password"}
+            type='password'
             label='Confirm Password'
+            name='confirmPassword'
             placeholder='Confirm your new password'
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
             required
             showToggle={true}
             isVisible={showConfirmPassword}
-            onToggle={toggleConfirmPasswordVisibility}
+            onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
           />
 
           <Button

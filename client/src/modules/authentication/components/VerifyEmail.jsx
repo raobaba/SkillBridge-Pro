@@ -1,39 +1,41 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { verifyEmail, clearAuthState } from "../slice/userSlice";
-import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import { verifyEmail } from "../slice/userSlice";
 
 const VerifyEmail = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { loading, error, message } = useSelector((state) => state.user);
-
   const [localStatus, setLocalStatus] = useState("loading");
 
-  useEffect(() => {
-    if (token) {
-      dispatch(verifyEmail(token));
-    } else {
+  const handleVerification = useCallback(async () => {
+    if (!token) {
+      setLocalStatus("error");
+      return;
+    }
+
+    try {
+      const result = await dispatch(verifyEmail(token));
+      if (result?.payload?.status === 200) {
+        setLocalStatus("success");
+        setTimeout(() => {
+          navigate("/auth");
+        }, 2000);
+      } else {
+        setLocalStatus("error");
+      }
+    } catch (error) {
+      console.error("Email verification error:", error);
       setLocalStatus("error");
     }
-  }, [token, dispatch]);
+  }, [token, dispatch, navigate]);
 
   useEffect(() => {
-    if (loading) {
-      toast.info("Verifying your email...");
-    } else if (message) {
-      toast.success(message || "Email verified successfully!");
-      navigate("/auth");
-      dispatch(clearAuthState());
-    } else if (error) {
-      toast.error(error || "Verification failed");
-      dispatch(clearAuthState());
-    }
-  }, [loading, message, error, dispatch, navigate]);
+    handleVerification();
+  }, [handleVerification]);
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>

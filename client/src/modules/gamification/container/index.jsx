@@ -3,6 +3,7 @@ import XPBoard from "../components/XPBoard";
 import Leaderboards from "../components/Leaderboards";
 import Badges from "../components/Badges";
 import Navbar from "../../../components/header";
+import { Footer } from "../../../components";
 
 const Gamification = () => {
   return (
@@ -18,6 +19,7 @@ const Gamification = () => {
         {/* Badges */}
         <Badges />
       </div>
+      <Footer/>
     </>
   );
 };

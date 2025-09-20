@@ -21,6 +21,7 @@ const initialState = {
   loading: false,
   error: null,
   message: null,
+  lastAction: null, // Track last action for debugging
 };
 
 export const loginUser = createAsyncThunk(
@@ -174,6 +175,19 @@ const userSlice = createSlice({
     clearAuthState: (state) => {
       state.error = null;
       state.message = null;
+      state.lastAction = 'clearAuthState';
+    },
+    setLoading: (state, action) => {
+      state.loading = action.payload;
+      state.lastAction = 'setLoading';
+    },
+    clearError: (state) => {
+      state.error = null;
+      state.lastAction = 'clearError';
+    },
+    clearMessage: (state) => {
+      state.message = null;
+      state.lastAction = 'clearMessage';
     },
   },
   extraReducers: (builder) => {
@@ -383,5 +397,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { clearAuthState } = userSlice.actions;
+export const { clearAuthState, setLoading, clearError, clearMessage } = userSlice.actions;
 export default userSlice.reducer;

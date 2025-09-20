@@ -125,15 +125,6 @@ const ChatBox = ({ onSend }) => {
               <Send className="w-5 h-5 text-white" />
             </button>
           </div>
-
-          {/* Quick actions */}
-          <div className="mt-3 flex items-center gap-2 text-xs text-gray-400">
-            <span>Press Enter to send, Shift+Enter for new line</span>
-            <div className="flex gap-1 ml-auto">
-              <div className="w-1 h-1 bg-green-400 rounded-full"></div>
-              <span>Online</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -16,11 +16,15 @@ const Input = ({
   options = [], // for select dropdown
   textarea = false, // render textarea instead of input
   rows = 3, // for textarea
+  showToggle = false, // external password toggle control
+  isVisible = false, // external password visibility state
+  onToggle, // external password toggle handler
   ...props
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
+  const [internalShowPassword, setInternalShowPassword] = useState(false);
 
   const isPassword = type === "password";
+  const showPassword = showToggle ? isVisible : internalShowPassword;
   const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
   return (
@@ -87,7 +91,13 @@ const Input = ({
         {isPassword ? (
           <div
             className='absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center cursor-pointer text-gray-400'
-            onClick={() => setShowPassword(!showPassword)}
+            onClick={() => {
+              if (showToggle && onToggle) {
+                onToggle();
+              } else {
+                setInternalShowPassword(!internalShowPassword);
+              }
+            }}
           >
             {showPassword ? (
               <EyeOff className='w-5 h-5' />

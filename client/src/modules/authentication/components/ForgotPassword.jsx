@@ -1,34 +1,38 @@
-import React, { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { forgetPassPassword, clearAuthState } from "../slice/userSlice";
-import { toast } from "react-toastify";
+import React, { useState, useEffect, useCallback } from "react";
+import { useDispatch } from "react-redux";
+import { forgetPassPassword } from "../slice/userSlice";
 import { useNavigate } from "react-router-dom";
 import Circular from "../../../components/loader/Circular";
 import { Input, Button } from "../../../components";
+import { useAuthForm } from "../../../components/hooks/useAuthForm";
 
 const ForgotPassword = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error, message } = useSelector((state) => state.user);
-  const [email, setEmail] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email) return toast.error("Please enter your email.");
-    dispatch(forgetPassPassword({ email }));
-  };
+  const initialFormData = { email: "" };
 
+  const {
+    formData,
+    errors,
+    loading,
+    handleChange,
+    handleSubmit,
+    handleAuthStateChange
+  } = useAuthForm(initialFormData, ["email"]);
+
+  // Handle auth state changes
   useEffect(() => {
-    if (message) {
-      toast.success(message);
-      dispatch(clearAuthState());
-    }
+    handleAuthStateChange();
+  }, [handleAuthStateChange]);
 
-    if (error) {
-      toast.error(error.message || "Something went wrong.");
-      dispatch(clearAuthState());
+  const onSubmit = useCallback(async (data) => {
+    try {
+      await dispatch(forgetPassPassword(data));
+    } catch (error) {
+      console.error("Forgot password error:", error);
     }
-  }, [message, error, dispatch]);
+  }, [dispatch]);
 
   return (
     <div className='min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
@@ -42,14 +46,16 @@ const ForgotPassword = () => {
           your password.
         </p>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
           <Input
             type='email'
             label='Email Address'
+            name='email'
             placeholder='you@example.com'
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
             className='w-full'
           />
 

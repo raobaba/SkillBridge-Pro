@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Users, Briefcase, Star, ArrowRight } from "lucide-react";
 import SignIn from "../components/SignIn";
 import SignUp from "../components/SignUp";
@@ -9,9 +9,10 @@ import Circular from "../../../components/loader/Circular";
 const Authentication = () => {
   const [isSignIn, setIsSignIn] = useState(true);
   const navigate = useNavigate();
-  const switchMode = () => setIsSignIn(!isSignIn);
   const { loading } = useSelector((state) => state.user);
-  const features = [
+
+  // Memoize features to prevent unnecessary re-renders
+  const features = useMemo(() => [
     {
       icon: <Users className='w-6 h-6' />,
       title: "Connect with Top Talent",
@@ -27,7 +28,17 @@ const Authentication = () => {
       title: "Skill Development",
       description: "Learn and grow with industry professionals",
     },
-  ];
+  ], []);
+
+  // Memoize switch mode function
+  const switchMode = useCallback(() => {
+    setIsSignIn(prev => !prev);
+  }, []);
+
+  // Memoize navigation handler
+  const handleLogoClick = useCallback(() => {
+    navigate("/");
+  }, [navigate]);
 
   return (
     <div className='min-h-screen flex flex-col bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white relative'>
@@ -36,7 +47,7 @@ const Authentication = () => {
       <nav className='absolute top-0 left-0 right-0 z-20 p-4 lg:p-6'>
         <div className='flex items-center justify-between max-w-7xl mx-auto'>
           <div
-            onClick={() => navigate("/")}
+            onClick={handleLogoClick}
             className='text-xl cursor-pointer font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'
           >
             SkillBridge

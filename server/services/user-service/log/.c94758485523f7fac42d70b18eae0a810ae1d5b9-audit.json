@@ -84,6 +84,11 @@
             "date": 1758237383144,
             "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\services\\user-service\\log\\combined-2025-09-19.log",
             "hash": "7991d49a6f6dcd96d2b57a1fcb8054058bc1b61edd26d53c1c718bba19588f92"
+        },
+        {
+            "date": 1758327350172,
+            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\services\\user-service\\log\\combined-2025-09-20.log",
+            "hash": "caf311ccb9c94f114a81a920186f3d4f22ea683551f59556378b5c00d74e9ed0"
         }
     ],
     "hashType": "sha256"
