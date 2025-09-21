@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { User, Phone, Video, MoreVertical, Search, Settings, Archive, Star } from "lucide-react";
 
-const ChatHeader = ({ user }) => {
+const ChatHeader = ({ user, permissions }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState("Active now");
 
@@ -43,7 +43,7 @@ const ChatHeader = ({ user }) => {
           <div className="flex items-center gap-4">
             <div className="relative group">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-                {user.name.charAt(0)}
+                {user?.name?.charAt(0) || '?'}
               </div>
               {/* Enhanced Online status dot */}
               <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full animate-pulse shadow-lg">
@@ -53,34 +53,85 @@ const ChatHeader = ({ user }) => {
             
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-white font-semibold text-lg">{user.name}</h2>
+                <h2 className="text-white font-semibold text-lg">{user?.name || 'Unknown User'}</h2>
+                {/* Role indicators */}
+                {user?.isSystem && (
+                  <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded border border-yellow-500/30">
+                    System
+                  </span>
+                )}
+                {user?.isFlagged && (
+                  <span className="px-2 py-1 bg-red-500/20 text-red-300 text-xs rounded border border-red-500/30">
+                    Flagged
+                  </span>
+                )}
+                {user?.isGroup && (
+                  <span className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded border border-purple-500/30">
+                    Group Chat
+                  </span>
+                )}
+                {!user?.isSystem && !user?.isFlagged && !user?.isGroup && user?.role && (
+                  <span className={`px-2 py-1 text-xs rounded border ${
+                    user.role === 'project-owner' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                    user.role === 'developer' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                    'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                  }`}>
+                    {user.role?.replace('_', ' ').toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <p className="text-sm text-gray-300">{lastSeen}</p>
+                <div className={`w-2 h-2 rounded-full ${
+                  user?.isFlagged ? 'bg-red-400 animate-pulse' :
+                  user?.isSystem ? 'bg-yellow-400' :
+                  user?.status === 'online' ? 'bg-green-400 animate-pulse' :
+                  user?.status === 'away' ? 'bg-yellow-400' :
+                  'bg-gray-400'
+                }`}></div>
+                <p className="text-sm text-gray-300">
+                  {user?.isSystem ? 'System notifications' :
+                   user?.isFlagged ? 'Flagged for moderation' :
+                   user?.isGroup ? 'Group chat' :
+                   lastSeen}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Simplified Action Icons */}
+          {/* Role-based Action Icons */}
           <div className="flex items-center gap-2">
-            {/* Voice Call button */}
-            <button
-              onClick={() => handleCall('Voice')}
-              className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
-              title="Voice Call"
-            >
-              <Phone className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
-            </button>
+            {/* Voice Call button - only for direct chats */}
+            {!user?.isSystem && !user?.isFlagged && permissions?.canSendMessages && (
+              <button
+                onClick={() => handleCall('Voice')}
+                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+                title="Voice Call"
+              >
+                <Phone className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
+              </button>
+            )}
 
-            {/* Video Call button */}
-            <button
-              onClick={() => handleCall('Video')}
-              className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
-              title="Video Call"
-            >
-              <Video className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors duration-300" />
-            </button>
+            {/* Video Call button - only for direct chats */}
+            {!user?.isSystem && !user?.isFlagged && permissions?.canSendMessages && (
+              <button
+                onClick={() => handleCall('Video')}
+                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+                title="Video Call"
+              >
+                <Video className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors duration-300" />
+              </button>
+            )}
+
+            {/* Moderation actions for flagged chats */}
+            {user?.isFlagged && permissions?.canModerate && (
+              <button
+                onClick={() => console.log('Resolve flagged chat')}
+                className="p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-300 hover:scale-110 group"
+                title="Resolve Flagged Chat"
+              >
+                <Star className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
+              </button>
+            )}
 
             {/* More Options Menu */}
             <div className="relative">

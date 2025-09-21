@@ -1,99 +1,149 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
 import ChatBox from "../components/ChatBox";
-import Navbar from "../../../components/header";
 import ChatSidebar from "../components/ChatSidebar";
-import { Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Menu, X, Shield, Users, MessageCircle, AlertTriangle } from "lucide-react";
 
 const staticUsers = [
   { 
     id: 1, 
     name: "Alice Johnson", 
+    role: "project-owner",
     lastMessage: "Thanks for the help with the design!",
     lastSeen: "2 min ago",
     isFavorite: true,
     isArchived: false,
     unreadCount: 0,
     status: "online",
-    avatar: "AJ"
+    avatar: "AJ",
+    chatType: "direct",
+    projectId: "proj-001"
   },
   { 
     id: 2, 
     name: "Bob Smith", 
+    role: "developer",
     lastMessage: "Can you review the PR when you get a chance?",
     lastSeen: "5 min ago",
     isFavorite: false,
     isArchived: false,
     unreadCount: 2,
     status: "online",
-    avatar: "BS"
+    avatar: "BS",
+    chatType: "direct"
   },
   { 
     id: 3, 
     name: "Charlie Brown", 
+    role: "project-owner",
     lastMessage: "Good morning! Ready for the meeting?",
     lastSeen: "1 hour ago",
     isFavorite: true,
     isArchived: false,
     unreadCount: 0,
     status: "away",
-    avatar: "CB"
+    avatar: "CB",
+    chatType: "group",
+    projectId: "proj-002"
   },
   { 
     id: 4, 
     name: "Diana Prince", 
+    role: "developer",
     lastMessage: "The new features look amazing!",
     lastSeen: "3 hours ago",
     isFavorite: false,
     isArchived: false,
     unreadCount: 1,
     status: "offline",
-    avatar: "DP"
+    avatar: "DP",
+    chatType: "direct"
   },
   { 
     id: 5, 
-    name: "Ethan Hunt", 
-    lastMessage: "Mission accomplished! 🎯",
+    name: "E-commerce Platform Team", 
+    role: "group",
+    lastMessage: "Ethan Hunt: Mission accomplished! 🎯",
     lastSeen: "yesterday",
     isFavorite: false,
     isArchived: true,
     unreadCount: 0,
     status: "offline",
-    avatar: "EH"
+    avatar: "EP",
+    chatType: "group",
+    projectId: "proj-001",
+    isGroup: true
   },
   { 
     id: 6, 
     name: "Fiona Green", 
+    role: "project-owner",
     lastMessage: "Let's schedule a call for next week",
     lastSeen: "2 days ago",
     isFavorite: true,
     isArchived: false,
     unreadCount: 0,
     status: "offline",
-    avatar: "FG"
+    avatar: "FG",
+    chatType: "direct",
+    projectId: "proj-003"
   },
   { 
     id: 7, 
     name: "George Wilson", 
+    role: "developer",
     lastMessage: "The database migration is complete",
     lastSeen: "1 week ago",
     isFavorite: false,
     isArchived: true,
     unreadCount: 0,
     status: "offline",
-    avatar: "GW"
+    avatar: "GW",
+    chatType: "direct"
   },
   { 
     id: 8, 
     name: "Hannah Davis", 
+    role: "developer",
     lastMessage: "Thanks for the great presentation!",
     lastSeen: "now",
     isFavorite: false,
     isArchived: false,
     unreadCount: 3,
     status: "online",
-    avatar: "HD"
+    avatar: "HD",
+    chatType: "direct"
+  },
+  { 
+    id: 9, 
+    name: "System Notifications", 
+    role: "system",
+    lastMessage: "New match found for your skills!",
+    lastSeen: "5 min ago",
+    isFavorite: false,
+    isArchived: false,
+    unreadCount: 1,
+    status: "online",
+    avatar: "SN",
+    chatType: "system",
+    isSystem: true
+  },
+  { 
+    id: 10, 
+    name: "Flagged Chat #123", 
+    role: "admin",
+    lastMessage: "User reported inappropriate content",
+    lastSeen: "1 hour ago",
+    isFavorite: false,
+    isArchived: false,
+    unreadCount: 1,
+    status: "online",
+    avatar: "FC",
+    chatType: "moderation",
+    isFlagged: true
   }
 ];
 
@@ -293,15 +343,113 @@ const staticMessages = {
 };
 
 const ChatContainer = () => {
-  const [activeUser, setActiveUser] = useState(staticUsers[0]);
-  const [messages, setMessages] = useState(staticMessages);
+  const navigate = useNavigate();
+  const { user } = useSelector((state) => state?.user || {});
+  const [activeUser, setActiveUser] = useState(staticUsers?.[0] || null);
+  const [messages, setMessages] = useState(staticMessages || {});
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [filterType, setFilterType] = useState("all"); // all, direct, groups, system, flagged
+
+  // Role-based user filtering
+  const getFilteredUsers = () => {
+    if (!user?.role) return staticUsers || [];
+
+    const currentUserRole = user.role;
+    
+    return (staticUsers || []).filter(chatUser => {
+      // System notifications are visible to all roles
+      if (chatUser?.isSystem) return true;
+      
+      // Flagged chats are only visible to admins
+      if (chatUser?.isFlagged && currentUserRole !== 'admin') return false;
+      
+      // Role-based filtering
+      switch (currentUserRole) {
+        case 'developer':
+          // Can chat with project owners and other developers
+          // Can join group chats when accepted
+          return ['project-owner', 'developer', 'group'].includes(chatUser?.role) || 
+                 chatUser?.chatType === 'group';
+        
+        case 'project-owner':
+          // Can chat with developers and other project owners
+          // Can create/manage project group chats
+          return ['developer', 'project-owner', 'group'].includes(chatUser?.role) || 
+                 chatUser?.chatType === 'group';
+        
+        case 'admin':
+          // Can see flagged chats for moderation
+          // Read-only access to flagged chats
+          return chatUser?.isFlagged || chatUser?.role === 'admin';
+        
+        default:
+          return true;
+      }
+    });
+  };
+
+  const filteredUsers = getFilteredUsers() || [];
+
+  // Set default active user if none selected and users are available
+  useEffect(() => {
+    if (!activeUser && filteredUsers?.length > 0) {
+      setActiveUser(filteredUsers[0]);
+    }
+  }, [activeUser, filteredUsers]);
+
+  // Role-based permissions
+  const getRolePermissions = () => {
+    if (!user?.role) return { canSendMessages: false, canCreateGroups: false, canModerate: false, canJoinGroups: false };
+    
+    switch (user.role) {
+      case 'developer':
+        return {
+          canSendMessages: true,
+          canCreateGroups: false,
+          canModerate: false,
+          canJoinGroups: true
+        };
+      case 'project-owner':
+        return {
+          canSendMessages: true,
+          canCreateGroups: true,
+          canModerate: false,
+          canJoinGroups: true
+        };
+      case 'admin':
+        return {
+          canSendMessages: false, // Read-only for flagged chats
+          canCreateGroups: false,
+          canModerate: true,
+          canJoinGroups: false
+        };
+      default:
+        return { canSendMessages: false, canCreateGroups: false, canModerate: false, canJoinGroups: false };
+    }
+  };
+
+  const permissions = getRolePermissions();
 
   const handleSend = (text) => {
+    // Check if user can send messages based on role and chat type
+    if (!permissions?.canSendMessages) {
+      console.log("You don't have permission to send messages in this chat");
+      return;
+    }
+
+    // For flagged chats, admins have read-only access
+    if (activeUser?.isFlagged && user?.role === 'admin') {
+      console.log("This is a flagged chat - read-only access for moderation");
+      return;
+    }
+
+    if (!text?.trim()) return;
+
+    const currentMessages = messages?.[activeUser?.id] || [];
     const newMessage = {
-      id: messages[activeUser.id].length + 1,
+      id: (currentMessages?.length || 0) + 1,
       sender: "me",
-      text,
+      text: text.trim(),
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -309,15 +457,54 @@ const ChatContainer = () => {
       timestamp: new Date().toISOString(),
       status: "sent"
     };
-    setMessages({
-      ...messages,
-      [activeUser.id]: [...messages[activeUser.id], newMessage],
-    });
+    
+    setMessages(prev => ({
+      ...prev,
+      [activeUser?.id]: [...currentMessages, newMessage],
+    }));
   };
 
   return (
     <>
-      <Navbar />
+      {/* Role-based Header */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 p-4 border-b border-white/10">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
+              <MessageCircle className="w-5 h-5 text-white" />
+            </div>
+            <div onClick={()=>navigate('/')}>
+              <h1 className="text-xl font-bold text-white">Communication Center</h1>
+              <p className="text-sm text-gray-300">
+                {user?.role === 'developer' && 'Chat with Project Owners & Join Group Discussions'}
+                {user?.role === 'project-owner' && 'Manage Team Communications & Project Chats'}
+                {user?.role === 'admin' && 'Monitor Flagged Chats & System Notifications'}
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {user?.role === 'admin' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-lg border border-red-500/30">
+                <Shield className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-300">Moderation Mode</span>
+              </div>
+            )}
+            {user?.role === 'project-owner' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                <Users className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-blue-300">Team Management</span>
+              </div>
+            )}
+            {user?.role === 'developer' && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-lg border border-green-500/30">
+                <MessageCircle className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-green-300">Collaboration</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Mobile toggle button */}
       <div className="sm:hidden flex justify-start p-2 bg-slate-900">
@@ -337,20 +524,32 @@ const ChatContainer = () => {
           } sm:translate-x-0`}
         >
           <ChatSidebar
-            users={staticUsers}
+            users={filteredUsers}
             activeUser={activeUser}
             onSelectUser={(user) => {
               setActiveUser(user);
               setSidebarOpen(false); // Close sidebar on mobile after selection
             }}
+            userRole={user?.role}
+            permissions={permissions}
           />
         </div>
 
         {/* Chat Area */}
         <div className="flex flex-col flex-1 bg-gradient-to-b from-slate-900 to-indigo-900">
-          <ChatHeader user={activeUser} />
-          <MessageList messages={messages[activeUser.id]} />
-          <ChatBox onSend={handleSend} />
+          {activeUser && <ChatHeader user={activeUser} permissions={permissions} />}
+          <MessageList messages={activeUser ? (messages?.[activeUser?.id] || []) : []} />
+          {permissions?.canSendMessages && !activeUser?.isFlagged && (
+            <ChatBox onSend={handleSend} />
+          )}
+          {!permissions?.canSendMessages && (
+            <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm p-4 border-t border-white/10">
+              <div className="flex items-center justify-center gap-2 text-gray-400">
+                <AlertTriangle className="w-4 h-4" />
+                <span className="text-sm">Read-only access for this chat</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

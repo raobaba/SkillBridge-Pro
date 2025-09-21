@@ -1,25 +1,48 @@
 import React from "react";
 import { Clock, Calendar, DollarSign, CheckCircle, XCircle } from "lucide-react";
 
-const BillingHistory = () => {
-  const history = [
-    { id: 1, date: "2025-08-01", amount: "$29.99", status: "Paid" },
-    { id: 2, date: "2025-07-01", amount: "$29.99", status: "Paid" },
-    { id: 3, date: "2025-06-01", amount: "$29.99", status: "Failed" },
-  ];
+const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
+  // Default history based on role if none provided
+  const defaultHistory = {
+    developer: [
+      { id: 1, date: "2025-01-01", amount: "$0.00", status: "Free Plan", description: "Free Tier" },
+    ],
+    project_owner: [
+      { id: 1, date: "2025-01-01", amount: "$29.99", status: "Paid", description: "Premium Plan" },
+      { id: 2, date: "2024-12-01", amount: "$29.99", status: "Paid", description: "Premium Plan" },
+      { id: 3, date: "2024-11-01", amount: "$15.00", status: "Paid", description: "Project Boost" },
+    ],
+    admin: [
+      { id: 1, date: "2025-01-01", amount: "$0.00", status: "Admin Access", description: "Administrative Account" },
+    ],
+  };
+
+  const history = billingHistory.length > 0 ? billingHistory : defaultHistory[userRole] || defaultHistory.developer;
 
   const getStatusIcon = (status) => {
-    return status === "Paid" ? (
-      <CheckCircle className="w-4 h-4" />
-    ) : (
-      <XCircle className="w-4 h-4" />
-    );
+    switch (status) {
+      case "Paid":
+      case "Free Plan":
+      case "Admin Access":
+        return <CheckCircle className="w-4 h-4" />;
+      case "Failed":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <Clock className="w-4 h-4" />;
+    }
   };
 
   const getStatusColor = (status) => {
-    return status === "Paid"
-      ? "from-emerald-500 to-green-500"
-      : "from-red-500 to-pink-500";
+    switch (status) {
+      case "Paid":
+      case "Free Plan":
+      case "Admin Access":
+        return "from-emerald-500 to-green-500";
+      case "Failed":
+        return "from-red-500 to-pink-500";
+      default:
+        return "from-yellow-500 to-orange-500";
+    }
   };
 
   const formatDate = (dateString) => {
@@ -94,6 +117,14 @@ const BillingHistory = () => {
                         {item.amount}
                       </p>
                     </div>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <p className="text-xs text-gray-300 mb-1">Description</p>
+                    <p className="text-white font-medium group-hover:text-blue-200 transition-colors duration-300">
+                      {item.description || 'N/A'}
+                    </p>
                   </div>
                 </div>
 

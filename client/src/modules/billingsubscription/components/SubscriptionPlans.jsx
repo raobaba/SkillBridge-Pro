@@ -1,37 +1,40 @@
 import React from "react";
 import { Star, Check, Zap, Crown, Building2 } from "lucide-react";
 
-const SubscriptionPlans = () => {
+const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const plans = [
     {
       id: 1,
-      name: "Basic",
-      price: "$9.99",
+      name: "Free",
+      price: "$0",
       period: "month",
-      features: ["1 Project", "Email Support", "Basic Analytics", "Standard Templates"],
+      features: ["100 AI Credits", "Basic Tools", "Standard Matchmaking", "Community Support"],
       icon: <Zap className="w-4 h-4" />,
       popular: false,
-      color: "from-blue-500 to-indigo-500"
+      color: "from-gray-500 to-gray-600",
+      current: userRole === 'developer'
     },
     {
       id: 2,
       name: "Pro",
       price: "$29.99",
       period: "month",
-      features: ["10 Projects", "Priority Support", "Advanced Analytics", "Premium Templates", "API Access"],
+      features: ["1000 AI Credits", "Enhanced AI Tools", "Matchmaking Boost", "Priority Support", "Project Visibility"],
       icon: <Crown className="w-4 h-4" />,
       popular: true,
-      color: "from-purple-500 to-pink-500"
+      color: "from-purple-500 to-pink-500",
+      current: userRole === 'project_owner'
     },
     {
       id: 3,
       name: "Enterprise",
       price: "$99.99",
       period: "month",
-      features: ["Unlimited Projects", "24/7 Support", "Custom Analytics", "White-label", "Dedicated Manager"],
+      features: ["Unlimited AI Credits", "All Enhanced Tools", "Maximum Matchmaking Boost", "24/7 Support", "Custom Analytics"],
       icon: <Building2 className="w-4 h-4" />,
       popular: false,
-      color: "from-emerald-500 to-teal-500"
+      color: "from-emerald-500 to-teal-500",
+      current: userRole === 'admin'
     },
   ];
 
@@ -76,11 +79,18 @@ const SubscriptionPlans = () => {
               animation: 'fadeInUp 0.6s ease-out forwards'
             }}
           >
-            {/* Popular Badge */}
-            {plan.popular && (
+            {/* Popular Badge or Current Plan Badge */}
+            {plan.popular && !plan.current && (
               <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
                 <div className="px-4 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold rounded-full shadow-lg">
                   Most Popular
+                </div>
+              </div>
+            )}
+            {plan.current && (
+              <div className="absolute top-0.5 left-1/2 transform -translate-x-1/2 z-20">
+                <div className="px-4 py-1 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                  Current Plan
                 </div>
               </div>
             )}
@@ -127,8 +137,10 @@ const SubscriptionPlans = () => {
               </div>
 
               {/* CTA Button */}
-              <button className={`w-full px-6 py-3 rounded-lg bg-gradient-to-r ${getPlanColor(plan)} text-white font-semibold hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 group-hover:shadow-xl`}>
-                {plan.popular ? 'Get Started' : 'Choose Plan'}
+              <button className={`w-full px-6 py-3 rounded-lg bg-gradient-to-r ${getPlanColor(plan)} text-white font-semibold hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 group-hover:shadow-xl ${
+                plan.current ? 'opacity-75 cursor-not-allowed' : ''
+              }`}>
+                {plan.current ? 'Current Plan' : plan.popular ? 'Get Started' : 'Choose Plan'}
               </button>
             </div>
 

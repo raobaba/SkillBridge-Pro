@@ -8,8 +8,8 @@ const ChatBox = ({ onSend }) => {
   const inputRef = useRef(null);
 
   const handleSend = () => {
-    if (message.trim() === "") return;
-    onSend(message);
+    if (!message?.trim()) return;
+    onSend?.(message);
     setMessage("");
   };
 
@@ -21,7 +21,7 @@ const ChatBox = ({ onSend }) => {
   };
 
   const handleInputChange = (e) => {
-    setMessage(e.target.value);
+    setMessage(e?.target?.value || "");
   };
 
   const handleVoiceToggle = () => {
@@ -80,9 +80,9 @@ const ChatBox = ({ onSend }) => {
               />
 
               {/* Character count */}
-              {message.length > 0 && (
+              {(message?.length || 0) > 0 && (
                 <div className="absolute bottom-1 right-3 text-xs text-gray-500">
-                  {message.length}
+                  {message?.length || 0}
                 </div>
               )}
             </div>
@@ -115,8 +115,8 @@ const ChatBox = ({ onSend }) => {
             {/* Send button */}
             <button
               onClick={handleSend}
-              disabled={!message.trim()}
-              className={`p-3 rounded-xl transition-all duration-300 ${message.trim()
+              disabled={!message?.trim()}
+              className={`p-3 rounded-xl transition-all duration-300 ${message?.trim()
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95"
                   : "bg-gray-600/50 opacity-50 cursor-not-allowed"
                 }`}
