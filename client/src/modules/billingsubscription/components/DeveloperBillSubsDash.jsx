@@ -13,7 +13,7 @@ import {
   Users
 } from "lucide-react";
 
-const DeveloperDashboard = ({ data }) => {
+const DeveloperBillSubsDash = ({ data }) => {
   const { subscription, billingHistory, paymentMethods } = data;
 
   const formatDate = (dateString) => {
@@ -282,4 +282,4 @@ const DeveloperDashboard = ({ data }) => {
   );
 };
 
-export default DeveloperDashboard;
+export default DeveloperBillSubsDash;

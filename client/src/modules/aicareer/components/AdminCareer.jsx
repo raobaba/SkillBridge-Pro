@@ -1,8 +1,8 @@
-// AnalyticsDashboard.jsx
+// AdminCareer.jsx
 import React from "react";
 import { Button } from "../../../components";
 
-const AnalyticsDashboard = () => {
+const AdminCareer = () => {
   const metrics = [
     {
       id: 1,
@@ -243,4 +243,4 @@ const AnalyticsDashboard = () => {
   );
 };
 
-export default AnalyticsDashboard;
+export default AdminCareer;

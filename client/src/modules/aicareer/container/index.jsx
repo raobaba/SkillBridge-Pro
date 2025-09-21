@@ -7,7 +7,7 @@ import SkillGapAnalyzer from "../components/SkillGapAnalyzer";
 import ProjectOptimizer from "../components/ProjectOptimizer";
 import TeamAnalyzer from "../components/TeamAnalyzer";
 import DeveloperMatcher from "../components/DeveloperMatcher";
-import AnalyticsDashboard from "../components/AnalyticsDashboard";
+import AdminCareer from "../components/AdminCareer";
 import SkillTrends from "../components/SkillTrends";
 import PlatformInsights from "../components/PlatformInsights";
 import Navbar from "../../../components/header";
@@ -25,10 +25,12 @@ const AiCareer = () => {
   }, [user]);
 
   const renderDeveloperTools = () => (
-    <div className="p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">AI Career Tools</h1>
-        <p className="text-gray-300">Personalized career development and skill enhancement</p>
+    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+      <div className='text-center mb-8'>
+        <h1 className='text-4xl font-bold text-white mb-2'>AI Career Tools</h1>
+        <p className='text-gray-300'>
+          Personalized career development and skill enhancement
+        </p>
       </div>
       <CareerRecommender />
       <ResumeEnhancer />
@@ -37,10 +39,12 @@ const AiCareer = () => {
   );
 
   const renderProjectOwnerTools = () => (
-    <div className="p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">AI Project Tools</h1>
-        <p className="text-gray-300">Optimize projects and find the best developers</p>
+    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+      <div className='text-center mb-8'>
+        <h1 className='text-4xl font-bold text-white mb-2'>AI Project Tools</h1>
+        <p className='text-gray-300'>
+          Optimize projects and find the best developers
+        </p>
       </div>
       <ProjectOptimizer />
       <TeamAnalyzer />
@@ -49,12 +53,16 @@ const AiCareer = () => {
   );
 
   const renderAdminTools = () => (
-    <div className="p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">AI Analytics Dashboard</h1>
-        <p className="text-gray-300">System-wide insights and platform optimization</p>
+    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+      <div className='text-center mb-8'>
+        <h1 className='text-4xl font-bold text-white mb-2'>
+          AI Analytics Dashboard
+        </h1>
+        <p className='text-gray-300'>
+          System-wide insights and platform optimization
+        </p>
       </div>
-      <AnalyticsDashboard />
+      <AdminCareer />
       <SkillTrends />
       <PlatformInsights />
     </div>
