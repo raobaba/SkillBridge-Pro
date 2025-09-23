@@ -2,10 +2,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Code, Menu, X, User, Bell, MessageSquare, Search } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { getToken } from "../../services/utils";
 import Input from "../Input";
 import Button from "../Button";
+import ConfirmModal from "../modal/ConfirmModal";
+import { logOut } from "../../modules/authentication/slice/userSlice";
 
 const Navbar = ({
   onLogoutClick,
@@ -14,9 +16,11 @@ const Navbar = ({
   isHome = false,
 }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isAvatarBroken, setIsAvatarBroken] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const dropdownRef = useRef(null);
   const notificationsRef = useRef(null);
   const messagesRef = useRef(null);
@@ -48,13 +52,22 @@ const Navbar = ({
     { label: "Pricing", link: "#pricing" },
   ];
 
+  const doLogout = async () => {
+    try {
+      await dispatch(logOut());
+    } finally {
+      dispatch({ type: "signin/logout" });
+      navigate("/");
+    }
+  };
+
   const userDropdownItems = [
     { label: "Profile", action: () => navigate("/profile") },
     { label: "Dashboard", action: () => navigate("/dashboard") },
     { label: "Notifications", action: () => navigate("/notifications") },
     { label: "Settings", action: () => navigate("/settings") },
     { label: "Portfolio Sync", action: () => navigate("/portfolio-sync") },
-    { label: "Logout", action: () => onLogoutClick?.() },
+    { label: "Logout", action: () => setIsLogoutOpen(true) },
   ];
 
   useEffect(() => {
@@ -81,6 +94,7 @@ const Navbar = ({
   }, []);
 
   return (
+    <>
     <nav
       className={`fixed top-0 left-0 w-full z-50 bg-black/20 backdrop-blur-sm border-b border-white/10 ${
         !isHome ? "sticky" : ""
@@ -431,6 +445,18 @@ const Navbar = ({
         </div>
       )}
     </nav>
+    {/* Global Logout Confirm Modal */}
+    <ConfirmModal
+      isOpen={isLogoutOpen}
+      title="Logout"
+      message="Are you sure you want to logout?"
+      onCancel={() => setIsLogoutOpen(false)}
+      onConfirm={() => {
+        setIsLogoutOpen(false);
+        doLogout();
+      }}
+    />
+    </>
   );
 };
 

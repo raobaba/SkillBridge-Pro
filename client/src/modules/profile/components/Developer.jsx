@@ -17,6 +17,25 @@ import {
   Brain,
   Briefcase,
   Clock,
+  BookOpen,
+  Trophy,
+  MessageSquare,
+  Eye,
+  Heart,
+  Share2,
+  Download,
+  Edit3,
+  Plus,
+  MapPin,
+  Mail,
+  Phone,
+  Globe,
+  Code,
+  Users,
+  BarChart3,
+  Lightbulb,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
@@ -31,6 +50,101 @@ import {
   InfoCard,
 } from "../../../components/Profile";
 
+// Enhanced data for Developer portfolio features
+const PORTFOLIO_PROJECTS = [
+  {
+    id: 1,
+    title: "E-commerce Platform",
+    description: "Full-stack e-commerce solution with React, Node.js, and MongoDB",
+    tech: ["React", "Node.js", "MongoDB", "Stripe"],
+    status: "Completed",
+    duration: "3 months",
+    github: "https://github.com/user/ecommerce",
+    live: "https://ecommerce-demo.com",
+    stars: 45,
+    forks: 12,
+    image: "/api/placeholder/400/200"
+  },
+  {
+    id: 2,
+    title: "Task Management App",
+    description: "Collaborative task management with real-time updates",
+    tech: ["Vue.js", "Express", "Socket.io", "PostgreSQL"],
+    status: "Completed",
+    duration: "2 months",
+    github: "https://github.com/user/taskapp",
+    live: "https://taskapp-demo.com",
+    stars: 32,
+    forks: 8,
+    image: "/api/placeholder/400/200"
+  },
+  {
+    id: 3,
+    title: "Weather Dashboard",
+    description: "Real-time weather tracking with data visualization",
+    tech: ["React", "D3.js", "OpenWeather API"],
+    status: "In Progress",
+    duration: "1 month",
+    github: "https://github.com/user/weather",
+    live: null,
+    stars: 18,
+    forks: 5,
+    image: "/api/placeholder/400/200"
+  }
+];
+
+const ENDORSEMENTS = [
+  {
+    id: 1,
+    endorser: "Sarah Johnson",
+    endorserTitle: "Senior Developer at TechCorp",
+    endorserAvatar: "/api/placeholder/40/40",
+    skill: "React",
+    message: "Excellent React developer with deep understanding of hooks and state management.",
+    rating: 5,
+    date: "2025-01-15"
+  },
+  {
+    id: 2,
+    endorser: "Mike Chen",
+    endorserTitle: "Project Manager at StartupXYZ",
+    endorserAvatar: "/api/placeholder/40/40",
+    skill: "Node.js",
+    message: "Outstanding backend development skills. Delivered complex APIs on time.",
+    rating: 5,
+    date: "2025-01-10"
+  },
+  {
+    id: 3,
+    endorser: "Alex Rodriguez",
+    endorserTitle: "CTO at InnovateLab",
+    endorserAvatar: "/api/placeholder/40/40",
+    skill: "JavaScript",
+    message: "Strong problem-solving abilities and clean code practices.",
+    rating: 4,
+    date: "2025-01-05"
+  }
+];
+
+const AI_INSIGHTS = {
+  skillGaps: [
+    { skill: "Docker", priority: "high", reason: "High demand in DevOps roles", marketDemand: 85 },
+    { skill: "GraphQL", priority: "medium", reason: "Growing popularity in API development", marketDemand: 72 },
+    { skill: "Machine Learning", priority: "low", reason: "Future opportunity in AI roles", marketDemand: 68 }
+  ],
+  careerSuggestions: [
+    { role: "Senior Full-Stack Developer", match: 92, reason: "Strong React and Node.js skills" },
+    { role: "Frontend Architect", match: 88, reason: "Excellent UI/UX implementation skills" },
+    { role: "DevOps Engineer", match: 65, reason: "Good foundation, needs Docker/Kubernetes" }
+  ],
+  marketTrends: [
+    { skill: "React", trend: "up", change: "+15%", demand: 95 },
+    { skill: "TypeScript", trend: "up", change: "+22%", demand: 88 },
+    { skill: "Node.js", trend: "up", change: "+8%", demand: 82 },
+    { skill: "Vue.js", trend: "stable", change: "+3%", demand: 75 }
+  ]
+};
+
 // Reusable components to eliminate code repetition
 const SectionCard = memo(({ icon, title, children, className = "" }) => (
   <div className={`bg-white/5 border border-white/10 rounded-xl p-6 ${className}`}>
@@ -38,6 +152,107 @@ const SectionCard = memo(({ icon, title, children, className = "" }) => (
       {icon} {title}
     </h2>
     {children}
+  </div>
+));
+
+const PortfolioProjectCard = memo(({ project }) => (
+  <div className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all duration-300">
+    <div className="flex items-start justify-between mb-3">
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-white mb-1">{project.title}</h3>
+        <p className="text-gray-300 text-sm mb-2">{project.description}</p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {project.tech.map((tech, index) => (
+            <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">
+              {tech}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 ml-4">
+        <div className="flex items-center gap-1">
+          <Star className="w-4 h-4 text-yellow-400" />
+          <span className="text-sm text-gray-300">{project.stars}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Users className="w-4 h-4 text-gray-400" />
+          <span className="text-sm text-gray-300">{project.forks}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4 text-sm text-gray-400">
+        <span>{project.duration}</span>
+        <Badge className={
+          project.status === "Completed" ? "bg-green-500/20 text-green-300" :
+          project.status === "In Progress" ? "bg-yellow-500/20 text-yellow-300" :
+          "bg-blue-500/20 text-blue-300"
+        }>
+          {project.status}
+        </Badge>
+      </div>
+      
+      <div className="flex items-center gap-2">
+        <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+          <Github className="w-4 h-4 text-gray-400" />
+        </button>
+        {project.live && (
+          <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+            <ExternalLink className="w-4 h-4 text-gray-400" />
+          </button>
+        )}
+        <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+          <Eye className="w-4 h-4 text-gray-400" />
+        </button>
+      </div>
+    </div>
+  </div>
+));
+
+const EndorsementCard = memo(({ endorsement }) => (
+  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+    <div className="flex items-start gap-3 mb-3">
+      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+        {endorsement.endorser.charAt(0)}
+      </div>
+      <div className="flex-1">
+        <h4 className="text-white font-medium">{endorsement.endorser}</h4>
+        <p className="text-gray-400 text-sm">{endorsement.endorserTitle}</p>
+      </div>
+      <div className="flex items-center gap-1">
+        {[...Array(endorsement.rating)].map((_, i) => (
+          <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+        ))}
+      </div>
+    </div>
+    
+    <div className="mb-3">
+      <Badge className="bg-blue-500/20 text-blue-300 mb-2">{endorsement.skill}</Badge>
+      <p className="text-gray-300 text-sm">{endorsement.message}</p>
+    </div>
+    
+    <div className="text-xs text-gray-400">{endorsement.date}</div>
+  </div>
+));
+
+const SkillGapCard = memo(({ skillGap }) => (
+  <div className="bg-white/5 border border-white/10 rounded-lg p-4">
+    <div className="flex items-center justify-between mb-2">
+      <h4 className="text-white font-medium">{skillGap.skill}</h4>
+      <Badge className={
+        skillGap.priority === "high" ? "bg-red-500/20 text-red-300" :
+        skillGap.priority === "medium" ? "bg-yellow-500/20 text-yellow-300" :
+        "bg-green-500/20 text-green-300"
+      }>
+        {skillGap.priority}
+      </Badge>
+    </div>
+    <p className="text-gray-300 text-sm mb-2">{skillGap.reason}</p>
+    <div className="flex items-center justify-between">
+      <span className="text-xs text-gray-400">Market Demand</span>
+      <span className="text-xs text-blue-400">{skillGap.marketDemand}%</span>
+    </div>
   </div>
 ));
 
