@@ -42,12 +42,14 @@ import {
   Minus,
   X
 } from "lucide-react";
+import ProjectManagementPanel from "./ProjectManagementPanel";
 
-const ProjectCard = ({ project }) => {
+const ProjectCard = ({ project, isOwner = false, onAction, onInvite }) => {
   const [expanded, setExpanded] = useState(false);
   const [favorited, setFavorited] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
+  const [showManagementPanel, setShowManagementPanel] = useState(false);
 
   const statusColors = {
     Active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -283,30 +285,71 @@ const ProjectCard = ({ project }) => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
-          <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
-            <Eye className="w-4 h-4" />
-            View Details
-          </button>
-          
-          <button className="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
-            <MessageSquare className="w-4 h-4" />
-            Contact
-          </button>
-          
-          <button
-            onClick={() => setFavorited(!favorited)}
-            className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
-              favorited 
-                ? "bg-pink-500/20 text-pink-400" 
-                : "bg-white/10 text-gray-400 hover:bg-white/20"
-            }`}
-          >
-            <Heart className={`w-5 h-5 ${favorited ? "fill-current" : ""}`} />
-          </button>
-          
-          <button className="p-3 rounded-xl bg-white/10 text-gray-400 hover:bg-white/20 transition-all duration-300 hover:scale-105">
-            <Share2 className="w-5 h-5" />
-          </button>
+          {isOwner ? (
+            <>
+              <button 
+                onClick={() => setShowManagementPanel(true)}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              >
+                <Settings className="w-4 h-4" />
+                Manage Project
+              </button>
+              
+              <button 
+                onClick={() => onInvite && onInvite(project.id)}
+                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              >
+                <Users className="w-4 h-4" />
+                Invite Developers
+              </button>
+              
+              <button 
+                onClick={() => onAction && onAction(project.id, 'boost')}
+                className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              >
+                <Zap className="w-4 h-4" />
+                Boost Visibility
+              </button>
+              
+              <button
+                onClick={() => onAction && onAction(project.id, project.status === 'Active' ? 'pause' : 'resume')}
+                className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
+                  project.status === 'Active'
+                    ? "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30"
+                    : "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                }`}
+              >
+                {project.status === 'Active' ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              </button>
+            </>
+          ) : (
+            <>
+              <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
+                <Eye className="w-4 h-4" />
+                View Details
+              </button>
+              
+              <button className="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
+                <MessageSquare className="w-4 h-4" />
+                Contact
+              </button>
+              
+              <button
+                onClick={() => setFavorited(!favorited)}
+                className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
+                  favorited 
+                    ? "bg-pink-500/20 text-pink-400" 
+                    : "bg-white/10 text-gray-400 hover:bg-white/20"
+                }`}
+              >
+                <Heart className={`w-5 h-5 ${favorited ? "fill-current" : ""}`} />
+              </button>
+              
+              <button className="p-3 rounded-xl bg-white/10 text-gray-400 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                <Share2 className="w-5 h-5" />
+              </button>
+            </>
+          )}
         </div>
 
         {/* Additional Info */}
@@ -332,14 +375,61 @@ const ProjectCard = ({ project }) => {
             </div>
           )}
           
-          {project?.featured && (
+          {project?.isFeatured && (
             <div className="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-xs font-semibold rounded-full text-white flex items-center gap-1">
               <Award className="w-3 h-3" />
               Featured
             </div>
           )}
+          
+          {isOwner && (
+            <div className="px-3 py-1 bg-gradient-to-r from-blue-400 to-indigo-500 text-xs font-semibold rounded-full text-white flex items-center gap-1">
+              <Settings className="w-3 h-3" />
+              Owner View
+            </div>
+          )}
         </div>
+        
+        {/* Owner-specific metrics */}
+        {isOwner && (
+          <div className="bg-white/5 rounded-xl p-4 border border-white/10 mt-4">
+            <h4 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-blue-400" />
+              Owner Metrics
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">{project?.applicantsCount || 0}</p>
+                <p className="text-gray-400 text-xs">Total Applicants</p>
+              </div>
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">{project?.rating || 0}</p>
+                <p className="text-gray-400 text-xs">Project Rating</p>
+              </div>
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">{progress}%</p>
+                <p className="text-gray-400 text-xs">Progress</p>
+              </div>
+              <div className="text-center">
+                <p className="text-white font-bold text-lg">{daysLeft}</p>
+                <p className="text-gray-400 text-xs">Days Left</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      
+      {/* Management Panel Modal */}
+      {showManagementPanel && (
+        <ProjectManagementPanel
+          project={project}
+          onClose={() => setShowManagementPanel(false)}
+          onSave={(updatedProject) => {
+            console.log('Project updated:', updatedProject);
+            setShowManagementPanel(false);
+          }}
+        />
+      )}
     </div>
   );
 };

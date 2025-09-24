@@ -266,6 +266,61 @@ const ApplicantsList = () => {
     averageRating: (applicants.reduce((sum, a) => sum + a.rating, 0) / applicants.length).toFixed(1)
   };
 
+  // Helpers to reduce repetition
+  const renderRatingStars = (rating, { showCount = true } = {}) => (
+    <div className="flex items-center gap-1">
+      {[...Array(5)].map((_, i) => (
+        <Star
+          key={i}
+          className={`w-4 h-4 ${i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-500"}`}
+        />
+      ))}
+      {showCount && (
+        <span className="text-gray-400 text-sm ml-1">({rating})</span>
+      )}
+    </div>
+  );
+
+  const renderStatusBadge = (status) => (
+    <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}>
+      {getStatusIcon(status)}
+      {status}
+    </span>
+  );
+
+  const headerCards = [
+    {
+      icon: Users,
+      iconColor: "from-blue-500 to-cyan-500",
+      value: stats.total,
+      label: "Total",
+    },
+    {
+      icon: Clock,
+      iconColor: "from-yellow-500 to-orange-500",
+      value: stats.applied,
+      label: "Applied",
+    },
+    {
+      icon: CheckCircle,
+      iconColor: "from-green-500 to-emerald-500",
+      value: stats.shortlisted,
+      label: "Shortlisted",
+    },
+    {
+      icon: Users,
+      iconColor: "from-purple-500 to-pink-500",
+      value: stats.interviewing,
+      label: "Interviewing",
+    },
+    {
+      icon: Star,
+      iconColor: "from-yellow-500 to-orange-500",
+      value: stats.averageRating,
+      label: "Avg Rating",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
@@ -304,65 +359,19 @@ const ApplicantsList = () => {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.total}</p>
-              <p className="text-sm text-gray-400">Total</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-              <Clock className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.applied}</p>
-              <p className="text-sm text-gray-400">Applied</p>
+        {headerCards.map((c, idx) => (
+          <div key={idx} className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 bg-gradient-to-r ${c.iconColor} rounded-lg`}>
+                <c.icon className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-white">{c.value}</p>
+                <p className="text-sm text-gray-400">{c.label}</p>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.shortlisted}</p>
-              <p className="text-sm text-gray-400">Shortlisted</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.interviewing}</p>
-              <p className="text-sm text-gray-400">Interviewing</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-              <Star className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-white">{stats.averageRating}</p>
-              <p className="text-sm text-gray-400">Avg Rating</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Enhanced Search and Filters */}
@@ -541,19 +550,7 @@ const ApplicantsList = () => {
                     </td>
                     
                     <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < app.rating
-                                ? "text-yellow-400 fill-yellow-400"
-                                : "text-gray-500"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-gray-400 text-sm ml-1">({app.rating})</span>
-                      </div>
+                      {renderRatingStars(app.rating)}
                     </td>
                     
                     <td className="px-6 py-4">
@@ -636,19 +633,7 @@ const ApplicantsList = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Rating</span>
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${
-                          i < app.rating
-                            ? "text-yellow-400 fill-yellow-400"
-                            : "text-gray-500"
-                        }`}
-                      />
-                    ))}
-                    <span className="text-gray-400 text-sm ml-1">({app.rating})</span>
-                  </div>
+                  {renderRatingStars(app.rating)}
                 </div>
                 
                 <div className="flex items-center justify-between">

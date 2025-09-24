@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import { Button, Badge, Input } from "../../../components";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Search, Download, Flag, FlagOff, ShieldCheck, CheckCircle, Ban, Trash2 } from "lucide-react";
+import { Search, Download, Flag, FlagOff, ShieldCheck, CheckCircle, Ban, Trash2, Eye, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 
 const AdminProjects = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all"); // all | active | closed | flagged | pending | approved | suspended
   const [sortBy, setSortBy] = useState("recent"); // recent | title | owner | status | disputes | flagged
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 6;
 
   const [projects, setProjects] = useState([
     { id: 1, title: "AI Resume Builder", owner: "Alice", status: "Pending Verification", disputes: 0, flagged: false },
@@ -110,9 +114,75 @@ const AdminProjects = () => {
     }
   })();
 
+  // Counts for header and tabs
+  const countAll = projects.length;
+  const countActive = projects.filter(p => p.status === 'Active').length;
+  const countClosed = projects.filter(p => p.status === 'Closed').length;
+  const countFlagged = projects.filter(p => p.flagged).length;
+  const countPending = projects.filter(p => p.status === 'Pending Verification').length;
+  const countApproved = projects.filter(p => p.status === 'Approved').length;
+  const countSuspended = projects.filter(p => p.status === 'Suspended').length;
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const paged = sorted.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const toggleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedIds(paged.map(p => p.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const bulkAction = (action) => {
+    if (selectedIds.length === 0) return;
+    const label = action.charAt(0).toUpperCase() + action.slice(1);
+    if (!window.confirm(`${label} ${selectedIds.length} selected project(s)?`)) return;
+    if (action === 'approve') setProjects(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, status: 'Approved' } : p));
+    if (action === 'suspend') setProjects(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, status: 'Suspended' } : p));
+    if (action === 'remove') setProjects(prev => prev.filter(p => !selectedIds.includes(p.id)));
+    if (action === 'flag') setProjects(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, flagged: true } : p));
+    if (action === 'unflag') setProjects(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, flagged: false } : p));
+    setSelectedIds([]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 px-6 py-8 space-y-6">
       <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Admin Project Oversight</h1>
+
+      {/* Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Total</p>
+          <p className="text-xl font-bold text-white">{countAll}</p>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Active</p>
+          <p className="text-xl font-bold text-white">{countActive}</p>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Closed</p>
+          <p className="text-xl font-bold text-white">{countClosed}</p>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Flagged</p>
+          <p className="text-xl font-bold text-white">{countFlagged}</p>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Pending</p>
+          <p className="text-xl font-bold text-white">{countPending}</p>
+        </div>
+        <div className="bg-black/20 border border-white/10 rounded-lg p-3">
+          <p className="text-xs text-gray-400">Suspended</p>
+          <p className="text-xl font-bold text-white">{countSuspended}</p>
+        </div>
+      </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex items-center gap-2 w-full md:w-auto">
@@ -146,16 +216,16 @@ const AdminProjects = () => {
         </div>
       </div>
 
-      {/* Tabs replaced with button group */}
+      {/* Tabs with counts */}
       <div className="flex flex-wrap gap-2">
         {[
-          { value: 'all', label: 'All' },
-          { value: 'active', label: 'Active' },
-          { value: 'closed', label: 'Closed' },
-          { value: 'flagged', label: 'Flagged' },
-          { value: 'pending', label: 'Pending' },
-          { value: 'approved', label: 'Approved' },
-          { value: 'suspended', label: 'Suspended' },
+          { value: 'all', label: `All (${countAll})` },
+          { value: 'active', label: `Active (${countActive})` },
+          { value: 'closed', label: `Closed (${countClosed})` },
+          { value: 'flagged', label: `Flagged (${countFlagged})` },
+          { value: 'pending', label: `Pending (${countPending})` },
+          { value: 'approved', label: `Approved (${countApproved})` },
+          { value: 'suspended', label: `Suspended (${countSuspended})` },
         ].map((t) => (
           <button
             key={t.value}
@@ -169,13 +239,32 @@ const AdminProjects = () => {
         ))}
       </div>
 
+      {/* Bulk actions */}
+      <div className="flex flex-wrap items-center gap-2 bg-white/5 border border-white/10 rounded-lg p-3">
+        <span className="text-xs text-gray-300">Selected: {selectedIds.length}</span>
+        <div className="flex gap-2">
+          <Button onClick={() => bulkAction('approve')} disabled={selectedIds.length === 0}><CheckCircle className="mr-2 h-4 w-4" />Approve</Button>
+          <Button variant="destructive" onClick={() => bulkAction('suspend')} disabled={selectedIds.length === 0}><Ban className="mr-2 h-4 w-4" />Suspend</Button>
+          <Button variant="destructive" onClick={() => bulkAction('remove')} disabled={selectedIds.length === 0}><Trash2 className="mr-2 h-4 w-4" />Remove</Button>
+          <Button variant="outline" onClick={() => bulkAction('flag')} disabled={selectedIds.length === 0}><Flag className="mr-2 h-4 w-4" />Flag</Button>
+          <Button variant="outline" onClick={() => bulkAction('unflag')} disabled={selectedIds.length === 0}><FlagOff className="mr-2 h-4 w-4" />Unflag</Button>
+        </div>
+      </div>
+
       {/* Project Monitoring */}
       <div className="space-y-4">
-        {sorted.map((project) => (
+        {paged.map((project) => (
           <div key={project.id} className="border border-white/10 rounded-lg p-4 bg-black/20 backdrop-blur-sm text-gray-200">
             <div className="space-y-2">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(project.id)}
+                    onChange={() => toggleSelectOne(project.id)}
+                    className="mt-1 w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+                  />
+                  <div>
                   <h2 className="text-lg font-semibold text-white">{project.title}</h2>
                   <p><strong>Owner:</strong> {project.owner}</p>
                   <div className="flex items-center gap-2">
@@ -185,8 +274,12 @@ const AdminProjects = () => {
                     {project.status === 'Suspended' && <Badge variant="outline">Suspended</Badge>}
                   </div>
                   <p><strong>Disputes:</strong> {project.disputes}</p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2 justify-end">
+                  <Button variant="outline" onClick={() => { setSelectedProject(project); setDetailOpen(true); }}>
+                    <Eye className="mr-2 h-4 w-4" /> Details
+                  </Button>
                   <Button variant="outline" onClick={() => handleToggleFlag(project.id)}>
                     {project.flagged ? <FlagOff className="mr-2 h-4 w-4" /> : <Flag className="mr-2 h-4 w-4" />} {project.flagged ? 'Unflag' : 'Flag'}
                   </Button>
@@ -213,6 +306,36 @@ const AdminProjects = () => {
         {sorted.length === 0 && (
           <p className="text-sm text-gray-500">No projects match your criteria.</p>
         )}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between gap-3 pt-2">
+        <div className="flex items-center gap-2 text-xs text-gray-300">
+          <input
+            type="checkbox"
+            checked={selectedIds.length === paged.length && paged.length > 0}
+            onChange={(e) => toggleSelectAll(e.target.checked)}
+            className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+          />
+          <span>Select page</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage(Math.max(1, currentPage - 1))}
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center gap-2"
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="w-4 h-4" /> Prev
+          </button>
+          <span className="text-gray-300 text-sm">Page {currentPage} of {totalPages}</span>
+          <button
+            onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center gap-2"
+            disabled={currentPage === totalPages}
+          >
+            Next <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Analytics Section */}
@@ -244,6 +367,43 @@ const AdminProjects = () => {
                 <Button variant="secondary" onClick={() => setDisputeOpen(false)}>Close</Button>
                 <Button onClick={() => { alert(`Dispute for project ${selectedProject.id} resolved.`); setDisputeOpen(false); }}>Resolve Dispute</Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Detail Modal */}
+      {detailOpen && selectedProject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg p-6 w-full max-w-lg shadow-lg text-gray-200">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold text-white">{selectedProject.title}</h3>
+                <p className="text-sm text-gray-400">Owner: {selectedProject.owner}</p>
+              </div>
+              <button className="bg-white/10 hover:bg-white/20 rounded-md px-3 py-1" onClick={() => setDetailOpen(false)}>Close</button>
+            </div>
+            <div className="space-y-2">
+              <p><strong>Status:</strong> {selectedProject.status}</p>
+              <p><strong>Flagged:</strong> {selectedProject.flagged ? 'Yes' : 'No'}</p>
+              <p><strong>Disputes:</strong> {selectedProject.disputes}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4 justify-end">
+              <Button variant="outline" onClick={() => { handleToggleFlag(selectedProject.id); }}>
+                {selectedProject.flagged ? <FlagOff className="mr-2 h-4 w-4" /> : <Flag className="mr-2 h-4 w-4" />} {selectedProject.flagged ? 'Unflag' : 'Flag'}
+              </Button>
+              <Button onClick={() => { handleVerify(selectedProject.id); }}>
+                <ShieldCheck className="mr-2 h-4 w-4" /> Verify
+              </Button>
+              <Button onClick={() => { handleApprove(selectedProject.id); }}>
+                <CheckCircle className="mr-2 h-4 w-4" /> Approve
+              </Button>
+              <Button variant="destructive" onClick={() => { handleSuspend(selectedProject.id); }}>
+                <Ban className="mr-2 h-4 w-4" /> Suspend
+              </Button>
+              <Button variant="destructive" onClick={() => { handleRemove(selectedProject.id); setDetailOpen(false); }}>
+                <Trash2 className="mr-2 h-4 w-4" /> Remove
+              </Button>
             </div>
           </div>
         </div>

@@ -46,6 +46,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Input, Button } from "../../../components";
+import AIEnhancedDescription from "./AIEnhancedDescription";
 
 const ProjectForm = () => {
   const [formData, setFormData] = useState({
@@ -219,6 +220,10 @@ const ProjectForm = () => {
     }
   };
 
+  const handleAIDescriptionGenerated = (description) => {
+    setFormData({ ...formData, description });
+  };
+
   return (
     <div className="space-y-6">
       {/* Enhanced Header */}
@@ -283,21 +288,24 @@ const ProjectForm = () => {
                   </div>
 
                   <div>
-                    <Input
-                      label="Description"
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-gray-300">Description</label>
+                      <AIEnhancedDescription onDescriptionGenerated={handleAIDescriptionGenerated} />
+                    </div>
+                    <textarea
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
                       placeholder="Describe the project in detail"
-                      textarea
                       rows={4}
                       maxLength={1000}
-                      error={errors.description}
+                      className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                     <p className="text-gray-400 text-xs mt-1">
                       {formData.description.length}/1000 characters
                     </p>
+                    {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

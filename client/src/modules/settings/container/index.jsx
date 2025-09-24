@@ -1,20 +1,10 @@
-import SettingsPage from "../components/SettingPage";
 import React, { useState } from "react";
 import Navbar from "../../../components/header";
 import { Footer } from "../../../components";
-import { Badge, Button } from "../../../components";
 import NotificationSettings from "../components/NotificationSettings";
 import PrivacySettings from "../components/PrivacySettings";
 import SubsBilling from "../components/SubsBilling";
-import {
-  User,
-  Lock,
-  Bell,
-  Shield,
-  CreditCard,
-  Github,
-  Calendar,
-} from "lucide-react";
+import { Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import ProfileSettings from "../components/ProfileSettings";
 import AccountSettings from "../components/AccountSettings";
@@ -25,6 +15,7 @@ import DangerZone from "../components/DangerZone";
 
 const Settings = () => {
   const user = useSelector((state) => state.user?.user) || {};
+  const role = (user.role || '').toLowerCase() || 'developer';
 
   // Initialize state with user data or default/static values
   const [formData, setFormData] = useState({
@@ -49,6 +40,41 @@ const Settings = () => {
     googleCalendar: true,
   });
 
+  // Role-based section visibility
+  const roleSections = {
+    developer: [
+      'profile',
+      'account',
+      'notifications',
+      'privacy',
+      'billing',
+      'integrations',
+      'portfolio',
+      'skills',
+      'danger',
+    ],
+    'project-owner': [
+      'profile',
+      'account',
+      'notifications',
+      'privacy',
+      'billing',
+      'integrations',
+      'portfolio',
+      'danger',
+    ],
+    admin: [
+      'profile',
+      'account',
+      'notifications',
+      'privacy',
+      'integrations',
+      'danger',
+    ],
+  };
+
+  const visible = (key) => (roleSections[role] || roleSections.developer).includes(key);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -70,30 +96,69 @@ const Settings = () => {
       <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
         <Navbar data={user} isSearchBar={false} />
         <div className='max-w-6xl mx-auto px-4 py-8'>
-          <h1 className='text-4xl font-bold text-white drop-shadow-lg mb-6'>
-            SettingsPage
-          </h1>
+          <div className='flex items-center gap-3 mb-2'>
+            <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
+              <SettingsIcon className='w-6 h-6 text-white' />
+            </div>
+            <h1 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+              Settings
+            </h1>
+          </div>
+          <p className='text-gray-300 text-sm mb-6'>Manage your profile, privacy, notifications, billing and integrations.</p>
+
+          {/* Quick Navigation */}
+          <div className='mb-6 overflow-x-auto'>
+            <div className='flex gap-2 min-w-full'>
+              {[
+                { key: 'profile', href: '#profile', label: 'Profile' },
+                { key: 'account', href: '#account', label: 'Account' },
+                { key: 'notifications', href: '#notifications', label: 'Notifications' },
+                { key: 'privacy', href: '#privacy', label: 'Privacy' },
+                { key: 'billing', href: '#billing', label: 'Billing' },
+                { key: 'integrations', href: '#integrations', label: 'Integrations' },
+                { key: 'portfolio', href: '#portfolio', label: 'Portfolio' },
+                { key: 'skills', href: '#skills', label: 'Skills' },
+                { key: 'danger', href: '#danger', label: 'Danger Zone' },
+              ]
+                .filter((item) => visible(item.key))
+                .map((item) => (
+                  <a key={item.href} href={item.href} className='px-3 py-1 rounded-full text-xs bg-white/10 text-gray-300 border border-white/20 hover:bg-white/20 transition-colors duration-200'>
+                    {item.label}
+                  </a>
+                ))}
+            </div>
+          </div>
 
           {/* Two-column layout */}
           <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
             {/* Left Column */}
             <div className='space-y-6'>
               {/* Profile Settings */}
-              <ProfileSettings
+              <section id='profile'>
+                <ProfileSettings
                 formData={formData}
                 handleInputChange={handleInputChange}
                 handleSaveProfile={handleSaveProfile}
-              />
+                />
+              </section>
 
               {/* Account Settings */}
-              <AccountSettings
-                formData={formData}
-                handleInputChange={handleInputChange}
-                handleSaveProfile={handleSaveProfile}
-              />
+              {visible('account') && (
+                <section id='account'>
+                  <AccountSettings
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                  handleSaveProfile={handleSaveProfile}
+                  />
+                </section>
+              )}
 
               {/* Notification Preferences */}
-              <NotificationSettings />
+              {visible('notifications') && (
+                <section id='notifications'>
+                  <NotificationSettings />
+                </section>
+              )}
 
 
             </div>
@@ -101,23 +166,47 @@ const Settings = () => {
             {/* Right Column */}
             <div className='space-y-6'>
               {/* Privacy Settings */}
-              <PrivacySettings />
+              {visible('privacy') && (
+                <section id='privacy'>
+                  <PrivacySettings />
+                </section>
+              )}
 
               {/* Subscription / Billing */}
-              <SubsBilling />
+              {visible('billing') && (
+                <section id='billing'>
+                  <SubsBilling />
+                </section>
+              )}
 
               {/* Integrations */}
-              <Integrations
-                integrations={integrations}
-                toggleIntegration={toggleIntegration}
-              />
+              {visible('integrations') && (
+                <section id='integrations'>
+                  <Integrations
+                  integrations={integrations}
+                  toggleIntegration={toggleIntegration}
+                  />
+                </section>
+              )}
 
               {/* Portfolio & Resume */}
-              <PortfolioResume user={user} />
+              {visible('portfolio') && (
+                <section id='portfolio'>
+                  <PortfolioResume user={user} />
+                </section>
+              )}
               {/* Skills & Experience */}
-              <SkillsExperience user={user} />
+              {visible('skills') && (
+                <section id='skills'>
+                  <SkillsExperience user={user} />
+                </section>
+              )}
               {/* Danger Zone */}
-              <DangerZone />
+              {visible('danger') && (
+                <section id='danger'>
+                  <DangerZone />
+                </section>
+              )}
             </div>
           </div>
         </div>

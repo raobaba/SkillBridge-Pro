@@ -32,12 +32,16 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  HelpCircle
+  HelpCircle,
+  LayoutGrid,
+  List,
+  Loader
 } from "lucide-react";
 import { Button, Input } from "../../../components";
 import ProjectCard from "./ProjectCard";
 
 const DeveloperProjects = ({ user }) => {
+  const [activeTab, setActiveTab] = useState("discover"); // discover | applications
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -48,8 +52,12 @@ const DeveloperProjects = ({ user }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [appliedProjects, setAppliedProjects] = useState([]);
+  const [applicationStatusByProjectId, setApplicationStatusByProjectId] = useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [savedProjects, setSavedProjects] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [internalSearch, setInternalSearch] = useState("");
 
   // Mock data - in real app, this would come from API
   const [projects, setProjects] = useState([
@@ -194,6 +202,10 @@ const DeveloperProjects = ({ user }) => {
 
   const [filteredProjects, setFilteredProjects] = useState(projects);
 
+  const recommendedProjects = projects
+    .filter(p => p.isFeatured || (p.matchScore || 0) >= 90)
+    .slice(0, 6);
+
   const skillOptions = [
     "React", "Node.js", "Python", "JavaScript", "TypeScript", "Vue.js", "Angular",
     "Express", "Django", "Flask", "MongoDB", "PostgreSQL", "MySQL", "Redis",
@@ -236,6 +248,18 @@ const DeveloperProjects = ({ user }) => {
   useEffect(() => {
     filterProjects();
   }, [searchTerm, selectedSkills, selectedStatus, selectedPriority, selectedLocation, sortBy]);
+
+  // Debounce search input for better UX
+  useEffect(() => {
+    const t = setTimeout(() => setSearchTerm(internalSearch), 300);
+    return () => clearTimeout(t);
+  }, [internalSearch]);
+
+  // Simulate initial load for skeleton UI
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 600);
+    return () => clearTimeout(t);
+  }, []);
 
   const filterProjects = () => {
     let filtered = projects.filter(project => {
@@ -285,10 +309,34 @@ const DeveloperProjects = ({ user }) => {
   };
 
   const handleApplyToProject = (projectId) => {
-    setAppliedProjects(prev => [...prev, projectId]);
+    if (!appliedProjects.includes(projectId)) {
+      setAppliedProjects(prev => [...prev, projectId]);
+    }
+    setApplicationStatusByProjectId(prev => ({ ...prev, [projectId]: "Applied" }));
     // In real app, this would make an API call
     console.log(`Applied to project ${projectId}`);
   };
+
+  const handleWithdrawApplication = (projectId) => {
+    setAppliedProjects(prev => prev.filter(id => id !== projectId));
+    setApplicationStatusByProjectId(prev => {
+      const next = { ...prev };
+      delete next[projectId];
+      return next;
+    });
+  };
+
+  const handleOpenDetails = (project) => {
+    setSelectedProject(project);
+    setShowDetailsModal(true);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetailsModal(false);
+    setSelectedProject(null);
+  };
+
+  const canJoinGroupChat = (projectId) => applicationStatusByProjectId[projectId] === "Accepted";
 
   const handleSaveProject = (projectId) => {
     setSavedProjects(prev => 
@@ -335,10 +383,10 @@ const DeveloperProjects = ({ user }) => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Discover Projects
+                  {activeTab === "discover" ? "Discover Projects" : "Your Applications"}
                 </h1>
                 <p className="text-gray-300 text-sm">
-                  Find and apply to projects that match your skills and interests
+                  {activeTab === "discover" ? "Find and apply to projects that match your skills and interests" : "Track your application statuses and next steps"}
                 </p>
               </div>
             </div>
@@ -349,6 +397,26 @@ const DeveloperProjects = ({ user }) => {
                 <span className="text-sm text-gray-300">
                   {stats.matches} matches found
                 </span>
+              </div>
+              <div className="bg-white/10 rounded-xl p-1">
+                <div className="grid grid-cols-2 gap-1">
+                  <button
+                    onClick={() => setActiveTab("discover")}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                      activeTab === "discover" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
+                    }`}
+                  >
+                    Discover
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("applications")}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                      activeTab === "applications" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
+                    }`}
+                  >
+                    Applications ({appliedProjects.length})
+                  </button>
+                </div>
               </div>
               <button
                 onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
@@ -424,20 +492,21 @@ const DeveloperProjects = ({ user }) => {
         </div>
 
         {/* Search and Filters */}
+        {activeTab === "discover" && (
         <div className="bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1 relative">
+            <div className="flex flex-col lg:flex-row gap-4 sticky top-4 z-20">
+              <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search projects by title, description, company, or role..."
                 className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                  value={internalSearch}
+                  onChange={(e) => setInternalSearch(e.target.value)}
               />
             </div>
             
-            <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
@@ -457,6 +526,23 @@ const DeveloperProjects = ({ user }) => {
                 <Filter className="w-4 h-4" />
                 Filters
               </button>
+
+                <div className="hidden md:flex bg-white/10 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setViewMode("grid")}
+                    className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "grid" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
+                    title="Grid view"
+                  >
+                    <LayoutGrid className="w-4 h-4" /> Grid
+                  </button>
+                  <button
+                    onClick={() => setViewMode("list")}
+                    className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "list" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
+                    title="List view"
+                  >
+                    <List className="w-4 h-4" /> List
+                  </button>
+                </div>
             </div>
           </div>
 
@@ -536,134 +622,380 @@ const DeveloperProjects = ({ user }) => {
             </div>
           )}
         </div>
+        )}
 
-        {/* Projects Grid/List */}
-        {viewMode === "grid" ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProjects.map((project) => (
-              <div key={project.id} className="relative">
-                <ProjectCard 
-                  project={project} 
-                  userRole="developer"
-                  onApply={() => handleApplyToProject(project.id)}
-                  onSave={() => handleSaveProject(project.id)}
-                  onToggleFavorite={() => handleToggleFavorite(project.id)}
-                  isApplied={appliedProjects.includes(project.id)}
-                  isSaved={savedProjects.includes(project.id)}
-                  isFavorited={favorites.includes(project.id)}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredProjects.map((project) => (
-              <div key={project.id} className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/5 transition-all duration-300">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white">{project.title}</h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        project.status === "Active" ? "bg-green-500/20 text-green-400" :
-                        project.status === "Upcoming" ? "bg-yellow-500/20 text-yellow-400" :
-                        "bg-gray-500/20 text-gray-400"
-                      }`}>
-                        {project.status}
-                      </span>
-                      {project.isFeatured && (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400">
-                          Featured
-                        </span>
-                      )}
+        {/* Recommended Projects */}
+        {activeTab === "discover" && recommendedProjects.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-xl font-semibold text-white">Recommended for you</h2>
+            <div className="overflow-x-auto">
+              <div className="flex gap-4 min-w-full snap-x snap-mandatory pb-2">
+                {recommendedProjects.map(project => (
+                  <div key={project.id} className="min-w-[280px] bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300 relative snap-start">
+                    {project.isFeatured && (
+                      <span className="absolute top-3 right-3 px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Featured</span>
+                    )}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                        <Briefcase className="w-4 h-4 text-white" />
+                      </div>
+                      <h3 className="text-white font-semibold truncate">{project.title}</h3>
                     </div>
-                    
-                    <p className="text-gray-300 mb-3">{project.description}</p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {project.tags.slice(0, 4).map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                      {project.tags.length > 4 && (
-                        <span className="px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10">
-                          +{project.tags.length - 4}
-                        </span>
-                      )}
+                    <p className="text-gray-300 text-sm line-clamp-3 mb-3">{project.description}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span className="flex items-center gap-1"><Users className="w-3 h-3" />{project.applicantsCount}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
+                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
                     </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <span className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />
-                        {project.budget}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        {project.location}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        {project.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        {project.applicantsCount} applicants
-                      </span>
+                    <div className="flex gap-2 mt-3">
+                      <button
+                        onClick={() => handleOpenDetails(project)}
+                        className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleApplyToProject(project.id)}
+                        disabled={appliedProjects.includes(project.id)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                          appliedProjects.includes(project.id)
+                            ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                        }`}
+                      >
+                        {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
+                      </button>
                     </div>
                   </div>
-                  
-                  <div className="flex flex-col gap-2 ml-4">
-                    <button
-                      onClick={() => handleApplyToProject(project.id)}
-                      disabled={appliedProjects.includes(project.id)}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                        appliedProjects.includes(project.id)
-                          ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                          : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105"
-                      }`}
-                    >
-                      {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
-                    </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Projects Grid/List or Applications */}
+        {activeTab === "discover" ? (
+          viewMode === "grid" ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {loading ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-pulse">
+                    <div className="h-4 w-24 bg-white/10 rounded mb-4" />
+                    <div className="h-5 w-3/4 bg-white/10 rounded mb-2" />
+                    <div className="h-5 w-2/3 bg-white/10 rounded mb-4" />
+                    <div className="h-2 w-full bg-white/10 rounded mb-2" />
+                    <div className="h-2 w-5/6 bg-white/10 rounded mb-2" />
+                    <div className="h-2 w-2/3 bg-white/10 rounded" />
+                  </div>
+                ))
+              ) : (
+                filteredProjects.map((project) => (
+                  <div key={project.id} className="relative h-full">
+                    {/* Urgent badge only (Rewards moved into header chips) */}
+                    {project.isUrgent && (
+                      <div className="absolute top-3 right-3 z-10 px-2 py-1 text-[10px] rounded-full bg-red-500/20 text-red-300 border border-red-500/30">
+                        Urgent
+                      </div>
+                    )}
+
+                    {/* Compact Card */}
+                    <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col">
+                      {/* Header */}
+                      <div className="p-5 border-b border-white/10">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0">
+                              <Briefcase className="w-4 h-4 text-white" />
+                            </div>
+                            <div className="min-w-0">
+                              <h3 className="text-white font-semibold truncate">{project.title}</h3>
+                              <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                  project.status === "Active" ? "bg-green-500/20 text-green-300" :
+                                  project.status === "Upcoming" ? "bg-yellow-500/20 text-yellow-300" :
+                                  "bg-gray-500/20 text-gray-300"
+                                }`}>
+                                  {project.status}
+                                </span>
+                                {project.isFeatured && (
+                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300">
+                                    Featured
+                                  </span>
+                                )}
+                                {project.benefits && (
+                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-300">
+                                    Rewards
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Body minimal info */}
+                      <div className="p-5 flex-1 flex flex-col gap-3">
+                        {/* Tags (up to 3) */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {project.tags.slice(0, 3).map((tag, idx) => (
+                            <span key={idx} className="px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500">
+                              {tag}
+                            </span>
+                          ))}
+                          {project.tags.length > 3 && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10">
+                              +{project.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Meta Row (2 items only for compactness) */}
+                        <div className="flex items-center justify-between text-xs text-gray-400">
+                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
+                        </div>
+                      </div>
+
+                      {/* Footer actions pinned */}
+                      <div className="p-5 pt-0 mt-auto">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleOpenDetails(project)}
+                            className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                          >
+                            View Details
+                          </button>
+                          <button
+                            onClick={() => handleApplyToProject(project.id)}
+                            disabled={appliedProjects.includes(project.id)}
+                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                              appliedProjects.includes(project.id)
+                                ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                            }`}
+                          >
+                            {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredProjects.map((project) => (
+                <div key={project.id} className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/5 transition-all duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-white">{project.title}</h3>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                          project.status === "Active" ? "bg-green-500/20 text-green-400" :
+                          project.status === "Upcoming" ? "bg-yellow-500/20 text-yellow-400" :
+                          "bg-gray-500/20 text-gray-400"
+                        }`}>
+                          {project.status}
+                        </span>
+                        {project.isFeatured && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400">
+                            Featured
+                          </span>
+                        )}
+                        {project.benefits && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400">
+                            Rewards
+                          </span>
+                        )}
+                      </div>
+                      
+                      <p className="text-gray-300 mb-3">{project.description}</p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {project.tags.slice(0, 4).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 4 && (
+                          <span className="px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10">
+                            +{project.tags.length - 4}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-4 h-4" />
+                          {project.budget}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />
+                          {project.location}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {project.duration}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          {project.applicantsCount} applicants
+                        </span>
+                      </div>
+                      {project.benefits && (
+                        <p className="text-xs text-green-300 mt-2">Benefits: {project.benefits}</p>
+                      )}
+                    </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 ml-4">
                       <button
-                        onClick={() => handleSaveProject(project.id)}
-                        className={`p-2 rounded-lg transition-colors duration-300 ${
-                          savedProjects.includes(project.id)
-                            ? "bg-yellow-500/20 text-yellow-400"
-                            : "bg-white/10 text-gray-400 hover:bg-white/20"
+                        onClick={() => handleOpenDetails(project)}
+                        className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white"
+                      >
+                        View Details
+                      </button>
+                      <button
+                        onClick={() => handleApplyToProject(project.id)}
+                        disabled={appliedProjects.includes(project.id)}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                          appliedProjects.includes(project.id)
+                            ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                            : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105"
                         }`}
                       >
-                        <Bookmark className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`} />
+                        {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
                       </button>
                       
-                      <button
-                        onClick={() => handleToggleFavorite(project.id)}
-                        className={`p-2 rounded-lg transition-colors duration-300 ${
-                          favorites.includes(project.id)
-                            ? "bg-pink-500/20 text-pink-400"
-                            : "bg-white/10 text-gray-400 hover:bg-white/20"
-                        }`}
-                      >
-                        <Heart className={`w-4 h-4 ${favorites.includes(project.id) ? "fill-current" : ""}`} />
-                      </button>
-                      
-                      <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
-                        <Share2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveProject(project.id)}
+                          className={`p-2 rounded-lg transition-colors duration-300 ${
+                            savedProjects.includes(project.id)
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-white/10 text-gray-400 hover:bg-white/20"
+                          }`}
+                        >
+                          <Bookmark className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`} />
+                        </button>
+                        
+                        <button
+                          onClick={() => handleToggleFavorite(project.id)}
+                          className={`p-2 rounded-lg transition-colors duration-300 ${
+                            favorites.includes(project.id)
+                              ? "bg-pink-500/20 text-pink-400"
+                              : "bg-white/10 text-gray-400 hover:bg-white/20"
+                          }`}
+                        >
+                          <Heart className={`w-4 h-4 ${favorites.includes(project.id) ? "fill-current" : ""}`} />
+                        </button>
+                        
+                        <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )
+        ) : (
+          // Applications tab
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-white/5">
+                  <tr className="text-left text-gray-400 uppercase text-xs tracking-wider">
+                    <th className="px-6 py-4">Project</th>
+                    <th className="px-6 py-4">Company</th>
+                    <th className="px-6 py-4">Applied</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {appliedProjects.map((projectId) => {
+                    const project = projects.find(p => p.id === projectId);
+                    if (!project) return null;
+                    const status = applicationStatusByProjectId[projectId] || "Applied";
+                    const statusColors = {
+                      Applied: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                      Shortlisted: "bg-green-500/20 text-green-400 border-green-500/30",
+                      Interviewing: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+                      Accepted: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+                      Rejected: "bg-red-500/20 text-red-400 border-red-500/30"
+                    };
+                    return (
+                      <tr key={projectId} className="hover:bg-white/5 transition-colors duration-200">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                              <Briefcase className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">{project.title}</p>
+                              <p className="text-gray-400 text-xs">{project.roleNeeded}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-white">{project.company}</td>
+                        <td className="px-6 py-4 text-gray-300">Recently</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}>
+                            {status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenDetails(project)}
+                              className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                            >
+                              View
+                            </button>
+                            {canJoinGroupChat(projectId) ? (
+                              <button
+                                onClick={() => console.log("Joining group chat for", projectId)}
+                                className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300"
+                              >
+                                Join Group Chat
+                              </button>
+                            ) : (
+                              <button
+                                disabled
+                                className="p-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed"
+                              >
+                                Group Chat Locked
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleWithdrawApplication(projectId)}
+                              className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300"
+                            >
+                              Withdraw
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {appliedProjects.length === 0 && (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-12 text-center text-gray-400">No applications yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
         {/* No projects found */}
-        {filteredProjects.length === 0 && (
+        {activeTab === "discover" && filteredProjects.length === 0 && (
           <div className="text-center py-12">
             <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-400 text-lg">No projects found</p>
@@ -672,6 +1004,77 @@ const DeveloperProjects = ({ user }) => {
                 ? "Try adjusting your search terms or filters"
                 : "No projects are currently available"}
             </p>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedProject && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                    <Briefcase className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold text-white">{selectedProject.title}</h3>
+                    <p className="text-gray-400 text-sm">{selectedProject.company} • {selectedProject.location}</p>
+                  </div>
+                </div>
+                <button onClick={handleCloseDetails} className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                  Close
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Budget</p>
+                    <p className="text-white font-semibold">{selectedProject.budget}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Duration</p>
+                    <p className="text-white font-semibold">{selectedProject.duration}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Applicants</p>
+                    <p className="text-white font-semibold">{selectedProject.applicantsCount}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">About the project</h4>
+                  <p className="text-gray-300 leading-relaxed">{selectedProject.description}</p>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.tags.map((tag, idx) => (
+                      <span key={idx} className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                {selectedProject.benefits && (
+                  <div>
+                    <h4 className="text-white font-semibold mb-2">Rewards & Benefits</h4>
+                    <p className="text-green-300 text-sm">{selectedProject.benefits}</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button onClick={handleCloseDetails} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300">Close</button>
+                  <button
+                    onClick={() => handleApplyToProject(selectedProject.id)}
+                    disabled={appliedProjects.includes(selectedProject.id)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      appliedProjects.includes(selectedProject.id)
+                        ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                    }`}
+                  >
+                    {appliedProjects.includes(selectedProject.id) ? "Applied" : "Apply Now"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

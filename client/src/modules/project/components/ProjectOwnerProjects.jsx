@@ -1,477 +1,706 @@
-import React, { useState } from "react";
-import { Button, Input, Badge } from "../../../components";
-import { Plus, Edit, Eye, UserPlus, Star, TrendingUp, XCircle, CheckCircle, XOctagon, Search, Download, Sparkles } from "lucide-react";
+import React, { useState } from 'react'
+import ProjectForm from './ProjectForm'
+import ApplicantsList from './ApplicantsList'
+import ProjectCard from './ProjectCard'
+import ProjectAnalytics from './ProjectAnalytics'
+import ProjectManagementPanel from './ProjectManagementPanel'
+import {
+  BarChart3,
+  TrendingUp,
+  Users,
+  DollarSign,
+  Calendar,
+  Clock,
+  Target,
+  Zap,
+  Award,
+  Activity,
+  Bell,
+  Plus,
+  Settings,
+  Eye,
+  Edit,
+  Trash2,
+  Play,
+  Pause,
+  CheckCircle,
+  AlertCircle,
+  Star,
+  MessageSquare,
+  Share2,
+  Download,
+  Filter,
+  Search,
+  MoreVertical,
+  Sparkles,
+  Lightbulb,
+  Briefcase
+} from 'lucide-react'
 
 const ProjectOwnerProjects = () => {
-  const [projects, setProjects] = useState([
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [selectedProject, setSelectedProject] = useState(null)
+  const [showProjectModal, setShowProjectModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [notifications, setNotifications] = useState([
     {
       id: 1,
-      title: "AI Career Assistant Platform",
-      description: "An AI-powered career guidance and job recommendation platform.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 101, name: "Ravi Sharma", skills: "React, Node.js", status: "Pending" },
-        { id: 102, name: "Anjali Gupta", skills: "Python, ML", status: "Pending" }
-      ]
+      type: 'new_applicant',
+      message: '3 new applicants for Talent Matching Engine Revamp',
+      timestamp: '2 hours ago',
+      read: false
     },
     {
       id: 2,
-      title: "DeFi Portfolio Tracker",
-      description: "Track multi-chain assets and yield strategies across chains.",
-      status: "Active",
-      premium: true,
-      applicants: [
-        { id: 201, name: "Sanjay Kumar", skills: "Next.js, Rust", status: "Shortlisted" }
-      ]
-    },
-    {
-      id: 3,
-      title: "Open Health Chatbot",
-      description: "RAG over medical corpus with safe responses.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 301, name: "Priya Verma", skills: "Python, FastAPI", status: "Pending" },
-        { id: 302, name: "Karan Mehta", skills: "NLP, RAG", status: "Pending" }
-      ]
-    },
-    {
-      id: 4,
-      title: "Remote Team Dashboard",
-      description: "Realtime productivity insights for distributed teams.",
-      status: "Closed",
-      premium: false,
-      applicants: []
-    },
-    {
-      id: 5,
-      title: "AI Resume Enhancer",
-      description: "Rewrite resumes with role-tailored suggestions.",
-      status: "Active",
-      premium: true,
-      applicants: [
-        { id: 501, name: "Nisha Patel", skills: "React, Tailwind", status: "Shortlisted" }
-      ]
-    },
-    {
-      id: 6,
-      title: "Marketplace Analytics",
-      description: "Seller performance and trend analytics.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 601, name: "Rohit Das", skills: "Node, PostgreSQL", status: "Pending" }
-      ]
-    },
-    {
-      id: 7,
-      title: "Content Moderation AI",
-      description: "Detect policy-violating content using ML.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 701, name: "Isha Kapoor", skills: "Python, CNN", status: "Pending" }
-      ]
-    },
-    {
-      id: 8,
-      title: "Gamified Learning App",
-      description: "Quests, badges, and leaderboards for upskilling.",
-      status: "Closed",
-      premium: true,
-      applicants: []
-    },
-    {
-      id: 9,
-      title: "Realtime Chat Infra",
-      description: "Scalable WebSocket-backed chat for teams.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 901, name: "Veer Singh", skills: "WebSocket, Redis", status: "Rejected" }
-      ]
-    },
-    {
-      id: 10,
-      title: "Portfolio Sync Tool",
-      description: "Auto-sync GitHub repos into live portfolio.",
-      status: "Active",
-      premium: false,
-      applicants: [
-        { id: 1001, name: "Aarti Joshi", skills: "GitHub API, React", status: "Pending" },
-        { id: 1002, name: "Yash Jain", skills: "Node, OAuth", status: "Pending" }
-      ]
+      type: 'project_deadline',
+      message: 'Project Collaboration Hub deadline approaching',
+      timestamp: '1 day ago',
+      read: false
     }
-  ]);
+  ])
 
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newProject, setNewProject] = useState({ title: "", description: "" });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all"); // all | active | closed | premium
-  const [sortBy, setSortBy] = useState("recent"); // recent | title | status | applicants | premium
+  // Mock owned projects; replace with API data when ready
+  const [ownedProjects, setOwnedProjects] = useState([
+    {
+      id: 101,
+      title: 'Talent Matching Engine Revamp',
+      status: 'Active',
+      priority: 'High',
+      description:
+        'Refactor matching algorithms and improve scoring explainability for stakeholders.',
+      startDate: '2025-08-01',
+      deadline: '2025-11-15',
+      roleNeeded: 'Full Stack Developer',
+      applicantsCount: 18,
+      newApplicants: 3,
+      activity: '2 updates this week',
+      tags: ['Node.js', 'React', 'PostgreSQL', 'AWS'],
+      rating: 4.5,
+      budget: '$70,000 - $100,000',
+      location: 'Remote',
+      duration: '4-6 months',
+      experience: 'Senior Level',
+      category: 'AI/ML',
+      isRemote: true,
+      isUrgent: true,
+      isFeatured: true,
+      company: 'SkillBridge Pro',
+      website: 'https://skillbridge.pro',
+      matchScore: 96,
+    },
+    {
+      id: 102,
+      title: 'Project Collaboration Hub',
+      status: 'Upcoming',
+      priority: 'Medium',
+      description:
+        'Create a unified collaboration hub with tasks, chat, and docs integrations.',
+      startDate: '2025-10-01',
+      deadline: '2026-02-01',
+      roleNeeded: 'Frontend Developer',
+      applicantsCount: 7,
+      newApplicants: 1,
+      activity: 'Planning in progress',
+      tags: ['React', 'TailwindCSS', 'WebSockets'],
+      rating: 4.2,
+      budget: '$40,000 - $70,000',
+      location: 'Remote',
+      duration: '3-5 months',
+      experience: 'Mid Level',
+      category: 'Web Development',
+      isRemote: true,
+      isUrgent: false,
+      isFeatured: false,
+      company: 'SkillBridge Pro',
+      website: 'https://skillbridge.pro',
+      matchScore: 82,
+    },
+  ])
 
-  // Invite developer dialog state
-  const [inviteProjectId, setInviteProjectId] = useState(null);
-  const [inviteEmail, setInviteEmail] = useState("");
+  // Dashboard analytics data
+  const dashboardStats = {
+    totalProjects: ownedProjects.length,
+    activeProjects: ownedProjects.filter(p => p.status === 'Active').length,
+    totalApplicants: ownedProjects.reduce((sum, p) => sum + p.applicantsCount, 0),
+    newApplicants: ownedProjects.reduce((sum, p) => sum + p.newApplicants, 0),
+    avgRating: (ownedProjects.reduce((sum, p) => sum + p.rating, 0) / ownedProjects.length).toFixed(1),
+    totalBudget: '$110,000 - $170,000',
+    completionRate: 75,
+    responseTime: '2.3 hours'
+  }
 
-  const selectedProject = projects.find((p) => p.id === selectedProjectId) || null;
+  const handleProjectAction = (projectId, action) => {
+    const updatedProjects = ownedProjects.map(project => {
+      if (project.id === projectId) {
+        switch (action) {
+          case 'pause':
+            return { ...project, status: 'Paused' }
+          case 'resume':
+            return { ...project, status: 'Active' }
+          case 'close':
+            return { ...project, status: 'Completed' }
+          case 'boost':
+            return { ...project, isFeatured: true }
+          default:
+            return project
+        }
+      }
+      return project
+    })
+    setOwnedProjects(updatedProjects)
+  }
 
-  // Helpers
-  const generateAIDescription = (title) => {
-    if (!title) return "";
-    return `AI-generated: A focused project titled "${title}" aiming to deliver measurable outcomes with clear milestones and collaborative workflows.`;
-  };
+  const handleInviteDeveloper = (projectId) => {
+    setSelectedProject(ownedProjects.find(p => p.id === projectId))
+    setShowInviteModal(true)
+  }
 
-  const getDerivedMetrics = (project) => {
-    const applicantsCount = project.applicants.length;
-    const shortlistedCount = project.applicants.filter((a) => a.status === "Shortlisted").length;
-    const completionPct = applicantsCount === 0 ? 0 : Math.round((shortlistedCount / applicantsCount) * 100);
-    return { applicantsCount, shortlistedCount, completionPct };
-  };
-
-  const exportApplicantsCSV = (project) => {
-    const headers = ["Applicant ID", "Name", "Skills", "Status"];
-    const rows = project.applicants.map((a) => [a.id, a.name, a.skills, a.status]);
-    const csv = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${project.title.replaceAll(" ", "_")}_applicants.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  // Project management actions
-  const handleCreateProject = () => {
-    if (!newProject.title) return;
-    const description = newProject.description || generateAIDescription(newProject.title);
-    const project = {
-      id: Date.now(),
-      title: newProject.title,
-      description,
-      status: "Active",
-      premium: false,
-      applicants: []
-    };
-    setProjects([...projects, project]);
-    setNewProject({ title: "", description: "" });
-    setShowCreateForm(false);
-  };
-
-  const handleEditProject = (id, updatedData) => {
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, ...updatedData } : p)));
-  };
-
-  const handleCloseProject = (id) => {
-    const project = projects.find((p) => p.id === id);
-    const confirmClose = window.confirm(`Close project "${project?.title}"? You can reopen later.`);
-    if (!confirmClose) return;
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, status: "Closed" } : p)));
-  };
-
-  const handleTogglePremium = (id) => {
-    setProjects((prev) => prev.map((p) => (p.id === id ? { ...p, premium: !p.premium } : p)));
-  };
-
-  const handleInviteDeveloper = (id) => {
-    setInviteProjectId(id);
-  };
-
-  const sendInvite = () => {
-    if (!inviteEmail) return;
-    // Placeholder: replace with API call
-    console.log("Invite developer", { projectId: inviteProjectId, email: inviteEmail });
-    setInviteEmail("");
-    setInviteProjectId(null);
-  };
-
-  const handleViewApplicants = (projectId) => {
-    setSelectedProjectId(projectId);
-  };
-
-  // Applicant actions
-  const handleShortlistApplicant = (projectId, applicantId) => {
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? {
-              ...project,
-              applicants: project.applicants.map((app) =>
-                app.id === applicantId ? { ...app, status: "Shortlisted" } : app
-              )
-            }
-          : project
+  const markNotificationAsRead = (notificationId) => {
+    setNotifications(prev => 
+      prev.map(notif => 
+        notif.id === notificationId ? { ...notif, read: true } : notif
       )
-    );
-  };
-
-  const handleRejectApplicant = (projectId, applicantId) => {
-    setProjects((prev) =>
-      prev.map((project) =>
-        project.id === projectId
-          ? {
-              ...project,
-              applicants: project.applicants.map((app) =>
-                app.id === applicantId ? { ...app, status: "Rejected" } : app
-              )
-            }
-          : project
-      )
-    );
-  };
-
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTab =
-      activeTab === "all" ||
-      (activeTab === "active" && p.status === "Active") ||
-      (activeTab === "closed" && p.status === "Closed") ||
-      (activeTab === "premium" && p.premium);
-    return matchesSearch && matchesTab;
-  });
-
-  const sortedProjects = (() => {
-    const copy = [...filteredProjects];
-    switch (sortBy) {
-      case "title":
-        return copy.sort((a, b) => a.title.localeCompare(b.title));
-      case "status":
-        return copy.sort((a, b) => a.status.localeCompare(b.status));
-      case "applicants":
-        return copy.sort((a, b) => b.applicants.length - a.applicants.length);
-      case "premium":
-        return copy.sort((a, b) => Number(b.premium) - Number(a.premium));
-      case "recent":
-      default:
-        return copy.sort((a, b) => b.id - a.id);
-    }
-  })();
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 px-6 py-8 space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">My Projects</h1>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:flex-none">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search projects"
-              className="pl-8 bg-white/10 border border-white/20 text-white placeholder-gray-400"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+      <div className="px-6 py-8 space-y-8 max-w-7xl mx-auto">
+        {/* Enhanced Header with Notifications */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+              <BarChart3 className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Project Owner Dashboard
+              </h1>
+              <p className="text-gray-300 text-sm">Manage your projects and track performance</p>
+            </div>
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-white/10 border border-white/20 rounded-md px-2 py-2 text-sm text-white"
-          >
-            <option className="text-black" value="recent">Newest</option>
-            <option className="text-black" value="title">Title</option>
-            <option className="text-black" value="status">Status</option>
-            <option className="text-black" value="applicants">Applicants</option>
-            <option className="text-black" value="premium">Premium first</option>
-          </select>
-          <div className="hidden md:flex items-center gap-2 text-xs text-gray-300 px-2 py-2 border border-white/10 rounded-md">
-            <span>{sortedProjects.length} matches</span>
+          
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <button className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors duration-300">
+                <Bell className="w-5 h-5 text-white" />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
+            </div>
+            <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              New Project
+            </button>
           </div>
-          <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700" onClick={() => setShowCreateForm(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Create Project
-          </Button>
         </div>
-      </div>
 
-      {/* Tabs replaced with simple button group */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { value: "all", label: "All" },
-          { value: "active", label: "Active" },
-          { value: "closed", label: "Closed" },
-          { value: "premium", label: "Premium" },
-        ].map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setActiveTab(t.value)}
-            className={`px-3 py-1 rounded-md text-sm border ${
-              activeTab === t.value ? "bg-blue-600 text-white border-blue-600" : "bg-white/10 text-gray-200 border-white/20 hover:bg-white/20"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        {/* Dashboard Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+          {/* Total Projects */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.1)] focus-within:ring-1 focus-within:ring-blue-400">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg mb-3">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="Total number of projects">{dashboardStats.totalProjects}</p>
+              <p className="text-sm text-gray-400">Total Projects</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 w-full" />
+            </div>
+          </div>
 
-      {/* Project Creation Form */}
-      {showCreateForm && (
-        <div className="bg-black/20 backdrop-blur-sm border border-white/10 p-4 rounded-md text-gray-200">
-          <h2 className="text-lg font-semibold mb-2">Create New Project</h2>
-          <input
-            type="text"
-            placeholder="Project Title"
-            value={newProject.title}
-            onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-            className="p-2 w-full mb-2 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400"
-          />
-          <div className="flex items-start gap-2">
-            <textarea
-              placeholder="Project Description (optional)"
-              value={newProject.description}
-              onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-              className="p-2 w-full mb-2 bg-white/10 border border-white/20 rounded text-white placeholder-gray-400"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setNewProject((np) => ({ ...np, description: np.description || generateAIDescription(np.title) }))}
-              className="shrink-0 h-10 mt-0 md:mt-0"
+          {/* Active */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mb-3">
+                <Play className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="Number of active projects">{dashboardStats.activeProjects}</p>
+              <p className="text-sm text-gray-400">Active</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500" style={{ width: `${Math.min(100, (dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100)}%` }} />
+            </div>
+          </div>
+
+          {/* Applicants */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg mb-3">
+                <Users className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="Total applicants across projects">{dashboardStats.totalApplicants}</p>
+              <p className="text-sm text-gray-400">Total Applicants</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500" style={{ width: `${Math.min(100, dashboardStats.totalApplicants ? 100 : 0)}%` }} />
+            </div>
+          </div>
+
+          {/* New Applicants */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg mb-3">
+                <Bell className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="New applicants this period">{dashboardStats.newApplicants}</p>
+              <p className="text-sm text-gray-400">New Applicants</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500" style={{ width: `${Math.min(100, (dashboardStats.newApplicants / Math.max(1, dashboardStats.totalApplicants)) * 100)}%` }} />
+            </div>
+          </div>
+
+          {/* Avg Rating */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg mb-3">
+                <Star className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="Average project rating">{dashboardStats.avgRating}</p>
+              <p className="text-sm text-gray-400">Avg Rating</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${(Number(dashboardStats.avgRating) / 5) * 100}%` }} />
+            </div>
+          </div>
+
+          {/* Total Budget */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg mb-3">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-lg font-bold text-white" title="Aggregate budget range">{dashboardStats.totalBudget}</p>
+              <p className="text-sm text-gray-400">Total Budget</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-green-500 to-teal-500 w-2/3" />
+            </div>
+          </div>
+
+          {/* Completion Rate */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg mb-3">
+                <Target className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-2xl font-bold text-white" title="Percent of projects completed">{dashboardStats.completionRate}%</p>
+              <p className="text-sm text-gray-400">Completion Rate</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${dashboardStats.completionRate}%` }} />
+            </div>
+          </div>
+
+          {/* Avg Response */}
+          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
+            <div className="text-center">
+              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-pink-500 to-red-500 rounded-lg mb-3">
+                <Activity className="w-5 h-5 text-white" />
+              </div>
+              <p className="text-lg font-bold text-white" title="Average response time">{dashboardStats.responseTime}</p>
+              <p className="text-sm text-gray-400">Avg Response</p>
+            </div>
+            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-pink-500 to-red-500 w-1/2" />
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Tabs */}
+        <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-2xl border border-white/10">
+          <div className="grid grid-cols-5 gap-2">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'dashboard'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+              }`}
             >
-              <Sparkles className="mr-2 h-4 w-4" /> AI Describe
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={handleCreateProject}>Save Project</Button>
-            <Button variant="secondary" onClick={() => setShowCreateForm(false)}>
-              Cancel
-            </Button>
+              <BarChart3 className="w-4 h-4 inline mr-2" />
+              Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('my-projects')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'my-projects'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 inline mr-2" />
+              My Projects
+            </button>
+            <button
+              onClick={() => setActiveTab('create')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'create'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+              }`}
+            >
+              <Plus className="w-4 h-4 inline mr-2" />
+              Create Project
+            </button>
+            <button
+              onClick={() => setActiveTab('applicants')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'applicants'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+              }`}
+            >
+              <Users className="w-4 h-4 inline mr-2" />
+              Applicants
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                activeTab === 'analytics'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 inline mr-2" />
+              Analytics
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Projects List */}
-      {sortedProjects.length === 0 ? (
-        <p>No projects match your criteria.</p>
-      ) : (
-        <div className="grid md:grid-cols-2 gap-6">
-          {sortedProjects.map((project) => {
-            const { applicantsCount, shortlistedCount, completionPct } = getDerivedMetrics(project);
-            return (
-              <div key={project.id} className="border border-white/10 rounded-lg bg-black/20 backdrop-blur-sm">
-                <div className="p-4 border-b border-white/10">
-                  <div className="text-lg font-semibold text-white">
-                    {project.title}
-                    {project.premium && <Star className="inline ml-2 text-yellow-500" />}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm text-gray-300">{project.status}</p>
-                    {project.premium && <Badge variant="secondary">Premium</Badge>}
-                  </div>
-                </div>
-                <div className="p-4 space-y-4">
-                  <p className="text-gray-200">{project.description}</p>
-
-                  {/* Performance analytics */}
-                  <div className="bg-white/10 p-3 rounded-md text-sm space-y-2 text-gray-200 border border-white/10">
-                    <div className="flex justify-between"><span>Applicants</span><span>{applicantsCount}</span></div>
-                    <div className="flex justify-between"><span>Shortlisted</span><span>{shortlistedCount}</span></div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1"><span>Completion</span><span>{completionPct}%</span></div>
-                      <div className="w-full h-2 bg-white/10 rounded">
-                        <div className="h-2 bg-blue-500 rounded" style={{ width: `${completionPct}%` }} />
+        {/* Content */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Recent Activity */}
+              <div className="lg:col-span-2">
+                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-green-400" />
+                    Recent Activity
+                  </h3>
+                  <div className="space-y-4">
+                    {notifications.map((notification) => (
+                      <div key={notification.id} className={`p-4 rounded-xl border ${
+                        notification.read ? 'bg-white/5 border-white/10' : 'bg-blue-500/10 border-blue-500/20'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <p className="text-white text-sm">{notification.message}</p>
+                          <span className="text-gray-400 text-xs">{notification.timestamp}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEditProject(project.id, { title: project.title + " (Edited)" })}>
-                      <Edit className="mr-1 h-4 w-4" /> Edit
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleCloseProject(project.id)}>
-                      <XCircle className="mr-1 h-4 w-4" /> Close
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleInviteDeveloper(project.id)}>
-                      <UserPlus className="mr-1 h-4 w-4" /> Invite
-                    </Button>
-                    <Button variant={project.premium ? "secondary" : "outline"} size="sm" onClick={() => handleTogglePremium(project.id)}>
-                      <Star className="mr-1 h-4 w-4" /> {project.premium ? "Remove Premium" : "Boost"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleViewApplicants(project.id)}>
-                      <Eye className="mr-1 h-4 w-4" /> Applicants
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => exportApplicantsCSV(project)}>
-                      <Download className="mr-1 h-4 w-4" /> Export CSV
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <TrendingUp className="mr-1 h-4 w-4" /> Performance
-                    </Button>
+                    ))}
                   </div>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Applicants Modal */}
-      {selectedProject && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg p-6 w-full max-w-lg shadow-lg text-gray-200">
-            <h2 className="text-xl font-semibold mb-4">Applicants for {selectedProject.title}</h2>
-            {selectedProject.applicants.length === 0 ? (
-              <p>No applicants yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {selectedProject.applicants.map((applicant) => (
-                  <div key={applicant.id} className="flex items-center justify-between border border-white/10 p-3 rounded-md">
-                    <div>
-                      <p className="font-medium text-white">{applicant.name}</p>
-                      <p className="text-sm text-gray-300">{applicant.skills}</p>
-                      <p className="text-xs text-gray-400">Status: {applicant.status}</p>
+              
+              {/* Quick Actions */}
+              <div className="lg:col-span-1">
+                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <Zap className="w-5 h-5 text-yellow-400" />
+                    Quick Actions
+                  </h3>
+                  <div className="space-y-3">
+                    <button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                      <Plus className="w-4 h-4" />
+                      Create New Project
+                    </button>
+                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Invite Developers
+                    </button>
+                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                      <Award className="w-4 h-4" />
+                      Boost Project Visibility
+                    </button>
+                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      View Analytics
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Top Performing Projects */}
+            <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <Star className="w-5 h-5 text-yellow-400" />
+                Top Performing Projects
+              </h3>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {ownedProjects.slice(0, 3).map((project) => (
+                  <div key={project.id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors duration-300">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-white font-semibold">{project.title}</h4>
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        project.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {project.status}
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleShortlistApplicant(selectedProject.id, applicant.id)}>
-                        <CheckCircle className="mr-1 h-4 w-4" /> Shortlist
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleRejectApplicant(selectedProject.id, applicant.id)}>
-                        <XOctagon className="mr-1 h-4 w-4" /> Reject
-                      </Button>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Applicants:</span>
+                        <span className="text-white">{project.applicantsCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Rating:</span>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          <span className="text-white">{project.rating}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Budget:</span>
+                        <span className="text-white">{project.budget}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'my-projects' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                Your Projects
+              </h1>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-300 text-sm">{ownedProjects.length} total</span>
+                <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  New Project
+                </button>
+              </div>
+            </div>
+            {ownedProjects.length === 0 ? (
+              <div className="text-center py-12">
+                <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400 text-lg">No projects yet</p>
+                <p className="text-gray-500 text-sm mt-2">Create your first project to get started</p>
+                <button className="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto">
+                  <Plus className="w-4 h-4" />
+                  Create Project
+                </button>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {ownedProjects.map((project) => (
+                  <div key={project.id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col">
+                    <div className="p-5 border-b border-white/10">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0">
+                            <Briefcase className="w-4 h-4 text-white" />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="text-white font-semibold truncate">{project.title}</h3>
+                            <div className="mt-1 flex items-center gap-2 flex-wrap">
+                              <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                project.status === 'Active' ? 'bg-green-500/20 text-green-300' :
+                                project.status === 'Upcoming' ? 'bg-yellow-500/20 text-yellow-300' :
+                                'bg-gray-500/20 text-gray-300'
+                              }`}>
+                                {project.status}
+                              </span>
+                              {project.isFeatured && (
+                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300">
+                                  Featured
+                                </span>
+                              )}
+                              {project.isUrgent && (
+                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-red-500/20 text-red-300">
+                                  Urgent
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col gap-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {project.tags.slice(0, 3).map((tag, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500">
+                            {tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 3 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10">
+                            +{project.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-400">
+                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
+                      </div>
+                    </div>
+                    <div className="p-5 pt-0 mt-auto">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => { setSelectedProject(project); setShowProjectModal(true); }}
+                          className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <div className="mt-6 flex justify-between">
-              <Button variant="outline" onClick={() => exportApplicantsCSV(selectedProject)}>
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
-              <Button variant="secondary" onClick={() => setSelectedProjectId(null)}>
-                Close
-              </Button>
+          </div>
+        )}
+
+        {activeTab === 'create' && (
+          <div className="space-y-6">
+            {/* Create Header */}
+            <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                      Create a New Project
+                    </h2>
+                    <p className="text-gray-300 text-sm">
+                      Fill the details below. You can use AI to draft a quality description.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full text-xs bg-white/10 text-gray-300 border border-white/20">Auto-save enabled</span>
+                  <span className="px-3 py-1 rounded-full text-xs bg-white/10 text-gray-300 border border-white/20">Draft friendly</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Tips + Form */}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              <div className="xl:col-span-3">
+                <ProjectForm />
+              </div>
+
+              {/* Helper Panel */}
+              <aside className="xl:col-span-1">
+                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 sticky top-6 space-y-5">
+                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-yellow-400" />
+                    Tips
+                  </h3>
+                  <ul className="text-sm text-gray-300 space-y-2 list-disc list-inside">
+                    <li>Keep the title concise and clear.</li>
+                    <li>Mention key tech stack and seniority.</li>
+                    <li>Add budget and duration for better matches.</li>
+                    <li>Use the AI Description button for a strong first draft.</li>
+                  </ul>
+
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-white font-medium mb-2">Need a hand?</p>
+                    <p className="text-gray-400 text-sm mb-3">Click “AI-Enhanced Description” beside the Description field in the form.</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-300">
+                      <Sparkles className="w-4 h-4 text-purple-300" />
+                      Improves clarity and attractiveness
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-400">
+                    Your project will be visible to developers once published. You can save as draft anytime.
+                  </div>
+                </div>
+              </aside>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Invite Developer Modal (inline, no external UI lib) */}
-      {!!inviteProjectId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg p-6 w-full max-w-md shadow-lg text-gray-200">
-            <h3 className="text-lg font-semibold mb-3">Invite Developer</h3>
-            <div className="space-y-3">
-              <Input
-                type="email"
-                placeholder="developer@example.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={() => setInviteProjectId(null)}>Cancel</Button>
-                <Button onClick={sendInvite} disabled={!inviteEmail}>Send Invite</Button>
+        {activeTab === 'applicants' && (
+          <ApplicantsList />
+        )}
+
+        {activeTab === 'analytics' && (
+          <ProjectAnalytics projects={ownedProjects} />
+        )}
+
+        {/* Owner Project Details Modal */}
+        {showProjectModal && selectedProject && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-900 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                    <Briefcase className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold text-white">{selectedProject.title}</h3>
+                    <p className="text-gray-400 text-sm">{selectedProject.company} • {selectedProject.location}</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowProjectModal(false)} className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                  Close
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Budget</p>
+                    <p className="text-white font-semibold">{selectedProject.budget}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Duration</p>
+                    <p className="text-white font-semibold">{selectedProject.duration}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Applicants</p>
+                    <p className="text-white font-semibold">{selectedProject.applicantsCount}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">About the project</h4>
+                  <p className="text-gray-300 leading-relaxed">{selectedProject.description}</p>
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedProject.tags.map((tag, idx) => (
+                      <span key={idx} className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">{tag}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Priority</p>
+                    <p className="text-white font-semibold">{selectedProject.priority}</p>
+                  </div>
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <p className="text-gray-400 text-xs mb-1">Status</p>
+                    <p className="text-white font-semibold">{selectedProject.status}</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button onClick={() => setShowProjectModal(false)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300">Close</button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProjectOwnerProjects;
+export default ProjectOwnerProjects
