@@ -1,2 +1,0 @@
-2025-08-26T00:06:56.168Z [ERROR] GET /api/v1/user/verify-email/aebce386a5de5ad72196a8321febbc2ca3bf056c729f7587866129aaea72e0a2 500 - Internal server error
-2025-08-26T00:06:56.176Z [ERROR] GET /api/v1/user/verify-email/aebce386a5de5ad72196a8321febbc2ca3bf056c729f7587866129aaea72e0a2 500 - Internal server error

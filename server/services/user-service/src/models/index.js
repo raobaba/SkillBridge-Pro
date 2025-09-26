@@ -1,4 +1,4 @@
-import { userTable } from "./user.model";
+const { userTable } = require("./user.model");
 
 module.exports = {
   userTable,

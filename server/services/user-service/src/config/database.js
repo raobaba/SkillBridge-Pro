@@ -84,7 +84,7 @@ const testConnection = async (retries = 3, delay = 2000) => {
   for (let i = 0; i < retries; i++) {
     try {
       const client = await pool.connect();
-      console.log("🚀 Database connected successfully!");
+      console.log("🚀 Database connected successfully for user-service!");
       client.release();
       return true;
     } catch (error) {
@@ -103,8 +103,21 @@ const testConnection = async (retries = 3, delay = 2000) => {
 
 const runMigrations = async () => {
   try {
-    await migrate(db, { migrationsFolder: "./src/db/migrations" });
-    console.log("✅ Database migrations completed successfully");
+    const path = require("path");
+    const migrationPath = path.resolve(__dirname, "../../../../shared/migration");
+    const { runMigrations } = require(migrationPath);
+    
+    // Suppress detailed migration output for cleaner startup
+    const originalConsoleLog = console.log;
+    console.log = () => {}; // Suppress migration details
+    
+    await runMigrations("user-service", {
+      migrationsFolder: "./src/db/migrations",
+      backupFolder: "./src/db/backups"
+    });
+    
+    console.log = originalConsoleLog; // Restore console.log
+    console.log("✅ Database migrations completed successfully for user-service");
   } catch (error) {
     console.error("❌ Database migrations failed:", error);
     throw error;

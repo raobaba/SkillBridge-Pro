@@ -5,9 +5,9 @@ const helmet = require("helmet");
 const session = require("express-session");
 const fileUpload = require("express-fileupload");
 const passport = require("passport");
-const HttpException = require("./utils/HttpException.utils");
-const errorMiddleware = require("./middleware/error.middleware");
-const logger = require("./utils/logger.utils");
+const HttpException = require("shared/utils/HttpException.utils");
+const errorMiddleware = require("shared/middleware/error.middleware");
+const logger = require("shared/utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
 const cloudinary = require("cloudinary").v2;
 

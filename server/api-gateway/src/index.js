@@ -59,6 +59,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Proxy configuration
 const API_USER_URL = process.env.API_USER_URL || "http://localhost:3001";
 
+const API_PROJECT_URL = process.env.API_PROJECT_URL || "https://localhost:3002";
+
 // Mount proxy at root `/` and forward full original path to user-service
 app.use(
   "/api/v1/user",
@@ -77,6 +79,21 @@ app.use(
 app.use(
   "/api/v1/auth",
   proxy(API_USER_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+app.use(
+  "/api/v1/project",
+  proxy(API_PROJECT_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",
     parseReqBody: true,

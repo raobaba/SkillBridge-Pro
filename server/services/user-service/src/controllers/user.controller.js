@@ -2,10 +2,10 @@ const { UserModel } = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendMail } = require("../utils/sendEmail");
-const ErrorHandler = require("../utils/errorHandler");
-const { uploadFileToSupabase } = require("../utils/uploadFile.utils");
-const { supabase } = require("../utils/supabase.utils");
+const { sendMail } = require("shared/utils/sendEmail");
+const ErrorHandler = require("shared/utils/errorHandler");
+const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
+const { supabase } = require("shared/utils/supabase.utils");
 require("dotenv").config();
 
 const registerUser = async (req, res) => {

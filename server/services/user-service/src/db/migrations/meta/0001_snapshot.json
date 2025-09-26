@@ -1,6 +1,6 @@
 {
-  "id": "0610d758-7c7d-49bd-bfbb-3752b94af915",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "2bf2ba0e-549e-4beb-9d58-46dde5c9aea8",
+  "prevId": "e4400d9b-a630-4411-bcb5-4a9fbfa6f7bf",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -138,6 +138,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "portfolio_url": {
+          "name": "portfolio_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "portfolio_score": {
           "name": "portfolio_score",
           "type": "integer",
@@ -170,11 +176,26 @@
           "notNull": false,
           "default": "'{}'::json"
         },
+        "role": {
+          "name": "role",
+          "type": "role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'developer'"
+        },
+        "is_deleted": {
+          "name": "is_deleted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "updated_at": {
@@ -191,17 +212,17 @@
       "uniqueConstraints": {
         "users_uuid_unique": {
           "name": "users_uuid_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "uuid"
-          ]
+          ],
+          "nullsNotDistinct": false
         },
         "users_email_unique": {
           "name": "users_email_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -209,12 +230,22 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.role": {
+      "name": "role",
+      "schema": "",
+      "values": [
+        "developer",
+        "project-owner",
+        "admin"
+      ]
+    }
+  },
   "schemas": {},
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

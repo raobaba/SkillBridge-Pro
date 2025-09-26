@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\log\\.55273fe480134acc3eb0c5fda1b550b1c1e469f7-audit.json",
+    "files": [
+        {
+            "date": 1758716045856,
+            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\log\\error-2025-09-24.log",
+            "hash": "c709aacf5da9a3f98eaf6bfeccf9a778c34cf9248490fe43daf740b87c460e46"
+        },
+        {
+            "date": 1758855936330,
+            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\log\\error-2025-09-26.log",
+            "hash": "2e7d5c1c0dc01399e2189ee190b7431f57771397eef94341773841478567abc0"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -1,0 +1,136 @@
+-- Database backup created at 2025-09-26T03:13:49.861Z for project-service
+
+-- Table: project_applicants
+CREATE TABLE IF NOT EXISTS "project_applicants" (
+  "id" integer NOT NULL DEFAULT nextval('project_applicants_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "user_id" integer NOT NULL,
+  "status" USER-DEFINED NOT NULL DEFAULT 'applied'::applicant_status,
+  "match_score" integer,
+  "rating" integer,
+  "notes" text,
+  "applied_at" timestamp without time zone DEFAULT now(),
+  "updated_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: project_boosts
+CREATE TABLE IF NOT EXISTS "project_boosts" (
+  "id" integer NOT NULL DEFAULT nextval('project_boosts_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "purchased_by" integer NOT NULL,
+  "plan" USER-DEFINED NOT NULL DEFAULT 'basic'::boost_plan,
+  "amount_cents" integer NOT NULL,
+  "currency" character varying DEFAULT 'USD'::character varying,
+  "start_at" timestamp without time zone NOT NULL,
+  "end_at" timestamp without time zone NOT NULL,
+  "created_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: project_files
+CREATE TABLE IF NOT EXISTS "project_files" (
+  "id" integer NOT NULL DEFAULT nextval('project_files_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "uploader_id" integer NOT NULL,
+  "name" text NOT NULL,
+  "url" text NOT NULL,
+  "mime_type" text,
+  "size_kb" integer,
+  "uploaded_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: project_invites
+CREATE TABLE IF NOT EXISTS "project_invites" (
+  "id" integer NOT NULL DEFAULT nextval('project_invites_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "invited_email" text NOT NULL,
+  "invited_user_id" integer,
+  "role" text,
+  "message" text,
+  "status" text DEFAULT 'pending'::text,
+  "sent_at" timestamp without time zone DEFAULT now(),
+  "responded_at" timestamp without time zone
+);
+
+-- Table: project_reviews
+CREATE TABLE IF NOT EXISTS "project_reviews" (
+  "id" integer NOT NULL DEFAULT nextval('project_reviews_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "reviewer_id" integer NOT NULL,
+  "rating" integer NOT NULL,
+  "comment" text,
+  "created_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: project_skills
+CREATE TABLE IF NOT EXISTS "project_skills" (
+  "id" integer NOT NULL DEFAULT nextval('project_skills_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "name" text NOT NULL
+);
+
+-- Table: project_tags
+CREATE TABLE IF NOT EXISTS "project_tags" (
+  "id" integer NOT NULL DEFAULT nextval('project_tags_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "name" text NOT NULL
+);
+
+-- Table: project_team
+CREATE TABLE IF NOT EXISTS "project_team" (
+  "id" integer NOT NULL DEFAULT nextval('project_team_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "user_id" integer NOT NULL,
+  "role" text,
+  "joined_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: project_updates
+CREATE TABLE IF NOT EXISTS "project_updates" (
+  "id" integer NOT NULL DEFAULT nextval('project_updates_id_seq'::regclass),
+  "project_id" integer NOT NULL,
+  "author_id" integer NOT NULL,
+  "type" text DEFAULT 'note'::text,
+  "message" text NOT NULL,
+  "created_at" timestamp without time zone DEFAULT now()
+);
+
+-- Table: projects
+CREATE TABLE IF NOT EXISTS "projects" (
+  "id" integer NOT NULL DEFAULT nextval('projects_id_seq'::regclass),
+  "uuid" uuid NOT NULL DEFAULT gen_random_uuid(),
+  "owner_id" integer NOT NULL,
+  "title" text NOT NULL,
+  "description" text NOT NULL,
+  "role_needed" text NOT NULL,
+  "status" USER-DEFINED NOT NULL DEFAULT 'draft'::project_status,
+  "priority" USER-DEFINED DEFAULT 'medium'::priority,
+  "category" text,
+  "experience_level" USER-DEFINED,
+  "budget_min" integer,
+  "budget_max" integer,
+  "currency" character varying DEFAULT 'USD'::character varying,
+  "is_remote" boolean DEFAULT true,
+  "location" text,
+  "duration" text,
+  "start_date" timestamp without time zone,
+  "deadline" timestamp without time zone,
+  "requirements" text,
+  "benefits" text,
+  "company" text,
+  "website" text,
+  "featured_until" timestamp without time zone,
+  "is_urgent" boolean DEFAULT false,
+  "is_featured" boolean DEFAULT false,
+  "max_applicants" integer,
+  "language" text DEFAULT 'English'::text,
+  "timezone" text,
+  "match_score_avg" integer DEFAULT 0,
+  "rating_avg" numeric DEFAULT '0'::numeric,
+  "rating_count" integer DEFAULT 0,
+  "applicants_count" integer DEFAULT 0,
+  "new_applicants_count" integer DEFAULT 0,
+  "is_deleted" boolean NOT NULL DEFAULT false,
+  "created_at" timestamp without time zone NOT NULL DEFAULT now(),
+  "updated_at" timestamp without time zone NOT NULL DEFAULT now()
+);
+

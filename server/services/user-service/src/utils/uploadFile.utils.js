@@ -1,4 +1,4 @@
-const { supabase } = require("./supabase.utils.js");
+const { supabase } = require("shared/utils/supabase.utils.js");
 const path = require("path");
 const fs = require("fs");
 
