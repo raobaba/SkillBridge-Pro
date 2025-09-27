@@ -23,6 +23,13 @@ const uploadFileToSupabase = async (file, storagePath) => {
 
   if (error) throw error;
 
+  // Clean up temporary file
+  try {
+    fs.unlinkSync(file.tempFilePath);
+  } catch (cleanupError) {
+    console.warn("Failed to clean up temporary file:", cleanupError.message);
+  }
+
   // store only the path, not public URL
   return {
     path: fullPath,
