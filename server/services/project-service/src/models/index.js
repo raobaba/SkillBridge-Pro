@@ -35,6 +35,7 @@ const ProjectModel = {
   
   // Files
   addFile: ProjectFilesModel.addFile,
+  getFilesByProjectId: ProjectFilesModel.getFilesByProjectId,
   
   // Updates
   addUpdate: ProjectUpdatesModel.addUpdate,

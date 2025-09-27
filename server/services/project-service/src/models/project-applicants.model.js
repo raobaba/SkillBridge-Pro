@@ -1,4 +1,4 @@
-const { pgTable, serial, text, integer, timestamp, pgEnum } = require("drizzle-orm/pg-core");
+const { pgTable, serial, text, integer, timestamp, pgEnum, numeric } = require("drizzle-orm/pg-core");
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
@@ -19,7 +19,7 @@ const projectApplicantsTable = pgTable("project_applicants", {
   projectId: integer("project_id").notNull(), // FK -> projects.id
   userId: integer("user_id").notNull(), // FK -> users.id
   status: applicantStatusEnum("status").default("applied").notNull(),
-  matchScore: integer("match_score"),
+  matchScore: numeric("match_score"),
   rating: integer("rating"),
   notes: text("notes"),
   appliedAt: timestamp("applied_at").defaultNow(),

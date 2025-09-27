@@ -107,16 +107,11 @@ const runMigrations = async () => {
     const migrationPath = path.resolve(__dirname, "../../../../shared/migration");
     const { runMigrations } = require(migrationPath);
     
-    // Suppress detailed migration output for cleaner startup
-    const originalConsoleLog = console.log;
-    console.log = () => {}; // Suppress migration details
-    
     await runMigrations("user-service", {
       migrationsFolder: "./src/db/migrations",
       backupFolder: "./src/db/backups"
     });
     
-    console.log = originalConsoleLog; // Restore console.log
     console.log("✅ Database migrations completed successfully for user-service");
   } catch (error) {
     console.error("❌ Database migrations failed:", error);

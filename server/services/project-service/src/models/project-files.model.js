@@ -12,14 +12,16 @@ const projectFilesTable = pgTable("project_files", {
   url: text("url").notNull(),
   mimeType: text("mime_type"),
   sizeKb: integer("size_kb"),
+  description: text("description"),
+  category: text("category").default("other"),
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
 // Project Files Model Class
 class ProjectFilesModel {
-  static async addFile({ projectId, uploaderId, name, url, mimeType, sizeKb }) {
+  static async addFile({ projectId, uploaderId, name, url, mimeType, sizeKb, description, category }) {
     const [row] = await db.insert(projectFilesTable).values({
-      projectId, uploaderId, name, url, mimeType, sizeKb,
+      projectId, uploaderId, name, url, mimeType, sizeKb, description, category,
     }).returning();
     return row;
   }

@@ -137,11 +137,25 @@ class ProjectsModel {
 
   // Update project counters
   static async updateApplicantsCount(projectId, increment = 1) {
-    await db.update(projectsTable).set({
-      applicantsCount: projectsTable.applicantsCount + increment,
-      newApplicantsCount: projectsTable.newApplicantsCount + increment,
-      updatedAt: new Date(),
-    }).where(eq(projectsTable.id, projectId));
+    // First get current counts to avoid null issues
+    const [project] = await db
+      .select({ 
+        applicantsCount: projectsTable.applicantsCount, 
+        newApplicantsCount: projectsTable.newApplicantsCount 
+      })
+      .from(projectsTable)
+      .where(eq(projectsTable.id, projectId));
+    
+    if (project) {
+      const currentApplicantsCount = project.applicantsCount || 0;
+      const currentNewApplicantsCount = project.newApplicantsCount || 0;
+      
+      await db.update(projectsTable).set({
+        applicantsCount: currentApplicantsCount + increment,
+        newApplicantsCount: currentNewApplicantsCount + increment,
+        updatedAt: new Date(),
+      }).where(eq(projectsTable.id, projectId));
+    }
   }
 
   static async updateRatingStats(projectId, ratingAvg, ratingCount) {

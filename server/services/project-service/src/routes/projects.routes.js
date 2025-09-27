@@ -22,6 +22,7 @@ projectRouter.put("/invite/respond", authenticate, projectController.respondInvi
 
 // 📁 File Management
 projectRouter.post("/files", authenticate, projectController.addFile);
+projectRouter.get("/:projectId/files", projectController.getProjectFiles);
 
 // 📝 Project Updates
 projectRouter.post("/updates", authenticate, projectController.addUpdate);

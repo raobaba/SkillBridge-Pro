@@ -1,4 +1,6 @@
 const { ProjectModel } = require("../models");
+const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
+const { supabase } = require("shared/utils/supabase.utils");
 
 // Basic error helper to keep responses consistent
 const sendError = (res, message, status = 400) =>
@@ -160,11 +162,16 @@ const applyToProject = async (req, res) => {
   try {
     const applicantId = req.user?.userId || req.body.userId;
     const { projectId, matchScore, notes } = req.body;
-    if (!applicantId || !projectId) return sendError(res, "userId and projectId are required", 400);
+    
+    
+    if (!applicantId || !projectId) {
+      return sendError(res, "userId and projectId are required", 400);
+    }
+    
     const row = await ProjectModel.applyToProject({
       projectId: Number(projectId),
       userId: Number(applicantId),
-      matchScore,
+      matchScore: matchScore ? String(matchScore) : null, // Convert to string for numeric field
       notes,
     });
     return res.status(201).json({ success: true, status: 201, message: "Applied successfully", application: row });
@@ -249,23 +256,96 @@ const respondInvite = async (req, res) => {
 // Add file
 const addFile = async (req, res) => {
   try {
-    const { projectId, name, url, mimeType, sizeKb } = req.body;
+    const { projectId, description, category } = req.body;
     const uploaderId = req.user?.userId || req.body.uploaderId;
-    if (!projectId || !uploaderId || !name || !url) return sendError(res, "projectId, uploaderId, name, url are required", 400);
+    
+    if (!projectId || !uploaderId) {
+      return sendError(res, "projectId and uploaderId are required", 400);
+    }
+
+    // Check if file was uploaded
+    if (!req.files || !req.files.file) {
+      return sendError(res, "No file uploaded", 400);
+    }
+
+    const file = req.files.file;
+    const fileName = file.name;
+    const fileSize = file.size;
+    const mimeType = file.mimetype;
+    
+    // Upload file to Supabase (mirror user service logic)
+    const fileUpload = await uploadFileToSupabase(
+      file,
+      "project-files" // Storage path for project files
+    );
+    
     const row = await ProjectModel.addFile({
       projectId: Number(projectId),
       uploaderId: Number(uploaderId),
-      name,
-      url,
+      name: fileName,
+      url: fileUpload.path, // Store only the Supabase path (like user service)
       mimeType,
-      sizeKb: sizeKb ? Number(sizeKb) : null,
+      sizeKb: Math.round(fileSize / 1024),
+      description: description || null,
+      category: category || 'other'
     });
-    return res.status(201).json({ success: true, status: 201, message: "File added", file: row });
+    
+    return res.status(201).json({ 
+      success: true, 
+      status: 201, 
+      message: "File uploaded successfully", 
+      file: row
+    });
   } catch (error) {
     console.error("Add File Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add file", error: error.message });
+      .json({ success: false, status: 500, message: "Failed to upload file to Supabase", error: error.message });
+  }
+};
+
+// Get files by project ID
+const getProjectFiles = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const files = await ProjectModel.getFilesByProjectId(Number(projectId));
+    
+    // Generate signed URLs for each file (mirror user service logic)
+    const filesWithUrls = await Promise.all(files.map(async (file) => {
+      let signedUrl = null;
+      
+      // Generate signed URL if file.url is a path (not already a full URL)
+      if (file.url && !file.url.startsWith('http')) {
+        const { data, error } = await supabase.storage
+          .from("upload")
+          .createSignedUrl(file.url, 60 * 60); // 1 hour expiry (like user service)
+        
+        if (!error) {
+          signedUrl = data.signedUrl;
+        }
+      } else if (file.url && file.url.startsWith('http')) {
+        // If it's already a full URL, use it as is
+        signedUrl = file.url;
+      }
+      
+      return {
+        ...file,
+        signedUrl: signedUrl
+      };
+    }));
+    
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      files: filesWithUrls 
+    });
+  } catch (error) {
+    console.error("Get Project Files Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch project files", error: error.message });
   }
 };
 
@@ -339,6 +419,7 @@ module.exports = {
   createInvite,
   respondInvite,
   addFile,
+  getProjectFiles,
   addUpdate,
   addReview,
   addBoost,
