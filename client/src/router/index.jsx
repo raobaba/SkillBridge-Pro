@@ -39,34 +39,104 @@ const Routing = () => {
     <Router>
       <Suspense fallback={<CircularLoader />}>
         <Routes>
+          {/* Public Routes */}
           <Route path='/' element={<Home />} />
           <Route path='/auth' element={<Authentication />} />
-          <Route path='/profile' element={<Profile />} />
           <Route path='/verify-email' element={<VerifyEmail />} />
           <Route path='/reset-password' element={<ResetPassword />} />
           <Route path='/forgot-password' element={<ForgotPassword />} />
+          
+          {/* Protected Routes - All under /dashboard */}
           <Route
-            path='/dashboard/*'
+            path='/dashboard'
             element={
               <PrivateRoute screen='DASHBOARD_ACCESS'>
                 <Dashboard />
               </PrivateRoute>
             }
-          ></Route>
-          {/* Nested Dashboard Pages */}
-          <Route path='/notifications' element={<Notifications />} />
-          <Route path='/settings' element={<Settings />} />
-          <Route path='/portfolio-sync' element={<PortfolioSync />} />
-          <Route path='/project' element={<Project />} />
-          <Route path='/matchmaking' element={<Matchmaking />} />
-          <Route path='/gamification' element={<Gamification />} />
-          <Route path='/chat' element={<Chat />} />
+          />
+          <Route
+            path='/profile'
+            element={
+              <PrivateRoute screen='PROFILE_ACCESS'>
+                <Profile />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/notifications'
+            element={
+              <PrivateRoute screen='NOTIFICATIONS_ACCESS'>
+                <Notifications />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/settings'
+            element={
+              <PrivateRoute screen='SETTINGS_ACCESS'>
+                <Settings />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/portfolio-sync'
+            element={
+              <PrivateRoute screen='PORTFOLIO_ACCESS'>
+                <PortfolioSync />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/project'
+            element={
+              <PrivateRoute screen='PROJECT_ACCESS'>
+                <Project />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/matchmaking'
+            element={
+              <PrivateRoute screen='MATCHMAKING_ACCESS'>
+                <Matchmaking />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/gamification'
+            element={
+              <PrivateRoute screen='GAMIFICATION_ACCESS'>
+                <Gamification />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path='/chat'
+            element={
+              <PrivateRoute screen='CHAT_ACCESS'>
+                <Chat />
+              </PrivateRoute>
+            }
+          />
           <Route
             path='/billing-subscription'
-            element={<BillingSubscription />}
+            element={
+              <PrivateRoute screen='BILLING_ACCESS'>
+                <BillingSubscription />
+              </PrivateRoute>
+            }
           />
-          <Route path='/ai-career' element={<AiCareer />} />
+          <Route
+            path='/ai-career'
+            element={
+              <PrivateRoute screen='AI_CAREER_ACCESS'>
+                <AiCareer />
+              </PrivateRoute>
+            }
+          />
 
+          {/* Error Routes */}
           <Route path='/unauthorized' element={<Unauthorized />} />
           <Route path='*' element={<Error404 />} />
         </Routes>

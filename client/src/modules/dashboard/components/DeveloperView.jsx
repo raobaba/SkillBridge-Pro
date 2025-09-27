@@ -49,11 +49,13 @@ import {
   Heart,
   Sparkles,
 } from "lucide-react";
-import Navbar from "../../../components/header";
+import { Layout } from "../../../components";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 export default function DeveloperView() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
+  const navigate = useNavigate();
 
   // Enhanced mock data for developer dashboard
   const userStats = {
@@ -311,12 +313,12 @@ export default function DeveloperView() {
   };
 
   const quickAccessLinks = [
-    { name: "AI Career Tools", icon: Brain, color: "blue", description: "AI-powered career guidance" },
-    { name: "Portfolio Sync", icon: Database, color: "purple", description: "Sync your profiles" },
-    { name: "Communication", icon: MessageCircle, color: "green", description: "Chat with teams" },
-    { name: "Matchmaking", icon: Target, color: "pink", description: "Find new opportunities" },
-    { name: "Learning Paths", icon: BookOpen, color: "yellow", description: "Skill development" },
-    { name: "Gamification", icon: Trophy, color: "orange", description: "Track achievements" },
+    { name: "AI Career Tools", icon: Brain, color: "blue", description: "AI-powered career guidance", path: "/ai-career" },
+    { name: "Portfolio Sync", icon: Database, color: "purple", description: "Sync your profiles", path: "/portfolio-sync" },
+    { name: "Communication", icon: MessageCircle, color: "green", description: "Chat with teams", path: "/chat" },
+    { name: "Matchmaking", icon: Target, color: "pink", description: "Find new opportunities", path: "/matchmaking" },
+    { name: "Learning Paths", icon: BookOpen, color: "yellow", description: "Skill development", path: "/ai-career" },
+    { name: "Gamification", icon: Trophy, color: "orange", description: "Track achievements", path: "/gamification" },
   ];
 
   const getStatusColor = (status) => {
@@ -342,11 +344,7 @@ export default function DeveloperView() {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
-      {/* Header */}
-      <Navbar data={user} />
-
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+    <Layout isSearchBar={true}>
         {/* Enhanced Welcome Section */}
         <div className='mb-8'>
           <div className="flex items-center justify-between">
@@ -462,7 +460,10 @@ export default function DeveloperView() {
                   <CheckCircle2 className='w-6 h-6 text-green-400' />
                   Active Tasks
                 </h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <button 
+                  onClick={() => navigate('/project')}
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
                 </button>
               </div>
@@ -520,7 +521,10 @@ export default function DeveloperView() {
                   <MessageSquare className='w-6 h-6 text-blue-400' />
                   Project Invitations
                 </h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <button 
+                  onClick={() => navigate('/notifications')}
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
                 </button>
               </div>
@@ -978,6 +982,7 @@ export default function DeveloperView() {
             {quickAccessLinks.map((link, index) => (
               <button
                 key={index}
+                onClick={() => navigate(link.path)}
                 className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                   link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                   link.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :
@@ -1012,7 +1017,6 @@ export default function DeveloperView() {
             ))}
           </div>
         </div>
-      </div>
-    </div>
+    </Layout>
   );
 }

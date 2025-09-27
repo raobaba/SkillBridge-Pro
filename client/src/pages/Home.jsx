@@ -22,7 +22,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../components/header";
+import { Layout } from "../components";
 import { Footer } from "../components";
 import { useDispatch } from "react-redux";
 import { logOut } from "../modules/authentication/slice/userSlice";
@@ -242,10 +242,7 @@ export default function Home() {
   };
 
   return (
-    <div className='min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
-      {/* Navigation */}
-      <Navbar onLogoutClick={() => setIsLogoutModalOpen(true)} isHome={true} />
-
+    <Layout isHome={true} showBreadcrumb={false}>
       {/*Hero Section */}
       <Hero heroContent={heroContent} />
       {/* Stats Section */}
@@ -268,7 +265,6 @@ export default function Home() {
       <Pricing pricingContent={pricingContent} />
 
       {/* CTA Section */}
-
       <CallToAction />
       <Footer />
       <ConfirmModal
@@ -278,6 +274,6 @@ export default function Home() {
         onConfirm={handleLogout}
         onCancel={() => setIsLogoutModalOpen(false)}
       />
-    </div>
+    </Layout>
   );
 }

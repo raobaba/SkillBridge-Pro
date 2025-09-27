@@ -141,7 +141,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
         </div>
 
         {/* Enhanced User List */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden sidebar-scrollbar">
           {(filteredUsers || []).map((user, index) => {
             if (!user) return null;
             

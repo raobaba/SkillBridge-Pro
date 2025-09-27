@@ -211,7 +211,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
 
         <div className="flex h-[calc(90vh-120px)]">
           {/* Sidebar */}
-          <div className="w-64 bg-black/20 border-r border-white/10 p-4">
+          <div className="w-64 bg-black/20 border-r border-white/10 p-4 sidebar-scrollbar">
             <nav className="space-y-2">
               {[
                 { id: 'overview', label: 'Overview', icon: Eye },

@@ -137,7 +137,7 @@ const Authentication = () => {
 
           {/* Right Panel (Form) */}
           <div className='w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-8'>
-            <div className='w-full max-w-md h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20'>
+            <div className='w-full max-w-md h-[80vh] overflow-y-auto sidebar-scrollbar'>
               <div className='bg-black/30 border border-white/10 backdrop-blur-md rounded-2xl p-6 lg:p-8 shadow-xl'>
                 <h2 className='text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text'>
                   {isSignIn ? "Welcome Back 👋" : "Join SkillBridge 🚀"}

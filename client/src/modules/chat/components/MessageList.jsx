@@ -88,7 +88,7 @@ const MessageList = ({ messages, isLoading = false }) => {
       {/* Enhanced Message Container */}
       <div 
         ref={messagesContainerRef}
-        className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
+        className="h-full overflow-y-auto sidebar-scrollbar"
         onScroll={handleScroll}
       >
         <div className="p-4 space-y-1">

@@ -73,12 +73,14 @@ import {
   Flag,
   MoreVertical,
 } from "lucide-react";
-import Navbar from "../../../components/header";
+import { Layout } from "../../../components";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 export default function ProjectOwnerView() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
+  const navigate = useNavigate();
 
   // Enhanced mock data for Project Owner dashboard
   const ownerStats = {
@@ -272,12 +274,12 @@ export default function ProjectOwnerView() {
   ];
 
   const quickAccessLinks = [
-    { name: "Post New Project", icon: Plus, color: "blue", description: "Create project listing" },
-    { name: "Manage Team", icon: Users, color: "green", description: "Team management" },
-    { name: "View Applicants", icon: UserCheck, color: "purple", description: "Review applications" },
-    { name: "Billing & Subscriptions", icon: DollarSign, color: "yellow", description: "Payment management" },
-    { name: "Team Communication", icon: MessageCircle, color: "pink", description: "Chat with team" },
-    { name: "Analytics", icon: BarChart3, color: "orange", description: "Project insights" },
+    { name: "Post New Project", icon: Plus, color: "blue", description: "Create project listing", path: "/project?action=create" },
+    { name: "Manage Team", icon: Users, color: "green", description: "Team management", path: "/project?tab=team" },
+    { name: "View Applicants", icon: UserCheck, color: "purple", description: "Review applications", path: "/project?tab=applicants" },
+    { name: "Billing & Subscriptions", icon: DollarSign, color: "yellow", description: "Payment management", path: "/billing-subscription" },
+    { name: "Team Communication", icon: MessageCircle, color: "pink", description: "Chat with team", path: "/chat" },
+    { name: "Analytics", icon: BarChart3, color: "orange", description: "Project insights", path: "/analytics" },
   ];
 
   const recentNotifications = [
@@ -359,11 +361,7 @@ export default function ProjectOwnerView() {
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
-      {/* Header */}
-      <Navbar data={user} />
-
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+    <Layout isSearchBar={true}>
         {/* Enhanced Welcome Section */}
         <div className='mb-8'>
           <div className="flex items-center justify-between">
@@ -776,6 +774,7 @@ export default function ProjectOwnerView() {
                 {quickAccessLinks.map((link, index) => (
                   <button
                     key={index}
+                    onClick={() => navigate(link.path)}
                     className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                       link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                       link.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
@@ -850,7 +849,6 @@ export default function ProjectOwnerView() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </Layout>
   );
 }
