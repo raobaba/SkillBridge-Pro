@@ -1,4 +1,4 @@
-const { ProjectModel } = require("../models/project.model");
+const { ProjectModel } = require("../models");
 
 // Basic error helper to keep responses consistent
 const sendError = (res, message, status = 400) =>
