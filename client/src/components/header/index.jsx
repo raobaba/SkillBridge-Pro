@@ -153,7 +153,7 @@ const Navbar = ({
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          className='px-4 py-2 text-gray-300 hover:bg-white/10 cursor-pointer transition-colors'
+                          className='px-4 py-2 text-gray-300 hover:bg-gray-700/50 cursor-pointer transition-colors'
                         >
                           {item.label}
                         </div>
@@ -368,7 +368,7 @@ const Navbar = ({
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          className='px-4 py-2 text-gray-300 hover:bg-white/10 cursor-pointer transition-colors'
+                          className='px-4 py-2 text-gray-300 hover:bg-gray-700/50 cursor-pointer transition-colors'
                         >
                           {item.label}
                         </div>
@@ -384,7 +384,7 @@ const Navbar = ({
           {isHome && (
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className='md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors'
+              className='md:hidden p-2 rounded-lg hover:bg-gray-700/50 transition-colors'
               aria-label='Toggle Menu'
             >
               {isMenuOpen ? (

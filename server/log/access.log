@@ -66,3 +66,5 @@
 ::1 - - [27/Sep/2025:03:25:01 +0000] "POST /api/v1/user/login HTTP/1.1" 200 1005 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 ::1 - - [27/Sep/2025:03:26:53 +0000] "POST /api/v1/user/logout HTTP/1.1" 200 65 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
 ::1 - - [27/Sep/2025:03:27:03 +0000] "POST /api/v1/user/login HTTP/1.1" 200 1002 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+::1 - - [27/Sep/2025:03:37:17 +0000] "GET /api/v1/user/profile HTTP/1.1" 200 750 "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"
+::1 - - [27/Sep/2025:04:01:52 +0000] "GET /api/v1/user/profile HTTP/1.1" 304 - "http://localhost:5173/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36"

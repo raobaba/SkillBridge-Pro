@@ -73,7 +73,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "all"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
               }`}
             >
               All
@@ -83,7 +83,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "favorites"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
               }`}
             >
               <Star className="w-3 h-3 inline mr-1" />
@@ -95,7 +95,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
                 className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                   filterType === "groups"
                     ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                    : "text-gray-400 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
                 <Users className="w-3 h-3 inline mr-1" />
@@ -107,7 +107,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "system"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
               }`}
             >
               <MessageCircle className="w-3 h-3 inline mr-1" />
@@ -119,7 +119,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
                 className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                   filterType === "flagged"
                     ? "bg-gradient-to-r from-red-500 via-pink-500 to-red-500 text-white shadow-lg"
-                    : "text-gray-400 hover:text-white hover:bg-white/10"
+                    : "text-gray-400 hover:text-white hover:bg-gray-700/50"
                 }`}
               >
                 <Archive className="w-3 h-3 inline mr-1" />
@@ -131,7 +131,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "archived"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
               }`}
             >
               <Archive className="w-3 h-3 inline mr-1" />

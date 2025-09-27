@@ -48,6 +48,7 @@ import {
   PieChart,
   LineChart
 } from 'lucide-react'
+import { Button } from '../../../components'
 
 const ProjectManagementPanel = ({ project, onClose, onSave }) => {
   const [activeTab, setActiveTab] = useState('overview')
@@ -192,19 +193,20 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
             </div>
             
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 onClick={() => setIsEditing(!isEditing)}
                 className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
+                leftIcon={Edit}
               >
-                <Edit className="w-4 h-4" />
                 {isEditing ? 'Cancel' : 'Edit'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={onClose}
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition-colors duration-300"
+                leftIcon={X}
               >
-                <X className="w-4 h-4" />
-              </button>
+                Close
+              </Button>
             </div>
           </div>
         </div>
@@ -223,7 +225,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                 { id: 'files', label: 'Files', icon: Upload },
                 { id: 'history', label: 'History', icon: Clock }
               ].map((tab) => (
-                <button
+                <Button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors duration-300 ${
@@ -231,10 +233,10 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                       ? 'bg-white/20 text-white'
                       : 'bg-white/10 text-gray-300 hover:bg-white/15'
                   }`}
+                  leftIcon={tab.icon}
                 >
-                  <tab.icon className="w-4 h-4" />
                   {tab.label}
-                </button>
+                </Button>
               ))}
             </nav>
           </div>
@@ -329,58 +331,49 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                     <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                       <h3 className="text-xl font-semibold text-white mb-4">Quick Actions</h3>
                       <div className="space-y-3">
-                        <button
+                        <Button
                           onClick={() => handleProjectAction('invite')}
                           className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          leftIcon={Users}
                         >
-                          <Users className="w-4 h-4" />
                           Invite Developers
-                        </button>
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => handleProjectAction('boost')}
                           className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          leftIcon={Zap}
                         >
-                          <Zap className="w-4 h-4" />
                           Boost Visibility
-                        </button>
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => handleProjectAction(formData.status === 'Active' ? 'pause' : 'resume')}
                           className={`w-full p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 ${
                             formData.status === 'Active'
                               ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                               : 'bg-green-500/20 text-green-400 border border-green-500/30'
                           }`}
+                          leftIcon={formData.status === 'Active' ? Pause : Play}
                         >
-                          {formData.status === 'Active' ? (
-                            <>
-                              <Pause className="w-4 h-4" />
-                              Pause Project
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4" />
-                              Resume Project
-                            </>
-                          )}
-                        </button>
+                          {formData.status === 'Active' ? 'Pause Project' : 'Resume Project'}
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => handleProjectAction('close')}
                           className="w-full bg-blue-500/20 text-blue-400 border border-blue-500/30 p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          leftIcon={CheckCircle}
                         >
-                          <CheckCircle className="w-4 h-4" />
                           Close Project
-                        </button>
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => handleProjectAction('delete')}
                           className="w-full bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          leftIcon={Trash2}
                         >
-                          <Trash2 className="w-4 h-4" />
                           Delete Project
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

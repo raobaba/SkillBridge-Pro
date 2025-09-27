@@ -1,5 +1,6 @@
 import React from "react";
 import { Star, Check, Zap, Crown, Building2 } from "lucide-react";
+import { Button } from "../../../components";
 
 const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const plans = [
@@ -137,11 +138,14 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
               </div>
 
               {/* CTA Button */}
-              <button className={`w-full px-6 py-3 rounded-lg bg-gradient-to-r ${getPlanColor(plan)} text-white font-semibold hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 group-hover:shadow-xl ${
-                plan.current ? 'opacity-75 cursor-not-allowed' : ''
-              }`}>
+              <Button 
+                className={`w-full px-6 py-3 rounded-lg bg-gradient-to-r ${getPlanColor(plan)} text-white font-semibold hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 group-hover:shadow-xl ${
+                  plan.current ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
+                disabled={plan.current}
+              >
                 {plan.current ? 'Current Plan' : plan.popular ? 'Get Started' : 'Choose Plan'}
-              </button>
+              </Button>
             </div>
 
             {/* Hover effect indicator */}

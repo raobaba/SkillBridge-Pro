@@ -720,7 +720,7 @@ export default function ProjectOwnerView() {
                 {recentNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 rounded-lg transition-all hover:bg-white/10 ${
+                    className={`p-3 rounded-lg transition-all hover:bg-gray-700/50 ${
                       notification.unread
                         ? "bg-blue-500/10 border border-blue-500/20"
                         : "bg-white/5"
@@ -759,7 +759,7 @@ export default function ProjectOwnerView() {
                   </div>
                 ))}
               </div>
-              <button className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm transition-colors'>
+              <button className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'>
                 View All Notifications
               </button>
             </div>

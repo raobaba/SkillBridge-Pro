@@ -189,7 +189,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="md:hidden p-2 rounded-lg hover:bg-gray-700/50 transition-colors"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -384,7 +384,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                           className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-3 ${
                             isActivePath(item.path)
                               ? "bg-blue-500/20 text-blue-400"
-                              : "text-gray-300 hover:bg-white/10"
+                              : "text-gray-300 hover:bg-gray-700/50"
                           }`}
                         >
                           <item.icon className="w-4 h-4" />
@@ -460,7 +460,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                   className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center space-x-3 ${
                     isActivePath(item.path)
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                      : "text-gray-300 hover:bg-white/10"
+                      : "text-gray-300 hover:bg-gray-700/50"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />

@@ -450,28 +450,28 @@ const Admin = memo(function Admin({
               Moderation Tools
             </h3>
             <div className='space-y-3'>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors'>
+              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
                 <div className='flex items-center'>
                   <Ban className='w-4 h-4 mr-2 text-red-400' />
                   <span className='text-sm'>Ban User</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
               </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors'>
+              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
                 <div className='flex items-center'>
                   <CheckCircle2 className='w-4 h-4 mr-2 text-green-400' />
                   <span className='text-sm'>Verify User</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
               </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors'>
+              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
                 <div className='flex items-center'>
                   <Flag className='w-4 h-4 mr-2 text-orange-400' />
                   <span className='text-sm'>Flag Project</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
               </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors'>
+              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
                 <div className='flex items-center'>
                   <AlertTriangle className='w-4 h-4 mr-2 text-yellow-400' />
                   <span className='text-sm'>Resolve Dispute</span>

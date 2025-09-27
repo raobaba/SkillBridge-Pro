@@ -310,7 +310,7 @@ export default function AnalyticsDashboard() {
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
                 activeTab === tab.id
                   ? "bg-blue-500/20 text-blue-400 border border-blue-400/30"
-                  : "text-gray-400 hover:text-white hover:bg-white/10"
+                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
               }`}
             >
               <tab.icon className='w-4 h-4' />
@@ -343,7 +343,7 @@ export default function AnalyticsDashboard() {
               <Download className='w-4 h-4' />
               <span className='text-sm'>Export</span>
             </button>
-            <button className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors'>
+            <button className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg transition-colors'>
               <Filter className='w-4 h-4' />
               <span className='text-sm'>Filter</span>
             </button>
@@ -410,7 +410,7 @@ export default function AnalyticsDashboard() {
           ].map((item, idx) => (
             <div
               key={idx}
-              className='group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all hover:bg-white/10 cursor-pointer'
+              className='group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all hover:bg-gray-700/50 cursor-pointer'
             >
               <div className='flex items-center justify-between mb-2'>
                 <div className={`p-2 rounded-lg ${item.bg}`}>
@@ -558,7 +558,7 @@ export default function AnalyticsDashboard() {
               {recentAlerts.map((alert) => (
                 <li
                   key={alert.id}
-                  className='flex items-start space-x-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors'
+                  className='flex items-start space-x-3 p-3 bg-white/5 rounded-lg hover:bg-gray-700/50 transition-colors'
                 >
                   <div
                     className={`w-3 h-3 rounded-full mt-1 ${alert.alert ? "bg-red-500 animate-pulse" : "bg-green-500"}`}
@@ -598,7 +598,7 @@ export default function AnalyticsDashboard() {
               {topPerformers.map((performer, idx) => (
                 <div
                   key={idx}
-                  className='flex items-center space-x-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors'
+                  className='flex items-center space-x-3 p-3 bg-white/5 rounded-lg hover:bg-gray-700/50 transition-colors'
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center ${idx === 0 ? "bg-yellow-500/20 text-yellow-400" : idx === 1 ? "bg-gray-500/20 text-gray-400" : "bg-orange-500/20 text-orange-400"}`}
@@ -631,7 +631,7 @@ export default function AnalyticsDashboard() {
               {recentActivity.map((activity, idx) => (
                 <div
                   key={idx}
-                  className='flex items-start space-x-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors'
+                  className='flex items-start space-x-3 p-3 bg-white/5 rounded-lg hover:bg-gray-700/50 transition-colors'
                 >
                   <div className='w-2 h-2 bg-blue-400 rounded-full mt-2'></div>
                   <div className='flex-1'>

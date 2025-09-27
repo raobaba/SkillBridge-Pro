@@ -156,7 +156,7 @@ const SectionCard = memo(({ icon, title, children, className = "" }) => (
 ));
 
 const PortfolioProjectCard = memo(({ project }) => (
-  <div className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all duration-300">
+  <div className="bg-white/5 border border-white/10 rounded-lg p-4 hover:bg-gray-700/50 transition-all duration-300">
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1">
         <h3 className="text-lg font-semibold text-white mb-1">{project.title}</h3>
@@ -194,15 +194,15 @@ const PortfolioProjectCard = memo(({ project }) => (
       </div>
       
       <div className="flex items-center gap-2">
-        <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+        <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
           <Github className="w-4 h-4 text-gray-400" />
         </button>
         {project.live && (
-          <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+          <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
             <ExternalLink className="w-4 h-4 text-gray-400" />
           </button>
         )}
-        <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+        <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
           <Eye className="w-4 h-4 text-gray-400" />
         </button>
       </div>
@@ -431,7 +431,7 @@ const Developer = memo(function Developer({
                   href={link.url}
                   target='_blank'
                   rel='noopener noreferrer'
-                  className='flex items-center p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors'
+                  className='flex items-center p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
                 >
                   {link.icon}
                   <span className='ml-2 text-sm'>{link.platform}</span>
