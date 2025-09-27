@@ -20,6 +20,9 @@ const apiGatewaySwagger = YAML.load(
 const userSwagger = YAML.load(
   path.join(__dirname, "swagger", "user.swagger.yaml")
 );
+const projectSwagger = YAML.load(
+  path.join(__dirname, "swagger", "project.swagger.yaml")
+);
 
 // Combine Swagger docs
 const combinedSwagger = {
@@ -29,16 +32,27 @@ const combinedSwagger = {
     version: "1.0.0",
     description: "Unified API documentation for all microservices",
   },
-  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers],
-  paths: { ...apiGatewaySwagger.paths, ...userSwagger.paths },
+  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers],
+  tags: [
+    ...(apiGatewaySwagger.tags || []),
+    ...(userSwagger.tags || []),
+    ...(projectSwagger.tags || [])
+  ],
+  paths: { 
+    ...apiGatewaySwagger.paths, 
+    ...userSwagger.paths, 
+    ...projectSwagger.paths 
+  },
   components: {
     schemas: {
       ...(apiGatewaySwagger.components?.schemas || {}),
       ...(userSwagger.components?.schemas || {}),
+      ...(projectSwagger.components?.schemas || {}),
     },
     securitySchemes: {
       ...(apiGatewaySwagger.components?.securitySchemes || {}),
       ...(userSwagger.components?.securitySchemes || {}),
+      ...(projectSwagger.components?.securitySchemes || {}),
     },
   },
   security: [{ bearerAuth: [] }],
@@ -92,7 +106,7 @@ app.use(
 );
 
 app.use(
-  "/api/v1/project",
+  "/api/v1/projects",
   proxy(API_PROJECT_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",

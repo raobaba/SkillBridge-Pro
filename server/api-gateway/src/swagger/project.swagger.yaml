@@ -1,0 +1,1077 @@
+openapi: 3.0.0
+info:
+  title: Project Service API
+  description: API for project management, applications, invitations, file management, updates, reviews, and boosting
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+    description: Local Project Server
+
+tags:
+  - name: "🟢 PROJECT SERVICE - Management"
+    description: "Project Service: Core project CRUD operations and management"
+  - name: "🟢 PROJECT SERVICE - Applications"
+    description: "Project Service: Project application and applicant management"
+  - name: "🟢 PROJECT SERVICE - Invitations"
+    description: "Project Service: Project invitation system"
+  - name: "🟢 PROJECT SERVICE - Files"
+    description: "Project Service: File management for projects"
+  - name: "🟢 PROJECT SERVICE - Updates"
+    description: "Project Service: Project progress updates and milestones"
+  - name: "🟢 PROJECT SERVICE - Reviews"
+    description: "Project Service: Project reviews and ratings"
+  - name: "🟢 PROJECT SERVICE - Boosting"
+    description: "Project Service: Project promotion and boosting features"
+
+paths:
+  /api/v1/projects:
+    post:
+      summary: Create a new project
+      description: Create a new project with all necessary details
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          description: Bad request - missing required fields
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    get:
+      summary: List projects
+      description: Get a list of projects with optional filtering
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      parameters:
+        - name: ownerId
+          in: query
+          description: Filter by project owner ID
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by project status
+          schema:
+            type: string
+            enum: [draft, active, completed, cancelled]
+      responses:
+        "200":
+          description: Projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/{id}:
+    get:
+      summary: Get a specific project
+      description: Retrieve a project by its ID
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          description: Bad request - invalid project ID
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+    put:
+      summary: Update a project
+      description: Update project details
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdate"
+      responses:
+        "200":
+          description: Project updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete a project
+      description: Soft delete a project
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Project deleted"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/apply:
+    post:
+      summary: Apply to a project
+      description: Submit an application to a project
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicationRequest"
+      responses:
+        "201":
+          description: Application submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/applicants/status:
+    put:
+      summary: Update applicant status
+      description: Update the status of a project applicant
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplicantStatusUpdate"
+      responses:
+        "200":
+          description: Applicant status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/{projectId}/applicants:
+    get:
+      summary: List project applicants
+      description: Get all applicants for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Applicants retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  applicants:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Applicant"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/invite:
+    post:
+      summary: Create project invitation
+      description: Send an invitation to join a project
+      tags:
+        - "🟢 PROJECT SERVICE - Invitations"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteRequest"
+      responses:
+        "201":
+          description: Invitation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/invite/respond:
+    put:
+      summary: Respond to invitation
+      description: Accept or decline a project invitation
+      tags:
+        - "🟢 PROJECT SERVICE - Invitations"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteResponseRequest"
+      responses:
+        "200":
+          description: Invitation response recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/files:
+    post:
+      summary: Add file to project
+      description: Upload and attach a file to a project
+      tags:
+        - "🟢 PROJECT SERVICE - Files"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FileRequest"
+      responses:
+        "201":
+          description: File added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/updates:
+    post:
+      summary: Add project update
+      description: Add an update or progress note to a project
+      tags:
+        - "🟢 PROJECT SERVICE - Updates"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRequest"
+      responses:
+        "201":
+          description: Update added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/reviews:
+    post:
+      summary: Add project review
+      description: Submit a review for a project
+      tags:
+        - "🟢 PROJECT SERVICE - Reviews"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewRequest"
+      responses:
+        "201":
+          description: Review added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReviewResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/boost:
+    post:
+      summary: Add project boost
+      description: Purchase a boost to promote a project
+      tags:
+        - "🟢 PROJECT SERVICE - Boosting"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BoostRequest"
+      responses:
+        "201":
+          description: Boost added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BoostResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        ownerId:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        roleNeeded:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        category:
+          type: string
+        experienceLevel:
+          type: string
+          enum: [entry, mid, senior, expert]
+        budgetMin:
+          type: number
+        budgetMax:
+          type: number
+        currency:
+          type: string
+          default: USD
+        isRemote:
+          type: boolean
+        location:
+          type: string
+        duration:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        deadline:
+          type: string
+          format: date-time
+        requirements:
+          type: string
+        benefits:
+          type: string
+        company:
+          type: string
+        website:
+          type: string
+        maxApplicants:
+          type: integer
+        language:
+          type: string
+        timezone:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectCreate:
+      type: object
+      required: [title, description, roleNeeded]
+      properties:
+        title:
+          type: string
+          example: "E-commerce Website Development"
+        description:
+          type: string
+          example: "Build a modern e-commerce platform with React and Node.js"
+        roleNeeded:
+          type: string
+          example: "Full Stack Developer"
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+          default: draft
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          default: medium
+        category:
+          type: string
+          example: "Web Development"
+        experienceLevel:
+          type: string
+          enum: [entry, mid, senior, expert]
+          default: mid
+        budgetMin:
+          type: number
+          example: 5000
+        budgetMax:
+          type: number
+          example: 15000
+        currency:
+          type: string
+          default: USD
+        isRemote:
+          type: boolean
+          default: true
+        location:
+          type: string
+          example: "Remote"
+        duration:
+          type: string
+          example: "3 months"
+        startDate:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        deadline:
+          type: string
+          format: date-time
+          example: "2024-04-15T00:00:00Z"
+        requirements:
+          type: string
+          example: "3+ years React experience, Node.js knowledge"
+        benefits:
+          type: string
+          example: "Flexible hours, learning opportunities"
+        company:
+          type: string
+          example: "TechCorp Inc."
+        website:
+          type: string
+          example: "https://techcorp.com"
+        maxApplicants:
+          type: integer
+          default: 10
+        language:
+          type: string
+          default: English
+        timezone:
+          type: string
+          example: "UTC-5"
+        skills:
+          type: array
+          items:
+            type: string
+          example: ["React", "Node.js", "MongoDB"]
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["ecommerce", "react", "nodejs"]
+
+    ProjectUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        roleNeeded:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, completed, cancelled]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        category:
+          type: string
+        experienceLevel:
+          type: string
+          enum: [entry, mid, senior, expert]
+        budgetMin:
+          type: number
+        budgetMax:
+          type: number
+        currency:
+          type: string
+        isRemote:
+          type: boolean
+        location:
+          type: string
+        duration:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        deadline:
+          type: string
+          format: date-time
+        requirements:
+          type: string
+        benefits:
+          type: string
+        company:
+          type: string
+        website:
+          type: string
+        maxApplicants:
+          type: integer
+        language:
+          type: string
+        timezone:
+          type: string
+        skills:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    ProjectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+        project:
+          $ref: "#/components/schemas/Project"
+
+    ApplicationRequest:
+      type: object
+      required: [projectId]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        matchScore:
+          type: number
+          example: 85.5
+        notes:
+          type: string
+          example: "I have 5 years of React experience and have built similar e-commerce platforms"
+
+    ApplicationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Applied successfully"
+        application:
+          $ref: "#/components/schemas/Application"
+
+    Application:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        userId:
+          type: integer
+        matchScore:
+          type: number
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        appliedAt:
+          type: string
+          format: date-time
+
+    ApplicantStatusUpdate:
+      type: object
+      required: [projectId, userId, status]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+          example: accepted
+
+    Applicant:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        matchScore:
+          type: number
+        notes:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, rejected]
+        appliedAt:
+          type: string
+          format: date-time
+
+    InviteRequest:
+      type: object
+      required: [projectId, invitedEmail]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        invitedEmail:
+          type: string
+          format: email
+          example: "developer@example.com"
+        invitedUserId:
+          type: integer
+          example: 456
+        role:
+          type: string
+          example: "Frontend Developer"
+        message:
+          type: string
+          example: "We'd love to have you join our project!"
+
+    InviteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Invite created"
+        invite:
+          $ref: "#/components/schemas/Invite"
+
+    Invite:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        invitedEmail:
+          type: string
+        invitedUserId:
+          type: integer
+        role:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+          enum: [pending, accepted, declined]
+        createdAt:
+          type: string
+          format: date-time
+
+    InviteResponseRequest:
+      type: object
+      required: [inviteId, status]
+      properties:
+        inviteId:
+          type: integer
+          example: 1
+        status:
+          type: string
+          enum: [accepted, declined]
+          example: accepted
+
+    FileRequest:
+      type: object
+      required: [projectId, name, url]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "project-requirements.pdf"
+        url:
+          type: string
+          example: "https://storage.example.com/files/requirements.pdf"
+        mimeType:
+          type: string
+          example: "application/pdf"
+        sizeKb:
+          type: number
+          example: 1024
+
+    FileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "File added"
+        file:
+          $ref: "#/components/schemas/File"
+
+    File:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        uploaderId:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        mimeType:
+          type: string
+        sizeKb:
+          type: number
+        uploadedAt:
+          type: string
+          format: date-time
+
+    UpdateRequest:
+      type: object
+      required: [projectId, message]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        type:
+          type: string
+          enum: [progress, milestone, issue, announcement]
+          default: progress
+        message:
+          type: string
+          example: "Completed the user authentication module"
+
+    UpdateResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Update added"
+        update:
+          $ref: "#/components/schemas/Update"
+
+    Update:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        authorId:
+          type: integer
+        type:
+          type: string
+          enum: [progress, milestone, issue, announcement]
+        message:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewRequest:
+      type: object
+      required: [projectId, rating]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 4
+        comment:
+          type: string
+          example: "Great project, excellent communication throughout"
+
+    ReviewResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Review added"
+        review:
+          $ref: "#/components/schemas/Review"
+
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        reviewerId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    BoostRequest:
+      type: object
+      required: [projectId, plan, amountCents, startAt, endAt]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        plan:
+          type: string
+          enum: [basic, premium, featured]
+          example: premium
+        amountCents:
+          type: integer
+          example: 5000
+        currency:
+          type: string
+          default: USD
+        startAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T00:00:00Z"
+        endAt:
+          type: string
+          format: date-time
+          example: "2024-02-15T00:00:00Z"
+
+    BoostResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Boost added"
+        boost:
+          $ref: "#/components/schemas/Boost"
+
+    Boost:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        purchasedBy:
+          type: integer
+        plan:
+          type: string
+          enum: [basic, premium, featured]
+        amountCents:
+          type: integer
+        currency:
+          type: string
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time

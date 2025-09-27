@@ -7,6 +7,7 @@ const fileUpload = require("express-fileupload");
 const errorMiddleware = require("shared/middleware/error.middleware");
 const logger = require("shared/utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
+const projectRouter = require("./routes/projects.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -33,6 +34,7 @@ app.use(
 app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
+app.use("/api/v1/projects", projectRouter);
 
 // ⚠️ Error Middleware
 app.use(errorMiddleware);
