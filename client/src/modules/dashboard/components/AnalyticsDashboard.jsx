@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Button from '../../../components/Button';
 import {
   BarChart3,
   Users,
@@ -304,9 +305,10 @@ export default function AnalyticsDashboard() {
             { id: "moderation", label: "Moderation", icon: Shield },
             { id: "system", label: "System", icon: Server },
           ].map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
+              variant={activeTab === tab.id ? "primary" : "ghost"}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
                 activeTab === tab.id
                   ? "bg-blue-500/20 text-blue-400 border border-blue-400/30"
@@ -315,7 +317,7 @@ export default function AnalyticsDashboard() {
             >
               <tab.icon className='w-4 h-4' />
               <span className='text-sm font-medium'>{tab.label}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -339,14 +341,18 @@ export default function AnalyticsDashboard() {
             </select>
           </div>
           <div className='flex items-center space-x-2'>
-            <button className='flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors'>
+            <Button 
+              className='flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors'
+            >
               <Download className='w-4 h-4' />
               <span className='text-sm'>Export</span>
-            </button>
-            <button className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg transition-colors'>
+            </Button>
+            <Button 
+              className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg transition-colors'
+            >
               <Filter className='w-4 h-4' />
               <span className='text-sm'>Filter</span>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -497,9 +503,12 @@ export default function AnalyticsDashboard() {
               <Flag className='w-6 h-6 text-red-400' />
               Flagged Content
             </h2>
-            <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+            <Button 
+              variant="ghost"
+              className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+            >
               View All <ChevronRight className='w-4 h-4 ml-1' />
-            </button>
+            </Button>
           </div>
           <div className='space-y-3'>
             {flaggedContent.map((item) => (
@@ -530,12 +539,16 @@ export default function AnalyticsDashboard() {
                     <p className='text-gray-400 text-xs'>Reported by: {item.reportedBy} • {item.reportedAt}</p>
                   </div>
                   <div className='flex gap-2'>
-                    <button className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'>
+                    <Button 
+                      className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'
+                    >
                       Approve
-                    </button>
-                    <button className='px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm transition-colors'>
+                    </Button>
+                    <Button 
+                      className='px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm transition-colors'
+                    >
                       Reject
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -704,8 +717,9 @@ export default function AnalyticsDashboard() {
           </div>
           <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
             {quickAccessLinks.map((link, index) => (
-              <button
+              <Button
                 key={index}
+                variant="ghost"
                 className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                   link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                   link.color === 'red' ? 'bg-red-500/20 hover:bg-red-500/30' :
@@ -736,7 +750,7 @@ export default function AnalyticsDashboard() {
                   <p className='text-sm font-medium text-white'>{link.name}</p>
                   <p className='text-xs text-gray-400 mt-1'>{link.description}</p>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

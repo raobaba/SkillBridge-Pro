@@ -1,0 +1,3 @@
+2025-09-28T01:46:32.299Z [ERROR] GET /api/v1/user/profile 401 - Access denied. No credentials sent!
+2025-09-28T02:44:09.691Z [ERROR] GET /api/v1/user/profile 401 - Access denied. No credentials sent!
+2025-09-28T03:02:56.246Z [ERROR] GET /api/v1/user/profile 401 - Access denied. No credentials sent!

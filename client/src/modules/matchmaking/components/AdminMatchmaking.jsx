@@ -5,6 +5,7 @@ import {
   XCircle, Eye, Filter, Search, Calendar, Award, Zap, Shield,
   RefreshCw, Download, Settings, Activity, PieChart, LineChart
 } from "lucide-react";
+import Button from "../../../components/Button";
 
 const AdminMatchmaking = ({ user }) => {
   const [selectedTab, setSelectedTab] = useState("analytics");
@@ -303,20 +304,24 @@ const AdminMatchmaking = ({ user }) => {
                 
                 {case_.status !== 'Resolved' && (
                   <div className="flex space-x-2">
-                    <button
+                    <Button
                       onClick={() => handleResolveCase(case_.id, 'resolve')}
-                      className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+                      variant="default"
+                      size="sm"
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      leftIcon={CheckCircle}
                     >
-                      <CheckCircle className="w-4 h-4 inline mr-1" />
                       Resolve
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={() => handleResolveCase(case_.id, 'investigate')}
-                      className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                      variant="default"
+                      size="sm"
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                      leftIcon={Eye}
                     >
-                      <Eye className="w-4 h-4 inline mr-1" />
                       Investigate
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -410,9 +415,12 @@ const AdminMatchmaking = ({ user }) => {
               <h4 className="font-bold text-white">Auto-flag suspicious matches</h4>
               <p className="text-sm text-gray-300">Automatically flag matches that seem unusual</p>
             </div>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <Button
+              variant="default"
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
               Enable
-            </button>
+            </Button>
           </div>
           
           <div className="flex items-center justify-between">
@@ -473,18 +481,19 @@ const AdminMatchmaking = ({ user }) => {
           className="flex space-x-1 mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/20"
         >
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+              variant="ghost"
+              className={`flex items-center space-x-2 ${
                 selectedTab === tab.id
                   ? 'bg-blue-500 text-white'
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
+              leftIcon={tab.icon}
             >
-              <tab.icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
+              {tab.label}
+            </Button>
           ))}
         </motion.div>
 

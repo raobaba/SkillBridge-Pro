@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Search, Plus, MessageCircle, Users, Settings, Archive, Star } from "lucide-react";
+import {Button,Input } from "../../../components";
 
 const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissions }) => {
   const [search, setSearch] = useState("");
@@ -43,23 +44,25 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               <MessageCircle className="w-6 h-6 text-blue-400" />
               Chats
             </h2>
-            <button
+            <Button
               onClick={handleNewChat}
+              variant="ghost"
+              size="sm"
               className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
               title="New Chat"
             >
               <Plus className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
-            </button>
+            </Button>
           </div>
 
           {/* Enhanced Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
+            <Input
               type="text"
               placeholder="Search chats..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              leftIcon={Search}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/20 backdrop-blur-sm text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 border border-white/10 transition-all duration-300 hover:border-blue-500/30"
             />
           </div>
@@ -68,8 +71,10 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
         {/* Filter Tabs */}
         <div className="px-4 py-2 border-b border-white/10">
           <div className="flex gap-1 bg-black/20 backdrop-blur-sm rounded-lg p-1 flex-wrap">
-            <button
+            <Button
               onClick={() => handleFilterChange("all")}
+              variant="ghost"
+              size="sm"
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "all"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
@@ -77,9 +82,11 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               }`}
             >
               All
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleFilterChange("favorites")}
+              variant="ghost"
+              size="sm"
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "favorites"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
@@ -88,10 +95,12 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
             >
               <Star className="w-3 h-3 inline mr-1" />
               Favorites
-            </button>
+            </Button>
             {(userRole === 'developer' || userRole === 'project-owner') && (
-              <button
+              <Button
                 onClick={() => handleFilterChange("groups")}
+                variant="ghost"
+                size="sm"
                 className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                   filterType === "groups"
                     ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
@@ -100,10 +109,12 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               >
                 <Users className="w-3 h-3 inline mr-1" />
                 Groups
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               onClick={() => handleFilterChange("system")}
+              variant="ghost"
+              size="sm"
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "system"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
@@ -112,10 +123,12 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
             >
               <MessageCircle className="w-3 h-3 inline mr-1" />
               System
-            </button>
+            </Button>
             {userRole === 'admin' && (
-              <button
+              <Button
                 onClick={() => handleFilterChange("flagged")}
+                variant="ghost"
+                size="sm"
                 className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                   filterType === "flagged"
                     ? "bg-gradient-to-r from-red-500 via-pink-500 to-red-500 text-white shadow-lg"
@@ -124,10 +137,12 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               >
                 <Archive className="w-3 h-3 inline mr-1" />
                 Flagged
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               onClick={() => handleFilterChange("archived")}
+              variant="ghost"
+              size="sm"
               className={`px-3 py-2 rounded-md text-xs font-medium transition-all duration-300 ${
                 filterType === "archived"
                   ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white shadow-lg"
@@ -136,7 +151,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
             >
               <Archive className="w-3 h-3 inline mr-1" />
               Archived
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -256,12 +271,12 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
                 {search ? "No chats found" : "No chats available"}
               </p>
               {!search && (
-                <button
+                <Button
                   onClick={handleNewChat}
                   className="px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25"
                 >
                   Start New Chat
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -270,13 +285,15 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
         {/* Bottom Actions */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center justify-between">
-            <button
+            <Button
               onClick={() => console.log("Settings clicked")}
+              variant="ghost"
+              size="sm"
               className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
               title="Settings"
             >
               <Settings className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
-            </button>
+            </Button>
             
             <div className="flex items-center gap-2 text-xs text-gray-400">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>

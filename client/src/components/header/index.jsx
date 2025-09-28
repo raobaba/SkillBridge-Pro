@@ -4,8 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Code, Menu, X, User, Bell, MessageSquare, Search } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { getToken } from "../../services/utils";
-import Input from "../Input";
-import Button from "../Button";
+import {Button,Input} from "../../components"
 import ConfirmModal from "../modal/ConfirmModal";
 import { logOut } from "../../modules/authentication/slice/userSlice";
 
@@ -59,6 +58,32 @@ const Navbar = ({
       dispatch({ type: "signin/logout" });
       navigate("/");
     }
+  };
+
+  // Function to close all dropdowns
+  const closeAllDropdowns = () => {
+    setIsUserDropdownOpen(false);
+    setIsNotificationsOpen(false);
+    setIsMessagesOpen(false);
+    setIsMenuOpen(false);
+  };
+
+  // Function to open user dropdown and close others
+  const handleUserDropdownToggle = () => {
+    closeAllDropdowns();
+    setIsUserDropdownOpen(true);
+  };
+
+  // Function to open notifications and close others
+  const handleNotificationsToggle = () => {
+    closeAllDropdowns();
+    setNotificationsOpen(true);
+  };
+
+  // Function to open messages and close others
+  const handleMessagesToggle = () => {
+    closeAllDropdowns();
+    setMessagesOpen(true);
   };
 
   const userDropdownItems = [
@@ -127,36 +152,41 @@ const Navbar = ({
 
               {/* Avatar on far right */}
               {token && (
-                <div
-                  className='relative ml-4 hidden sm:block'
-                  ref={dropdownRef}
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                >
-                  {!isAvatarBroken && user?.avatarUrl ? (
-                    <img
-                      src={user?.avatarUrl}
-                      alt={user?.name || "Profile"}
-                      className='w-8 h-8 rounded-full border-2 border-white/20 cursor-pointer'
-                      onError={() => setIsAvatarBroken(true)}
-                    />
-                  ) : (
-                    <div className='w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20 cursor-pointer'>
-                      <User className='w-5 h-5 text-white' />
-                    </div>
-                  )}
+                <div className='relative ml-4 hidden sm:block'>
+                  <div
+                    ref={dropdownRef}
+                    onClick={handleUserDropdownToggle}
+                    className='cursor-pointer'
+                  >
+                    {!isAvatarBroken && user?.avatarUrl ? (
+                      <img
+                        src={user?.avatarUrl}
+                        alt={user?.name || "Profile"}
+                        className='w-8 h-8 rounded-full border-2 border-white/20'
+                        onError={() => setIsAvatarBroken(true)}
+                      />
+                    ) : (
+                      <div className='w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20'>
+                        <User className='w-5 h-5 text-white' />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Dropdown positioned relative to the outer container */}
                   {isUserDropdownOpen && (
-                    <div className='absolute right-0 mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50'>
+                    <div className='absolute left-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'>
                       {userDropdownItems.map((item, index) => (
-                        <div
+                        <Button
                           key={index}
                           onClick={() => {
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          className='px-4 py-2 text-gray-300 hover:bg-gray-700/50 cursor-pointer transition-colors'
+                          variant="ghost"
+                          className='w-full justify-start px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal'
                         >
                           {item.label}
-                        </div>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -166,15 +196,18 @@ const Navbar = ({
               {/* Auth Buttons if not logged in */}
               {!token && (
                 <>
-                  <button
+                  <Button
                     onClick={() => navigate("/auth")}
-                    className='text-gray-300 hover:text-white cursor-pointer transition-colors'
+                    variant="ghost"
+                    className='text-gray-300 hover:text-white'
                   >
                     Sign In
-                  </button>
-                  <button className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105'>
+                  </Button>
+                  <Button 
+                    className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transform hover:scale-105'
+                  >
                     Get Started
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -202,7 +235,7 @@ const Navbar = ({
                     variant='ghost'
                     size='md'
                     className='relative p-2 rounded-lg'
-                    onClick={() => setNotificationsOpen((prev) => !prev)}
+                    onClick={handleNotificationsToggle}
                   >
                     <Bell className='w-5 h-5' />
                     {notifications > 0 && (
@@ -214,38 +247,48 @@ const Navbar = ({
 
                   {/* Notifications Panel */}
                   {notificationsOpen && (
-                    <div className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'>
-                      <h4 className='text-gray-200 font-semibold mb-2'>
-                        Notifications
-                      </h4>
-                      <div className='max-h-64 overflow-y-auto'>
+                    <div className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4'>
+                      <div className='flex items-center justify-between mb-3'>
+                        <h4 className='text-gray-100 font-semibold text-lg'>
+                          Notifications
+                        </h4>
+                        <span className='text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full'>
+                          {notifications} new
+                        </span>
+                      </div>
+                      <div className='max-h-64 overflow-y-auto space-y-1'>
                         {[...Array(notifications)].map((_, index) => (
-                          <div
+                          <Button
                             key={index}
                             onClick={() => {
                               navigate("/notifications");
                               setNotificationsOpen(false);
                             }}
-                            className='px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors'
+                            variant="ghost"
+                            className='w-full justify-start p-3 h-auto bg-gray-800 hover:bg-gray-700 text-left'
                           >
-                            <p className='text-gray-300 text-sm'>
-                              Notification {index + 1}
-                            </p>
-                            <p className='text-gray-400 text-xs'>
-                              Details of the notification...
-                            </p>
-                          </div>
+                            <div className='flex flex-col items-start'>
+                              <p className='text-gray-300 text-sm font-medium'>
+                                Notification {index + 1}
+                              </p>
+                              <p className='text-gray-400 text-xs mt-1'>
+                                Details of the notification...
+                              </p>
+                            </div>
+                          </Button>
                         ))}
                       </div>
-                      <button
+                      <Button
                         onClick={() => {
                           navigate("/notifications");
                           setNotificationsOpen(false);
                         }}
-                        className='w-full cursor-pointer mt-2 text-blue-400 hover:text-blue-500 text-sm'
+                        variant="outline"
+                        size="sm"
+                        className='w-full mt-3 text-blue-400 hover:text-blue-300 border-blue-400/30 hover:border-blue-400/50'
                       >
-                        View All
-                      </button>
+                        View All Notifications
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -256,7 +299,7 @@ const Navbar = ({
                     variant='ghost'
                     size='md'
                     className='relative p-2 rounded-lg'
-                    onClick={() => setMessagesOpen((prev) => !prev)}
+                    onClick={handleMessagesToggle}
                   >
                     <MessageSquare className='w-5 h-5' />
                     {messages > 0 && (
@@ -267,14 +310,19 @@ const Navbar = ({
                   </Button>
 
                   {messagesOpen && (
-                    <div className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3 flex flex-col transition-all duration-300 max-h-[80vh]'>
-                      <h4 className='text-gray-200 font-semibold mb-2'>
-                        Messages
-                      </h4>
+                    <div className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4 flex flex-col transition-all duration-300 max-h-[80vh]'>
+                      <div className='flex items-center justify-between mb-3'>
+                        <h4 className='text-gray-100 font-semibold text-lg'>
+                          Messages
+                        </h4>
+                        <span className='text-xs text-gray-400 bg-blue-600 px-2 py-1 rounded-full'>
+                          {messages} unread
+                        </span>
+                      </div>
 
-                      <div className='overflow-y-auto flex-1'>
+                      <div className='overflow-y-auto flex-1 space-y-1'>
                         {messagesList.map((msg, index) => (
-                          <div
+                          <Button
                             key={msg.id}
                             onClick={() => {
                               if (expandedMessageIndex === index) {
@@ -283,19 +331,22 @@ const Navbar = ({
                                 setExpandedMessageIndex(index); // expand message
                               }
                             }}
-                            className={`px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors ${
+                            variant="ghost"
+                            className={`w-full justify-start p-3 h-auto text-left ${
                               expandedMessageIndex === index
-                                ? "bg-gray-700"
-                                : ""
+                                ? "bg-gray-700 hover:bg-gray-600"
+                                : "bg-gray-800 hover:bg-gray-700"
                             }`}
                           >
-                            <p className='text-gray-300 text-sm'>{`Message ${msg.id}`}</p>
-                            <p className='text-gray-400 text-xs whitespace-pre-wrap'>
-                              {expandedMessageIndex === index
-                                ? msg.fullText
-                                : msg.text}
-                            </p>
-                          </div>
+                            <div className='flex flex-col items-start w-full'>
+                              <p className='text-gray-300 text-sm font-medium'>{`Message ${msg.id}`}</p>
+                              <p className='text-gray-400 text-xs whitespace-pre-wrap mt-1'>
+                                {expandedMessageIndex === index
+                                  ? msg.fullText
+                                  : msg.text}
+                              </p>
+                            </div>
+                          </Button>
                         ))}
                       </div>
 
@@ -313,19 +364,20 @@ const Navbar = ({
                           }}
                           className='mt-2 flex space-x-2'
                         >
-                          <input
+                          <Input
                             type='text'
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             placeholder='Type a message...'
-                            className='flex-1 px-3 py-2 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500'
+                            className='flex-1 bg-gray-700 placeholder-gray-400 focus:ring-blue-500'
                           />
-                          <button
+                          <Button
                             type='submit'
-                            className='px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 rounded-lg text-white font-medium'
+                            size='md'
+                            className='px-4 py-2'
                           >
                             Send
-                          </button>
+                          </Button>
                         </form>
                       )}
                     </div>
@@ -333,45 +385,48 @@ const Navbar = ({
                 </div>
 
                 {/* Avatar + Username */}
-                <div
-                  className='relative flex items-center'
-                  ref={dropdownRef}
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                >
-                  {!isAvatarBroken && user?.avatarUrl ? (
-                    <img
-                      src={user?.avatarUrl}
-                      alt={user?.name || "Profile"}
-                      className='w-10 h-10 rounded-full border-2 border-white/20 cursor-pointer'
-                      onError={() => setIsAvatarBroken(true)}
-                    />
-                  ) : (
-                    <div className='w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20 cursor-pointer'>
-                      <User className='w-6 h-6 text-white' />
-                    </div>
-                  )}
+                <div className='relative flex items-center'>
+                  <div
+                    ref={dropdownRef}
+                    onClick={handleUserDropdownToggle}
+                    className='flex items-center cursor-pointer'
+                  >
+                    {!isAvatarBroken && user?.avatarUrl ? (
+                      <img
+                        src={user?.avatarUrl}
+                        alt={user?.name || "Profile"}
+                        className='w-10 h-10 rounded-full border-2 border-white/20'
+                        onError={() => setIsAvatarBroken(true)}
+                      />
+                    ) : (
+                      <div className='w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center border-2 border-white/20'>
+                        <User className='w-6 h-6 text-white' />
+                      </div>
+                    )}
 
-                  {/* Username */}
-                  {user?.name && (
-                    <span className='ml-2 text-sm font-medium text-gray-200 hidden sm:block'>
-                      {user.name}
-                    </span>
-                  )}
+                    {/* Username */}
+                    {user?.name && (
+                      <span className='ml-2 text-sm font-medium text-gray-200 hidden sm:block'>
+                        {user.name}
+                      </span>
+                    )}
+                  </div>
 
-                  {/* User Dropdown */}
+                  {/* User Dropdown positioned relative to the outer container */}
                   {isUserDropdownOpen && (
-                    <div className='absolute right-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50'>
+                    <div className='absolute left-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'>
                       {userDropdownItems.map((item, index) => (
-                        <div
+                        <Button
                           key={index}
                           onClick={() => {
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          className='px-4 py-2 text-gray-300 hover:bg-gray-700/50 cursor-pointer transition-colors'
+                          variant="ghost"
+                          className='w-full justify-start px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal'
                         >
                           {item.label}
-                        </div>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -382,9 +437,14 @@ const Navbar = ({
 
           {/* Mobile Menu Toggle for Home */}
           {isHome && (
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className='md:hidden p-2 rounded-lg hover:bg-gray-700/50 transition-colors'
+            <Button
+              onClick={() => {
+                closeAllDropdowns();
+                setIsMenuOpen(true);
+              }}
+              variant="ghost"
+              size="sm"
+              className='md:hidden p-2 hover:bg-gray-700/50'
               aria-label='Toggle Menu'
             >
               {isMenuOpen ? (
@@ -392,7 +452,7 @@ const Navbar = ({
               ) : (
                 <Menu className='w-6 h-6' />
               )}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -414,31 +474,35 @@ const Navbar = ({
 
             {token ? (
               userDropdownItems.map((item, index) => (
-                <div
+                <Button
                   key={index}
                   onClick={() => {
                     item.action();
                     setIsMenuOpen(false);
                   }}
-                  className='block text-gray-300 hover:text-white transition-colors cursor-pointer'
+                  variant="ghost"
+                  className='w-full justify-start text-gray-300 hover:text-white text-sm font-normal'
                 >
                   {item.label}
-                </div>
+                </Button>
               ))
             ) : (
               <>
-                <button
-                  className='block text-gray-300 hover:text-white transition-colors'
+                <Button
+                  variant="ghost"
+                  className='block text-gray-300 hover:text-white'
                   onClick={() => {
                     setIsMenuOpen(false);
                     navigate("/auth");
                   }}
                 >
                   Sign In
-                </button>
-                <button className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300'>
+                </Button>
+                <Button 
+                  className='w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
+                >
                   Get Started
-                </button>
+                </Button>
               </>
             )}
           </div>

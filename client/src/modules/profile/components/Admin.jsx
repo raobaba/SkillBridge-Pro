@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo } from "react";
+import Button from '../../../components/Button';
 import {
   Shield,
   Key,
@@ -158,15 +159,21 @@ const ACTIVITY_FEED_DATA = [
 // Memoized action buttons component
 const ActionButtons = memo(({ row }) => (
   <div className='flex gap-2'>
-    <button className='px-3 py-1 rounded-lg bg-green-500 text-white text-sm hover:bg-green-600'>
+    <Button 
+      className='px-3 py-1 rounded-lg bg-green-500 text-white text-sm hover:bg-green-600'
+    >
       Approve
-    </button>
-    <button className='px-3 py-1 rounded-lg bg-yellow-500 text-white text-sm hover:bg-yellow-600'>
+    </Button>
+    <Button 
+      className='px-3 py-1 rounded-lg bg-yellow-500 text-white text-sm hover:bg-yellow-600'
+    >
       Suspend
-    </button>
-    <button className='px-3 py-1 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600'>
+    </Button>
+    <Button 
+      className='px-3 py-1 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600'
+    >
       Remove
-    </button>
+    </Button>
   </div>
 ));
 
@@ -354,18 +361,24 @@ const Admin = memo(function Admin({
                     <span>Date: {project.date}</span>
                   </div>
                   <div className='mt-2 flex gap-2'>
-                    <button className='px-3 py-1 text-xs rounded-lg bg-blue-500 hover:bg-blue-600 text-white'>
+                    <Button 
+                      className='px-3 py-1 text-xs rounded-lg bg-blue-500 hover:bg-blue-600 text-white'
+                    >
                       <Eye className='w-3 h-3 inline mr-1' />
                       Review
-                    </button>
-                    <button className='px-3 py-1 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white'>
+                    </Button>
+                    <Button 
+                      className='px-3 py-1 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white'
+                    >
                       <CheckCircle2 className='w-3 h-3 inline mr-1' />
                       Approve
-                    </button>
-                    <button className='px-3 py-1 text-xs rounded-lg bg-red-500 hover:bg-red-600 text-white'>
+                    </Button>
+                    <Button 
+                      className='px-3 py-1 text-xs rounded-lg bg-red-500 hover:bg-red-600 text-white'
+                    >
                       <Ban className='w-3 h-3 inline mr-1' />
                       Ban
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -450,34 +463,42 @@ const Admin = memo(function Admin({
               Moderation Tools
             </h3>
             <div className='space-y-3'>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
+              <Button 
+                className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
+              >
                 <div className='flex items-center'>
                   <Ban className='w-4 h-4 mr-2 text-red-400' />
                   <span className='text-sm'>Ban User</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
-              </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
+              </Button>
+              <Button 
+                className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
+              >
                 <div className='flex items-center'>
                   <CheckCircle2 className='w-4 h-4 mr-2 text-green-400' />
                   <span className='text-sm'>Verify User</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
-              </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
+              </Button>
+              <Button 
+                className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
+              >
                 <div className='flex items-center'>
                   <Flag className='w-4 h-4 mr-2 text-orange-400' />
                   <span className='text-sm'>Flag Project</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
-              </button>
-              <button className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'>
+              </Button>
+              <Button 
+                className='w-full flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
+              >
                 <div className='flex items-center'>
                   <AlertTriangle className='w-4 h-4 mr-2 text-yellow-400' />
                   <span className='text-sm'>Resolve Dispute</span>
                 </div>
                 <span className='text-xs text-gray-400'>Quick Action</span>
-              </button>
+              </Button>
             </div>
           </div>
 

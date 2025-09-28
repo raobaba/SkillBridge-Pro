@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Button from '../../../components/Button';
 import { 
   Star, MapPin, Clock, Award, Zap, Heart, Bookmark, 
   Eye, MessageCircle, Phone, Video, Calendar, TrendingUp
@@ -62,14 +63,15 @@ const MatchCard = ({ match, role = "developer", onAction }) => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <button
+          <Button
             onClick={handleBookmark}
+            variant="ghost"
             className={`p-2 rounded-lg transition-colors ${
               isBookmarked ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-gray-400 hover:text-blue-400'
             }`}
           >
             <Bookmark className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -133,18 +135,24 @@ const MatchCard = ({ match, role = "developer", onAction }) => {
 
       {/* Actions */}
       <div className="flex space-x-3">
-        <button
+        <Button
           onClick={handlePrimaryAction}
           className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2"
         >
           <span>Invite to Project</span>
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
+        </Button>
+        <Button 
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"
+        >
           <Eye className="w-4 h-4" />
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
+        </Button>
+        <Button 
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"
+        >
           <MessageCircle className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </motion.div>
   );
@@ -182,14 +190,15 @@ const MatchCard = ({ match, role = "developer", onAction }) => {
             <div className="text-xl font-bold text-white">{match.matchScore}%</div>
             <div className="text-xs text-gray-400">Match Score</div>
           </div>
-          <button
+          <Button
             onClick={handleBookmark}
+            variant="ghost"
             className={`p-2 rounded-lg transition-colors ${
               isBookmarked ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-gray-400 hover:text-blue-400'
             }`}
           >
             <Bookmark className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -230,18 +239,24 @@ const MatchCard = ({ match, role = "developer", onAction }) => {
 
       {/* Actions */}
       <div className="flex space-x-3">
-        <button
+        <Button
           onClick={handlePrimaryAction}
           className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2"
         >
           <span>Apply Now</span>
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
+        </Button>
+        <Button 
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"
+        >
           <Eye className="w-4 h-4" />
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
+        </Button>
+        <Button 
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center"
+        >
           <MessageCircle className="w-4 h-4" />
-        </button>
+        </Button>
       </div>
     </motion.div>
   );

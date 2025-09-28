@@ -1,4 +1,5 @@
 import React from "react";
+import Button from '../../../components/Button';
 import {
   Shield,
   TrendingUp,
@@ -218,12 +219,18 @@ const AdminBillSubsDash = ({ data }) => {
                     </div>
 
                     <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                      <button className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                      <Button 
+                        variant='ghost'
+                        className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                      >
                         <Eye className='w-3 h-3 text-blue-400' />
-                      </button>
-                      <button className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                      </Button>
+                      <Button 
+                        variant='ghost'
+                        className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                      >
                         <Check className='w-3 h-3 text-emerald-400' />
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -291,12 +298,18 @@ const AdminBillSubsDash = ({ data }) => {
                   </div>
 
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                    <button className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
                       <Eye className='w-3 h-3 text-blue-400' />
-                    </button>
-                    <button className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                    </Button>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
                       <Check className='w-3 h-3 text-emerald-400' />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

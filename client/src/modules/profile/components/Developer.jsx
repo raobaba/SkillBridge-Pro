@@ -40,6 +40,7 @@ import {
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
+import Button from "../../../components/Button";
 import {
   Bio,
   ProfessionalInfo,
@@ -194,17 +195,26 @@ const PortfolioProjectCard = memo(({ project }) => (
       </div>
       
       <div className="flex items-center gap-2">
-        <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
-          <Github className="w-4 h-4 text-gray-400" />
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-2 bg-white/10 hover:bg-gray-600/50"
+          leftIcon={Github}
+        />
         {project.live && (
-          <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
-            <ExternalLink className="w-4 h-4 text-gray-400" />
-          </button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-2 bg-white/10 hover:bg-gray-600/50"
+            leftIcon={ExternalLink}
+          />
         )}
-        <button className="p-2 bg-white/10 rounded-lg hover:bg-gray-600/50 transition-colors">
-          <Eye className="w-4 h-4 text-gray-400" />
-        </button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-2 bg-white/10 hover:bg-gray-600/50"
+          leftIcon={Eye}
+        />
       </div>
     </div>
   </div>

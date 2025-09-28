@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Button from "../Button";
+import {Button,Input} from "../../components"
 
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
   // Disable body scroll when modal is open

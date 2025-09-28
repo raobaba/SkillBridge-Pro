@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { User, Phone, Video, MoreVertical, Search, Settings, Archive, Star } from "lucide-react";
+import Button from "../../../components/Button";
 
 const ChatHeader = ({ user, permissions }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -102,137 +103,159 @@ const ChatHeader = ({ user, permissions }) => {
           <div className="flex items-center gap-2">
             {/* Voice Call button - only for direct chats */}
             {!user?.isSystem && !user?.isFlagged && permissions?.canSendMessages && (
-              <button
+              <Button
                 onClick={() => handleCall('Voice')}
+                variant="ghost"
+                size="sm"
                 className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
                 title="Voice Call"
               >
                 <Phone className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
-              </button>
+              </Button>
             )}
 
             {/* Video Call button - only for direct chats */}
             {!user?.isSystem && !user?.isFlagged && permissions?.canSendMessages && (
-              <button
+              <Button
                 onClick={() => handleCall('Video')}
+                variant="ghost"
+                size="sm"
                 className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
                 title="Video Call"
               >
                 <Video className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors duration-300" />
-              </button>
+              </Button>
             )}
 
             {/* Moderation actions for flagged chats */}
             {user?.isFlagged && permissions?.canModerate && (
-              <button
+              <Button
                 onClick={() => console.log('Resolve flagged chat')}
+                variant="ghost"
+                size="sm"
                 className="p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-300 hover:scale-110 group"
                 title="Resolve Flagged Chat"
               >
                 <Star className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
-              </button>
+              </Button>
             )}
 
             {/* More Options Menu */}
             <div className="relative">
-              <button
+              <Button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                variant="ghost"
+                size="sm"
                 className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
                 title="More options"
               >
                 <MoreVertical className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors duration-300" />
-              </button>
+              </Button>
 
               {/* Enhanced Dropdown Menu with High Z-Index */}
               {isMenuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-black/40 backdrop-blur-sm rounded-xl border border-white/20 shadow-2xl overflow-hidden z-[99999]">
                   <div className="p-2">
                     {/* Search */}
-                    <button
+                    <Button
                       onClick={() => {
                         handleSearch();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <Search className="w-4 h-4" />
                       Search Messages
-                    </button>
+                    </Button>
                     
                     {/* View Profile */}
-                    <button
+                    <Button
                       onClick={() => {
                         console.log("View profile clicked");
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <User className="w-4 h-4" />
                       View Profile
-                    </button>
+                    </Button>
 
                     {/* Star/Favorite */}
-                    <button
+                    <Button
                       onClick={() => {
                         handleStar();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <Star className="w-4 h-4" />
                       Add to Favorites
-                    </button>
+                    </Button>
 
                     {/* Archive */}
-                    <button
+                    <Button
                       onClick={() => {
                         handleArchive();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <Archive className="w-4 h-4" />
                       Archive Chat
-                    </button>
+                    </Button>
 
                     {/* Settings */}
-                    <button
+                    <Button
                       onClick={() => {
                         handleSettings();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <Settings className="w-4 h-4" />
                       Chat Settings
-                    </button>
+                    </Button>
 
                     {/* Divider */}
                     <div className="my-2 border-t border-white/10"></div>
 
                     {/* Mute Notifications */}
-                    <button
+                    <Button
                       onClick={() => {
                         console.log("Mute notifications clicked");
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
                     >
                       <Phone className="w-4 h-4" />
                       Mute Notifications
-                    </button>
+                    </Button>
 
                     {/* Block User */}
-                    <button
+                    <Button
                       onClick={() => {
                         console.log("Block user clicked");
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-2"
                     >
                       <MoreVertical className="w-4 h-4" />
                       Block User
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

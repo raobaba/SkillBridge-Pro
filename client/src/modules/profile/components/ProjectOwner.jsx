@@ -23,6 +23,7 @@ import {
 import ConfirmModal from "../../../components/modal/ConfirmModal";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
+import Button from "../../../components/Button";
 import {
   Bio,
   QuickActions,
@@ -159,24 +160,30 @@ const DEVELOPERS_STATIC_DATA = [
 // Memoized action buttons component
 const DeveloperActionButtons = memo(({ row }) => (
   <div className='flex gap-2'>
-    <button
-      className='px-3 cursor-pointer py-1 text-xs rounded-lg bg-blue-500 hover:bg-blue-600 text-white'
+    <Button
+      variant='default'
+      size='sm'
+      className='px-3 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white'
       onClick={() => alert(`Viewing profile of ${row.name}`)}
     >
       View
-    </button>
-    <button
-      className='px-3 cursor-pointer py-1 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white'
+    </Button>
+    <Button
+      variant='default'
+      size='sm'
+      className='px-3 py-1 text-xs bg-green-500 hover:bg-green-600 text-white'
       onClick={() => alert(`Assigning project for ${row.name}`)}
     >
       Assign
-    </button>
-    <button
-      className='px-3 cursor-pointer py-1 text-xs rounded-lg bg-red-500 hover:bg-red-600 text-white'
+    </Button>
+    <Button
+      variant='default'
+      size='sm'
+      className='px-3 py-1 text-xs bg-red-500 hover:bg-red-600 text-white'
       onClick={() => alert(`Suspending ${row.name}`)}
     >
       Suspend
-    </button>
+    </Button>
   </div>
 ));
 

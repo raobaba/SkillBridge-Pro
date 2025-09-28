@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Send, Paperclip, Smile, Mic, MicOff } from "lucide-react";
+import {Button,Input} from "../../../components"
 
 
 const ChatBox = ({ onSend }) => {
@@ -58,17 +59,19 @@ const ChatBox = ({ onSend }) => {
           {/* Main input area */}
           <div className="flex items-center gap-3">
             {/* Attachment button */}
-            <button
+            <Button
               onClick={handleFileUpload}
+              variant="ghost"
+              size="sm"
               className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
               title="Attach file"
             >
               <Paperclip className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
-            </button>
+            </Button>
 
             {/* Message input */}
             <div className="flex-1 relative">
-              <input
+              <Input
                 ref={inputRef}
                 type="text"
                 aria-label="Type a message"
@@ -88,17 +91,21 @@ const ChatBox = ({ onSend }) => {
             </div>
 
             {/* Emoji button */}
-            <button
+            <Button
               onClick={handleEmojiClick}
+              variant="ghost"
+              size="sm"
               className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
               title="Add emoji"
             >
               <Smile className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
-            </button>
+            </Button>
 
             {/* Voice recording button */}
-            <button
+            <Button
               onClick={handleVoiceToggle}
+              variant="ghost"
+              size="sm"
               className={`p-2 rounded-lg transition-all duration-300 hover:scale-110 group ${isRecording
                   ? "bg-gradient-to-br from-red-500/30 via-pink-500/30 to-red-500/30 animate-pulse"
                   : "bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30"
@@ -110,10 +117,10 @@ const ChatBox = ({ onSend }) => {
               ) : (
                 <Mic className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
               )}
-            </button>
+            </Button>
 
             {/* Send button */}
-            <button
+            <Button
               onClick={handleSend}
               disabled={!message?.trim()}
               className={`p-3 rounded-xl transition-all duration-300 ${message?.trim()
@@ -123,7 +130,7 @@ const ChatBox = ({ onSend }) => {
               title="Send message"
             >
               <Send className="w-5 h-5 text-white" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

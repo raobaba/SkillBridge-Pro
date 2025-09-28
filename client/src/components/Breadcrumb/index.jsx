@@ -11,7 +11,7 @@ const Breadcrumb = () => {
       dashboard: "Dashboard",
       profile: "Profile",
       project: "Projects",
-      matchmaking: "Matchmaking",
+      matchmaking: "Matchmaking1",
       chat: "Communication",
       "ai-career": "AI Career",
       "portfolio-sync": "Portfolio Sync",

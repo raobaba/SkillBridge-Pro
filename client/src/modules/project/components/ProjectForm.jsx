@@ -244,20 +244,22 @@ const ProjectForm = () => {
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <button
+            <Button
               onClick={() => setShowPreview(!showPreview)}
+              variant="ghost"
               className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
             >
               <Eye className="w-4 h-4" />
               {showPreview ? "Hide Preview" : "Show Preview"}
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setShowAdvanced(!showAdvanced)}
+              variant="ghost"
               className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
             >
               <Settings className="w-4 h-4" />
               {showAdvanced ? "Hide Advanced" : "Show Advanced"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -492,12 +494,14 @@ const ProjectForm = () => {
                         >
                           <Tag className="w-3 h-3" />
                           {skill}
-                          <button
+                          <Button
                             onClick={() => handleRemoveSkill(idx)}
+                            variant="ghost"
+                            size="sm"
                             className="ml-1 hover:text-red-300 transition-colors duration-300"
                           >
                             <X className="w-3 h-3" />
-                          </button>
+                          </Button>
                         </span>
                       ))}
                     </div>
@@ -530,12 +534,14 @@ const ProjectForm = () => {
                         >
                           <Tag className="w-3 h-3" />
                           {tag}
-                          <button
+                          <Button
                             onClick={() => handleRemoveTag(idx)}
+                            variant="ghost"
+                            size="sm"
                             className="ml-1 hover:text-red-300 transition-colors duration-300"
                           >
                             <X className="w-3 h-3" />
-                          </button>
+                          </Button>
                         </span>
                       ))}
                     </div>
@@ -691,12 +697,14 @@ const ProjectForm = () => {
                             <span className="text-white text-sm">{file.name}</span>
                             <span className="text-gray-400 text-xs">({(file.size / 1024).toFixed(1)} KB)</span>
                           </div>
-                          <button
+                          <Button
                             onClick={() => removeAttachment(idx)}
+                            variant="ghost"
+                            size="sm"
                             className="text-red-400 hover:text-red-300 transition-colors duration-300"
                           >
                             <X className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       ))}
                     </div>

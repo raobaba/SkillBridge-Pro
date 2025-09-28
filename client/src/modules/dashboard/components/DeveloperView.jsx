@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Button from '../../../components/Button';
 import {
   Bell,
   MessageSquare,
@@ -460,12 +461,13 @@ export default function DeveloperView() {
                   <CheckCircle2 className='w-6 h-6 text-green-400' />
                   Active Tasks
                 </h2>
-                <button 
+                <Button 
                   onClick={() => navigate('/project')}
+                  variant="ghost"
                   className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
                 >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-3'>
                 {activeTasks.map((task) => (
@@ -505,9 +507,11 @@ export default function DeveloperView() {
                           {task.estimatedTime}
                         </span>
                       </div>
-                      <button className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'>
+                      <Button 
+                        className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
+                      >
                         {task.status === 'in_progress' ? 'Continue' : 'Start'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -521,12 +525,13 @@ export default function DeveloperView() {
                   <MessageSquare className='w-6 h-6 text-blue-400' />
                   Project Invitations
                 </h2>
-                <button 
+                <Button 
                   onClick={() => navigate('/notifications')}
+                  variant="ghost"
                   className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
                 >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-3'>
                 {invitations.map((invitation) => (
@@ -558,12 +563,16 @@ export default function DeveloperView() {
                     <div className='flex items-center justify-between'>
                       <span className='text-gray-400 text-sm'>{invitation.sent}</span>
                       <div className='flex gap-2'>
-                        <button className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'>
+                        <Button 
+                          className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'
+                        >
                           Accept
-                        </button>
-                        <button className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'>
+                        </Button>
+                        <Button 
+                          className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'
+                        >
                           Decline
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -575,9 +584,12 @@ export default function DeveloperView() {
             <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
               <div className='flex items-center justify-between mb-6'>
                 <h2 className='text-xl font-semibold'>Recent Projects</h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-4'>
                 {recentProjects.map((project) => (
@@ -662,9 +674,12 @@ export default function DeveloperView() {
             <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
               <div className='flex items-center justify-between mb-6'>
                 <h2 className='text-xl font-semibold'>Matched Projects</h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-4'>
                 {matchedProjects.map((project) => (
@@ -731,12 +746,16 @@ export default function DeveloperView() {
                         Posted {project.posted}
                       </span>
                       <div className='flex space-x-2'>
-                        <button className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'>
+                        <Button 
+                          className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
+                        >
                           Apply
-                        </button>
-                        <button className='px-3 py-1 bg-white/10 hover:bg-gray-600/50 rounded text-sm transition-colors'>
+                        </Button>
+                        <Button 
+                          className='px-3 py-1 bg-white/10 hover:bg-gray-600/50 rounded text-sm transition-colors'
+                        >
                           Save
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -881,9 +900,11 @@ export default function DeveloperView() {
                   </div>
                 </div>
               </div>
-              <button className='w-full mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm transition-colors'>
+              <Button 
+                className='w-full mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm transition-colors'
+              >
                 Sync All Platforms
-              </button>
+              </Button>
             </div>
 
             {/* Skill Gap Analysis */}
@@ -913,9 +934,11 @@ export default function DeveloperView() {
                   </div>
                 ))}
               </div>
-              <button className='w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm transition-colors'>
+              <Button 
+                className='w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm transition-colors'
+              >
                 View Learning Paths
-              </button>
+              </Button>
             </div>
 
             {/* Enhanced Notifications */}
@@ -953,9 +976,12 @@ export default function DeveloperView() {
                           <p className='text-xs text-gray-500'>
                             {notification.time}
                           </p>
-                          <button className='text-xs text-blue-400 hover:text-blue-300'>
+                          <Button 
+                            variant="ghost"
+                            className='text-xs text-blue-400 hover:text-blue-300'
+                          >
                             {notification.action}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       {notification.unread && (
@@ -965,9 +991,11 @@ export default function DeveloperView() {
                   </div>
                 ))}
               </div>
-              <button className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'>
+              <Button 
+                className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'
+              >
                 View All Notifications
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -980,9 +1008,10 @@ export default function DeveloperView() {
           </h3>
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
             {quickAccessLinks.map((link, index) => (
-              <button
+              <Button
                 key={index}
                 onClick={() => navigate(link.path)}
+                variant="ghost"
                 className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                   link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                   link.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :
@@ -1013,7 +1042,7 @@ export default function DeveloperView() {
                   <p className='text-sm font-medium text-white'>{link.name}</p>
                   <p className='text-xs text-gray-400 mt-1'>{link.description}</p>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

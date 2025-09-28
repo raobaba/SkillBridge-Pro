@@ -391,12 +391,14 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         <Tag className="w-3 h-3" />
                         {tag}
                         {isEditing && (
-                          <button
+                          <Button
                             onClick={() => handleRemoveTag(idx)}
+                            variant="ghost"
+                            size="sm"
                             className="ml-1 hover:text-red-300 transition-colors duration-300"
                           >
                             <X className="w-3 h-3" />
-                          </button>
+                          </Button>
                         )}
                       </span>
                     ))}
@@ -412,12 +414,14 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
                       />
-                      <button
+                      <Button
                         onClick={handleAddTag}
+                        variant="outline"
+                        size="sm"
                         className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-4 py-2 rounded-lg hover:bg-blue-500/30 transition-colors duration-300"
                       >
                         <Plus className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -425,13 +429,13 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                 {/* Save Button */}
                 {isEditing && (
                   <div className="flex justify-end">
-                    <button
+                    <Button
                       onClick={handleSave}
                       className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       Save Changes
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -594,18 +598,19 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </div>
             </div>
             <div className="p-6 border-t border-white/10 flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => setShowInviteModal(false)}
+                variant="ghost"
                 className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors duration-300"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleInvite}
                 className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
               >
                 Send Invite
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -644,18 +649,19 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </div>
             </div>
             <div className="p-6 border-t border-white/10 flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => setShowBoostModal(false)}
+                variant="ghost"
                 className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors duration-300"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleBoost}
                 className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
               >
                 Boost Now
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -683,23 +689,25 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </div>
             </div>
             <div className="p-6 border-t border-white/10 flex justify-end gap-3">
-              <button
+              <Button
                 onClick={() => setShowDeleteConfirm(false)}
+                variant="ghost"
                 className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors duration-300"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   // Handle delete logic
                   console.log('Deleting project')
                   setShowDeleteConfirm(false)
                   onClose()
                 }}
+                variant="outline"
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg transition-colors duration-300"
               >
                 Delete Project
-              </button>
+              </Button>
             </div>
           </div>
         </div>

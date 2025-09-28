@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Button from "../../../components/Button";
 import {
   Calendar,
   Clock,
@@ -229,12 +230,13 @@ const ProjectCard = ({ project, isOwner = false, onAction, onInvite }) => {
                 <Users className="w-4 h-4 text-green-400" />
                 Team Members ({project.team.length})
               </h3>
-              <button
+              <Button
                 onClick={() => setShowTeam(!showTeam)}
+                variant="ghost"
                 className="text-blue-400 hover:text-blue-300 transition-colors duration-300 text-xs font-medium"
               >
                 {showTeam ? "Hide" : "View All"}
-              </button>
+              </Button>
             </div>
             
             <div className="flex -space-x-3">
@@ -287,32 +289,33 @@ const ProjectCard = ({ project, isOwner = false, onAction, onInvite }) => {
         <div className="flex flex-col sm:flex-row gap-3">
           {isOwner ? (
             <>
-              <button 
+              <Button 
                 onClick={() => setShowManagementPanel(true)}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
               >
                 <Settings className="w-4 h-4" />
                 Manage Project
-              </button>
+              </Button>
               
-              <button 
+              <Button 
                 onClick={() => onInvite && onInvite(project.id)}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
               >
                 <Users className="w-4 h-4" />
                 Invite Developers
-              </button>
+              </Button>
               
-              <button 
+              <Button 
                 onClick={() => onAction && onAction(project.id, 'boost')}
                 className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
               >
                 <Zap className="w-4 h-4" />
                 Boost Visibility
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={() => onAction && onAction(project.id, project.status === 'Active' ? 'pause' : 'resume')}
+                variant="ghost"
                 className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
                   project.status === 'Active'
                     ? "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30"
@@ -320,22 +323,27 @@ const ProjectCard = ({ project, isOwner = false, onAction, onInvite }) => {
                 }`}
               >
                 {project.status === 'Active' ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
+              <Button 
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              >
                 <Eye className="w-4 h-4" />
                 View Details
-              </button>
+              </Button>
               
-              <button className="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm">
+              <Button 
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2 text-sm"
+              >
                 <MessageSquare className="w-4 h-4" />
                 Contact
-              </button>
+              </Button>
               
-              <button
+              <Button
                 onClick={() => setFavorited(!favorited)}
+                variant="ghost"
                 className={`p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
                   favorited 
                     ? "bg-pink-500/20 text-pink-400" 
@@ -343,11 +351,14 @@ const ProjectCard = ({ project, isOwner = false, onAction, onInvite }) => {
                 }`}
               >
                 <Heart className={`w-5 h-5 ${favorited ? "fill-current" : ""}`} />
-              </button>
+              </Button>
               
-              <button className="p-3 rounded-xl bg-white/10 text-gray-400 hover:bg-white/20 transition-all duration-300 hover:scale-105">
+              <Button 
+                variant="ghost"
+                className="p-3 rounded-xl bg-white/10 text-gray-400 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+              >
                 <Share2 className="w-5 h-5" />
-              </button>
+              </Button>
             </>
           )}
         </div>

@@ -36,7 +36,7 @@ import {
   Eye,
   ExternalLink,
 } from "lucide-react";
-import Button from "../Button";
+import {Button,Input} from "../../components"
 import ConfirmModal from "../modal/ConfirmModal";
 import { logOut } from "../../modules/authentication/slice/userSlice";
 import { useDispatch } from "react-redux";
@@ -187,12 +187,14 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             </div>
 
             {/* Mobile menu button */}
-            <button
+            <Button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-2 rounded-lg hover:bg-gray-700/50 transition-colors"
+              variant="ghost"
+              size="sm"
+              className="md:hidden p-2 hover:bg-gray-700/50"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            </Button>
           </div>
 
           {/* Mobile menu */}
@@ -240,14 +242,12 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             {/* Search Bar */}
             {isSearchBar && (
               <div className="hidden md:flex flex-1 max-w-md mx-8">
-                <div className="relative w-full">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search projects, skills, or companies..."
-                    className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+                <Input
+                  type="text"
+                  placeholder="Search projects, skills, or companies..."
+                  leftIcon={Search}
+                  className="w-full bg-white/10 border-white/20 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
             )}
 
@@ -287,15 +287,17 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                         </div>
                       ))}
                     </div>
-                    <button
+                    <Button
                       onClick={() => {
                         navigate("/notifications");
                         setIsNotificationsOpen(false);
                       }}
-                      className="w-full cursor-pointer mt-2 text-blue-400 hover:text-blue-500 text-sm"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-blue-400 hover:text-blue-500"
                     >
                       View All
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -334,15 +336,17 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                         </div>
                       ))}
                     </div>
-                    <button
+                    <Button
                       onClick={() => {
                         navigate("/chat");
                         setIsMessagesOpen(false);
                       }}
-                      className="w-full cursor-pointer mt-2 text-blue-400 hover:text-blue-500 text-sm"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-2 text-blue-400 hover:text-blue-500"
                     >
                       View All Messages
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -351,20 +355,20 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
               <div className="relative dropdown-container">
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 p-2 rounded-lg"
+                  className="group flex items-center space-x-2 p-2 rounded-lg hover:bg-white/10"
                   onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                     {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                   </div>
-                  <span className="hidden sm:block text-sm font-medium text-gray-200">
+                  <span className="hidden sm:block text-sm font-medium text-gray-200 group-hover:text-white">
                     {user?.name || "User"}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-white" />
                 </Button>
 
                 {isUserDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 mt-2 w-64 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-1">
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-white/10">
                       <p className="text-sm font-medium text-white">{user?.name || "User"}</p>
@@ -373,40 +377,42 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                     </div>
 
                     {/* Navigation Items */}
-                    <div className="py-2">
+                    <div className="py-2 space-y-1">
                       {navigationItems.slice(0, 6).map((item, index) => (
-                        <button
+                        <Button
                           key={index}
                           onClick={() => {
                             navigate(item.path);
                             setIsUserDropdownOpen(false);
                           }}
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-3 ${
+                          variant="ghost"
+                          className={`w-full justify-start px-3 py-2 text-sm flex items-center space-x-3 rounded-lg ${
                             isActivePath(item.path)
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "text-gray-300 hover:bg-gray-700/50"
+                              ? "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30"
+                              : "text-gray-300 hover:bg-gray-700/50 hover:text-white"
                           }`}
                         >
                           <item.icon className="w-4 h-4" />
                           <span>{item.label}</span>
-                        </button>
+                        </Button>
                       ))}
                     </div>
 
                     {/* Divider */}
-                    <div className="border-t border-white/10"></div>
+                    <div className="border-t border-white/10 my-2"></div>
 
                     {/* Logout */}
-                    <button
+                    <Button
                       onClick={() => {
                         setIsUserDropdownOpen(false);
                         setIsLogoutOpen(true);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 transition-colors flex items-center space-x-3"
+                      variant="ghost"
+                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 flex items-center space-x-3 rounded-lg"
                     >
                       <LogOut className="w-4 h-4" />
                       <span>Logout</span>
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -425,9 +431,10 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {quickAccessItems.map((item, index) => (
-                <button
+                <Button
                   key={index}
                   onClick={() => navigate(item.path)}
+                  variant="ghost"
                   className={`p-3 rounded-lg transition-all duration-200 hover:scale-105 ${
                     item.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                     item.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
@@ -442,7 +449,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                     'text-yellow-400'
                   }`} />
                   <p className="text-xs font-medium text-white text-center">{item.label}</p>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -454,10 +461,11 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             </h3>
             <div className="space-y-1">
               {navigationItems.map((item, index) => (
-                <button
+                <Button
                   key={index}
                   onClick={() => navigate(item.path)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center space-x-3 ${
+                  variant="ghost"
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center space-x-3 ${
                     isActivePath(item.path)
                       ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
                       : "text-gray-300 hover:bg-gray-700/50"
@@ -468,7 +476,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                     <p className="text-sm font-medium">{item.label}</p>
                     <p className="text-xs text-gray-400">{item.description}</p>
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -479,10 +487,11 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/10">
         <div className="grid grid-cols-5 gap-1 p-2">
           {navigationItems.slice(0, 5).map((item, index) => (
-            <button
+            <Button
               key={index}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center py-2 px-1 rounded-lg transition-colors ${
+              variant="ghost"
+              className={`flex flex-col items-center py-2 px-1 rounded-lg ${
                 isActivePath(item.path)
                   ? "bg-blue-500/20 text-blue-400"
                   : "text-gray-400 hover:text-white"
@@ -490,7 +499,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             >
               <item.icon className="w-5 h-5 mb-1" />
               <span className="text-xs font-medium">{item.label}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>

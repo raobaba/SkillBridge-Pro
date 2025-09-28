@@ -1,4 +1,5 @@
 import React from "react";
+import Button from '../../../components/Button';
 import { 
   Zap, 
   Brain, 
@@ -166,10 +167,12 @@ const DeveloperBillSubsDash = ({ data }) => {
                   Priority Support
                 </li>
               </ul>
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2">
+              <Button 
+                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
+              >
                 Upgrade Now
                 <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
 
             <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-emerald-500/50 transition-all duration-300">
@@ -198,10 +201,12 @@ const DeveloperBillSubsDash = ({ data }) => {
                   24/7 Dedicated Support
                 </li>
               </ul>
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2">
+              <Button 
+                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2"
+              >
                 Contact Sales
                 <ArrowUpRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

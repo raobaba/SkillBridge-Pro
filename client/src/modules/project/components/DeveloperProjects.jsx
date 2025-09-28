@@ -400,30 +400,33 @@ const DeveloperProjects = ({ user }) => {
               </div>
               <div className="bg-white/10 rounded-xl p-1">
                 <div className="grid grid-cols-2 gap-1">
-                  <button
+                  <Button
                     onClick={() => setActiveTab("discover")}
+                    variant="ghost"
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                       activeTab === "discover" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
                     }`}
                   >
                     Discover
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setActiveTab("applications")}
+                    variant="ghost"
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                       activeTab === "applications" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
                     }`}
                   >
                     Applications ({appliedProjects.length})
-                  </button>
+                  </Button>
                 </div>
               </div>
-              <button
+              <Button
                 onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+                variant="ghost"
                 className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
               >
                 {viewMode === "grid" ? "List View" : "Grid View"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -519,29 +522,29 @@ const DeveloperProjects = ({ user }) => {
                 ))}
               </select>
               
-              <button
+              <Button
                 onClick={() => setShowFilters(!showFilters)}
                 className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
               >
                 <Filter className="w-4 h-4" />
                 Filters
-              </button>
+              </Button>
 
                 <div className="hidden md:flex bg-white/10 rounded-lg overflow-hidden">
-                  <button
+                  <Button
                     onClick={() => setViewMode("grid")}
                     className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "grid" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
                     title="Grid view"
                   >
                     <LayoutGrid className="w-4 h-4" /> Grid
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => setViewMode("list")}
                     className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "list" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
                     title="List view"
                   >
                     <List className="w-4 h-4" /> List
-                  </button>
+                  </Button>
                 </div>
             </div>
           </div>
@@ -586,12 +589,12 @@ const DeveloperProjects = ({ user }) => {
                   ))}
                 </select>
                 
-                <button
+                <Button
                   onClick={clearFilters}
                   className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg transition-colors duration-300"
                 >
                   Clear Filters
-                </button>
+                </Button>
               </div>
 
               {/* Skills Filter */}
@@ -599,7 +602,7 @@ const DeveloperProjects = ({ user }) => {
                 <label className="block text-gray-300 mb-2">Filter by Skills</label>
                 <div className="flex flex-wrap gap-2">
                   {skillOptions.map(skill => (
-                    <button
+                    <Button
                       key={skill}
                       onClick={() => {
                         setSelectedSkills(prev => 
@@ -615,7 +618,7 @@ const DeveloperProjects = ({ user }) => {
                       }`}
                     >
                       {skill}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -648,13 +651,13 @@ const DeveloperProjects = ({ user }) => {
                       <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <button
+                      <Button
                         onClick={() => handleOpenDetails(project)}
                         className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
                       >
                         View
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleApplyToProject(project.id)}
                         disabled={appliedProjects.includes(project.id)}
                         className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
@@ -664,7 +667,7 @@ const DeveloperProjects = ({ user }) => {
                         }`}
                       >
                         {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -759,13 +762,13 @@ const DeveloperProjects = ({ user }) => {
                       {/* Footer actions pinned */}
                       <div className="p-5 pt-0 mt-auto">
                         <div className="flex gap-2">
-                          <button
+                          <Button
                             onClick={() => handleOpenDetails(project)}
                             className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
                           >
                             View Details
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => handleApplyToProject(project.id)}
                             disabled={appliedProjects.includes(project.id)}
                             className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
@@ -775,7 +778,7 @@ const DeveloperProjects = ({ user }) => {
                             }`}
                           >
                             {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -852,13 +855,13 @@ const DeveloperProjects = ({ user }) => {
                     </div>
                     
                     <div className="flex flex-col gap-2 ml-4">
-                      <button
+                      <Button
                         onClick={() => handleOpenDetails(project)}
                         className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white"
                       >
                         View Details
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => handleApplyToProject(project.id)}
                         disabled={appliedProjects.includes(project.id)}
                         className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
@@ -868,10 +871,10 @@ const DeveloperProjects = ({ user }) => {
                         }`}
                       >
                         {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
-                      </button>
+                      </Button>
                       
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => handleSaveProject(project.id)}
                           className={`p-2 rounded-lg transition-colors duration-300 ${
                             savedProjects.includes(project.id)
@@ -880,9 +883,9 @@ const DeveloperProjects = ({ user }) => {
                           }`}
                         >
                           <Bookmark className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`} />
-                        </button>
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => handleToggleFavorite(project.id)}
                           className={`p-2 rounded-lg transition-colors duration-300 ${
                             favorites.includes(project.id)
@@ -891,11 +894,13 @@ const DeveloperProjects = ({ user }) => {
                           }`}
                         >
                           <Heart className={`w-4 h-4 ${favorites.includes(project.id) ? "fill-current" : ""}`} />
-                        </button>
+                        </Button>
                         
-                        <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
+                        <Button 
+                          className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                        >
                           <Share2 className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -951,33 +956,33 @@ const DeveloperProjects = ({ user }) => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button
+                            <Button
                               onClick={() => handleOpenDetails(project)}
                               className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
                             >
                               View
-                            </button>
+                            </Button>
                             {canJoinGroupChat(projectId) ? (
-                              <button
+                              <Button
                                 onClick={() => console.log("Joining group chat for", projectId)}
                                 className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300"
                               >
                                 Join Group Chat
-                              </button>
+                              </Button>
                             ) : (
-                              <button
+                              <Button
                                 disabled
                                 className="p-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed"
                               >
                                 Group Chat Locked
-                              </button>
+                              </Button>
                             )}
-                            <button
+                            <Button
                               onClick={() => handleWithdrawApplication(projectId)}
                               className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300"
                             >
                               Withdraw
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -1021,9 +1026,12 @@ const DeveloperProjects = ({ user }) => {
                     <p className="text-gray-400 text-sm">{selectedProject.company} • {selectedProject.location}</p>
                   </div>
                 </div>
-                <button onClick={handleCloseDetails} className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                <Button 
+                  onClick={handleCloseDetails} 
+                  className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300"
+                >
                   Close
-                </button>
+                </Button>
               </div>
 
               <div className="p-6 space-y-6">
@@ -1060,8 +1068,13 @@ const DeveloperProjects = ({ user }) => {
                   </div>
                 )}
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <button onClick={handleCloseDetails} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300">Close</button>
-                  <button
+                  <Button 
+                    onClick={handleCloseDetails} 
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300"
+                  >
+                    Close
+                  </Button>
+                  <Button
                     onClick={() => handleApplyToProject(selectedProject.id)}
                     disabled={appliedProjects.includes(selectedProject.id)}
                     className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
@@ -1071,7 +1084,7 @@ const DeveloperProjects = ({ user }) => {
                     }`}
                   >
                     {appliedProjects.includes(selectedProject.id) ? "Applied" : "Apply Now"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

@@ -1,5 +1,6 @@
 // components/ApplicantsList.jsx
 import React, { useState, useMemo } from "react";
+import Button from '../../../components/Button';
 import { 
   Star, 
   Heart, 
@@ -347,12 +348,12 @@ const ApplicantsList = () => {
                 {stats.total} Total Applicants
               </span>
             </div>
-            <button
+            <Button
               onClick={() => setViewMode(viewMode === "table" ? "card" : "table")}
               className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300"
             >
               {viewMode === "table" ? "Card View" : "Table View"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -435,20 +436,20 @@ const ApplicantsList = () => {
                 {selectedApplicants.length} applicant(s) selected
               </span>
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={() => handleBulkAction("shortlist")}
                   className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 px-3 py-1 rounded text-sm transition-colors duration-300"
                 >
                   <CheckCircle className="w-3 h-3 mr-1 inline" />
                   Shortlist
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={() => handleBulkAction("reject")}
                   className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1 rounded text-sm transition-colors duration-300"
                 >
                   <UserX className="w-3 h-3 mr-1 inline" />
                   Reject
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -567,7 +568,7 @@ const ApplicantsList = () => {
                     
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button
+                        <Button
                           onClick={() => toggleFavorite(app.id)}
                           className={`p-2 rounded-lg transition-colors duration-300 ${
                             favorites.includes(app.id)
@@ -576,18 +577,20 @@ const ApplicantsList = () => {
                           }`}
                         >
                           <Heart className={`w-4 h-4 ${favorites.includes(app.id) ? "fill-current" : ""}`} />
-                        </button>
+                        </Button>
                         
-                        <button
+                        <Button
                           onClick={() => setExpandedApplicant(expandedApplicant === app.id ? null : app.id)}
                           className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
                         >
                           <Eye className="w-4 h-4" />
-                        </button>
+                        </Button>
                         
-                        <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
+                        <Button 
+                          className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                        >
                           <MessageSquare className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -670,7 +673,7 @@ const ApplicantsList = () => {
               
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => toggleFavorite(app.id)}
                     className={`p-2 rounded-lg transition-colors duration-300 ${
                       favorites.includes(app.id)
@@ -679,26 +682,34 @@ const ApplicantsList = () => {
                     }`}
                   >
                     <Heart className={`w-4 h-4 ${favorites.includes(app.id) ? "fill-current" : ""}`} />
-                  </button>
+                  </Button>
                   
-                  <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
+                  <Button 
+                    className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                  >
                     <MessageSquare className="w-4 h-4" />
-                  </button>
+                  </Button>
                   
-                  <button className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300">
+                  <Button 
+                    className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                  >
                     <ExternalLink className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </div>
                 
                 <div className="flex gap-1">
-                  <button className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-sm hover:bg-green-500/30 transition-colors duration-300">
+                  <Button 
+                    className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-sm hover:bg-green-500/30 transition-colors duration-300"
+                  >
                     <CheckCircle className="w-3 h-3 mr-1 inline" />
                     Shortlist
-                  </button>
-                  <button className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-sm hover:bg-red-500/30 transition-colors duration-300">
+                  </Button>
+                  <Button 
+                    className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-sm hover:bg-red-500/30 transition-colors duration-300"
+                  >
                     <UserX className="w-3 h-3 mr-1 inline" />
                     Reject
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

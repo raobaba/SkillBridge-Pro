@@ -69,7 +69,7 @@ export default function SettingsPage() {
     <>
       <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
         <Navbar data={user} isSearchBar={false} />
-        <div className='max-w-6xl mx-auto px-4 py-8'>
+        <div className='w-full px-6 py-8'>
           <h1 className='text-4xl font-bold text-white drop-shadow-lg mb-6'>
             SettingsPage
           </h1>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Button from '../../../components/Button';
 import {
   Bell,
   MessageSquare,
@@ -477,9 +478,12 @@ export default function ProjectOwnerView() {
                   <UserCheck className='w-6 h-6 text-green-400' />
                   Recent Applicants
                 </h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-3'>
                 {recentApplicants.map((applicant) => (
@@ -532,12 +536,16 @@ export default function ProjectOwnerView() {
                     <div className='flex items-center justify-between mt-3'>
                       <span className='text-gray-400 text-sm'>{applicant.appliedDate}</span>
                       <div className='flex gap-2'>
-                        <button className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'>
+                        <Button 
+                          className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'
+                        >
                           {applicant.status === 'hired' ? 'View Profile' : 'Review'}
-                        </button>
-                        <button className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'>
+                        </Button>
+                        <Button 
+                          className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
+                        >
                           Message
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -549,9 +557,12 @@ export default function ProjectOwnerView() {
             <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
               <div className='flex items-center justify-between mb-6'>
                 <h2 className='text-xl font-semibold'>Active Projects</h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View All <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-4'>
                 {activeProjects.map((project) => (
@@ -645,9 +656,12 @@ export default function ProjectOwnerView() {
                   <Users className='w-6 h-6 text-blue-400' />
                   Team Members
                 </h2>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   Manage Team <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-4'>
                 {teamMembers.map((member) => (
@@ -695,12 +709,16 @@ export default function ProjectOwnerView() {
                       </div>
                     </div>
                     <div className='flex flex-col gap-2'>
-                      <button className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'>
+                      <Button 
+                        className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
+                      >
                         Message
-                      </button>
-                      <button className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'>
+                      </Button>
+                      <Button 
+                        className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'
+                      >
                         View Profile
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -747,9 +765,12 @@ export default function ProjectOwnerView() {
                           <p className='text-xs text-gray-500'>
                             {notification.time}
                           </p>
-                          <button className='text-xs text-blue-400 hover:text-blue-300'>
+                          <Button 
+                            variant="ghost"
+                            className='text-xs text-blue-400 hover:text-blue-300'
+                          >
                             {notification.action}
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       {notification.unread && (
@@ -759,9 +780,11 @@ export default function ProjectOwnerView() {
                   </div>
                 ))}
               </div>
-              <button className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'>
+              <Button 
+                className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'
+              >
                 View All Notifications
-              </button>
+              </Button>
             </div>
 
             {/* Enhanced Quick Access Links */}
@@ -772,9 +795,10 @@ export default function ProjectOwnerView() {
               </h3>
               <div className='grid grid-cols-2 gap-4'>
                 {quickAccessLinks.map((link, index) => (
-                  <button
+                  <Button
                     key={index}
                     onClick={() => navigate(link.path)}
+                    variant="ghost"
                     className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                       link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                       link.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
@@ -805,7 +829,7 @@ export default function ProjectOwnerView() {
                       <p className='text-sm font-medium text-white'>{link.name}</p>
                       <p className='text-xs text-gray-400 mt-1'>{link.description}</p>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -817,9 +841,12 @@ export default function ProjectOwnerView() {
                   <BarChart3 className='w-5 h-5 text-purple-400' />
                   Project Categories
                 </h3>
-                <button className='text-blue-400 hover:text-blue-300 text-sm flex items-center'>
+                <Button 
+                  variant="ghost"
+                  className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
+                >
                   View Analytics <ChevronRight className='w-4 h-4 ml-1' />
-                </button>
+                </Button>
               </div>
               <div className='space-y-3'>
                 {projectCategories.map((category, index) => (

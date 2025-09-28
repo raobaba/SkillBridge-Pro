@@ -1,4 +1,5 @@
 import React from "react";
+import Button from '../../../components/Button';
 import {
   Building2,
   TrendingUp,
@@ -164,10 +165,12 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                 Project Listings
               </h2>
             </div>
-            <button className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'>
+            <Button 
+              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'
+            >
               <Plus className='w-4 h-4' />
               Add Project
-            </button>
+            </Button>
           </div>
 
           <div className='space-y-4'>
@@ -218,12 +221,18 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                   </div>
 
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                    <button className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
                       <Settings className='w-3 h-3 text-blue-400' />
-                    </button>
-                    <button className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                    </Button>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
                       <TrendingUp className='w-3 h-3 text-emerald-400' />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -244,10 +253,12 @@ const ProjectOwnBillSubsDash = ({ data }) => {
               </div>
               <h2 className='text-2xl font-bold text-white'>Payment Methods</h2>
             </div>
-            <button className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'>
+            <Button 
+              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'
+            >
               <Plus className='w-4 h-4' />
               Add Method
-            </button>
+            </Button>
           </div>
 
           <div className='space-y-4'>
@@ -296,9 +307,12 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                   </div>
 
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                    <button className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
                       <Settings className='w-3 h-3 text-blue-400' />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>

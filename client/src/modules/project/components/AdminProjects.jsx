@@ -227,15 +227,17 @@ const AdminProjects = () => {
           { value: 'approved', label: `Approved (${countApproved})` },
           { value: 'suspended', label: `Suspended (${countSuspended})` },
         ].map((t) => (
-          <button
+          <Button
             key={t.value}
             onClick={() => setActiveTab(t.value)}
-            className={`px-3 py-1 rounded-md text-sm border ${
+            variant="ghost"
+            size="sm"
+            className={`px-3 py-1 text-sm border ${
               activeTab === t.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/10 text-gray-200 border-white/20 hover:bg-white/20'
             }`}
           >
             {t.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -320,21 +322,25 @@ const AdminProjects = () => {
           <span>Select page</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setPage(Math.max(1, currentPage - 1))}
-            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center gap-2"
+            variant="ghost"
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white"
             disabled={currentPage === 1}
+            leftIcon={ChevronLeft}
           >
-            <ChevronLeft className="w-4 h-4" /> Prev
-          </button>
+            Prev
+          </Button>
           <span className="text-gray-300 text-sm">Page {currentPage} of {totalPages}</span>
-          <button
+          <Button
             onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center gap-2"
+            variant="ghost"
+            className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white"
             disabled={currentPage === totalPages}
+            rightIcon={ChevronRight}
           >
-            Next <ChevronRight className="w-4 h-4" />
-          </button>
+            Next
+          </Button>
         </div>
       </div>
 
@@ -381,7 +387,14 @@ const AdminProjects = () => {
                 <h3 className="text-lg font-semibold text-white">{selectedProject.title}</h3>
                 <p className="text-sm text-gray-400">Owner: {selectedProject.owner}</p>
               </div>
-              <button className="bg-white/10 hover:bg-white/20 rounded-md px-3 py-1" onClick={() => setDetailOpen(false)}>Close</button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/10 hover:bg-white/20"
+                onClick={() => setDetailOpen(false)}
+              >
+                Close
+              </Button>
             </div>
             <div className="space-y-2">
               <p><strong>Status:</strong> {selectedProject.status}</p>

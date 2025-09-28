@@ -167,12 +167,16 @@ const DeveloperMatcher = () => {
 
               {/* Action buttons */}
               <div className="mt-4 flex gap-2">
-                <button className="flex-1 px-3 py-2 text-xs rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors">
+                <Button 
+                  className="flex-1 px-3 py-2 text-xs rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+                >
                   View Profile
-                </button>
-                <button className="flex-1 px-3 py-2 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors">
+                </Button>
+                <Button 
+                  className="flex-1 px-3 py-2 text-xs rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+                >
                   Contact
-                </button>
+                </Button>
               </div>
 
               {/* Hover effect indicator */}

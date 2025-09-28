@@ -95,7 +95,7 @@ const Settings = () => {
     <>
       <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
         <Navbar data={user} isSearchBar={false} />
-        <div className='max-w-6xl mx-auto px-4 py-8'>
+        <div className='w-full px-6 py-8'>
           <div className='flex items-center gap-3 mb-2'>
             <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
               <SettingsIcon className='w-6 h-6 text-white' />

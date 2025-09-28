@@ -1,4 +1,5 @@
 import React from "react";
+import Button from '../../../components/Button';
 import { CreditCard, Wallet, Shield, Star, Plus, Trash2, Edit } from "lucide-react";
 
 const PaymentMethods = () => {
@@ -58,10 +59,12 @@ const PaymentMethods = () => {
               Payment Methods
             </h2>
           </div>
-          <button className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2">
+          <Button 
+            className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2"
+          >
             <Plus className="w-4 h-4" />
             Add Method
-          </button>
+          </Button>
         </div>
         <p className="text-gray-300 text-sm">Manage your payment methods and billing preferences</p>
       </div>
@@ -128,12 +131,18 @@ const PaymentMethods = () => {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <button className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300">
-                      <Edit className="w-3 h-3 text-blue-400" />
-                    </button>
-                    <button className="w-8 h-8 bg-gradient-to-br from-red-500/20 to-pink-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300">
-                      <Trash2 className="w-3 h-3 text-red-400" />
-                    </button>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
+                      <Edit className='w-3 h-3 text-blue-400' />
+                    </Button>
+                    <Button 
+                      variant='ghost'
+                      className='w-8 h-8 bg-gradient-to-br from-red-500/20 to-pink-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                    >
+                      <Trash2 className='w-3 h-3 text-red-400' />
+                    </Button>
                   </div>
                 </div>
               </div>

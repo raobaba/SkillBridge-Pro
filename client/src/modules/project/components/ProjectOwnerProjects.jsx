@@ -4,6 +4,7 @@ import ApplicantsList from './ApplicantsList'
 import ProjectCard from './ProjectCard'
 import ProjectAnalytics from './ProjectAnalytics'
 import ProjectManagementPanel from './ProjectManagementPanel'
+import Button from '../../../components/Button'
 import {
   BarChart3,
   TrendingUp,
@@ -182,19 +183,23 @@ const ProjectOwnerProjects = () => {
           
           <div className="flex items-center gap-3">
             <div className="relative">
-              <button className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors duration-300">
+              <Button
+                className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors duration-300"
+              >
                 <Bell className="w-5 h-5 text-white" />
                 {notifications.filter(n => !n.read).length > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                     {notifications.filter(n => !n.read).length}
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
-            <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+            <Button 
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+            >
               <Plus className="w-4 h-4" />
               New Project
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -316,8 +321,9 @@ const ProjectOwnerProjects = () => {
         {/* Enhanced Tabs */}
         <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-2xl border border-white/10">
           <div className="grid grid-cols-5 gap-2">
-            <button
+            <Button
               onClick={() => setActiveTab('dashboard')}
+              variant="ghost"
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === 'dashboard'
                   ? 'bg-white/20 text-white'
@@ -326,9 +332,10 @@ const ProjectOwnerProjects = () => {
             >
               <BarChart3 className="w-4 h-4 inline mr-2" />
               Dashboard
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveTab('my-projects')}
+              variant="ghost"
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === 'my-projects'
                   ? 'bg-white/20 text-white'
@@ -337,9 +344,10 @@ const ProjectOwnerProjects = () => {
             >
               <BarChart3 className="w-4 h-4 inline mr-2" />
               My Projects
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveTab('create')}
+              variant="ghost"
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === 'create'
                   ? 'bg-white/20 text-white'
@@ -348,9 +356,10 @@ const ProjectOwnerProjects = () => {
             >
               <Plus className="w-4 h-4 inline mr-2" />
               Create Project
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveTab('applicants')}
+              variant="ghost"
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === 'applicants'
                   ? 'bg-white/20 text-white'
@@ -359,9 +368,10 @@ const ProjectOwnerProjects = () => {
             >
               <Users className="w-4 h-4 inline mr-2" />
               Applicants
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setActiveTab('analytics')}
+              variant="ghost"
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === 'analytics'
                   ? 'bg-white/20 text-white'
@@ -370,7 +380,7 @@ const ProjectOwnerProjects = () => {
             >
               <TrendingUp className="w-4 h-4 inline mr-2" />
               Analytics
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -408,22 +418,30 @@ const ProjectOwnerProjects = () => {
                     Quick Actions
                   </h3>
                   <div className="space-y-3">
-                    <button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                    <Button
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
                       <Plus className="w-4 h-4" />
                       Create New Project
-                    </button>
-                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                    </Button>
+                    <Button
+                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
                       <Users className="w-4 h-4" />
                       Invite Developers
-                    </button>
-                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                    </Button>
+                    <Button
+                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
                       <Award className="w-4 h-4" />
                       Boost Project Visibility
-                    </button>
-                    <button className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                    </Button>
+                    <Button
+                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                    >
                       <TrendingUp className="w-4 h-4" />
                       View Analytics
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -478,10 +496,12 @@ const ProjectOwnerProjects = () => {
               </h1>
               <div className="flex items-center gap-3">
                 <span className="text-gray-300 text-sm">{ownedProjects.length} total</span>
-                <button className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
+                <Button 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                >
                   <Plus className="w-4 h-4" />
                   New Project
-                </button>
+                </Button>
               </div>
             </div>
             {ownedProjects.length === 0 ? (
@@ -489,10 +509,12 @@ const ProjectOwnerProjects = () => {
                 <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-400 text-lg">No projects yet</p>
                 <p className="text-gray-500 text-sm mt-2">Create your first project to get started</p>
-                <button className="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto">
+                <Button 
+                  className="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
+                >
                   <Plus className="w-4 h-4" />
                   Create Project
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -549,12 +571,13 @@ const ProjectOwnerProjects = () => {
                     </div>
                     <div className="p-5 pt-0 mt-auto">
                       <div className="flex gap-2">
-                        <button
+                        <Button
                           onClick={() => { setSelectedProject(project); setShowProjectModal(true); }}
-                          className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                          variant="ghost"
+                          className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm"
                         >
                           View Details
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -649,9 +672,13 @@ const ProjectOwnerProjects = () => {
                     <p className="text-gray-400 text-sm">{selectedProject.company} • {selectedProject.location}</p>
                   </div>
                 </div>
-                <button onClick={() => setShowProjectModal(false)} className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300">
+                <Button 
+                  onClick={() => setShowProjectModal(false)} 
+                  variant="ghost"
+                  className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300"
+                >
                   Close
-                </button>
+                </Button>
               </div>
 
               <div className="p-6 space-y-6">
@@ -692,7 +719,13 @@ const ProjectOwnerProjects = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-2">
-                  <button onClick={() => setShowProjectModal(false)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300">Close</button>
+                  <Button 
+                    onClick={() => setShowProjectModal(false)} 
+                    variant="ghost"
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300"
+                  >
+                    Close
+                  </Button>
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { MoreVertical, Copy, Reply, Forward, Delete, Check, CheckCheck } from "lucide-react";
+import Button from "../../../components/Button";
 
 const MessageItem = ({ message }) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -95,13 +96,15 @@ const MessageItem = ({ message }) => {
             isSent ? "left-2" : "right-2"
           } opacity-0 group-hover/message:opacity-100 transition-opacity duration-300`}>
             <div className="relative">
-              <button
+              <Button
                 onClick={() => setShowMenu(!showMenu)}
+                variant="ghost"
+                size="sm"
                 className="p-1 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 transition-colors duration-200"
                 title="Message options"
               >
                 <MoreVertical className="w-3 h-3 text-gray-300" />
-              </button>
+              </Button>
 
               {/* Dropdown menu */}
               {showMenu && (
@@ -109,35 +112,43 @@ const MessageItem = ({ message }) => {
                   isSent ? "left-0" : "right-0"
                 } top-full mt-1 w-40 bg-black/20 backdrop-blur-sm rounded-lg border border-white/10 shadow-xl overflow-hidden z-50`}>
                   <div className="p-1">
-                    <button
+                    <Button
                       onClick={handleCopy}
-                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md flex items-center gap-2"
                     >
                       <Copy className="w-3 h-3" />
                       {isCopied ? "Copied!" : "Copy"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleReply}
-                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md flex items-center gap-2"
                     >
                       <Reply className="w-3 h-3" />
                       Reply
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleForward}
-                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md transition-colors duration-200 flex items-center gap-2"
+                      variant="ghost"
+                      size="sm"
+                      className="w-full px-3 py-2 text-left text-xs text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-md flex items-center gap-2"
                     >
                       <Forward className="w-3 h-3" />
                       Forward
-                    </button>
+                    </Button>
                     {isSent && (
-                      <button
+                      <Button
                         onClick={handleDelete}
-                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-md transition-colors duration-200 flex items-center gap-2"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full px-3 py-2 text-left text-xs text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-md flex items-center gap-2"
                       >
                         <Delete className="w-3 h-3" />
                         Delete
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>

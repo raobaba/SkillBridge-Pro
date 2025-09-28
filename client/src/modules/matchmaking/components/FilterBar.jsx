@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Search, XCircle, MapPin, Clock, Star, Award, Zap } from "lucide-react";
 import { motion } from "framer-motion";
+import Button from "../../../components/Button";
 
 const FilterBar = ({ filters, setFilters, role = "developer" }) => {
   const [search, setSearch] = useState(filters.search || "");
@@ -77,12 +78,13 @@ const FilterBar = ({ filters, setFilters, role = "developer" }) => {
           className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
         />
         {search && (
-          <button
+          <Button
             onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-          >
-            <XCircle className="w-4 h-4" />
-          </button>
+            variant="ghost"
+            size="sm"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white p-1"
+            leftIcon={XCircle}
+          />
         )}
       </div>
 
@@ -148,25 +150,27 @@ const FilterBar = ({ filters, setFilters, role = "developer" }) => {
       {/* Action Buttons */}
       <div className="flex justify-between items-center">
         <div className="flex gap-3">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSearch}
-            className="px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center gap-2"
-          >
-            <Search className="w-4 h-4" />
-            Search
-          </motion.button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleSearch}
+              variant="default"
+              className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white hover:shadow-lg"
+              leftIcon={Search}
+            >
+              Search
+            </Button>
+          </motion.div>
 
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleReset}
-            className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-all flex items-center gap-2"
-          >
-            <XCircle className="w-4 h-4" />
-            Reset
-          </motion.button>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleReset}
+              variant="ghost"
+              className="bg-white/10 text-gray-300 hover:bg-white/20"
+              leftIcon={XCircle}
+            >
+              Reset
+            </Button>
+          </motion.div>
         </div>
 
         <div className="text-sm text-gray-400">

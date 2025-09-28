@@ -15,17 +15,16 @@ import { Footer } from "../../../components/Footer";
 
 const AiCareer = () => {
   const { user } = useSelector((state) => state.user);
-
-  const [userRole, setUserRole] = useState("project-owner");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.role) {
-      setUserRole(user.role);
-    }
-  }, [user]);
+    // Simulate loading user data
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const renderDeveloperTools = () => (
-    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+    <div className='w-full p-6 space-y-8'>
       <div className='text-center mb-8'>
         <h1 className='text-4xl font-bold text-white mb-2'>AI Career Tools</h1>
         <p className='text-gray-300'>
@@ -39,7 +38,7 @@ const AiCareer = () => {
   );
 
   const renderProjectOwnerTools = () => (
-    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+    <div className='w-full p-6 space-y-8'>
       <div className='text-center mb-8'>
         <h1 className='text-4xl font-bold text-white mb-2'>AI Project Tools</h1>
         <p className='text-gray-300'>
@@ -53,7 +52,7 @@ const AiCareer = () => {
   );
 
   const renderAdminTools = () => (
-    <div className='p-6 space-y-6 sm:space-y-8 max-w-6xl mx-auto'>
+    <div className='w-full p-6 space-y-8'>
       <div className='text-center mb-8'>
         <h1 className='text-4xl font-bold text-white mb-2'>
           AI Analytics Dashboard
@@ -68,8 +67,21 @@ const AiCareer = () => {
     </div>
   );
 
-  const renderContent = () => {
-    switch (user?.role) {
+  const renderRoleBasedContent = () => {
+    if (!user?.role) {
+      return (
+        <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
+          <div className='text-center text-white'>
+            <h2 className='text-2xl font-bold mb-4'>Access Denied</h2>
+            <p className='text-gray-300'>
+              Please log in to access AI career features.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    switch (user.role) {
       case "developer":
         return renderDeveloperTools();
       case "project-owner":
@@ -77,14 +89,34 @@ const AiCareer = () => {
       case "admin":
         return renderAdminTools();
       default:
-        return renderDeveloperTools();
+        return (
+          <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
+            <div className='text-center text-white'>
+              <h2 className='text-2xl font-bold mb-4'>Invalid Role</h2>
+              <p className='text-gray-300'>
+                Your role doesn't have access to AI career features.
+              </p>
+            </div>
+          </div>
+        );
     }
   };
+
+  if (loading) {
+    return (
+      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
+        <div className='text-center text-white'>
+          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4'></div>
+          <p className='text-gray-300'>Loading AI career tools...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      {renderContent()}
+      {renderRoleBasedContent()}
       <Footer />
     </>
   );

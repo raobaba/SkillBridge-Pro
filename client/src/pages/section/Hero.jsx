@@ -1,7 +1,7 @@
 import React from "react";
 const Hero = ({heroContent}) => {
   return (
-    <section className='relative overflow-hidden pt-20'>
+    <section className='relative overflow-hidden'>
       <div className='absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-3xl'></div>
       <div className='relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32'>
         <div className='text-center'>

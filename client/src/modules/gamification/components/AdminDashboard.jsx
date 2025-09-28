@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Button from '../../../components/Button';
 import { 
   Shield, AlertTriangle, CheckCircle, XCircle, Eye, 
   Users, BarChart3, TrendingUp, Filter, Search, 
@@ -176,24 +177,26 @@ const AdminDashboard = ({ user }) => {
               
               {review.status === "pending" && (
                 <div className="flex space-x-2">
-                  <button
+                  <Button
                     onClick={() => handleModerateReview(review.id, "approved")}
                     className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
                   >
                     <CheckCircle className="w-4 h-4 inline mr-1" />
                     Approve
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleModerateReview(review.id, "rejected")}
                     className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
                   >
                     <XCircle className="w-4 h-4 inline mr-1" />
                     Reject
-                  </button>
-                  <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+                  </Button>
+                  <Button 
+                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  >
                     <Eye className="w-4 h-4 inline mr-1" />
                     Investigate
-                  </button>
+                  </Button>
                 </div>
               )}
               
@@ -259,24 +262,26 @@ const AdminDashboard = ({ user }) => {
               
               {item.status === "pending" && (
                 <div className="flex space-x-2">
-                  <button
+                  <Button
                     onClick={() => handleVerifyItem(item.id, "verified")}
                     className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
                   >
                     <CheckCircle className="w-4 h-4 inline mr-1" />
                     Verify
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleVerifyItem(item.id, "rejected")}
                     className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
                   >
                     <XCircle className="w-4 h-4 inline mr-1" />
                     Reject
-                  </button>
-                  <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+                  </Button>
+                  <Button 
+                    className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  >
                     <Eye className="w-4 h-4 inline mr-1" />
                     Review
-                  </button>
+                  </Button>
                 </div>
               )}
               
@@ -305,14 +310,18 @@ const AdminDashboard = ({ user }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">Developer Leaderboard</h3>
           <div className="flex space-x-2">
-            <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
+            <Button 
+              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+            >
               <RefreshCw className="w-4 h-4 inline mr-1" />
               Refresh
-            </button>
-            <button className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors">
+            </Button>
+            <Button 
+              className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+            >
               <Download className="w-4 h-4 inline mr-1" />
               Export
-            </button>
+            </Button>
           </div>
         </div>
         
@@ -483,9 +492,11 @@ const AdminDashboard = ({ user }) => {
               <h4 className="font-bold text-white">Auto-flag suspicious reviews</h4>
               <p className="text-sm text-gray-300">Automatically flag reviews that match suspicious patterns</p>
             </div>
-            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <Button 
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
               Enable
-            </button>
+            </Button>
           </div>
           
           <div className="flex items-center justify-between">
@@ -493,9 +504,11 @@ const AdminDashboard = ({ user }) => {
               <h4 className="font-bold text-white">Require verification for endorsements</h4>
               <p className="text-sm text-gray-300">All endorsements must be verified before appearing publicly</p>
             </div>
-            <button className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">
+            <Button 
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            >
               Enabled
-            </button>
+            </Button>
           </div>
           
           <div className="flex items-center justify-between">
@@ -547,9 +560,10 @@ const AdminDashboard = ({ user }) => {
           className="flex space-x-1 mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/20"
         >
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
+              variant="ghost"
               className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
                 selectedTab === tab.id
                   ? 'bg-blue-500 text-white'
@@ -558,7 +572,7 @@ const AdminDashboard = ({ user }) => {
             >
               <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
-            </button>
+            </Button>
           ))}
         </motion.div>
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { Github, Linkedin, Mail } from "lucide-react";
-import { Button } from "..";
+import {Button,Input} from "../../components"
 
 const OAuthButtons = ({ onOAuthClick, className = "" }) => {
   const oauthProviders = [

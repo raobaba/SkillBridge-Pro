@@ -173,13 +173,15 @@ export default function AccountSettings({
                   errors.password ? "border-red-500" : "border-white/20"
                 }`}
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => togglePasswordVisibility('password')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+                variant="ghost"
+                size="sm"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 {showPasswords.password ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
             {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password}</p>}
           </div>
@@ -197,13 +199,15 @@ export default function AccountSettings({
                   errors.newPassword ? "border-red-500" : "border-white/20"
                 }`}
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => togglePasswordVisibility('newPassword')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+                variant="ghost"
+                size="sm"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 {showPasswords.newPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
             
             {/* Password Strength Indicator */}
@@ -244,13 +248,15 @@ export default function AccountSettings({
                   errors.confirmPassword ? "border-red-500" : "border-white/20"
                 }`}
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => togglePasswordVisibility('confirmPassword')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+                variant="ghost"
+                size="sm"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
               >
                 {showPasswords.confirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
+              </Button>
             </div>
             {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
@@ -298,32 +304,37 @@ export default function AccountSettings({
             </h3>
             
             <div className="grid grid-cols-1 gap-3">
-              <button className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left">
+              <Button
+                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left w-full"
+              >
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-green-400" />
                   <span className="text-white text-sm font-medium">Enable 2FA</span>
                 </div>
-              </button>
+              </Button>
               
-              <button className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left">
+              <Button
+                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left w-full"
+              >
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-purple-400" />
                   <span className="text-white text-sm font-medium">Login History</span>
                 </div>
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Toggle Advanced */}
-        <button
+        <Button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2 text-sm"
+          variant="ghost"
+          className="w-full bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm"
         >
           <Settings className="w-4 h-4" />
           {showAdvanced ? "Hide Advanced" : "Show Advanced"}
-        </button>
+        </Button>
       </form>
     </section>
   );

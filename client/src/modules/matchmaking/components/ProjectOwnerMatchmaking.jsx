@@ -6,6 +6,7 @@ import {
   Bookmark, Heart, MoreVertical, CheckCircle, XCircle, ArrowRight,
   UserCheck, ThumbsUp, Award as AwardIcon, Briefcase, Globe
 } from "lucide-react";
+import Button from "../../../components/Button";
 
 const ProjectOwnerMatchmaking = ({ user }) => {
   const [selectedTab, setSelectedTab] = useState("recommended");
@@ -182,16 +183,17 @@ const ProjectOwnerMatchmaking = ({ user }) => {
             <div className="text-xs text-gray-400">Match Score</div>
           </div>
           <div className="flex flex-col space-y-1">
-            <button
+            <Button
               onClick={() => handleBookmark(developer.id)}
-              className={`p-2 rounded-lg transition-colors ${
+              variant="ghost"
+              size="sm"
+              className={`p-2 ${
                 developer.isBookmarked 
                   ? 'bg-blue-500/20 text-blue-400' 
                   : 'bg-white/10 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20'
               }`}
-            >
-              <Bookmark className="w-4 h-4" />
-            </button>
+              leftIcon={Bookmark}
+            />
           </div>
         </div>
       </div>
@@ -260,19 +262,24 @@ const ProjectOwnerMatchmaking = ({ user }) => {
 
       {/* Actions */}
       <div className="flex space-x-3">
-        <button
+        <Button
           onClick={() => handleInvite(developer.id)}
-          className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-lg hover:shadow-lg transition-all flex items-center justify-center space-x-2"
+          variant="default"
+          className="flex-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white hover:shadow-lg"
+          rightIcon={ArrowRight}
         >
-          <span>Invite to Project</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
-          <Eye className="w-4 h-4" />
-        </button>
-        <button className="px-4 py-2 bg-white/10 text-gray-300 rounded-lg hover:bg-white/20 transition-colors flex items-center justify-center">
-          <MessageCircle className="w-4 h-4" />
-        </button>
+          Invite to Project
+        </Button>
+        <Button
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 hover:bg-white/20"
+          leftIcon={Eye}
+        />
+        <Button
+          variant="ghost"
+          className="px-4 py-2 bg-white/10 text-gray-300 hover:bg-white/20"
+          leftIcon={MessageCircle}
+        />
       </div>
     </motion.div>
   );
@@ -435,18 +442,19 @@ const ProjectOwnerMatchmaking = ({ user }) => {
           className="flex space-x-1 mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/20"
         >
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+              variant="ghost"
+              className={`flex items-center space-x-2 ${
                 selectedTab === tab.id
                   ? 'bg-blue-500 text-white'
                   : 'text-gray-300 hover:text-white hover:bg-white/10'
               }`}
+              leftIcon={tab.icon}
             >
-              <tab.icon className="w-4 h-4" />
-              <span>{tab.label}</span>
-            </button>
+              {tab.label}
+            </Button>
           ))}
         </motion.div>
 

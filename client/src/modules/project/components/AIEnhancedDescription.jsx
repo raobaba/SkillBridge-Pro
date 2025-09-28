@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import Button from '../../../components/Button';
 import {
   Sparkles,
   Wand2,
@@ -161,13 +162,13 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
 
   return (
     <>
-      <button
+      <Button
         onClick={() => setShowModal(true)}
         className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105 flex items-center gap-2"
       >
         <Sparkles className="w-4 h-4" />
         AI-Enhanced Description
-      </button>
+      </Button>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -189,12 +190,12 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                   </div>
                 </div>
                 
-                <button
+                <Button
                   onClick={() => setShowModal(false)}
                   className="bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg transition-colors duration-300"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -306,7 +307,7 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                     
                     <div className="flex flex-wrap gap-2">
                       {popularSkills.map((skill, idx) => (
-                        <button
+                        <Button
                           key={skill}
                           onClick={() => handleSkillToggle(skill)}
                           className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
@@ -316,7 +317,7 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                           }`}
                         >
                           {skill}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -352,7 +353,7 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                     </div>
                   </div>
                   
-                  <button
+                  <Button
                     onClick={generateDescription}
                     disabled={isGenerating || !projectDetails.title}
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-500 disabled:to-gray-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
@@ -368,7 +369,7 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                         Generate Description
                       </>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
               
@@ -388,7 +389,7 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                         </div>
                         
                         <div className="flex gap-3">
-                          <button
+                          <Button
                             onClick={handleCopy}
                             className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center justify-center gap-2"
                           >
@@ -403,15 +404,15 @@ const AIEnhancedDescription = ({ onDescriptionGenerated, initialDescription = ''
                                 Copy
                               </>
                             )}
-                          </button>
+                          </Button>
                           
-                          <button
+                          <Button
                             onClick={handleUseDescription}
                             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
                           >
                             <CheckCircle className="w-4 h-4" />
                             Use This Description
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     ) : (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Button from '../../../components/Button';
 import { 
   Star, Users, MessageSquare, ThumbsUp, Award, Clock, 
   CheckCircle, Eye, Filter, Search, Calendar, TrendingUp,
@@ -200,12 +201,12 @@ const ProjectOwnerDashboard = ({ user }) => {
                     ))}
                   </div>
                 </div>
-                <button
+                <Button
                   onClick={() => handleStartEvaluation(project)}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                   Evaluate
-                </button>
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -230,7 +231,7 @@ const ProjectOwnerDashboard = ({ user }) => {
                 </label>
                 <div className="flex space-x-1">
                   {[1, 2, 3, 4, 5].map(rating => (
-                    <button
+                    <Button
                       key={rating}
                       onClick={() => handleRatingChange(category.key, rating)}
                       className={`w-8 h-8 rounded-full border-2 transition-colors ${
@@ -240,7 +241,7 @@ const ProjectOwnerDashboard = ({ user }) => {
                       }`}
                     >
                       <Star className="w-4 h-4 mx-auto" />
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -287,7 +288,7 @@ const ProjectOwnerDashboard = ({ user }) => {
             </label>
             <div className="flex flex-wrap gap-2">
               {pendingEvaluations.find(p => p.id === evaluationForm.projectId)?.skills.map(skill => (
-                <button
+                <Button
                   key={skill}
                   onClick={() => {
                     setEvaluationForm(prev => ({
@@ -304,20 +305,20 @@ const ProjectOwnerDashboard = ({ user }) => {
                   }`}
                 >
                   {skill} {evaluationForm.endorseSkills.includes(skill) && <CheckCircle className="w-3 h-3 inline ml-1" />}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
           {/* Submit Button */}
           <div className="flex space-x-3">
-            <button
+            <Button
               onClick={handleSubmitEvaluation}
               className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
             >
               Submit Evaluation
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => setEvaluationForm({
                 projectId: null,
                 developerId: null,
@@ -329,7 +330,7 @@ const ProjectOwnerDashboard = ({ user }) => {
               className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </motion.div>
       )}
@@ -511,9 +512,10 @@ const ProjectOwnerDashboard = ({ user }) => {
           className="flex space-x-1 mb-6 bg-white/10 backdrop-blur-sm rounded-lg p-1 border border-white/20"
         >
           {tabs.map((tab) => (
-            <button
+            <Button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id)}
+              variant="ghost"
               className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
                 selectedTab === tab.id
                   ? 'bg-blue-500 text-white'
@@ -522,7 +524,7 @@ const ProjectOwnerDashboard = ({ user }) => {
             >
               <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
-            </button>
+            </Button>
           ))}
         </motion.div>
 
