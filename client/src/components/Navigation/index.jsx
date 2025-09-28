@@ -40,6 +40,11 @@ import {Button,Input} from "../../components"
 import ConfirmModal from "../modal/ConfirmModal";
 import { logOut } from "../../modules/authentication/slice/userSlice";
 import { useDispatch } from "react-redux";
+import { 
+  getNavigationItems, 
+  getQuickAccessItems, 
+  getHomeNavItems 
+} from "../../modules/home/homeNavigationConfig.js";
 
 const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const navigate = useNavigate();
@@ -57,72 +62,10 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const [notifications] = useState(4);
   const [messages] = useState(1);
 
-  // Role-based navigation items
-  const getNavigationItems = (role) => {
-    const baseItems = [
-      { label: "Dashboard", path: "/dashboard", icon: Home, description: "Main dashboard" },
-      { label: "Profile", path: "/profile", icon: User, description: "Manage your profile" },
-      { label: "Projects", path: "/project", icon: Briefcase, description: "Browse and manage projects" },
-      { label: "Matchmaking", path: "/matchmaking", icon: Target, description: "Find matches" },
-      { label: "Communication", path: "/chat", icon: MessageSquare, description: "Chat and collaborate" },
-      { label: "AI Career", path: "/ai-career", icon: Brain, description: "AI-powered career tools" },
-      { label: "Portfolio Sync", path: "/portfolio-sync", icon: Database, description: "Sync your profiles" },
-      { label: "Gamification", path: "/gamification", icon: Trophy, description: "Track achievements" },
-      { label: "Settings", path: "/settings", icon: Settings, description: "Account settings" },
-    ];
-
-    if (role === "project-owner") {
-      return [
-        ...baseItems.filter(item => item.label !== "Matchmaking"),
-        { label: "Billing", path: "/billing-subscription", icon: CreditCard, description: "Manage subscriptions" },
-        { label: "Analytics", path: "/analytics", icon: BarChart3, description: "Project analytics" },
-      ];
-    }
-
-    if (role === "admin") {
-      return [
-        { label: "Dashboard", path: "/dashboard", icon: Home, description: "Admin dashboard" },
-        { label: "Analytics", path: "/analytics", icon: BarChart3, description: "System analytics" },
-        { label: "Users", path: "/users", icon: Users, description: "User management" },
-        { label: "Projects", path: "/project", icon: Briefcase, description: "Project management" },
-        { label: "Settings", path: "/settings", icon: Settings, description: "System settings" },
-      ];
-    }
-
-    return baseItems;
-  };
-
+  // Get navigation items using the configuration
   const navigationItems = getNavigationItems(user?.role);
 
-  // Quick access items based on role
-  const getQuickAccessItems = (role) => {
-    if (role === "project-owner") {
-      return [
-        { label: "Post Project", path: "/project?action=create", icon: Plus, color: "blue" },
-        { label: "View Applicants", path: "/project?tab=applicants", icon: Users, color: "green" },
-        { label: "Team Management", path: "/project?tab=team", icon: Users, color: "purple" },
-        { label: "Billing", path: "/billing-subscription", icon: CreditCard, color: "yellow" },
-      ];
-    }
-
-    if (role === "admin") {
-      return [
-        { label: "System Analytics", path: "/analytics", icon: BarChart3, color: "blue" },
-        { label: "User Management", path: "/users", icon: Users, color: "green" },
-        { label: "Project Oversight", path: "/project", icon: Briefcase, color: "purple" },
-        { label: "System Settings", path: "/settings", icon: Settings, color: "yellow" },
-      ];
-    }
-
-    // Developer quick access
-    return [
-      { label: "Find Projects", path: "/matchmaking", icon: Target, color: "blue" },
-      { label: "AI Career Tools", path: "/ai-career", icon: Brain, color: "green" },
-      { label: "Sync Portfolio", path: "/portfolio-sync", icon: Database, color: "purple" },
-      { label: "View Achievements", path: "/gamification", icon: Trophy, color: "yellow" },
-    ];
-  };
-
+  // Get quick access items using the configuration
   const quickAccessItems = getQuickAccessItems(user?.role);
 
   const handleLogout = async () => {
@@ -171,10 +114,16 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
             </Link>
 
             <div className="hidden md:flex items-center space-x-6">
-              <a href="#features" className="text-gray-300 hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">How it Works</a>
-              <a href="#testimonials" className="text-gray-300 hover:text-white transition-colors">Testimonials</a>
-              <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">Pricing</a>
+              {getHomeNavItems().map((item, index) => (
+                <a 
+                  key={index}
+                  href={item.href} 
+                  className="text-gray-300 hover:text-white transition-colors"
+                  title={item.description}
+                >
+                  {item.label}
+                </a>
+              ))}
               
               <div className="flex items-center space-x-4">
                 <Button
@@ -201,10 +150,16 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
           {isMenuOpen && (
             <div className="md:hidden bg-black/90 backdrop-blur-sm border-t border-white/10">
               <div className="px-4 py-4 space-y-3">
-                <a href="#features" className="block text-gray-300 hover:text-white transition-colors">Features</a>
-                <a href="#how-it-works" className="block text-gray-300 hover:text-white transition-colors">How it Works</a>
-                <a href="#testimonials" className="block text-gray-300 hover:text-white transition-colors">Testimonials</a>
-                <a href="#pricing" className="block text-gray-300 hover:text-white transition-colors">Pricing</a>
+                {getHomeNavItems().map((item, index) => (
+                  <a 
+                    key={index}
+                    href={item.href} 
+                    className="block text-gray-300 hover:text-white transition-colors"
+                    title={item.description}
+                  >
+                    {item.label}
+                  </a>
+                ))}
                 
                 <Button
                   onClick={() => {

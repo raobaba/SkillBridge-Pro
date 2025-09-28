@@ -1,6 +1,6 @@
 import React from "react";
 
-const Feature = ({ features, activeFeature, setActiveFeature }) => {
+const Features = ({ features, activeFeature, setActiveFeature }) => {
   return (
     <section id="features" className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,4 +65,4 @@ const Feature = ({ features, activeFeature, setActiveFeature }) => {
   );
 };
 
-export default Feature;
+export default Features;

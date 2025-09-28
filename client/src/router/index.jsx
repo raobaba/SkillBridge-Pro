@@ -6,7 +6,7 @@ import Error404 from "./Error404";
 import Unauthorized from "./Unauthorized";
 
 // Lazy loaded pages
-const Home = lazy(() => import("../pages/Home"));
+const Home = lazy(() => import("../modules/home/container"));
 const Dashboard = lazy(() => import("../modules/dashboard/container"));
 const Profile = lazy(() => import("../modules/profile/container"));
 const Authentication = lazy(

@@ -1,6 +1,11 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { getCTAButtons, handleNavigationAction } from "../../homeNavigationConfig";
 
 const CallToAction = () => {
+  const navigate = useNavigate();
+  const ctaButtons = getCTAButtons();
+
   return (
     <section className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -13,12 +18,15 @@ const CallToAction = () => {
             to success and transforming their careers.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105">
-              Start Free Today
-            </button>
-            <button className="border-2 border-white/30 hover:border-white/50 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:bg-white/5">
-              Schedule Demo
-            </button>
+            {ctaButtons.map((button, index) => (
+              <button
+                key={index}
+                className={button.className}
+                onClick={() => handleNavigationAction(button.action, button.path, navigate)}
+              >
+                {button.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>

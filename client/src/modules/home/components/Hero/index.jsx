@@ -14,7 +14,11 @@ const Hero = ({heroContent}) => {
 
           <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
             {heroContent.buttons.map((btn, idx) => (
-              <button key={idx} className={btn.className}>
+              <button 
+                key={idx} 
+                className={btn.className}
+                onClick={btn.onClick}
+              >
                 {btn.label}
                 {btn.icon}
               </button>
