@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const session = require("express-session");
 const fileUpload = require("express-fileupload");
 const errorMiddleware = require("shared/middleware/error.middleware");
+const settingsRouter = require("./routes/settings.routes");
 const logger = require("shared/utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
 
@@ -33,6 +34,7 @@ app.use(
 app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
+app.use("/api/v1/settings", settingsRouter);
 
 // ⚠️ Error Middleware
 app.use(errorMiddleware);
