@@ -23,6 +23,15 @@ const userSwagger = YAML.load(
 const projectSwagger = YAML.load(
   path.join(__dirname, "swagger", "project.swagger.yaml")
 );
+// Optional: settings swagger (if present)
+let settingsSwagger = { servers: [], tags: [], paths: {}, components: {} };
+try {
+  settingsSwagger = YAML.load(
+    path.join(__dirname, "swagger", "settings.swagger.yaml")
+  );
+} catch (e) {
+  // settings swagger not present yet; proceed without it
+}
 
 // Combine Swagger docs
 const combinedSwagger = {
@@ -32,27 +41,31 @@ const combinedSwagger = {
     version: "1.0.0",
     description: "Unified API documentation for all microservices",
   },
-  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers],
+  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers, ...(settingsSwagger.servers || [])],
   tags: [
     ...(apiGatewaySwagger.tags || []),
     ...(userSwagger.tags || []),
-    ...(projectSwagger.tags || [])
+    ...(projectSwagger.tags || []),
+    ...(settingsSwagger.tags || [])
   ],
   paths: { 
     ...apiGatewaySwagger.paths, 
     ...userSwagger.paths, 
-    ...projectSwagger.paths
+    ...projectSwagger.paths,
+    ...(settingsSwagger.paths || {})
   },
   components: {
     schemas: {
       ...(apiGatewaySwagger.components?.schemas || {}),
       ...(userSwagger.components?.schemas || {}),
       ...(projectSwagger.components?.schemas || {}),
+      ...(settingsSwagger.components?.schemas || {}),
     },
     securitySchemes: {
       ...(apiGatewaySwagger.components?.securitySchemes || {}),
       ...(userSwagger.components?.securitySchemes || {}),
       ...(projectSwagger.components?.securitySchemes || {}),
+      ...(settingsSwagger.components?.securitySchemes || {}),
     },
   },
   security: [{ bearerAuth: [] }],
@@ -73,7 +86,8 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // Proxy configuration
 const API_USER_URL = process.env.API_USER_URL || "http://localhost:3001";
 
-const API_PROJECT_URL = process.env.API_PROJECT_URL || "https://localhost:3002";
+const API_PROJECT_URL = process.env.API_PROJECT_URL || "http://localhost:3002";
+const API_SETTINGS_URL = process.env.API_SETTINGS_URL || "http://localhost:3003";
 
 // Mount proxy at root `/` and forward full original path to user-service
 app.use(
@@ -108,6 +122,21 @@ app.use(
 app.use(
   "/api/v1/projects",
   proxy(API_PROJECT_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+app.use(
+  "/api/v1/settings",
+  proxy(API_SETTINGS_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",
     parseReqBody: true,
