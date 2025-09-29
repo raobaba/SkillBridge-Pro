@@ -9,6 +9,12 @@ const { projectFilesTable, ProjectFilesModel } = require("./project-files.model"
 const { projectUpdatesTable, ProjectUpdatesModel } = require("./project-updates.model");
 const { projectReviewsTable, ProjectReviewsModel } = require("./project-reviews.model");
 const { projectBoostsTable, ProjectBoostsModel } = require("./project-boosts.model");
+const { projectCollaboratorsTable, ProjectCollaboratorsModel } = require("./project-collaborators.model");
+const { projectAnalyticsTable, ProjectAnalyticsModel } = require("./project-analytics.model");
+const { projectNotificationsTable, ProjectNotificationsModel } = require("./project-notifications.model");
+const { projectCommentsTable, ProjectCommentsModel } = require("./project-comments.model");
+const { projectMilestonesTable, ProjectMilestonesModel } = require("./project-milestones.model");
+const { projectTasksTable, ProjectTasksModel } = require("./project-tasks.model");
 
 // Legacy ProjectModel for backward compatibility
 const ProjectModel = {
@@ -45,6 +51,14 @@ const ProjectModel = {
   
   // Boosts
   addBoost: ProjectBoostsModel.addBoost,
+  
+  // New functionality
+  addCollaborator: ProjectCollaboratorsModel.addCollaborator,
+  addAnalytics: ProjectAnalyticsModel.addMetric,
+  addNotification: ProjectNotificationsModel.addNotification,
+  addComment: ProjectCommentsModel.addComment,
+  addMilestone: ProjectMilestonesModel.addMilestone,
+  addTask: ProjectTasksModel.addTask,
 };
 
 module.exports = {
@@ -59,6 +73,12 @@ module.exports = {
   projectUpdatesTable,
   projectReviewsTable,
   projectBoostsTable,
+  projectCollaboratorsTable,
+  projectAnalyticsTable,
+  projectNotificationsTable,
+  projectCommentsTable,
+  projectMilestonesTable,
+  projectTasksTable,
   
   // Model Classes (for business logic)
   ProjectsModel,
@@ -71,6 +91,12 @@ module.exports = {
   ProjectUpdatesModel,
   ProjectReviewsModel,
   ProjectBoostsModel,
+  ProjectCollaboratorsModel,
+  ProjectAnalyticsModel,
+  ProjectNotificationsModel,
+  ProjectCommentsModel,
+  ProjectMilestonesModel,
+  ProjectTasksModel,
   
   // Legacy Model (for backward compatibility with existing controllers)
   ProjectModel,

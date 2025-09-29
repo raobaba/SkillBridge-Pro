@@ -3,10 +3,6 @@ import { useSelector } from "react-redux";
 
 import { Button, Footer } from "../../../components";
 import Navbar from "../../../components/header/index";
-import ProjectForm from "../components/ProjectForm";
-import ApplicantsList from "../components/ApplicantsList";
-import ProjectCard from "../components/ProjectCard";
-
 // Role-specific components
 import DeveloperProjects from "../components/DeveloperProjects";
 import ProjectOwnerProjects from "../components/ProjectOwnerProjects";

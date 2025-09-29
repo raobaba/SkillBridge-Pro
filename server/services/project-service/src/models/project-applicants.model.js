@@ -2,7 +2,7 @@ const { pgTable, serial, text, integer, timestamp, pgEnum, numeric } = require("
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { ProjectsModel } = require("./projects.model");
+const { ProjectsModel, projectsTable } = require("./projects.model");
 
 // Enums
 const applicantStatusEnum = pgEnum("applicant_status", [
@@ -16,7 +16,7 @@ const applicantStatusEnum = pgEnum("applicant_status", [
 // Project Applicants table
 const projectApplicantsTable = pgTable("project_applicants", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull(), // FK -> projects.id
+  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
   userId: integer("user_id").notNull(), // FK -> users.id
   status: applicantStatusEnum("status").default("applied").notNull(),
   matchScore: numeric("match_score"),

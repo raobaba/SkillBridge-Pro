@@ -2,7 +2,7 @@ const { pgTable, serial, text, integer, timestamp, varchar, pgEnum } = require("
 const { eq } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { ProjectsModel } = require("./projects.model");
+const { ProjectsModel, projectsTable } = require("./projects.model");
 
 // Enums
 const boostPlanEnum = pgEnum("boost_plan", ["basic", "premium", "spotlight"]);
@@ -10,7 +10,7 @@ const boostPlanEnum = pgEnum("boost_plan", ["basic", "premium", "spotlight"]);
 // Project Boosts table
 const projectBoostsTable = pgTable("project_boosts", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull(), // FK -> projects.id
+  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
   purchasedBy: integer("purchased_by").notNull(), // FK -> users.id
   plan: boostPlanEnum("plan").default("basic").notNull(),
   amountCents: integer("amount_cents").notNull(),

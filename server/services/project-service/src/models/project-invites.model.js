@@ -2,11 +2,12 @@ const { pgTable, serial, text, integer, timestamp } = require("drizzle-orm/pg-co
 const { eq } = require("drizzle-orm");
 
 const { db } = require("../config/database");
+const { projectsTable } = require("./projects.model");
 
 // Project Invites table
 const projectInvitesTable = pgTable("project_invites", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull(), // FK -> projects.id
+  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
   invitedEmail: text("invited_email").notNull(),
   invitedUserId: integer("invited_user_id"), // FK -> users.id (optional)
   role: text("role"),

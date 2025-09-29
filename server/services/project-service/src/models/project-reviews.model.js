@@ -2,12 +2,12 @@ const { pgTable, serial, text, integer, timestamp } = require("drizzle-orm/pg-co
 const { eq } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { ProjectsModel } = require("./projects.model");
+const { ProjectsModel, projectsTable } = require("./projects.model");
 
 // Project Reviews table
 const projectReviewsTable = pgTable("project_reviews", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull(), // FK -> projects.id
+  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
   reviewerId: integer("reviewer_id").notNull(), // FK -> users.id
   rating: integer("rating").notNull(),
   comment: text("comment"),
