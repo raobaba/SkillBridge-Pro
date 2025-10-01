@@ -9,9 +9,7 @@ const {
 } = require("../models");
 
 const resolveUserId = (req) => {
-  // Prefer authenticated user if later middleware adds it
   if (req.user?.id) return Number(req.user.id);
-  // Fallbacks for now: header or query param for service testing
   if (req.headers["x-user-id"]) return Number(req.headers["x-user-id"]);
   if (req.query.userId) return Number(req.query.userId);
   return null;
