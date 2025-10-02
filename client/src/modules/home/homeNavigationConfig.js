@@ -135,16 +135,6 @@ export const navigationConfig = {
       showInUserDropdown: true,
       showInMobileNav: false,
     },
-    analytics: {
-      label: "Analytics",
-      path: "/analytics",
-      icon: BarChart3,
-      description: "Project analytics",
-      roles: ["project-owner", "admin"],
-      showInSidebar: true,
-      showInUserDropdown: true,
-      showInMobileNav: false,
-    },
     userManagement: {
       label: "Users",
       path: "/users",

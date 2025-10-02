@@ -546,14 +546,6 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </div>
             )}
             
-            {activeTab === 'analytics' && (
-              <div className="space-y-6">
-                <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-4">Project Analytics</h3>
-                  <p className="text-gray-300">Detailed analytics for this project will be displayed here.</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

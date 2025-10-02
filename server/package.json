@@ -3,20 +3,27 @@
   "version": "1.0.0",
   "description": "SkillBridge Pro backend microservices with API Gateway",
   "scripts": {
-    "start": "concurrently \"npm run start:gateway\" \"npm run start:user\" \"npm run start:project\"",
+    "start": "concurrently \"npm run start:gateway\" \"npm run start:user\" \"npm run start:settings\" \"npm run start:project\"",
     "start:gateway": "cd api-gateway && npm run dev",
     "start:user": "cd services/user-service && npm run dev",
+    "start:settings": "cd services/settings-service && npm run dev",
     "start:project": "cd services/project-service && npm run dev",
     
-    "install:all": "npm install && cd api-gateway && npm install && cd ../services/user-service && npm install && cd ../project-service && npm install",
+    "install:all": "npm install && cd api-gateway && npm install && cd ../services/user-service && npm install && cd ../settings-service && npm install && cd ../project-service && npm install",
 
-    "db:generate": "cd services/user-service && npm run db:generate",
-    "db:migrate": "cd services/user-service && npm run db:migrate",
-    "db:seed": "cd services/user-service && npm run db:seed",
-
+    "db:generate": "concurrently \"npm run db:generate:user\" \"npm run db:generate:settings\" \"npm run db:generate:project\"",
+    "db:generate:user": "cd services/user-service && npm run db:generate",
+    "db:generate:settings": "cd services/settings-service && npm run db:generate",
     "db:generate:project": "cd services/project-service && npm run db:generate",
+
+    "db:migrate": "concurrently \"npm run db:migrate:user\" \"npm run db:migrate:settings\" \"npm run db:migrate:project\"",
+    "db:migrate:user": "cd services/user-service && npm run db:migrate",
+    "db:migrate:settings": "cd services/settings-service && npm run db:migrate",
     "db:migrate:project": "cd services/project-service && npm run db:migrate",
-    "db:seed:project": "cd services/project-service && npm run db:seed"
+
+    "db:seed": "echo 'No seed files available for services'",
+    "db:seed:user": "echo 'No seed file available for user service'",
+    "db:seed:project": "echo 'No seed file available for project service'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

@@ -4,6 +4,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import { persistStore } from "redux-persist";
 import Routing from "./router";
 import store from "../src/redux/store/configureStore";
+import AuthInitializer from "./components/AuthInitializer";
 export const AppContext = createContext();
 
 const persistor = persistStore(store);
@@ -27,7 +28,9 @@ function App() {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <Routing />
+        <AuthInitializer>
+          <Routing />
+        </AuthInitializer>
       </PersistGate>
     </Provider>
   );

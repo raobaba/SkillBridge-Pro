@@ -1,5 +1,5 @@
 {
-  "id": "e4400d9b-a630-4411-bcb5-4a9fbfa6f7bf",
+  "id": "0248842b-66a6-4bad-b27f-aa9c266fd647",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -230,17 +230,7 @@
       "isRLSEnabled": false
     }
   },
-  "enums": {
-    "public.role": {
-      "name": "role",
-      "schema": "",
-      "values": [
-        "developer",
-        "project-owner",
-        "admin"
-      ]
-    }
-  },
+  "enums": {},
   "schemas": {},
   "sequences": {},
   "roles": {},

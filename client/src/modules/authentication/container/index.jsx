@@ -1,15 +1,32 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Users, Briefcase, Star, ArrowRight } from "lucide-react";
 import SignIn from "../components/SignIn";
 import SignUp from "../components/SignUp";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Circular from "../../../components/loader/Circular";
+import { getToken } from "../../../services/utils";
 
 const Authentication = () => {
   const [isSignIn, setIsSignIn] = useState(true);
   const navigate = useNavigate();
-  const { loading } = useSelector((state) => state.user);
+  const [searchParams] = useSearchParams();
+  const { loading, isAuthenticated, user } = useSelector((state) => state.user);
+  
+  // Get redirect URL from query parameters
+  const redirectTo = searchParams.get('redirect_to');
+
+  // Check if user is already authenticated and redirect them
+  useEffect(() => {
+    const token = getToken();
+    const isLoggedIn = isAuthenticated && token && user;
+    
+    if (isLoggedIn) {
+      // User is already authenticated, redirect them to intended route or home
+      const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/";
+      navigate(targetRoute, { replace: true });
+    }
+  }, [isAuthenticated, user, redirectTo, navigate]);
 
   // Memoize features to prevent unnecessary re-renders
   const features = useMemo(() => [

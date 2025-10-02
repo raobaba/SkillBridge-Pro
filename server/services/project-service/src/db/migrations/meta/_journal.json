@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1758856115656,
-      "tag": "0000_black_starjammers",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758936310845,
-      "tag": "0001_amusing_lilandra",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1758937157351,
-      "tag": "0002_harsh_sentinel",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1759115243353,
-      "tag": "0003_bitter_slapstick",
+      "when": 1759281949924,
+      "tag": "0000_careful_norman_osborn",
       "breakpoints": true
     }
   ]

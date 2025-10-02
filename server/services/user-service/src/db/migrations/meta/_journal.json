@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1758851068357,
-      "tag": "0000_nosy_bishop",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1758858645586,
-      "tag": "0001_silly_screwball",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1759116136773,
-      "tag": "0002_damp_otto_octavius",
+      "when": 1759281947400,
+      "tag": "0000_premium_dreaming_celestial",
       "breakpoints": true
     }
   ]

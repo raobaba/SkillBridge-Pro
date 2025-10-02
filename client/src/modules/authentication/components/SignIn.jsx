@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { loginUser } from "../slice/userSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Input, Button } from "../../../components";
 import OAuthButtons from "../../../components/shared/OAuthButtons";
 import { useAuthForm } from "../../../components/hooks/useAuthForm";
@@ -9,8 +9,12 @@ import { useAuthForm } from "../../../components/hooks/useAuthForm";
 const SignIn = ({ switchMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   const [loginFailed, setLoginFailed] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Get redirect URL from query parameters
+  const redirectTo = searchParams.get('redirect_to');
 
   const initialFormData = {
     email: "",
@@ -51,7 +55,9 @@ const SignIn = ({ switchMode }) => {
     try {
       const result = await dispatch(loginUser(data));
       if (result?.payload?.status === 200) {
-        navigate("/");
+        // Navigate to the intended route or default to home
+        const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/";
+        navigate(targetRoute);
       } else {
         // Login failed - show forgot password option
         setLoginFailed(true);
@@ -60,7 +66,7 @@ const SignIn = ({ switchMode }) => {
       console.error("Login error:", error);
       setLoginFailed(true);
     }
-  }, [dispatch, navigate]);
+  }, [dispatch, navigate, redirectTo]);
 
   return (
     <div className='space-y-6'>

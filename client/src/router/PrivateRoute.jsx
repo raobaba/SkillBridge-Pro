@@ -2,22 +2,34 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 import { getToken } from "../services/utils";
-// import { selectUserLoggedIn } from "../modules/sign-in/slice/signinSlice";
-import { some } from "lodash";
 
 const PrivateRoute = ({ children, screen }) => {
-  const isLoggedIn = true;
-  // const { userData } = useSelector(({ signin }) => signin);
-  // const jwt_token = getToken();
-  const jwt_token = true
+  // Get authentication state from Redux store
+  const { isAuthenticated, user } = useSelector((state) => state.user);
+  
+  // Get JWT token from session storage
+  const jwt_token = getToken();
 
-  if (!isLoggedIn || !jwt_token) {
-    const redirect_to = encodeURIComponent(window.location.pathname);
-    return <Navigate to={`/sign-in?redirect_to=${redirect_to}`} replace />;
+  // Check if user is authenticated (both Redux state and token must be present)
+  const isLoggedIn = isAuthenticated && jwt_token && user;
+
+  if (!isLoggedIn) {
+    // Store the current path to redirect back after login
+    const currentPath = window.location.pathname;
+    
+    // Only add redirect_to if we're not already on the auth page
+    if (currentPath === '/auth') {
+      return <Navigate to="/auth" replace />;
+    }
+    
+    const redirect_to = encodeURIComponent(currentPath);
+    return <Navigate to={`/auth?redirect_to=${redirect_to}`} replace />;
   }
 
-  // const hasMenuAccess = some(userData?.userAccess, ({ moduleCode }) => moduleCode === screen);
+  // For now, allow access to all screens for authenticated users
+  // You can implement role-based access control here later
   const hasMenuAccess = true;
+  
   if (screen && !hasMenuAccess) {
     return <Navigate to="/unauthorized" replace />;
   }

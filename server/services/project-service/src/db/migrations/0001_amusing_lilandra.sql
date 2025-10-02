@@ -1,1 +1,0 @@
-ALTER TABLE "project_applicants" ALTER COLUMN "match_score" SET DATA TYPE numeric;

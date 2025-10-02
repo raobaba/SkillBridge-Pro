@@ -189,6 +189,29 @@ const userSlice = createSlice({
       state.message = null;
       state.lastAction = 'clearMessage';
     },
+    // Initialize authentication state from stored token and user data
+    initializeAuth: (state, action) => {
+      const { user, token } = action.payload;
+      if (user && token) {
+        state.user = user;
+        state.isAuthenticated = true;
+        state.lastAction = 'initializeAuth';
+      } else {
+        state.user = null;
+        state.isAuthenticated = false;
+        state.lastAction = 'initializeAuth - no valid session';
+      }
+    },
+    // Clear all authentication data
+    clearAuth: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.error = null;
+      state.message = null;
+      state.lastAction = 'clearAuth';
+      // Clear token from session storage
+      removeToken();
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -244,6 +267,8 @@ const userSlice = createSlice({
         state.isAuthenticated = false;
         state.message = "Logout successful";
         state.error = null;
+        // Clear token from session storage
+        removeToken();
       })
       .addCase(logOut.rejected, (state, action) => {
         state.loading = false;
@@ -397,5 +422,12 @@ const userSlice = createSlice({
   },
 });
 
-export const { clearAuthState, setLoading, clearError, clearMessage } = userSlice.actions;
+export const { 
+  clearAuthState, 
+  setLoading, 
+  clearError, 
+  clearMessage, 
+  initializeAuth, 
+  clearAuth 
+} = userSlice.actions;
 export default userSlice.reducer;
