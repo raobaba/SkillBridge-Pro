@@ -9,7 +9,8 @@ const sendError = (res, message, status = 400) =>
 // Create a new project
 const createProject = async (req, res) => {
   try {
-    const ownerId = req.user?.userId || req.body.ownerId; // from auth middleware or body (fallback)
+    // Only use authenticated user's ID - no fallback to body for security
+    const ownerId = req.user?.userId;
     const {
       title,
       description,
@@ -122,13 +123,26 @@ const listProjects = async (req, res) => {
 const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
     if (!id) return sendError(res, "Project id is required", 400);
+    
+    // Check if project exists and user has permission to update it
+    const existingProject = await ProjectModel.getProjectById(Number(id));
+    if (!existingProject) return sendError(res, "Project not found", 404);
+    
+    // Only project owner or admin can update (admin can update any project)
+    if (userRole !== 'admin' && existingProject.ownerId !== userId) {
+      return sendError(res, "You can only update your own projects", 403);
+    }
+    
     const payload = { ...req.body };
     if (payload.startDate) payload.startDate = new Date(payload.startDate);
     if (payload.deadline) payload.deadline = new Date(payload.deadline);
 
     const project = await ProjectModel.updateProject(Number(id), payload);
-    if (!project) return sendError(res, "Project not found or update failed", 404);
+    if (!project) return sendError(res, "Project update failed", 500);
 
     if (Array.isArray(payload.skills)) await ProjectModel.setSkills(project.id, payload.skills);
     if (Array.isArray(payload.tags)) await ProjectModel.setTags(project.id, payload.tags);
@@ -146,7 +160,20 @@ const updateProject = async (req, res) => {
 const deleteProject = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
     if (!id) return sendError(res, "Project id is required", 400);
+    
+    // Check if project exists and user has permission to delete it
+    const existingProject = await ProjectModel.getProjectById(Number(id));
+    if (!existingProject) return sendError(res, "Project not found", 404);
+    
+    // Only project owner or admin can delete (admin can delete any project)
+    if (userRole !== 'admin' && existingProject.ownerId !== userId) {
+      return sendError(res, "You can only delete your own projects", 403);
+    }
+    
     await ProjectModel.softDeleteProject(Number(id));
     return res.status(200).json({ success: true, status: 200, message: "Project deleted" });
   } catch (error) {
@@ -160,7 +187,8 @@ const deleteProject = async (req, res) => {
 // Apply to a project
 const applyToProject = async (req, res) => {
   try {
-    const applicantId = req.user?.userId || req.body.userId;
+    // Only use authenticated user's ID - no fallback to body for security
+    const applicantId = req.user?.userId;
     const { projectId, matchScore, notes } = req.body;
     
     
@@ -257,7 +285,7 @@ const respondInvite = async (req, res) => {
 const addFile = async (req, res) => {
   try {
     const { projectId, description, category } = req.body;
-    const uploaderId = req.user?.userId || req.body.uploaderId;
+    const uploaderId = req.user?.userId;
     
     if (!projectId || !uploaderId) {
       return sendError(res, "projectId and uploaderId are required", 400);
@@ -352,7 +380,7 @@ const getProjectFiles = async (req, res) => {
 // Add update
 const addUpdate = async (req, res) => {
   try {
-    const authorId = req.user?.userId || req.body.authorId;
+    const authorId = req.user?.userId;
     const { projectId, type, message } = req.body;
     if (!authorId || !projectId || !message) return sendError(res, "authorId, projectId and message are required", 400);
     const row = await ProjectModel.addUpdate({ projectId: Number(projectId), authorId: Number(authorId), type, message });
@@ -368,7 +396,7 @@ const addUpdate = async (req, res) => {
 // Add review
 const addReview = async (req, res) => {
   try {
-    const reviewerId = req.user?.userId || req.body.reviewerId;
+    const reviewerId = req.user?.userId;
     const { projectId, rating, comment } = req.body;
     if (!reviewerId || !projectId || !rating) return sendError(res, "reviewerId, projectId and rating are required", 400);
     const row = await ProjectModel.addReview({ projectId: Number(projectId), reviewerId: Number(reviewerId), rating: Number(rating), comment });
@@ -384,7 +412,7 @@ const addReview = async (req, res) => {
 // Add boost
 const addBoost = async (req, res) => {
   try {
-    const purchaserId = req.user?.userId || req.body.purchasedBy;
+    const purchaserId = req.user?.userId;
     const { projectId, plan, amountCents, currency, startAt, endAt } = req.body;
     if (!purchaserId || !projectId || !plan || !amountCents || !startAt || !endAt) {
       return sendError(res, "purchasedBy, projectId, plan, amountCents, startAt, endAt are required", 400);

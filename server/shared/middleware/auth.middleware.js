@@ -33,6 +33,7 @@ const auth = async (req, res, next) => {
     req.user = {
       userId: decoded.userId,
       email: decoded.email,
+      role: decoded.role || null,
       userAccess: decoded.userAccess || null,
     };
 
