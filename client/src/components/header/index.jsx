@@ -44,7 +44,8 @@ const Navbar = ({
 
   const token = getToken();
   const userFromRedux = useSelector((state) => state.user?.user);
-  const user = isHome ? userFromRedux : data;
+  const user = userFromRedux || data;
+  
 
   const homeMenuItems = [
     { label: "Features", link: "#features" },
@@ -75,46 +76,35 @@ const Navbar = ({
     e.preventDefault();
     e.stopPropagation();
     
-    // Simple toggle - if open, close it; if closed, open it
-    setIsUserDropdownOpen(prev => !prev);
-    
-    // Close other dropdowns
-    setIsNotificationsOpen(false);
-    setIsMessagesOpen(false);
-    setIsMenuOpen(false);
-  };
-
-  // Function to open notifications and close others
-  const handleNotificationsToggle = () => {
-    // If notifications is already open, close it
-    if (notificationsOpen) {
-      setNotificationsOpen(false);
-    } else {
-      // Close all other dropdowns first, then open notifications
+    // Toggle user dropdown
+    if (isUserDropdownOpen) {
       setIsUserDropdownOpen(false);
-      setIsMessagesOpen(false);
-      setIsMenuOpen(false);
-      // Use setTimeout to ensure state updates are processed
-      setTimeout(() => {
-        setNotificationsOpen(true);
-      }, 0);
+    } else {
+      toggleDropdown('user');
     }
   };
 
-  // Function to open messages and close others
-  const handleMessagesToggle = () => {
-    // If messages is already open, close it
-    if (messagesOpen) {
-      setMessagesOpen(false);
-    } else {
-      // Close all other dropdowns first, then open messages
-      setIsUserDropdownOpen(false);
-      setNotificationsOpen(false);
-      setIsMenuOpen(false);
-      // Use setTimeout to ensure state updates are processed
-      setTimeout(() => {
+  // Helper function to toggle dropdowns with better UX
+  const toggleDropdown = (dropdownType) => {
+    // Close all other dropdowns first
+    setIsUserDropdownOpen(false);
+    setNotificationsOpen(false);
+    setMessagesOpen(false);
+    setIsMenuOpen(false);
+
+    // Open the requested dropdown
+    switch (dropdownType) {
+      case 'user':
+        setIsUserDropdownOpen(true);
+        break;
+      case 'notifications':
+        setNotificationsOpen(true);
+        break;
+      case 'messages':
         setMessagesOpen(true);
-      }, 0);
+        break;
+      default:
+        break;
     }
   };
 
@@ -232,7 +222,6 @@ const Navbar = ({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('Dropdown item clicked:', item.label);
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
@@ -288,7 +277,7 @@ const Navbar = ({
                     variant='ghost'
                     size='md'
                     className='relative p-2 rounded-lg'
-                    onClick={handleNotificationsToggle}
+                    onClick={() => toggleDropdown('notifications')}
                   >
                     <Bell className='w-5 h-5' />
                     {notifications > 0 && (
@@ -301,42 +290,23 @@ const Navbar = ({
                   {/* Notifications Panel */}
                   {notificationsOpen && (
                     <div 
-                      className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4'
+                      className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'
                       data-dropdown-content
-                      style={{ 
-                        maxWidth: 'min(20rem, calc(100vw - 2rem))',
-                        right: '0',
-                        left: 'auto'
-                      }}
                     >
-                      <div className='flex items-center justify-between mb-3'>
-                        <h4 className='text-gray-100 font-semibold text-lg'>
-                          Notifications
-                        </h4>
-                        <span className='text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full'>
-                          {notifications} new
-                        </span>
-                      </div>
-                      <div className='max-h-64 overflow-y-auto space-y-1'>
+                      <h4 className="text-gray-200 font-semibold mb-2">Notifications</h4>
+                      <div className="max-h-64 overflow-y-auto">
                         {[...Array(notifications)].map((_, index) => (
-                          <Button
+                          <div
                             key={index}
                             onClick={() => {
                               navigate("/notifications");
                               setNotificationsOpen(false);
                             }}
-                            variant="ghost"
-                            className='w-full justify-start p-3 h-auto bg-gray-800 hover:bg-gray-700 text-left'
+                            className="px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
                           >
-                            <div className='flex flex-col items-start'>
-                              <p className='text-gray-300 text-sm font-medium'>
-                                Notification {index + 1}
-                              </p>
-                              <p className='text-gray-400 text-xs mt-1'>
-                                Details of the notification...
-                              </p>
-                            </div>
-                          </Button>
+                            <p className="text-gray-300 text-sm">Notification {index + 1}</p>
+                            <p className="text-gray-400 text-xs">Details of the notification...</p>
+                          </div>
                         ))}
                       </div>
                       <Button
@@ -344,11 +314,11 @@ const Navbar = ({
                           navigate("/notifications");
                           setNotificationsOpen(false);
                         }}
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className='w-full mt-3 text-blue-400 hover:text-blue-300 border-blue-400/30 hover:border-blue-400/50'
+                        className="w-full mt-2 text-blue-400 hover:text-blue-500"
                       >
-                        View All Notifications
+                        View All
                       </Button>
                     </div>
                   )}
@@ -360,7 +330,7 @@ const Navbar = ({
                     variant='ghost'
                     size='md'
                     className='relative p-2 rounded-lg'
-                    onClick={handleMessagesToggle}
+                    onClick={() => toggleDropdown('messages')}
                   >
                     <MessageSquare className='w-5 h-5' />
                     {messages > 0 && (
@@ -372,83 +342,36 @@ const Navbar = ({
 
                   {messagesOpen && (
                     <div 
-                      className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4 flex flex-col transition-all duration-300 max-h-[80vh]'
+                      className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'
                       data-dropdown-content
-                      style={{ 
-                        maxWidth: 'min(20rem, calc(100vw - 2rem))',
-                        right: '0',
-                        left: 'auto'
-                      }}
                     >
-                      <div className='flex items-center justify-between mb-3'>
-                        <h4 className='text-gray-100 font-semibold text-lg'>
-                          Messages
-                        </h4>
-                        <span className='text-xs text-gray-400 bg-blue-600 px-2 py-1 rounded-full'>
-                          {messages} unread
-                        </span>
-                      </div>
-
-                      <div className='overflow-y-auto flex-1 space-y-1'>
-                        {messagesList.map((msg, index) => (
-                          <Button
-                            key={msg.id}
+                      <h4 className="text-gray-200 font-semibold mb-2">Messages</h4>
+                      <div className="max-h-64 overflow-y-auto">
+                        {[...Array(messages)].map((_, index) => (
+                          <div
+                            key={index}
                             onClick={() => {
-                              if (expandedMessageIndex === index) {
-                                navigate("/chat"); // redirect when already expanded
-                              } else {
-                                setExpandedMessageIndex(index); // expand message
-                              }
+                              navigate("/chat");
+                              setMessagesOpen(false);
                             }}
-                            variant="ghost"
-                            className={`w-full justify-start p-3 h-auto text-left ${
-                              expandedMessageIndex === index
-                                ? "bg-gray-700 hover:bg-gray-600"
-                                : "bg-gray-800 hover:bg-gray-700"
-                            }`}
+                            className="px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
                           >
-                            <div className='flex flex-col items-start w-full'>
-                              <p className='text-gray-300 text-sm font-medium'>{`Message ${msg.id}`}</p>
-                              <p className='text-gray-400 text-xs whitespace-pre-wrap mt-1'>
-                                {expandedMessageIndex === index
-                                  ? msg.fullText
-                                  : msg.text}
-                              </p>
-                            </div>
-                          </Button>
+                            <p className="text-gray-300 text-sm">Message {index + 1}</p>
+                            <p className="text-gray-400 text-xs">Preview content...</p>
+                          </div>
                         ))}
                       </div>
-
-                      {/* Input area only when expanded */}
-                      {expandedMessageIndex !== null && (
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            if (!messageInput.trim()) return;
-                            const updatedMessages = [...messagesList];
-                            updatedMessages[expandedMessageIndex].fullText +=
-                              "\n" + messageInput;
-                            setMessagesList(updatedMessages);
-                            setMessageInput("");
-                          }}
-                          className='mt-2 flex space-x-2'
-                        >
-                          <Input
-                            type='text'
-                            value={messageInput}
-                            onChange={(e) => setMessageInput(e.target.value)}
-                            placeholder='Type a message...'
-                            className='flex-1 bg-gray-700 placeholder-gray-400 focus:ring-blue-500'
-                          />
-                          <Button
-                            type='submit'
-                            size='md'
-                            className='px-4 py-2'
-                          >
-                            Send
-                          </Button>
-                        </form>
-                      )}
+                      <Button
+                        onClick={() => {
+                          navigate("/chat");
+                          setMessagesOpen(false);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full mt-2 text-blue-400 hover:text-blue-500"
+                      >
+                        View All Messages
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -473,12 +396,6 @@ const Navbar = ({
                       </div>
                     )}
 
-                    {/* Username */}
-                    {user?.name && (
-                      <span className='ml-2 text-sm font-medium text-gray-200 hidden sm:block'>
-                        {user.name}
-                      </span>
-                    )}
                   </div>
 
                   {/* User Dropdown positioned relative to the outer container */}
@@ -498,7 +415,6 @@ const Navbar = ({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('Dropdown item clicked:', item.label);
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}

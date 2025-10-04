@@ -52,12 +52,16 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user?.user);
   
+  // Debug logging
+  console.log('Navigation user data:', user);
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
   const [dropdownTimeout, setDropdownTimeout] = useState(null);
+  const [isAvatarBroken, setIsAvatarBroken] = useState(false);
 
   // Mock data for notifications and messages
   const [notifications] = useState(4);
@@ -359,9 +363,21 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                   className="group flex items-center space-x-2 p-2 rounded-lg hover:bg-white/10"
                   onClick={() => toggleDropdown('user')}
                 >
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                  </div>
+                  {!isAvatarBroken && user?.avatarUrl ? (
+                    <img
+                      src={user?.avatarUrl}
+                      alt={user?.name || "Profile"}
+                      className="w-8 h-8 rounded-full border-2 border-white/20"
+                      onError={() => {
+                        console.log('Avatar image failed to load:', user?.avatarUrl);
+                        setIsAvatarBroken(true);
+                      }}
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                    </div>
+                  )}
                   <span className="hidden sm:block text-sm font-medium text-gray-200 group-hover:text-white">
                     {user?.name || "User"}
                   </span>
