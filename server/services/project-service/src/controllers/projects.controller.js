@@ -249,7 +249,32 @@ const listApplicants = async (req, res) => {
 const createInvite = async (req, res) => {
   try {
     const { projectId, invitedEmail, invitedUserId, role, message } = req.body;
+    const inviterUserId = req.user?.userId;
+    const inviterRole = req.user?.role;
+    
     if (!projectId || !invitedEmail) return sendError(res, "projectId and invitedEmail are required", 400);
+    if (!inviterUserId) return sendError(res, "Authentication required", 401);
+    
+    // Check if project exists and user has permission to invite
+    const project = await ProjectModel.getProjectById(Number(projectId));
+    if (!project) return sendError(res, "Project not found", 404);
+    
+    // Only project owner or admin can send invites
+    if (inviterRole !== 'admin' && project.ownerId !== inviterUserId) {
+      return sendError(res, "You can only invite people to your own projects", 403);
+    }
+    
+    // Check if invite already exists for this email and project
+    const existingInvites = await ProjectModel.getInvitesByProjectId(Number(projectId));
+    const existingInvite = existingInvites.find(invite => 
+      invite.invitedEmail.toLowerCase() === invitedEmail.toLowerCase() && 
+      invite.status === 'pending'
+    );
+    
+    if (existingInvite) {
+      return sendError(res, "An active invite already exists for this email", 400);
+    }
+    
     const row = await ProjectModel.createInvite({
       projectId: Number(projectId),
       invitedEmail,
@@ -266,11 +291,49 @@ const createInvite = async (req, res) => {
   }
 };
 
+// Get invites for the authenticated user
+const getMyInvites = async (req, res) => {
+  try {
+    const userEmail = req.user?.email;
+    if (!userEmail) return sendError(res, "Authentication required", 401);
+    
+    const invites = await ProjectModel.getInvitesByEmail(userEmail);
+    return res.status(200).json({ success: true, status: 200, invites });
+  } catch (error) {
+    console.error("Get My Invites Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch invites", error: error.message });
+  }
+};
+
 // Respond to invite
 const respondInvite = async (req, res) => {
   try {
     const { inviteId, status } = req.body;
+    const responderUserId = req.user?.userId;
+    const responderEmail = req.user?.email;
+    
     if (!inviteId || !status) return sendError(res, "inviteId and status are required", 400);
+    if (!responderUserId || !responderEmail) return sendError(res, "Authentication required", 401);
+    
+    // Get the invite to validate the responder
+    const invite = await ProjectModel.getInviteById(Number(inviteId));
+    if (!invite) return sendError(res, "Invite not found", 404);
+    
+    // Check if the person responding is actually the invited person
+    const isInvitedUser = invite.invitedUserId === responderUserId || 
+                          invite.invitedEmail.toLowerCase() === responderEmail.toLowerCase();
+    
+    if (!isInvitedUser) {
+      return sendError(res, "You can only respond to invites sent to you", 403);
+    }
+    
+    // Check if invite is still pending
+    if (invite.status !== 'pending') {
+      return sendError(res, `This invite has already been ${invite.status}`, 400);
+    }
+    
     const row = await ProjectModel.respondInvite({ inviteId: Number(inviteId), status });
     return res.status(200).json({ success: true, status: 200, message: "Invite updated", invite: row });
   } catch (error) {
@@ -445,6 +508,7 @@ module.exports = {
   updateApplicantStatus,
   listApplicants,
   createInvite,
+  getMyInvites,
   respondInvite,
   addFile,
   getProjectFiles,

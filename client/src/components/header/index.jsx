@@ -21,6 +21,8 @@ const Navbar = ({
   const [isAvatarBroken, setIsAvatarBroken] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const dropdownRefHome = useRef(null);
+  const dropdownRefApp = useRef(null);
   const notificationsRef = useRef(null);
   const messagesRef = useRef(null);
   const [notifications, setNotifications] = useState(4);
@@ -69,21 +71,51 @@ const Navbar = ({
   };
 
   // Function to open user dropdown and close others
-  const handleUserDropdownToggle = () => {
-    closeAllDropdowns();
-    setIsUserDropdownOpen(true);
+  const handleUserDropdownToggle = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Simple toggle - if open, close it; if closed, open it
+    setIsUserDropdownOpen(prev => !prev);
+    
+    // Close other dropdowns
+    setIsNotificationsOpen(false);
+    setIsMessagesOpen(false);
+    setIsMenuOpen(false);
   };
 
   // Function to open notifications and close others
   const handleNotificationsToggle = () => {
-    closeAllDropdowns();
-    setNotificationsOpen(true);
+    // If notifications is already open, close it
+    if (notificationsOpen) {
+      setNotificationsOpen(false);
+    } else {
+      // Close all other dropdowns first, then open notifications
+      setIsUserDropdownOpen(false);
+      setIsMessagesOpen(false);
+      setIsMenuOpen(false);
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        setNotificationsOpen(true);
+      }, 0);
+    }
   };
 
   // Function to open messages and close others
   const handleMessagesToggle = () => {
-    closeAllDropdowns();
-    setMessagesOpen(true);
+    // If messages is already open, close it
+    if (messagesOpen) {
+      setMessagesOpen(false);
+    } else {
+      // Close all other dropdowns first, then open messages
+      setIsUserDropdownOpen(false);
+      setNotificationsOpen(false);
+      setIsMenuOpen(false);
+      // Use setTimeout to ensure state updates are processed
+      setTimeout(() => {
+        setMessagesOpen(true);
+      }, 0);
+    }
   };
 
   const userDropdownItems = [
@@ -97,10 +129,20 @@ const Navbar = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Close user dropdown
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      // Check if click is on dropdown content - if so, don't close
+      if (event.target.closest('[data-dropdown-content]')) {
+        return;
+      }
+      
+      // Check if click is outside any dropdown
+      const isOutsideHome = !dropdownRefHome.current || !dropdownRefHome.current.contains(event.target);
+      const isOutsideApp = !dropdownRefApp.current || !dropdownRefApp.current.contains(event.target);
+      
+      // Close user dropdown if click is outside both (or if both refs don't exist)
+      if (isOutsideHome && isOutsideApp) {
         setIsUserDropdownOpen(false);
       }
+      
       // Close notifications panel
       if (
         notificationsRef.current &&
@@ -114,6 +156,7 @@ const Navbar = ({
       }
     };
 
+    // Use mousedown instead of click to avoid conflicts
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -154,7 +197,7 @@ const Navbar = ({
               {token && (
                 <div className='relative ml-4 hidden sm:block'>
                   <div
-                    ref={dropdownRef}
+                    ref={dropdownRefHome}
                     onClick={handleUserDropdownToggle}
                     className='cursor-pointer'
                   >
@@ -174,19 +217,29 @@ const Navbar = ({
                   
                   {/* Dropdown positioned relative to the outer container */}
                   {isUserDropdownOpen && (
-                    <div className='absolute left-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'>
+                    <div 
+                      className='absolute right-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'
+                      style={{ 
+                        maxWidth: 'min(12rem, calc(100vw - 2rem))',
+                        right: '0',
+                        left: 'auto'
+                      }}
+                      data-dropdown-content
+                    >
                       {userDropdownItems.map((item, index) => (
-                        <Button
+                        <div
                           key={index}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Dropdown item clicked:', item.label);
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          variant="ghost"
-                          className='w-full justify-start px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal'
+                          className='w-full cursor-pointer px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal rounded'
                         >
                           {item.label}
-                        </Button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -247,7 +300,15 @@ const Navbar = ({
 
                   {/* Notifications Panel */}
                   {notificationsOpen && (
-                    <div className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4'>
+                    <div 
+                      className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4'
+                      data-dropdown-content
+                      style={{ 
+                        maxWidth: 'min(20rem, calc(100vw - 2rem))',
+                        right: '0',
+                        left: 'auto'
+                      }}
+                    >
                       <div className='flex items-center justify-between mb-3'>
                         <h4 className='text-gray-100 font-semibold text-lg'>
                           Notifications
@@ -310,7 +371,15 @@ const Navbar = ({
                   </Button>
 
                   {messagesOpen && (
-                    <div className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4 flex flex-col transition-all duration-300 max-h-[80vh]'>
+                    <div 
+                      className='absolute right-0 mt-2 w-80 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-4 flex flex-col transition-all duration-300 max-h-[80vh]'
+                      data-dropdown-content
+                      style={{ 
+                        maxWidth: 'min(20rem, calc(100vw - 2rem))',
+                        right: '0',
+                        left: 'auto'
+                      }}
+                    >
                       <div className='flex items-center justify-between mb-3'>
                         <h4 className='text-gray-100 font-semibold text-lg'>
                           Messages
@@ -387,7 +456,7 @@ const Navbar = ({
                 {/* Avatar + Username */}
                 <div className='relative flex items-center'>
                   <div
-                    ref={dropdownRef}
+                    ref={dropdownRefApp}
                     onClick={handleUserDropdownToggle}
                     className='flex items-center cursor-pointer'
                   >
@@ -414,19 +483,29 @@ const Navbar = ({
 
                   {/* User Dropdown positioned relative to the outer container */}
                   {isUserDropdownOpen && (
-                    <div className='absolute left-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'>
+                    <div 
+                      className='absolute right-0 top-full mt-2 w-48 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-1'
+                      data-dropdown-content
+                      style={{ 
+                        maxWidth: 'min(12rem, calc(100vw - 2rem))',
+                        right: '0',
+                        left: 'auto'
+                      }}
+                    >
                       {userDropdownItems.map((item, index) => (
-                        <Button
+                        <div
                           key={index}
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Dropdown item clicked:', item.label);
                             item.action();
                             setIsUserDropdownOpen(false);
                           }}
-                          variant="ghost"
-                          className='w-full justify-start px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal'
+                          className='w-full cursor-pointer px-3 py-2 text-gray-300 hover:bg-gray-700/50 hover:text-white text-sm font-normal rounded'
                         >
                           {item.label}
-                        </Button>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -476,7 +555,9 @@ const Navbar = ({
               userDropdownItems.map((item, index) => (
                 <Button
                   key={index}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     item.action();
                     setIsMenuOpen(false);
                   }}

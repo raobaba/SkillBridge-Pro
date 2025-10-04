@@ -1,9 +1,6 @@
 import React, { useState } from 'react'
 import ProjectForm from './ProjectForm'
 import ApplicantsList from './ApplicantsList'
-import ProjectCard from './ProjectCard'
-import ProjectAnalytics from './ProjectAnalytics'
-import ProjectManagementPanel from './ProjectManagementPanel'
 import Button from '../../../components/Button'
 import {
   BarChart3,
@@ -652,10 +649,6 @@ const ProjectOwnerProjects = () => {
 
         {activeTab === 'applicants' && (
           <ApplicantsList />
-        )}
-
-        {activeTab === 'analytics' && (
-          <ProjectAnalytics projects={ownedProjects} />
         )}
 
         {/* Owner Project Details Modal */}

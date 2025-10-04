@@ -38,6 +38,9 @@ const ProjectModel = {
   // Invites
   createInvite: ProjectInvitesModel.createInvite,
   respondInvite: ProjectInvitesModel.respondInvite,
+  getInviteById: ProjectInvitesModel.getInviteById,
+  getInvitesByProjectId: ProjectInvitesModel.getInvitesByProjectId,
+  getInvitesByEmail: ProjectInvitesModel.getInvitesByEmail,
   
   // Files
   addFile: ProjectFilesModel.addFile,

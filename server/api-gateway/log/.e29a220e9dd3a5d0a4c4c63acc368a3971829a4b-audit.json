@@ -6,11 +6,6 @@
     "auditLog": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\.e29a220e9dd3a5d0a4c4c63acc368a3971829a4b-audit.json",
     "files": [
         {
-            "date": 1756856391386,
-            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-09-03.log",
-            "hash": "407d7dc4636b5e472f686153df27e2731b2ee5ab375ccaca3c7e473eb81250f3"
-        },
-        {
             "date": 1757030755489,
             "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-09-05.log",
             "hash": "414a88567bfc808af1a57c27cc0d331de2a16f476b80616207274938c7a855e3"
@@ -124,6 +119,11 @@
             "date": 1759376001146,
             "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-10-02.log",
             "hash": "2d5026c43289e2ab309c489a9f90140911e7c5c94a5739d8fad17f40b2ef88ee"
+        },
+        {
+            "date": 1759548216296,
+            "name": "C:\\Users\\raora\\OneDrive\\Desktop\\SkillBridge Pro\\server\\api-gateway\\log\\combined-2025-10-04.log",
+            "hash": "74d59f9d9c5c0d990675ea9786b2a4cf0e62926950025cbb1851eb1804cbd8e6"
         }
     ],
     "hashType": "sha256"

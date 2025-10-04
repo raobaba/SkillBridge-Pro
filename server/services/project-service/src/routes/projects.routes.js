@@ -17,9 +17,10 @@ projectRouter.post("/apply", authenticate, requireDeveloper, projectController.a
 projectRouter.put("/applicants/status", authenticate, requireProjectManager, projectController.updateApplicantStatus);
 projectRouter.get("/:projectId/applicants", authenticate, requireProjectManager, projectController.listApplicants);
 
-// 📧 Invitation Management (Only project owners can send invites)
+// 📧 Invitation Management (Only project owners can send invites, developers can respond)
 projectRouter.post("/invite", authenticate, requireProjectManager, projectController.createInvite);
-projectRouter.put("/invite/respond", authenticate, projectController.respondInvite); // Any authenticated user can respond
+projectRouter.get("/invites/my", authenticate, projectController.getMyInvites); // Developers can view their invites
+projectRouter.put("/invite/respond", authenticate, projectController.respondInvite); // Any authenticated user can respond to their own invites
 
 // 📁 File Management (Project owners can add files, anyone can view)
 projectRouter.post("/files", authenticate, requireProjectManager, projectController.addFile);

@@ -57,6 +57,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isMessagesOpen, setIsMessagesOpen] = useState(false);
+  const [dropdownTimeout, setDropdownTimeout] = useState(null);
 
   // Mock data for notifications and messages
   const [notifications] = useState(4);
@@ -77,6 +78,35 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
     }
   };
 
+  // Helper function to toggle dropdowns with better UX
+  const toggleDropdown = (dropdownType) => {
+    // Clear any existing timeout
+    if (dropdownTimeout) {
+      clearTimeout(dropdownTimeout);
+      setDropdownTimeout(null);
+    }
+
+    // Close all other dropdowns first
+    setIsUserDropdownOpen(false);
+    setIsNotificationsOpen(false);
+    setIsMessagesOpen(false);
+
+    // Open the requested dropdown
+    switch (dropdownType) {
+      case 'user':
+        setIsUserDropdownOpen(true);
+        break;
+      case 'notifications':
+        setIsNotificationsOpen(true);
+        break;
+      case 'messages':
+        setIsMessagesOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
   const isActivePath = (path) => {
     if (path === "/dashboard") {
       return location.pathname === "/dashboard";
@@ -87,7 +117,11 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
+      // Check if click is outside dropdown containers
+      const isOutsideDropdown = !event.target.closest('.dropdown-container') && 
+                                !event.target.closest('[data-dropdown-content]');
+      
+      if (isOutsideDropdown) {
         setIsUserDropdownOpen(false);
         setIsNotificationsOpen(false);
         setIsMessagesOpen(false);
@@ -95,8 +129,14 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      // Cleanup timeout on unmount
+      if (dropdownTimeout) {
+        clearTimeout(dropdownTimeout);
+      }
+    };
+  }, [dropdownTimeout]);
 
   if (isHome) {
     // Home page navigation (simplified)
@@ -214,7 +254,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                   variant="ghost"
                   size="md"
                   className="relative p-2 rounded-lg"
-                  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                  onClick={() => toggleDropdown('notifications')}
                 >
                   <Bell className="w-5 h-5" />
                   {notifications > 0 && (
@@ -225,7 +265,10 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                 </Button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3">
+                  <div 
+                    className="absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3"
+                    data-dropdown-content
+                  >
                     <h4 className="text-gray-200 font-semibold mb-2">Notifications</h4>
                     <div className="max-h-64 overflow-y-auto">
                       {[...Array(notifications)].map((_, index) => (
@@ -263,7 +306,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                   variant="ghost"
                   size="md"
                   className="relative p-2 rounded-lg"
-                  onClick={() => setIsMessagesOpen(!isMessagesOpen)}
+                  onClick={() => toggleDropdown('messages')}
                 >
                   <MessageSquare className="w-5 h-5" />
                   {messages > 0 && (
@@ -274,7 +317,10 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                 </Button>
 
                 {isMessagesOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3">
+                  <div 
+                    className="absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3"
+                    data-dropdown-content
+                  >
                     <h4 className="text-gray-200 font-semibold mb-2">Messages</h4>
                     <div className="max-h-64 overflow-y-auto">
                       {[...Array(messages)].map((_, index) => (
@@ -311,7 +357,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                 <Button
                   variant="ghost"
                   className="group flex items-center space-x-2 p-2 rounded-lg hover:bg-white/10"
-                  onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                  onClick={() => toggleDropdown('user')}
                 >
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                     {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
@@ -323,7 +369,10 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                 </Button>
 
                 {isUserDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-1">
+                  <div 
+                    className="absolute right-0 mt-2 w-64 bg-black/95 backdrop-blur-md border border-white/20 rounded-xl shadow-2xl z-50 p-1"
+                    data-dropdown-content
+                  >
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-white/10">
                       <p className="text-sm font-medium text-white">{user?.name || "User"}</p>
