@@ -498,6 +498,279 @@ const addBoost = async (req, res) => {
   }
 };
 
+// Get project updates
+const getProjectUpdates = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const updates = await ProjectModel.getProjectUpdates(Number(projectId));
+    return res.status(200).json({ success: true, status: 200, updates });
+  } catch (error) {
+    console.error("Get Project Updates Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch project updates", error: error.message });
+  }
+};
+
+// Get project reviews
+const getProjectReviews = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const reviews = await ProjectModel.getProjectReviews(Number(projectId));
+    return res.status(200).json({ success: true, status: 200, reviews });
+  } catch (error) {
+    console.error("Get Project Reviews Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch project reviews", error: error.message });
+  }
+};
+
+// Get project boosts
+const getProjectBoosts = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const boosts = await ProjectModel.getProjectBoosts(Number(projectId));
+    return res.status(200).json({ success: true, status: 200, boosts });
+  } catch (error) {
+    console.error("Get Project Boosts Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch project boosts", error: error.message });
+  }
+};
+
+// Get project statistics
+const getProjectStats = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const stats = await ProjectModel.getProjectStats(Number(projectId));
+    return res.status(200).json({ success: true, status: 200, stats });
+  } catch (error) {
+    console.error("Get Project Stats Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch project stats", error: error.message });
+  }
+};
+
+// Search projects with advanced filters
+const searchProjects = async (req, res) => {
+  try {
+    const {
+      query,
+      category,
+      status,
+      priority,
+      experienceLevel,
+      budgetMin,
+      budgetMax,
+      isRemote,
+      location,
+      skills,
+      tags,
+      sortBy,
+      sortOrder,
+      page = 1,
+      limit = 20
+    } = req.query;
+    
+    const filters = {
+      query,
+      category,
+      status,
+      priority,
+      experienceLevel,
+      budgetMin: budgetMin ? Number(budgetMin) : undefined,
+      budgetMax: budgetMax ? Number(budgetMax) : undefined,
+      isRemote: isRemote === 'true',
+      location,
+      skills: skills ? skills.split(',') : undefined,
+      tags: tags ? tags.split(',') : undefined,
+      sortBy: sortBy || 'createdAt',
+      sortOrder: sortOrder || 'desc',
+      page: Number(page),
+      limit: Number(limit)
+    };
+    
+    const results = await ProjectModel.searchProjects(filters);
+    return res.status(200).json({ success: true, status: 200, ...results });
+  } catch (error) {
+    console.error("Search Projects Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to search projects", error: error.message });
+  }
+};
+
+// Get project recommendations for user
+const getProjectRecommendations = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    const { limit = 10 } = req.query;
+    const recommendations = await ProjectModel.getProjectRecommendations(Number(userId), Number(limit));
+    return res.status(200).json({ success: true, status: 200, recommendations });
+  } catch (error) {
+    console.error("Get Project Recommendations Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch recommendations", error: error.message });
+  }
+};
+
+// Add project to favorites
+const addProjectFavorite = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId } = req.body;
+    
+    if (!userId || !projectId) {
+      return sendError(res, "userId and projectId are required", 400);
+    }
+    
+    const favorite = await ProjectModel.addProjectFavorite(Number(userId), Number(projectId));
+    return res.status(201).json({ success: true, status: 201, message: "Project added to favorites", favorite });
+  } catch (error) {
+    console.error("Add Project Favorite Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to add favorite", error: error.message });
+  }
+};
+
+// Remove project from favorites
+const removeProjectFavorite = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId } = req.body;
+    
+    if (!userId || !projectId) {
+      return sendError(res, "userId and projectId are required", 400);
+    }
+    
+    await ProjectModel.removeProjectFavorite(Number(userId), Number(projectId));
+    return res.status(200).json({ success: true, status: 200, message: "Project removed from favorites" });
+  } catch (error) {
+    console.error("Remove Project Favorite Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to remove favorite", error: error.message });
+  }
+};
+
+// Get user's favorite projects
+const getProjectFavorites = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    const favorites = await ProjectModel.getProjectFavorites(Number(userId));
+    return res.status(200).json({ success: true, status: 200, favorites });
+  } catch (error) {
+    console.error("Get Project Favorites Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch favorites", error: error.message });
+  }
+};
+
+// Add project comment
+const addProjectComment = async (req, res) => {
+  try {
+    const authorId = req.user?.userId;
+    const { projectId, content, parentCommentId } = req.body;
+    
+    if (!authorId || !projectId || !content) {
+      return sendError(res, "authorId, projectId and content are required", 400);
+    }
+    
+    const comment = await ProjectModel.addProjectComment({
+      projectId: Number(projectId),
+      authorId: Number(authorId),
+      content,
+      parentCommentId: parentCommentId ? Number(parentCommentId) : null
+    });
+    
+    return res.status(201).json({ success: true, status: 201, message: "Comment added", comment });
+  } catch (error) {
+    console.error("Add Project Comment Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to add comment", error: error.message });
+  }
+};
+
+// Get project comments
+const getProjectComments = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    if (!projectId) return sendError(res, "projectId is required", 400);
+    
+    const comments = await ProjectModel.getProjectComments(Number(projectId));
+    return res.status(200).json({ success: true, status: 200, comments });
+  } catch (error) {
+    console.error("Get Project Comments Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch comments", error: error.message });
+  }
+};
+
+// Update project comment
+const updateProjectComment = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { commentId } = req.params;
+    const { content } = req.body;
+    
+    if (!userId || !commentId || !content) {
+      return sendError(res, "userId, commentId and content are required", 400);
+    }
+    
+    const comment = await ProjectModel.updateProjectComment(Number(commentId), Number(userId), content);
+    if (!comment) return sendError(res, "Comment not found or you don't have permission to edit it", 404);
+    
+    return res.status(200).json({ success: true, status: 200, message: "Comment updated", comment });
+  } catch (error) {
+    console.error("Update Project Comment Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to update comment", error: error.message });
+  }
+};
+
+// Delete project comment
+const deleteProjectComment = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { commentId } = req.params;
+    
+    if (!userId || !commentId) {
+      return sendError(res, "userId and commentId are required", 400);
+    }
+    
+    const deleted = await ProjectModel.deleteProjectComment(Number(commentId), Number(userId));
+    if (!deleted) return sendError(res, "Comment not found or you don't have permission to delete it", 404);
+    
+    return res.status(200).json({ success: true, status: 200, message: "Comment deleted" });
+  } catch (error) {
+    console.error("Delete Project Comment Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to delete comment", error: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -515,5 +788,18 @@ module.exports = {
   addUpdate,
   addReview,
   addBoost,
+  getProjectUpdates,
+  getProjectReviews,
+  getProjectBoosts,
+  getProjectStats,
+  searchProjects,
+  getProjectRecommendations,
+  addProjectFavorite,
+  removeProjectFavorite,
+  getProjectFavorites,
+  addProjectComment,
+  getProjectComments,
+  updateProjectComment,
+  deleteProjectComment,
 };
 

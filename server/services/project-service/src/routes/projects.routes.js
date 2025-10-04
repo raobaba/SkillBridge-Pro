@@ -35,4 +35,25 @@ projectRouter.post("/reviews", authenticate, projectController.addReview);
 // 🚀 Project Boosting (Only project owners can boost their projects)
 projectRouter.post("/boost", authenticate, requireProjectManager, projectController.addBoost);
 
+// 📊 Project Analytics & Data (Public endpoints for viewing)
+projectRouter.get("/:projectId/updates", projectController.getProjectUpdates);
+projectRouter.get("/:projectId/reviews", projectController.getProjectReviews);
+projectRouter.get("/:projectId/boosts", projectController.getProjectBoosts);
+projectRouter.get("/:projectId/stats", projectController.getProjectStats);
+
+// 🔍 Advanced Search & Discovery
+projectRouter.get("/search", projectController.searchProjects);
+projectRouter.get("/recommendations", authenticate, projectController.getProjectRecommendations);
+
+// ❤️ Project Favorites (User-specific)
+projectRouter.post("/favorites", authenticate, projectController.addProjectFavorite);
+projectRouter.delete("/favorites", authenticate, projectController.removeProjectFavorite);
+projectRouter.get("/favorites/my", authenticate, projectController.getProjectFavorites);
+
+// 💬 Project Comments & Discussions (Public viewing, authenticated posting)
+projectRouter.get("/:projectId/comments", projectController.getProjectComments);
+projectRouter.post("/comments", authenticate, projectController.addProjectComment);
+projectRouter.put("/comments/:commentId", authenticate, projectController.updateProjectComment);
+projectRouter.delete("/comments/:commentId", authenticate, projectController.deleteProjectComment);
+
 module.exports = projectRouter;
