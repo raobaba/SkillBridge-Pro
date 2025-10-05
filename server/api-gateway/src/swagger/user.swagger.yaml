@@ -57,7 +57,7 @@ paths:
                 password:
                   type: string
                   format: password
-                  example: rajan@123
+                  example: 123123
       responses:
         "201":
           description: User registered successfully
@@ -67,6 +67,7 @@ paths:
   /api/v1/user/login:
     post:
       summary: Login a user
+      description: Authenticates user and returns JWT token stored in HTTP-only cookie for security
       tags:
         - "🔵 USER SERVICE - Authentication"
       requestBody:
@@ -87,12 +88,48 @@ paths:
                   example: developer
                 password:
                   type: string
-                  example: rajan@123
+                  example: 123123
       responses:
         "200":
-          description: Login successful
+          description: Login successful - JWT token stored in HTTP-only cookie
+          headers:
+            Set-Cookie:
+              description: JWT token stored in HTTP-only cookie
+              schema:
+                type: string
+                example: "token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Login successful"
+                  user:
+                    $ref: "#/components/schemas/User"
         "401":
           description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  status:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Invalid email or password"
 
   /api/v1/user/profile:
     get:
@@ -285,14 +322,20 @@ paths:
   /api/v1/user/logout:
     post:
       summary: Logout the currently logged-in user
-      description: Invalidates the user's session or JWT token. Client should remove token from storage.
+      description: Invalidates the user's session and clears the JWT token from HTTP-only cookie. No client-side token removal needed.
       tags:
         - "🔵 USER SERVICE - Authentication"
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Logout successful
+          description: Logout successful - JWT token cleared from HTTP-only cookie
+          headers:
+            Set-Cookie:
+              description: JWT token cleared from HTTP-only cookie
+              schema:
+                type: string
+                example: "token=; HttpOnly; Secure; SameSite=Strict; Max-Age=0"
           content:
             application/json:
               schema:

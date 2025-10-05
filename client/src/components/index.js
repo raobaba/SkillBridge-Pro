@@ -8,6 +8,7 @@ import Input from "./Input";
 import { Badge } from "./Badge";
 import { StackOverflowIcon } from "./StackOverflow";
 import { Footer } from "./Footer";
+import ErrorState from "./ErrorState";
 
 export {
   CircularLoader,
@@ -20,4 +21,5 @@ export {
   Badge,
   StackOverflowIcon,
   Footer,
+  ErrorState,
 };

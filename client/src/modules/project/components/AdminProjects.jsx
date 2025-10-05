@@ -1,33 +1,85 @@
-import React, { useState } from 'react';
-import { Button, Badge, Input } from "../../../components";
+import React, { useState, useEffect } from 'react';
+import { Button, Badge, Input, CircularLoader, ErrorState } from "../../../components";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Search, Download, Flag, FlagOff, ShieldCheck, CheckCircle, Ban, Trash2, Eye, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+// Project actions
+import { 
+  updateProject, 
+  deleteProject, 
+  getProjectStats,
+  searchProjects
+} from "../slice/projectSlice";
 
-const AdminProjects = () => {
+const AdminProjects = ({ user, projects, dispatch, loading, error, message, searchQuery, setSearchQuery, handleSearch }) => {
+  const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Remove local searchQuery state since it's passed as prop
   const [activeTab, setActiveTab] = useState("all"); // all | active | closed | flagged | pending | approved | suspended
   const [sortBy, setSortBy] = useState("recent"); // recent | title | owner | status | disputes | flagged
   const [selectedIds, setSelectedIds] = useState([]);
   const [page, setPage] = useState(1);
   const pageSize = 6;
 
-  const [projects, setProjects] = useState([
-    { id: 1, title: "AI Resume Builder", owner: "Alice", status: "Pending Verification", disputes: 0, flagged: false },
-    { id: 2, title: "Blockchain Voting System", owner: "Bob", status: "Approved", disputes: 2, flagged: true },
-    { id: 3, title: "Mental Health Platform", owner: "Charlie", status: "Suspended", disputes: 1, flagged: false },
-    { id: 4, title: "Marketplace Analytics", owner: "Dana", status: "Active", disputes: 0, flagged: false },
-    { id: 5, title: "Content Moderation AI", owner: "Evan", status: "Closed", disputes: 0, flagged: true },
-    { id: 6, title: "DeFi Portfolio Tracker", owner: "Frank", status: "Active", disputes: 0, flagged: false },
-    { id: 7, title: "Open Health Chatbot", owner: "Grace", status: "Approved", disputes: 3, flagged: false },
-    { id: 8, title: "Remote Team Dashboard", owner: "Hank", status: "Closed", disputes: 0, flagged: false },
-    { id: 9, title: "Gamified Learning App", owner: "Irene", status: "Suspended", disputes: 2, flagged: true },
-    { id: 10, title: "Realtime Chat Infra", owner: "Jay", status: "Active", disputes: 1, flagged: false }
-  ]);
+  // Map API data to match UI expectations
+  const mapProjectData = (project) => ({
+    id: project.id,
+    title: project.title,
+    owner: project.owner?.name || project.owner?.email || 'Unknown Owner',
+    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active',
+    disputes: project.disputesCount || 0,
+    flagged: project.isFlagged || false,
+    verified: project.isVerified || false,
+    suspended: project.isSuspended || false,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt
+  });
 
-  const analyticsData = [
+  // Use projects from Redux state and map them
+  const displayProjects = (projects || []).map(mapProjectData);
+  const [projectStats, setProjectStats] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+
+  // Load project stats when projects change
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      loadProjectStats();
+    }
+  }, [projects]);
+
+  // Handle toast notifications
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [message, error]);
+
+  const loadProjectStats = async () => {
+    try {
+      // Get stats for first 5 projects
+      const statsPromises = projects.slice(0, 5).map(project => 
+        dispatch(getProjectStats(project.id)).unwrap()
+      );
+      const stats = await Promise.all(statsPromises);
+      setProjectStats(stats);
+    } catch (error) {
+      console.error('Error loading project stats:', error);
+    }
+  };
+
+  const analyticsData = projectStats ? [
+    { month: 'Jan', active: projectStats[0]?.totalProjects || 30, disputes: projectStats[0]?.totalDisputes || 2 },
+    { month: 'Feb', active: projectStats[1]?.totalProjects || 45, disputes: projectStats[1]?.totalDisputes || 1 },
+    { month: 'Mar', active: projectStats[2]?.totalProjects || 60, disputes: projectStats[2]?.totalDisputes || 3 },
+    { month: 'Apr', active: projectStats[3]?.totalProjects || 80, disputes: projectStats[3]?.totalDisputes || 2 },
+    { month: 'May', active: projectStats[4]?.totalProjects || 100, disputes: projectStats[4]?.totalDisputes || 4 },
+  ] : [
     { month: 'Jan', active: 30, disputes: 2 },
     { month: 'Feb', active: 45, disputes: 1 },
     { month: 'Mar', active: 60, disputes: 3 },
@@ -50,48 +102,72 @@ const AdminProjects = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleVerify = (id) => {
-    const proj = projects.find((p) => p.id === id);
+  const handleVerify = async (id) => {
+    const proj = displayProjects.find((p) => p.id === id);
     if (!window.confirm(`Verify project "${proj?.title}"?`)) return;
-    setProjects((prev) => prev.map((p) => p.id === id ? { ...p, status: "Verified" } : p));
-    alert(`Project ${id} verified.`);
+    try {
+      await dispatch(updateProject({ id, data: { isVerified: true } })).unwrap();
+      toast.success(`Project "${proj?.title}" verified successfully!`);
+    } catch (error) {
+      toast.error(`Failed to verify project: ${error.message}`);
+    }
   };
 
-  const handleSuspend = (id) => {
-    const proj = projects.find((p) => p.id === id);
+  const handleSuspend = async (id) => {
+    const proj = displayProjects.find((p) => p.id === id);
     if (!window.confirm(`Suspend project "${proj?.title}"?`)) return;
-    setProjects((prev) => prev.map((p) => p.id === id ? { ...p, status: "Suspended" } : p));
-    alert(`Project ${id} suspended.`);
+    try {
+      await dispatch(updateProject({ id, data: { isSuspended: true, status: "paused" } })).unwrap();
+      toast.success(`Project "${proj?.title}" suspended successfully!`);
+    } catch (error) {
+      toast.error(`Failed to suspend project: ${error.message}`);
+    }
   };
 
-  const handleApprove = (id) => {
-    const proj = projects.find((p) => p.id === id);
+  const handleApprove = async (id) => {
+    const proj = displayProjects.find((p) => p.id === id);
     if (!window.confirm(`Approve project "${proj?.title}"?`)) return;
-    setProjects((prev) => prev.map((p) => p.id === id ? { ...p, status: "Approved" } : p));
-    alert(`Project ${id} approved.`);
+    try {
+      await dispatch(updateProject({ id, data: { status: "active", isVerified: true } })).unwrap();
+      toast.success(`Project "${proj?.title}" approved successfully!`);
+    } catch (error) {
+      toast.error(`Failed to approve project: ${error.message}`);
+    }
   };
 
-  const handleRemove = (id) => {
-    const proj = projects.find((p) => p.id === id);
+  const handleRemove = async (id) => {
+    const proj = displayProjects.find((p) => p.id === id);
     if (!window.confirm(`Remove project "${proj?.title}"? This cannot be undone.`)) return;
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-    alert(`Project ${id} removed.`);
+    try {
+      await dispatch(deleteProject(id)).unwrap();
+      toast.success(`Project "${proj?.title}" removed successfully!`);
+    } catch (error) {
+      toast.error(`Failed to remove project: ${error.message}`);
+    }
   };
 
-  const handleToggleFlag = (id) => {
-    setProjects((prev) => prev.map((p) => p.id === id ? { ...p, flagged: !p.flagged } : p));
+  const handleToggleFlag = async (id) => {
+    const proj = displayProjects.find((p) => p.id === id);
+    try {
+      await dispatch(updateProject({ id, data: { isFlagged: !proj.flagged } })).unwrap();
+      toast.success(`Project "${proj?.title}" ${!proj.flagged ? 'flagged' : 'unflagged'} successfully!`);
+    } catch (error) {
+      toast.error(`Failed to toggle flag: ${error.message}`);
+    }
   };
 
-  const filtered = projects.filter((p) => {
-    const q = searchQuery.toLowerCase();
-    const matchesQ = p.title.toLowerCase().includes(q) || p.owner.toLowerCase().includes(q) || p.status.toLowerCase().includes(q);
+  const filtered = displayProjects.filter((p) => {
+    const q = searchQuery?.toLowerCase() || '';
+    const matchesQ = p.title?.toLowerCase().includes(q) || 
+                     p.owner?.toLowerCase().includes(q) || 
+                     p.status?.toLowerCase().includes(q);
     const matchesTab = activeTab === 'all'
       || (activeTab === 'active' && p.status === 'Active')
-      || (activeTab === 'closed' && p.status === 'Closed')
+      || (activeTab === 'closed' && p.status === 'Completed')
       || (activeTab === 'flagged' && p.flagged)
-      || (activeTab === 'pending' && p.status === 'Pending Verification')
-      || (activeTab === 'approved' && p.status === 'Approved')
-      || (activeTab === 'suspended' && p.status === 'Suspended');
+      || (activeTab === 'pending' && p.status === 'Draft')
+      || (activeTab === 'approved' && p.verified)
+      || (activeTab === 'suspended' && p.suspended);
     return matchesQ && matchesTab;
   });
 
@@ -115,13 +191,13 @@ const AdminProjects = () => {
   })();
 
   // Counts for header and tabs
-  const countAll = projects.length;
-  const countActive = projects.filter(p => p.status === 'Active').length;
-  const countClosed = projects.filter(p => p.status === 'Closed').length;
-  const countFlagged = projects.filter(p => p.flagged).length;
-  const countPending = projects.filter(p => p.status === 'Pending Verification').length;
-  const countApproved = projects.filter(p => p.status === 'Approved').length;
-  const countSuspended = projects.filter(p => p.status === 'Suspended').length;
+  const countAll = displayProjects.length;
+  const countActive = displayProjects.filter(p => p.status === 'Active').length;
+  const countClosed = displayProjects.filter(p => p.status === 'Completed').length;
+  const countFlagged = displayProjects.filter(p => p.flagged).length;
+  const countPending = displayProjects.filter(p => p.status === 'Draft').length;
+  const countApproved = displayProjects.filter(p => p.verified).length;
+  const countSuspended = displayProjects.filter(p => p.suspended).length;
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -151,6 +227,18 @@ const AdminProjects = () => {
     if (action === 'unflag') setProjects(prev => prev.map(p => selectedIds.includes(p.id) ? { ...p, flagged: false } : p));
     setSelectedIds([]);
   };
+
+  // Show loading state
+  if (loading) {
+    return <CircularLoader />;
+  }
+
+  // Redirect to home on error
+  useEffect(() => {
+    if (error) {
+      navigate('/');
+    }
+  }, [error, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 px-6 py-8 space-y-6">

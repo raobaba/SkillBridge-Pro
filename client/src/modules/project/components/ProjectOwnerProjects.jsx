@@ -1,13 +1,13 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import ProjectForm from './ProjectForm'
 import ApplicantsList from './ApplicantsList'
 import Button from '../../../components/Button'
+import { CircularLoader, ErrorState } from '../../../components'
 import {
   BarChart3,
   TrendingUp,
   Users,
   DollarSign,
-  Calendar,
   Clock,
   Target,
   Zap,
@@ -15,137 +15,157 @@ import {
   Activity,
   Bell,
   Plus,
-  Settings,
-  Eye,
-  Edit,
-  Trash2,
   Play,
-  Pause,
-  CheckCircle,
-  AlertCircle,
   Star,
-  MessageSquare,
-  Share2,
-  Download,
-  Filter,
-  Search,
-  MoreVertical,
   Sparkles,
   Lightbulb,
   Briefcase
 } from 'lucide-react'
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+// Project actions
+import { 
+  updateProject, 
+  deleteProject,
+  getProjectStats,
+  listApplicants,
+} from "../slice/projectSlice";
 
-const ProjectOwnerProjects = () => {
+const ProjectOwnerProjects = ({ user, projects, dispatch, loading, error, message }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedProject, setSelectedProject] = useState(null)
   const [showProjectModal, setShowProjectModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'new_applicant',
-      message: '3 new applicants for Talent Matching Engine Revamp',
-      timestamp: '2 hours ago',
-      read: false
-    },
-    {
-      id: 2,
-      type: 'project_deadline',
-      message: 'Project Collaboration Hub deadline approaching',
-      timestamp: '1 day ago',
-      read: false
-    }
-  ])
+  const [notifications, setNotifications] = useState([]);
+  const [projectStats, setProjectStats] = useState(null);
+  const [projectApplicants, setProjectApplicants] = useState({});
+  const [projectUpdates, setProjectUpdates] = useState({});
+  const [projectReviews, setProjectReviews] = useState({});
+  const [projectBoosts, setProjectBoosts] = useState({});
 
-  // Mock owned projects; replace with API data when ready
-  const [ownedProjects, setOwnedProjects] = useState([
-    {
-      id: 101,
-      title: 'Talent Matching Engine Revamp',
-      status: 'Active',
-      priority: 'High',
-      description:
-        'Refactor matching algorithms and improve scoring explainability for stakeholders.',
-      startDate: '2025-08-01',
-      deadline: '2025-11-15',
-      roleNeeded: 'Full Stack Developer',
-      applicantsCount: 18,
-      newApplicants: 3,
-      activity: '2 updates this week',
-      tags: ['Node.js', 'React', 'PostgreSQL', 'AWS'],
-      rating: 4.5,
-      budget: '$70,000 - $100,000',
-      location: 'Remote',
-      duration: '4-6 months',
-      experience: 'Senior Level',
-      category: 'AI/ML',
-      isRemote: true,
-      isUrgent: true,
-      isFeatured: true,
-      company: 'SkillBridge Pro',
-      website: 'https://skillbridge.pro',
-      matchScore: 96,
-    },
-    {
-      id: 102,
-      title: 'Project Collaboration Hub',
-      status: 'Upcoming',
-      priority: 'Medium',
-      description:
-        'Create a unified collaboration hub with tasks, chat, and docs integrations.',
-      startDate: '2025-10-01',
-      deadline: '2026-02-01',
-      roleNeeded: 'Frontend Developer',
-      applicantsCount: 7,
-      newApplicants: 1,
-      activity: 'Planning in progress',
-      tags: ['React', 'TailwindCSS', 'WebSockets'],
-      rating: 4.2,
-      budget: '$40,000 - $70,000',
-      location: 'Remote',
-      duration: '3-5 months',
-      experience: 'Mid Level',
-      category: 'Web Development',
-      isRemote: true,
-      isUrgent: false,
-      isFeatured: false,
-      company: 'SkillBridge Pro',
-      website: 'https://skillbridge.pro',
-      matchScore: 82,
-    },
-  ])
+  // Load project data when component mounts
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      loadProjectData();
+    }
+  }, [projects]);
+
+  // Handle toast notifications
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [message, error]);
+
+  const loadProjectData = async () => {
+    try {
+      // Load stats for all projects
+      const statsPromises = projects.map(project => 
+        dispatch(getProjectStats(project.id)).unwrap()
+      );
+      const stats = await Promise.all(statsPromises);
+      setProjectStats(stats);
+
+      // Load applicants for each project
+      const applicantsPromises = projects.map(project =>
+        dispatch(listApplicants(project.id)).unwrap()
+      );
+      const applicants = await Promise.all(applicantsPromises);
+      const applicantsMap = {};
+      projects.forEach((project, index) => {
+        applicantsMap[project.id] = applicants[index];
+      });
+      setProjectApplicants(applicantsMap);
+    } catch (error) {
+      console.error('Error loading project data:', error);
+    }
+  };
+
+  // Map API data to match UI expectations
+  const mapProjectData = (project) => ({
+    id: project.id,
+    title: project.title,
+    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active',
+    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || 'Medium',
+    description: project.description,
+    startDate: project.startDate,
+    deadline: project.deadline,
+    roleNeeded: project.roleNeeded,
+    applicantsCount: project.applicantsCount || 0,
+    newApplicants: project.newApplicantsCount || 0,
+    activity: `${project.activityCount || 0} updates`,
+    tags: project.tags || [],
+    rating: parseFloat(project.ratingAvg) || 0,
+    budget: project.budgetMin && project.budgetMax ? 
+      `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}` : 
+      'Budget TBD',
+    location: project.isRemote ? 'Remote' : project.location || 'Remote',
+    duration: project.duration || 'TBD',
+    experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || 'Mid Level',
+    category: project.category || 'Web Development',
+    isRemote: project.isRemote,
+    isUrgent: project.isUrgent,
+    isFeatured: project.isFeatured,
+    company: project.company || 'Company',
+    website: project.website,
+    matchScore: project.matchScoreAvg || 0,
+    skills: project.tags || [],
+    benefits: project.benefits,
+    requirements: project.requirements,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt
+  });
+
+  // Use projects from Redux state and map them
+  const ownedProjects = (projects || []).map(mapProjectData);
 
   // Dashboard analytics data
   const dashboardStats = {
     totalProjects: ownedProjects.length,
     activeProjects: ownedProjects.filter(p => p.status === 'Active').length,
-    totalApplicants: ownedProjects.reduce((sum, p) => sum + p.applicantsCount, 0),
-    newApplicants: ownedProjects.reduce((sum, p) => sum + p.newApplicants, 0),
-    avgRating: (ownedProjects.reduce((sum, p) => sum + p.rating, 0) / ownedProjects.length).toFixed(1),
-    totalBudget: '$110,000 - $170,000',
-    completionRate: 75,
-    responseTime: '2.3 hours'
+    totalApplicants: ownedProjects.reduce((sum, p) => sum + (p.applicantsCount || 0), 0),
+    newApplicants: ownedProjects.reduce((sum, p) => sum + (p.newApplicants || 0), 0),
+    avgRating: ownedProjects.length > 0 ? (ownedProjects.reduce((sum, p) => sum + (p.rating || 0), 0) / ownedProjects.length).toFixed(1) : '0.0',
+    totalBudget: '$110,000 - $170,000', // This could be calculated from actual project budgets
+    completionRate: 75, // This could be calculated from project statuses
+    responseTime: '2.3 hours' // This could be calculated from actual response times
   }
 
-  const handleProjectAction = (projectId, action) => {
-    const updatedProjects = ownedProjects.map(project => {
-      if (project.id === projectId) {
-        switch (action) {
-          case 'pause':
-            return { ...project, status: 'Paused' }
-          case 'resume':
-            return { ...project, status: 'Active' }
-          case 'close':
-            return { ...project, status: 'Completed' }
-          case 'boost':
-            return { ...project, isFeatured: true }
-          default:
-            return project
-        }
+  const handleProjectAction = async (projectId, action) => {
+    const project = ownedProjects.find(p => p.id === projectId);
+    try {
+      switch (action) {
+        case 'pause':
+          await dispatch(updateProject({ id: projectId, data: { status: 'paused' } })).unwrap();
+          toast.success(`Project "${project?.title}" paused successfully!`);
+          break;
+        case 'resume':
+          await dispatch(updateProject({ id: projectId, data: { status: 'active' } })).unwrap();
+          toast.success(`Project "${project?.title}" resumed successfully!`);
+          break;
+        case 'close':
+          await dispatch(updateProject({ id: projectId, data: { status: 'completed' } })).unwrap();
+          toast.success(`Project "${project?.title}" closed successfully!`);
+          break;
+        case 'boost':
+          await dispatch(updateProject({ id: projectId, data: { isFeatured: true } })).unwrap();
+          toast.success(`Project "${project?.title}" boosted successfully!`);
+          break;
+        case 'delete':
+          await dispatch(deleteProject(projectId)).unwrap();
+          toast.success(`Project "${project?.title}" deleted successfully!`);
+          break;
+        default:
+          break;
       }
-      return project
-    })
-    setOwnedProjects(updatedProjects)
+    } catch (error) {
+      console.error(`Failed to ${action} project:`, error);
+      toast.error(`Failed to ${action} project: ${error.message}`);
+    }
   }
 
   const handleInviteDeveloper = (projectId) => {
@@ -160,6 +180,18 @@ const ProjectOwnerProjects = () => {
       )
     )
   }
+
+  // Show loading state
+  if (loading) {
+    return <CircularLoader />;
+  }
+
+  // Redirect to home on error
+  useEffect(() => {
+    if (error) {
+      navigate('/');
+    }
+  }, [error, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">

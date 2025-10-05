@@ -37,10 +37,22 @@ import {
   List,
   Loader
 } from "lucide-react";
-import { Button, Input } from "../../../components";
+import { Button, Input, CircularLoader, ErrorState } from "../../../components";
 import ProjectCard from "./ProjectCard";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+// Project actions
+import { 
+  applyToProject, 
+  searchProjects,
+  addProjectFavorite,
+  removeProjectFavorite,
+  getProjectComments,
+  addProjectComment
+} from "../slice/projectSlice";
 
-const DeveloperProjects = ({ user }) => {
+const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatch, loading, error, message, searchQuery, setSearchQuery, handleSearch }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("discover"); // discover | applications
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -50,161 +62,75 @@ const DeveloperProjects = ({ user }) => {
   const [sortBy, setSortBy] = useState("relevance");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilters, setShowFilters] = useState(false);
-  const [favorites, setFavorites] = useState([]);
-  const [appliedProjects, setAppliedProjects] = useState([]);
   const [applicationStatusByProjectId, setApplicationStatusByProjectId] = useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [savedProjects, setSavedProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [appliedProjects, setAppliedProjects] = useState([]);
+  const [projectComments, setProjectComments] = useState({});
+  const [showComments, setShowComments] = useState({});
   const [internalSearch, setInternalSearch] = useState("");
 
-  // Mock data - in real app, this would come from API
-  const [projects, setProjects] = useState([
-    {
-      id: 1,
-      title: "AI-Powered Resume Analyzer",
-      status: "Active",
-      priority: "High",
-      description: "Leverage AI to analyze resumes and provide job-fit insights for companies hiring at scale. We need a skilled frontend developer to build an intuitive dashboard.",
-      startDate: "2025-09-01",
-      deadline: "2025-12-01",
-      roleNeeded: "Frontend Developer",
-      applicantsCount: 12,
-      newApplicants: 2,
-      activity: "3 comments today",
-      tags: ["React", "TailwindCSS", "Next.js", "AI"],
-      rating: 4,
-      budget: "$50,000 - $80,000",
-      location: "Remote",
-      duration: "3-6 months",
-      experience: "Mid Level",
-      category: "Web Development",
-      isRemote: true,
-      isUrgent: false,
-      isFeatured: true,
-      company: "TechCorp Inc.",
-      website: "https://techcorp.com",
-      matchScore: 92,
-      team: [
-        { name: "Alice", avatar: "/avatars/alice.png" },
-        { name: "Bob", avatar: "/avatars/bob.png" },
-        { name: "Charlie", avatar: "/avatars/charlie.png" },
-      ],
-      benefits: "Health insurance, flexible hours, stock options",
-      requirements: "3+ years React experience, TypeScript knowledge",
-      createdAt: "2025-01-15",
-      updatedAt: "2025-01-20"
-    },
-    {
-      id: 2,
-      title: "Decentralized Freelance Platform",
-      status: "Active",
-      priority: "Medium",
-      description: "A blockchain-based freelance marketplace with transparent contracts and instant payments. Looking for a blockchain engineer to lead the smart contract development.",
-      startDate: "2025-08-15",
-      deadline: "2026-01-15",
-      roleNeeded: "Blockchain Engineer",
-      applicantsCount: 25,
-      newApplicants: 5,
-      activity: "2 new updates",
-      tags: ["Solidity", "Ethereum", "Web3", "Smart Contracts"],
-      rating: 5,
-      budget: "$80,000 - $120,000",
-      location: "San Francisco, CA",
-      duration: "6-12 months",
-      experience: "Senior Level",
-      category: "Blockchain",
-      isRemote: true,
-      isUrgent: false,
-      isFeatured: false,
-      company: "Blockchain Solutions",
-      website: "https://blockchainsolutions.com",
-      matchScore: 88,
-      team: [
-        { name: "David", avatar: "/avatars/david.png" },
-        { name: "Eva", avatar: "/avatars/eva.png" },
-      ],
-      benefits: "Competitive salary, crypto bonuses, remote work",
-      requirements: "5+ years blockchain experience, Solidity expertise",
-      createdAt: "2025-01-10",
-      updatedAt: "2025-01-18"
-    },
-    {
-      id: 3,
-      title: "Mental Health Chatbot",
-      status: "Active",
-      priority: "High",
-      description: "An AI chatbot designed to provide mental health support, daily check-ins, and mindfulness tips. Seeking a data scientist with ML experience.",
-      startDate: "2025-01-10",
-      deadline: "2025-06-30",
-      roleNeeded: "Data Scientist",
-      applicantsCount: 40,
-      newApplicants: 0,
-      activity: "5 new messages",
-      tags: ["Python", "TensorFlow", "Healthcare AI", "NLP"],
-      rating: 5,
-      budget: "$70,000 - $100,000",
-      location: "New York, NY",
-      duration: "6 months",
-      experience: "Mid Level",
-      category: "AI/ML",
-      isRemote: true,
-      isUrgent: true,
-      isFeatured: true,
-      company: "HealthTech Innovations",
-      website: "https://healthtech.com",
-      matchScore: 95,
-      team: [
-        { name: "Fiona", avatar: "/avatars/fiona.png" },
-        { name: "George", avatar: "/avatars/george.png" },
-      ],
-      benefits: "Health benefits, mental health support, flexible schedule",
-      requirements: "PhD in Data Science, 3+ years ML experience",
-      createdAt: "2025-01-05",
-      updatedAt: "2025-01-19"
-    },
-    {
-      id: 4,
-      title: "Remote Team Productivity Dashboard",
-      status: "Upcoming",
-      priority: "Medium",
-      description: "A real-time dashboard for distributed teams to track productivity, communication, and goals. Need a full stack developer.",
-      startDate: "2025-10-01",
-      deadline: "2026-02-01",
-      roleNeeded: "Full Stack Developer",
-      applicantsCount: 7,
-      newApplicants: 1,
-      activity: "1 update today",
-      tags: ["Node.js", "React", "Docker", "Microservices"],
-      rating: 3,
-      budget: "$60,000 - $90,000",
-      location: "Austin, TX",
-      duration: "4-8 months",
-      experience: "Mid Level",
-      category: "Web Development",
-      isRemote: true,
-      isUrgent: false,
-      isFeatured: false,
-      company: "ProductivityPro",
-      website: "https://productivitypro.com",
-      matchScore: 75,
-      team: [
-        { name: "Hannah", avatar: "/avatars/hannah.png" },
-        { name: "Ian", avatar: "/avatars/ian.png" },
-      ],
-      benefits: "Remote work, learning budget, team events",
-      requirements: "Full stack experience, microservices knowledge",
-      createdAt: "2025-01-12",
-      updatedAt: "2025-01-17"
+  // Load applied projects from localStorage or API
+  useEffect(() => {
+    const applied = localStorage.getItem('appliedProjects');
+    if (applied) {
+      setAppliedProjects(JSON.parse(applied));
     }
-  ]);
+  }, []);
 
-  const [filteredProjects, setFilteredProjects] = useState(projects);
+  // Handle toast notifications
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+    }
+    if (error) {
+      toast.error(error);
+    }
+  }, [message, error]);
 
-  const recommendedProjects = projects
-    .filter(p => p.isFeatured || (p.matchScore || 0) >= 90)
-    .slice(0, 6);
+  // Map API data to match UI expectations
+  const mapProjectData = (project) => ({
+    id: project.id,
+    title: project.title,
+    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active',
+    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || 'Medium',
+    description: project.description,
+    startDate: project.startDate,
+    deadline: project.deadline,
+    roleNeeded: project.roleNeeded,
+    applicantsCount: project.applicantsCount || 0,
+    newApplicants: project.newApplicantsCount || 0,
+    activity: `${project.activityCount || 0} updates`,
+    tags: project.tags || [],
+    rating: parseFloat(project.ratingAvg) || 0,
+    budget: project.budgetMin && project.budgetMax ? 
+      `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}` : 
+      'Budget TBD',
+    location: project.isRemote ? 'Remote' : project.location || 'Remote',
+    duration: project.duration || 'TBD',
+    experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || 'Mid Level',
+    category: project.category || 'Web Development',
+    isRemote: project.isRemote,
+    isUrgent: project.isUrgent,
+    isFeatured: project.isFeatured,
+    company: project.company || 'Company',
+    website: project.website,
+    matchScore: project.matchScoreAvg || 0,
+    skills: project.tags || [],
+    benefits: project.benefits,
+    requirements: project.requirements,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt
+  });
+
+  // Use projects from Redux state and map them
+  const displayProjects = (projects || []).map(mapProjectData);
+  const [filteredProjects, setFilteredProjects] = useState(displayProjects);
+
+  const recommendedProjects = (recommendations || []).map(mapProjectData).length > 0 ? 
+    (recommendations || []).map(mapProjectData) :
+    displayProjects.filter(p => p.isFeatured || (p.matchScore || 0) >= 90).slice(0, 6);
 
   const skillOptions = [
     "React", "Node.js", "Python", "JavaScript", "TypeScript", "Vue.js", "Angular",
@@ -247,7 +173,7 @@ const DeveloperProjects = ({ user }) => {
 
   useEffect(() => {
     filterProjects();
-  }, [searchTerm, selectedSkills, selectedStatus, selectedPriority, selectedLocation, sortBy]);
+  }, [searchTerm, selectedSkills, selectedStatus, selectedPriority, selectedLocation, sortBy, displayProjects]);
 
   // Debounce search input for better UX
   useEffect(() => {
@@ -255,23 +181,22 @@ const DeveloperProjects = ({ user }) => {
     return () => clearTimeout(t);
   }, [internalSearch]);
 
-  // Simulate initial load for skeleton UI
+  // Update filtered projects when displayProjects change
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(t);
-  }, []);
+    setFilteredProjects(displayProjects);
+  }, [displayProjects]);
 
   const filterProjects = () => {
-    let filtered = projects.filter(project => {
+    let filtered = displayProjects.filter(project => {
       const matchesSearch = 
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.roleNeeded.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.company.toLowerCase().includes(searchTerm.toLowerCase());
+        project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.roleNeeded?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.company?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesSkills = selectedSkills.length === 0 || 
         selectedSkills.some(skill => 
-          project.tags.some(tag => 
+          project.tags?.some(tag => 
             tag.toLowerCase().includes(skill.toLowerCase())
           )
         );
@@ -308,13 +233,21 @@ const DeveloperProjects = ({ user }) => {
     setFilteredProjects(filtered);
   };
 
-  const handleApplyToProject = (projectId) => {
-    if (!appliedProjects.includes(projectId)) {
-      setAppliedProjects(prev => [...prev, projectId]);
+  const handleApplyToProject = async (projectId) => {
+    try {
+      await dispatch(applyToProject({ projectId, coverLetter: "I am interested in this project" })).unwrap();
+      if (!appliedProjects.includes(projectId)) {
+        setAppliedProjects(prev => [...prev, projectId]);
+      }
+      setApplicationStatusByProjectId(prev => ({ ...prev, [projectId]: "Applied" }));
+      // Save to localStorage
+      localStorage.setItem('appliedProjects', JSON.stringify([...appliedProjects, projectId]));
+      toast.success("Application submitted successfully!");
+      console.log(`Applied to project ${projectId}`);
+    } catch (error) {
+      console.error('Failed to apply to project:', error);
+      toast.error(`Failed to apply to project: ${error.message}`);
     }
-    setApplicationStatusByProjectId(prev => ({ ...prev, [projectId]: "Applied" }));
-    // In real app, this would make an API call
-    console.log(`Applied to project ${projectId}`);
   };
 
   const handleWithdrawApplication = (projectId) => {
@@ -346,12 +279,20 @@ const DeveloperProjects = ({ user }) => {
     );
   };
 
-  const handleToggleFavorite = (projectId) => {
-    setFavorites(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
+  const handleToggleFavorite = async (projectId) => {
+    try {
+      const isFavorited = favorites?.includes(projectId);
+      if (isFavorited) {
+        await dispatch(removeProjectFavorite({ projectId })).unwrap();
+        toast.success("Removed from favorites");
+      } else {
+        await dispatch(addProjectFavorite({ projectId })).unwrap();
+        toast.success("Added to favorites");
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      toast.error(`Failed to toggle favorite: ${error.message}`);
+    }
   };
 
   const clearFilters = () => {
@@ -364,12 +305,24 @@ const DeveloperProjects = ({ user }) => {
   };
 
   const stats = {
-    total: projects.length,
+    total: displayProjects.length,
     applied: appliedProjects.length,
     saved: savedProjects.length,
-    favorites: favorites.length,
+    favorites: favorites?.length || 0,
     matches: filteredProjects.length
   };
+
+  // Show loading state
+  if (loading) {
+    return <CircularLoader />;
+  }
+
+  // Redirect to home on error
+  useEffect(() => {
+    if (error) {
+      navigate('/');
+    }
+  }, [error, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">

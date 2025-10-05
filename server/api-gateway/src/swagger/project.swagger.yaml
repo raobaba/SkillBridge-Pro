@@ -23,6 +23,14 @@ tags:
     description: "Project Service: Project reviews and ratings"
   - name: "🟢 PROJECT SERVICE - Boosting"
     description: "Project Service: Project promotion and boosting features"
+  - name: "🟢 PROJECT SERVICE - Analytics"
+    description: "Project Service: Project analytics, statistics, and data insights"
+  - name: "🟢 PROJECT SERVICE - Search"
+    description: "Project Service: Advanced project search and discovery"
+  - name: "🟢 PROJECT SERVICE - Favorites"
+    description: "Project Service: Project favorites and bookmarks"
+  - name: "🟢 PROJECT SERVICE - Comments"
+    description: "Project Service: Project comments and discussions"
 
 paths:
   /api/v1/projects:
@@ -39,6 +47,31 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProjectCreate"
+            example:
+              title: "E-commerce Platform Development"
+              description: "Build a modern e-commerce platform with React and Node.js. Looking for a full-stack developer with experience in React, Node.js, and MongoDB."
+              roleNeeded: "Full Stack Developer"
+              status: "active"
+              priority: "high"
+              category: "Web Development"
+              experienceLevel: "mid"
+              budgetMin: 8000
+              budgetMax: 15000
+              currency: "USD"
+              isRemote: true
+              location: "Remote"
+              duration: "3 months"
+              startDate: "2024-02-01T00:00:00Z"
+              deadline: "2024-05-01T00:00:00Z"
+              requirements: "3+ years React experience, Node.js knowledge, MongoDB experience preferred"
+              benefits: "Flexible hours, learning opportunities, competitive pay"
+              company: "TechCorp Inc."
+              website: "https://techcorp.com"
+              maxApplicants: 10
+              language: "English"
+              timezone: "UTC-5"
+              skills: ["React", "Node.js", "MongoDB", "Express", "JavaScript"]
+              tags: ["ecommerce", "react", "nodejs", "mongodb"]
       responses:
         "201":
           description: Project created successfully
@@ -138,6 +171,31 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProjectUpdate"
+            example:
+              title: "Updated E-commerce Platform Development"
+              description: "Build a modern e-commerce platform with React and Node.js. Updated requirements include payment integration and mobile responsiveness."
+              roleNeeded: "Full Stack Developer"
+              status: "active"
+              priority: "high"
+              category: "Web Development"
+              experienceLevel: "senior"
+              budgetMin: 10000
+              budgetMax: 18000
+              currency: "USD"
+              isRemote: true
+              location: "Remote"
+              duration: "4 months"
+              startDate: "2024-02-15T00:00:00Z"
+              deadline: "2024-06-15T00:00:00Z"
+              requirements: "5+ years React experience, Node.js knowledge, MongoDB experience, payment gateway integration"
+              benefits: "Flexible hours, learning opportunities, competitive pay, bonus for early completion"
+              company: "TechCorp Inc."
+              website: "https://techcorp.com"
+              maxApplicants: 15
+              language: "English"
+              timezone: "UTC-5"
+              skills: ["React", "Node.js", "MongoDB", "Express", "JavaScript", "Stripe", "PayPal"]
+              tags: ["ecommerce", "react", "nodejs", "mongodb", "payments"]
       responses:
         "200":
           description: Project updated successfully
@@ -208,6 +266,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ApplicationRequest"
+            example:
+              projectId: 123
+              matchScore: 87.5
+              notes: "I have 5+ years of experience with React and Node.js. I've built similar e-commerce platforms before and have experience with payment integration. I'm available to start immediately and can commit to the full project duration."
       responses:
         "201":
           description: Application submitted successfully
@@ -236,6 +298,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ApplicantStatusUpdate"
+            example:
+              projectId: 123
+              userId: 456
+              status: "accepted"
       responses:
         "200":
           description: Applicant status updated successfully
@@ -304,6 +370,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/InviteRequest"
+            example:
+              projectId: 123
+              invitedEmail: "developer@example.com"
+              invitedUserId: 456
+              role: "Frontend Developer"
+              message: "Hi! We'd love to have you join our e-commerce platform project. Your React skills would be perfect for this role. Please let us know if you're interested!"
       responses:
         "201":
           description: Invitation created successfully
@@ -367,6 +439,9 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/InviteResponseRequest"
+            example:
+              inviteId: 1
+              status: "accepted"
       responses:
         "200":
           description: Invitation response recorded
@@ -406,7 +481,7 @@ paths:
                 projectId:
                   type: integer
                   description: ID of the project to attach the file to
-                  example: 1
+                  example: 123
                 file:
                   type: string
                   format: binary
@@ -414,12 +489,17 @@ paths:
                 description:
                   type: string
                   description: Optional description of the file
-                  example: "Project requirements document"
+                  example: "Project requirements document with detailed specifications"
                 category:
                   type: string
                   description: File category
                   example: "requirements"
                   enum: ["requirements", "design", "documentation", "code", "other"]
+            example:
+              projectId: 123
+              file: "[Binary file data]"
+              description: "Project requirements document with detailed specifications"
+              category: "requirements"
       responses:
         "201":
           description: File uploaded successfully
@@ -485,6 +565,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateRequest"
+            example:
+              projectId: 123
+              type: "progress"
+              message: "Completed the user authentication module with JWT integration. All login and registration endpoints are working correctly. Next milestone is payment integration."
       responses:
         "201":
           description: Update added successfully
@@ -513,6 +597,10 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ReviewRequest"
+            example:
+              projectId: 123
+              rating: 5
+              comment: "Excellent project! The team delivered high-quality work on time. Great communication throughout the project. The e-commerce platform exceeded our expectations. Highly recommend working with this team."
       responses:
         "201":
           description: Review added successfully
@@ -541,6 +629,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BoostRequest"
+            example:
+              projectId: 123
+              plan: "premium"
+              amountCents: 5000
+              currency: "USD"
+              startAt: "2024-01-15T00:00:00Z"
+              endAt: "2024-02-15T00:00:00Z"
       responses:
         "201":
           description: Boost added successfully
@@ -552,6 +647,879 @@ paths:
           description: Bad request
         "401":
           description: Unauthorized
+        "500":
+          description: Internal server error
+
+  # 📊 Project Analytics & Data (Public endpoints for viewing)
+  /api/v1/projects/{projectId}/updates:
+    get:
+      summary: Get project updates
+      description: Retrieve all updates and progress notes for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project updates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  updates:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Update"
+              example:
+                success: true
+                status: 200
+                updates:
+                  - id: 1
+                    projectId: 123
+                    authorId: 456
+                    type: "progress"
+                    message: "Completed user authentication module with JWT integration"
+                    createdAt: "2024-01-15T10:30:00Z"
+                  - id: 2
+                    projectId: 123
+                    authorId: 456
+                    type: "milestone"
+                    message: "Reached 50% completion milestone"
+                    createdAt: "2024-01-14T15:45:00Z"
+                  - id: 3
+                    projectId: 123
+                    authorId: 789
+                    type: "announcement"
+                    message: "Project deadline extended by 1 week"
+                    createdAt: "2024-01-13T09:20:00Z"
+        "400":
+          description: Bad request
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/{projectId}/reviews:
+    get:
+      summary: Get project reviews
+      description: Retrieve all reviews and ratings for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  reviews:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Review"
+              example:
+                success: true
+                status: 200
+                reviews:
+                  - id: 1
+                    projectId: 123
+                    reviewerId: 789
+                    rating: 5
+                    comment: "Excellent project! Great communication and delivered on time. Highly recommend working with this team."
+                    createdAt: "2024-01-15T14:20:00Z"
+                  - id: 2
+                    projectId: 123
+                    reviewerId: 101
+                    rating: 4
+                    comment: "Very professional and skilled team. Project was completed with high quality standards."
+                    createdAt: "2024-01-14T16:30:00Z"
+                  - id: 3
+                    projectId: 123
+                    reviewerId: 202
+                    rating: 5
+                    comment: "Outstanding work! Exceeded expectations and provided great value."
+                    createdAt: "2024-01-13T11:15:00Z"
+        "400":
+          description: Bad request
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/{projectId}/boosts:
+    get:
+      summary: Get project boosts
+      description: Retrieve all boost purchases and promotions for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project boosts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  boosts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Boost"
+              example:
+                success: true
+                status: 200
+                boosts:
+                  - id: 1
+                    projectId: 123
+                    purchasedBy: 456
+                    plan: "premium"
+                    amountCents: 5000
+                    currency: "USD"
+                    startAt: "2024-01-15T00:00:00Z"
+                    endAt: "2024-02-15T00:00:00Z"
+                    createdAt: "2024-01-15T08:30:00Z"
+                  - id: 2
+                    projectId: 123
+                    purchasedBy: 456
+                    plan: "featured"
+                    amountCents: 10000
+                    currency: "USD"
+                    startAt: "2024-01-10T00:00:00Z"
+                    endAt: "2024-01-25T00:00:00Z"
+                    createdAt: "2024-01-10T12:15:00Z"
+        "400":
+          description: Bad request
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/{projectId}/stats:
+    get:
+      summary: Get project statistics
+      description: Retrieve comprehensive statistics and analytics for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectStats"
+              example:
+                success: true
+                status: 200
+                stats:
+                  projectId: 123
+                  totalViews: 1250
+                  totalApplications: 45
+                  totalFavorites: 23
+                  averageRating: 4.7
+                  totalReviews: 18
+                  totalUpdates: 12
+                  totalBoosts: 3
+                  totalComments: 67
+                  completionRate: 85.5
+                  responseTime: "2.3 hours"
+                  lastActivity: "2024-01-15T16:45:00Z"
+        "400":
+          description: Bad request
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  # 🔍 Advanced Search & Discovery
+  /api/v1/projects/search:
+    get:
+      summary: Search projects with advanced filters
+      description: Search and filter projects with multiple criteria including skills, location, budget, etc.
+      tags:
+        - "🟢 PROJECT SERVICE - Search"
+      parameters:
+        - name: query
+          in: query
+          description: Search query string
+          schema:
+            type: string
+          example: "React developer"
+        - name: skills
+          in: query
+          description: Comma-separated list of required skills
+          schema:
+            type: string
+          example: "React,Node.js,TypeScript"
+        - name: location
+          in: query
+          description: Project location filter
+          schema:
+            type: string
+          example: "Remote"
+        - name: budgetMin
+          in: query
+          description: Minimum budget filter
+          schema:
+            type: integer
+          example: 5000
+        - name: budgetMax
+          in: query
+          description: Maximum budget filter
+          schema:
+            type: integer
+          example: 15000
+        - name: status
+          in: query
+          description: Project status filter
+          schema:
+            type: string
+            enum: [draft, active, completed, cancelled]
+          example: "active"
+        - name: experienceLevel
+          in: query
+          description: Required experience level
+          schema:
+            type: string
+            enum: [entry, mid, senior, expert]
+          example: "mid"
+        - name: isRemote
+          in: query
+          description: Remote work filter
+          schema:
+            type: boolean
+          example: true
+        - name: sortBy
+          in: query
+          description: Sort results by field
+          schema:
+            type: string
+            enum: [createdAt, budget, deadline, rating, applicants]
+          example: "createdAt"
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+          example: "desc"
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          description: Number of results per page
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        "200":
+          description: Search results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 25
+                      totalPages:
+                        type: integer
+                        example: 3
+              example:
+                success: true
+                status: 200
+                results:
+                  - id: 1
+                    title: "E-commerce Platform Development"
+                    description: "Build a modern e-commerce platform with React and Node.js"
+                    roleNeeded: "Full Stack Developer"
+                    status: "active"
+                    priority: "high"
+                    budgetMin: 5000
+                    budgetMax: 15000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "mid"
+                    category: "Web Development"
+                    skills: ["React", "Node.js", "MongoDB"]
+                    tags: ["ecommerce", "react", "nodejs"]
+                    applicantsCount: 12
+                    ratingAvg: 4.5
+                    createdAt: "2024-01-10T00:00:00Z"
+                  - id: 2
+                    title: "Mobile App Development"
+                    description: "Create a cross-platform mobile app using React Native"
+                    roleNeeded: "Mobile Developer"
+                    status: "active"
+                    priority: "medium"
+                    budgetMin: 8000
+                    budgetMax: 20000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "senior"
+                    category: "Mobile Development"
+                    skills: ["React Native", "JavaScript", "Firebase"]
+                    tags: ["mobile", "react-native", "firebase"]
+                    applicantsCount: 8
+                    ratingAvg: 4.8
+                    createdAt: "2024-01-12T00:00:00Z"
+                pagination:
+                  page: 1
+                  limit: 10
+                  total: 25
+                  totalPages: 3
+        "400":
+          description: Bad request
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/recommendations:
+    get:
+      summary: Get project recommendations for user
+      description: Get personalized project recommendations based on user skills and preferences
+      tags:
+        - "🟢 PROJECT SERVICE - Search"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of recommendations
+          schema:
+            type: integer
+            default: 10
+          example: 10
+      responses:
+        "200":
+          description: Recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  recommendations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+              example:
+                success: true
+                status: 200
+                recommendations:
+                  - id: 15
+                    title: "AI-Powered Chatbot Development"
+                    description: "Develop an intelligent chatbot using machine learning and natural language processing"
+                    roleNeeded: "AI/ML Developer"
+                    status: "active"
+                    priority: "high"
+                    budgetMin: 12000
+                    budgetMax: 25000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "senior"
+                    category: "Artificial Intelligence"
+                    skills: ["Python", "TensorFlow", "NLP", "Machine Learning"]
+                    tags: ["ai", "chatbot", "python", "ml"]
+                    applicantsCount: 5
+                    ratingAvg: 4.9
+                    matchScore: 95
+                    createdAt: "2024-01-14T00:00:00Z"
+                  - id: 22
+                    title: "Blockchain Smart Contract Development"
+                    description: "Create smart contracts for DeFi application using Solidity"
+                    roleNeeded: "Blockchain Developer"
+                    status: "active"
+                    priority: "high"
+                    budgetMin: 15000
+                    budgetMax: 30000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "senior"
+                    category: "Blockchain"
+                    skills: ["Solidity", "Ethereum", "Web3", "DeFi"]
+                    tags: ["blockchain", "smart-contracts", "defi", "ethereum"]
+                    applicantsCount: 3
+                    ratingAvg: 4.7
+                    matchScore: 88
+                    createdAt: "2024-01-13T00:00:00Z"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  # ❤️ Project Favorites (User-specific)
+  /api/v1/projects/favorites:
+    post:
+      summary: Add project to favorites
+      description: Add a project to user's favorites list
+      tags:
+        - "🟢 PROJECT SERVICE - Favorites"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteRequest"
+            example:
+              projectId: 123
+      responses:
+        "201":
+          description: Project added to favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+              example:
+                success: true
+                status: 201
+                message: "Project added to favorites"
+                favorite:
+                  id: 15
+                  userId: 456
+                  projectId: 123
+                  createdAt: "2024-01-15T16:30:00Z"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Remove project from favorites
+      description: Remove a project from user's favorites list
+      tags:
+        - "🟢 PROJECT SERVICE - Favorites"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteRequest"
+            example:
+              projectId: 123
+      responses:
+        "200":
+          description: Project removed from favorites successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FavoriteResponse"
+              example:
+                success: true
+                status: 200
+                message: "Project removed from favorites"
+                favorite:
+                  id: 15
+                  userId: 456
+                  projectId: 123
+                  createdAt: "2024-01-15T16:30:00Z"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/favorites/my:
+    get:
+      summary: Get user's favorite projects
+      description: Retrieve all projects favorited by the authenticated user
+      tags:
+        - "🟢 PROJECT SERVICE - Favorites"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Favorite projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  favorites:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+              example:
+                success: true
+                status: 200
+                favorites:
+                  - id: 5
+                    title: "React Native Mobile App"
+                    description: "Build a cross-platform mobile application using React Native"
+                    roleNeeded: "Mobile Developer"
+                    status: "active"
+                    priority: "medium"
+                    budgetMin: 8000
+                    budgetMax: 18000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "mid"
+                    category: "Mobile Development"
+                    skills: ["React Native", "JavaScript", "Redux"]
+                    tags: ["mobile", "react-native", "javascript"]
+                    applicantsCount: 15
+                    ratingAvg: 4.6
+                    createdAt: "2024-01-08T00:00:00Z"
+                  - id: 12
+                    title: "Node.js Backend API"
+                    description: "Develop a robust REST API using Node.js and Express"
+                    roleNeeded: "Backend Developer"
+                    status: "active"
+                    priority: "high"
+                    budgetMin: 6000
+                    budgetMax: 12000
+                    currency: "USD"
+                    isRemote: true
+                    location: "Remote"
+                    experienceLevel: "mid"
+                    category: "Backend Development"
+                    skills: ["Node.js", "Express", "MongoDB", "JWT"]
+                    tags: ["backend", "nodejs", "api", "mongodb"]
+                    applicantsCount: 22
+                    ratingAvg: 4.4
+                    createdAt: "2024-01-11T00:00:00Z"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  # 💬 Project Comments & Discussions (Public viewing, authenticated posting)
+  /api/v1/projects/{projectId}/comments:
+    get:
+      summary: Get project comments
+      description: Retrieve all comments and discussions for a specific project
+      tags:
+        - "🟢 PROJECT SERVICE - Comments"
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: Project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  comments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Comment"
+              example:
+                success: true
+                status: 200
+                comments:
+                  - id: 1
+                    projectId: 123
+                    authorId: 456
+                    authorName: "John Smith"
+                    authorAvatar: "https://example.com/avatars/john.jpg"
+                    content: "This project looks very interesting! I have 5+ years of experience with React and Node.js. Would love to discuss the requirements in detail."
+                    parentCommentId: null
+                    isEdited: false
+                    likesCount: 3
+                    repliesCount: 2
+                    createdAt: "2024-01-15T10:30:00Z"
+                    updatedAt: "2024-01-15T10:30:00Z"
+                    replies:
+                      - id: 2
+                        projectId: 123
+                        authorId: 789
+                        authorName: "Project Owner"
+                        authorAvatar: "https://example.com/avatars/owner.jpg"
+                        content: "Thanks for your interest! Please check your email for the detailed requirements document."
+                        parentCommentId: 1
+                        isEdited: false
+                        likesCount: 1
+                        repliesCount: 0
+                        createdAt: "2024-01-15T11:15:00Z"
+                        updatedAt: "2024-01-15T11:15:00Z"
+                        replies: []
+                  - id: 3
+                    projectId: 123
+                    authorId: 101
+                    authorName: "Sarah Johnson"
+                    authorAvatar: "https://example.com/avatars/sarah.jpg"
+                    content: "I've worked on similar e-commerce projects before. What's the expected timeline for this project?"
+                    parentCommentId: null
+                    isEdited: false
+                    likesCount: 2
+                    repliesCount: 1
+                    createdAt: "2024-01-15T14:20:00Z"
+                    updatedAt: "2024-01-15T14:20:00Z"
+                    replies:
+                      - id: 4
+                        projectId: 123
+                        authorId: 789
+                        authorName: "Project Owner"
+                        authorAvatar: "https://example.com/avatars/owner.jpg"
+                        content: "We're looking at a 3-month timeline with weekly milestones. The project brief has all the details."
+                        parentCommentId: 3
+                        isEdited: false
+                        likesCount: 0
+                        repliesCount: 0
+                        createdAt: "2024-01-15T15:45:00Z"
+                        updatedAt: "2024-01-15T15:45:00Z"
+                        replies: []
+        "400":
+          description: Bad request
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/comments:
+    post:
+      summary: Add project comment
+      description: Add a comment to a project discussion
+      tags:
+        - "🟢 PROJECT SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentRequest"
+            example:
+              projectId: 123
+              content: "This project looks very interesting! I have 5+ years of experience with React and Node.js. Would love to discuss the requirements in detail."
+              parentCommentId: null
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+              example:
+                success: true
+                status: 201
+                message: "Comment added successfully"
+                comment:
+                  id: 5
+                  projectId: 123
+                  authorId: 456
+                  authorName: "John Smith"
+                  authorAvatar: "https://example.com/avatars/john.jpg"
+                  content: "This project looks very interesting! I have 5+ years of experience with React and Node.js. Would love to discuss the requirements in detail."
+                  parentCommentId: null
+                  isEdited: false
+                  likesCount: 0
+                  repliesCount: 0
+                  createdAt: "2024-01-15T16:45:00Z"
+                  updatedAt: "2024-01-15T16:45:00Z"
+                  replies: []
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/comments/{commentId}:
+    put:
+      summary: Update project comment
+      description: Update an existing project comment (only by comment author)
+      tags:
+        - "🟢 PROJECT SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentUpdateRequest"
+            example:
+              content: "Updated comment: This project looks very interesting! I have 5+ years of experience with React and Node.js. Would love to discuss the requirements in detail."
+      responses:
+        "200":
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentResponse"
+              example:
+                success: true
+                status: 200
+                message: "Comment updated successfully"
+                comment:
+                  id: 5
+                  projectId: 123
+                  authorId: 456
+                  authorName: "John Smith"
+                  authorAvatar: "https://example.com/avatars/john.jpg"
+                  content: "Updated comment: This project looks very interesting! I have 5+ years of experience with React and Node.js. Would love to discuss the requirements in detail."
+                  parentCommentId: null
+                  isEdited: true
+                  likesCount: 2
+                  repliesCount: 1
+                  createdAt: "2024-01-15T16:45:00Z"
+                  updatedAt: "2024-01-15T17:20:00Z"
+                  replies: []
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - not comment author
+        "404":
+          description: Comment not found
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete project comment
+      description: Delete a project comment (only by comment author)
+      tags:
+        - "🟢 PROJECT SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Comment deleted successfully"
+              example:
+                success: true
+                status: 200
+                message: "Comment deleted successfully"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - not comment author
+        "404":
+          description: Comment not found
         "500":
           description: Internal server error
 
@@ -1182,3 +2150,165 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    # New schemas for additional endpoints
+    ProjectStats:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        stats:
+          type: object
+          properties:
+            projectId:
+              type: integer
+              example: 1
+            totalViews:
+              type: integer
+              example: 150
+            totalApplications:
+              type: integer
+              example: 25
+            totalFavorites:
+              type: integer
+              example: 8
+            averageRating:
+              type: number
+              example: 4.5
+            totalReviews:
+              type: integer
+              example: 12
+            totalUpdates:
+              type: integer
+              example: 5
+            totalBoosts:
+              type: integer
+              example: 2
+            totalComments:
+              type: integer
+              example: 15
+            completionRate:
+              type: number
+              example: 85.5
+            responseTime:
+              type: string
+              example: "2.3 hours"
+            lastActivity:
+              type: string
+              format: date-time
+              example: "2024-01-15T10:30:00Z"
+
+    FavoriteRequest:
+      type: object
+      required: [projectId]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+
+    FavoriteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Project added to favorites"
+        favorite:
+          type: object
+          properties:
+            id:
+              type: integer
+            userId:
+              type: integer
+            projectId:
+              type: integer
+            createdAt:
+              type: string
+              format: date-time
+
+    CommentRequest:
+      type: object
+      required: [projectId, content]
+      properties:
+        projectId:
+          type: integer
+          example: 1
+        content:
+          type: string
+          example: "This project looks interesting! I have experience with React and Node.js."
+        parentCommentId:
+          type: integer
+          description: "ID of parent comment for replies"
+          example: 5
+
+    CommentUpdateRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          example: "Updated comment content"
+
+    CommentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Comment added successfully"
+        comment:
+          $ref: "#/components/schemas/Comment"
+
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        authorId:
+          type: integer
+        authorName:
+          type: string
+          example: "John Doe"
+        authorAvatar:
+          type: string
+          example: "https://example.com/avatar.jpg"
+        content:
+          type: string
+        parentCommentId:
+          type: integer
+          description: "ID of parent comment for replies"
+        isEdited:
+          type: boolean
+          example: false
+        likesCount:
+          type: integer
+          example: 3
+        repliesCount:
+          type: integer
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"

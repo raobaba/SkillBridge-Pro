@@ -1,9 +1,11 @@
 import { combineReducers } from "redux";
 import localStorage from "redux-persist/lib/storage";
-import userReducer from "../../modules/authentication/slice/userSlice"
+import userReducer from "../../modules/authentication/slice/userSlice";
+import projectReducer from "../../modules/project/slice/projectSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
+  project: projectReducer,
 });
 
 export const rootReducer = (state, action) => {
