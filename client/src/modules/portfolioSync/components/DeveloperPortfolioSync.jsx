@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { addProjectSave, removeProjectSave, getProjectSaves } from "../../project/slice/projectSlice";
 import { Badge, Button } from "../../../components";
 import { 
   Github, 
@@ -34,6 +36,8 @@ import {
 import SyncStatusCard from "./SyncStatusCard";
 
 const DeveloperPortfolioSync = ({ user }) => {
+  const dispatch = useDispatch();
+  const { saves, savesLoading } = useSelector((state) => state.project);
   // Enhanced integration data with skill intelligence
   const [integrations, setIntegrations] = useState({
     github: {
@@ -66,6 +70,27 @@ const DeveloperPortfolioSync = ({ user }) => {
   });
 
   const [syncing, setSyncing] = useState(false);
+  useEffect(() => {
+    // preload saves for the user, if authenticated
+    if (user?.id) {
+      dispatch(getProjectSaves());
+    }
+  }, [dispatch, user?.id]);
+
+  const isSaved = (projectId) => Array.isArray(saves) && (saves.some(s => s?.projectId === projectId || s?.project?.id === projectId || s === projectId));
+
+  const toggleSaveProject = async (projectId) => {
+    try {
+      if (isSaved(projectId)) {
+        await dispatch(removeProjectSave({ projectId })).unwrap();
+      } else {
+        await dispatch(addProjectSave({ projectId })).unwrap();
+      }
+      await dispatch(getProjectSaves()).unwrap();
+    } catch (e) {
+      // no-op; UI remains stable
+    }
+  };
   const [autoSync, setAutoSync] = useState(true);
   const [showSyncHistory, setShowSyncHistory] = useState(false);
   const [skillIntelligence, setSkillIntelligence] = useState({

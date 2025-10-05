@@ -29,6 +29,13 @@ import {
   getProjectCommentsApi,
   updateProjectCommentApi,
   deleteProjectCommentApi,
+  getPublicProjectsApi,
+  getProjectCategoriesApi,
+  getProjectMetadataApi,
+  addProjectSaveApi,
+  removeProjectSaveApi,
+  getProjectSavesApi,
+  withdrawApplicationApi,
 } from "./projectAction";
 
 // Initial state
@@ -46,7 +53,12 @@ const initialState = {
   searchResults: [],
   recommendations: [],
   favorites: [],
+  saves: [],
   projectComments: [],
+  // Public discovery
+  publicProjects: [],
+  projectCategories: [],
+  projectMetadata: null,
   
   // Loading states
   loading: false,
@@ -62,7 +74,10 @@ const initialState = {
   searchLoading: false,
   recommendationsLoading: false,
   favoritesLoading: false,
+  savesLoading: false,
   commentsLoading: false,
+  publicLoading: false,
+  metadataLoading: false,
   
   // Error and message states
   error: null,
@@ -151,6 +166,21 @@ export const applyToProject = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Application failed" }
+      );
+    }
+  }
+);
+
+// Withdraw application
+export const withdrawApplication = createAsyncThunk(
+  "project/withdrawApplication",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await withdrawApplicationApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to withdraw application" }
       );
     }
   }
@@ -436,6 +466,49 @@ export const getProjectFavorites = createAsyncThunk(
   }
 );
 
+// Saves (Bookmarks)
+export const addProjectSave = createAsyncThunk(
+  "project/addSave",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await addProjectSaveApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to save project" }
+      );
+    }
+  }
+);
+
+export const removeProjectSave = createAsyncThunk(
+  "project/removeSave",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await removeProjectSaveApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to unsave project" }
+      );
+    }
+  }
+);
+
+export const getProjectSaves = createAsyncThunk(
+  "project/getSaves",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectSavesApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch saves" }
+      );
+    }
+  }
+);
+
 // Add project comment
 export const addProjectComment = createAsyncThunk(
   "project/addComment",
@@ -491,6 +564,51 @@ export const deleteProjectComment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to delete comment" }
+      );
+    }
+  }
+);
+
+// Public: get public projects
+export const getPublicProjects = createAsyncThunk(
+  "project/getPublicProjects",
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await getPublicProjectsApi(params || {});
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch public projects" }
+      );
+    }
+  }
+);
+
+// Public: get project categories
+export const getProjectCategories = createAsyncThunk(
+  "project/getProjectCategories",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectCategoriesApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch project categories" }
+      );
+    }
+  }
+);
+
+// Public: get project metadata
+export const getProjectMetadata = createAsyncThunk(
+  "project/getProjectMetadata",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectMetadataApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch project metadata" }
       );
     }
   }
@@ -661,6 +779,14 @@ const projectSlice = createSlice({
         state.message = action.payload.message || "Application submitted successfully";
         state.error = null;
         state.lastAction = 'applyToProject.fulfilled';
+        // Optimistically update applicantsCount and applied flag on the project
+        const projectId = action?.meta?.arg?.projectId;
+        const proj = state.projects.find(p => p.id === projectId);
+        if (proj) {
+          proj.applicantsCount = (proj.applicantsCount || 0) + 1;
+          proj.newApplicantsCount = Math.max(0, (proj.newApplicantsCount || 0) + 1);
+          proj.__appliedByMe = true;
+        }
       })
       .addCase(applyToProject.rejected, (state, action) => {
         state.loading = false;
@@ -966,6 +1092,32 @@ const projectSlice = createSlice({
         state.error = null;
         state.lastAction = 'getProjectRecommendations.pending';
       })
+
+      // Withdraw application
+      .addCase(withdrawApplication.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.message = null;
+        state.lastAction = 'withdrawApplication.pending';
+      })
+      .addCase(withdrawApplication.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message || 'Application withdrawn';
+        state.error = null;
+        state.lastAction = 'withdrawApplication.fulfilled';
+        const projectId = action?.meta?.arg?.projectId;
+        const proj = state.projects.find(p => p.id === projectId);
+        if (proj) {
+          proj.applicantsCount = Math.max(0, (proj.applicantsCount || 0) - 1);
+          proj.__appliedByMe = false;
+        }
+      })
+      .addCase(withdrawApplication.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || 'Failed to withdraw application';
+        state.message = null;
+        state.lastAction = 'withdrawApplication.rejected';
+      })
       .addCase(getProjectRecommendations.fulfilled, (state, action) => {
         state.recommendationsLoading = false;
         state.recommendations = action.payload.recommendations || [];
@@ -990,6 +1142,24 @@ const projectSlice = createSlice({
         state.message = action.payload.message || "Project added to favorites";
         state.error = null;
         state.lastAction = 'addProjectFavorite.fulfilled';
+
+        // Optimistically update favorites array
+        const projectId = action?.meta?.arg?.projectId;
+        if (projectId) {
+          const alreadyFavorited = Array.isArray(state.favorites) && state.favorites.some((f) => (
+            f === projectId || f?.projectId === projectId || f?.project?.id === projectId || f?.id === projectId
+          ));
+          if (!alreadyFavorited) {
+            // Store a minimal entry to avoid shape mismatches
+            state.favorites.push({ projectId });
+          }
+
+          // Bump favoritesCount on the project if present
+          const proj = state.projects.find(p => p.id === projectId);
+          if (proj) {
+            proj.favoritesCount = (proj.favoritesCount || 0) + 1;
+          }
+        }
       })
       .addCase(addProjectFavorite.rejected, (state, action) => {
         state.loading = false;
@@ -1010,6 +1180,20 @@ const projectSlice = createSlice({
         state.message = action.payload.message || "Project removed from favorites";
         state.error = null;
         state.lastAction = 'removeProjectFavorite.fulfilled';
+
+        // Optimistically update favorites array
+        const projectId = action?.meta?.arg?.projectId;
+        if (projectId && Array.isArray(state.favorites)) {
+          state.favorites = state.favorites.filter((f) => !(
+            f === projectId || f?.projectId === projectId || f?.project?.id === projectId || f?.id === projectId
+          ));
+
+          // Decrease favoritesCount on the project if present
+          const proj = state.projects.find(p => p.id === projectId);
+          if (proj && (proj.favoritesCount || 0) > 0) {
+            proj.favoritesCount = Math.max(0, (proj.favoritesCount || 0) - 1);
+          }
+        }
       })
       .addCase(removeProjectFavorite.rejected, (state, action) => {
         state.loading = false;
@@ -1034,6 +1218,62 @@ const projectSlice = createSlice({
         state.favoritesLoading = false;
         state.error = action.payload.message || "Failed to fetch favorites";
         state.lastAction = 'getProjectFavorites.rejected';
+      })
+
+      // Saves
+      .addCase(addProjectSave.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.message = null;
+        state.lastAction = 'addProjectSave.pending';
+      })
+      .addCase(addProjectSave.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message || "Project saved";
+        state.error = null;
+        state.lastAction = 'addProjectSave.fulfilled';
+      })
+      .addCase(addProjectSave.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || "Failed to save project";
+        state.message = null;
+        state.lastAction = 'addProjectSave.rejected';
+      })
+
+      .addCase(removeProjectSave.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.message = null;
+        state.lastAction = 'removeProjectSave.pending';
+      })
+      .addCase(removeProjectSave.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message || "Project unsaved";
+        state.error = null;
+        state.lastAction = 'removeProjectSave.fulfilled';
+      })
+      .addCase(removeProjectSave.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || "Failed to unsave project";
+        state.message = null;
+        state.lastAction = 'removeProjectSave.rejected';
+      })
+
+      .addCase(getProjectSaves.pending, (state) => {
+        state.savesLoading = true;
+        state.error = null;
+        state.lastAction = 'getProjectSaves.pending';
+      })
+      .addCase(getProjectSaves.fulfilled, (state, action) => {
+        state.savesLoading = false;
+        state.saves = action.payload.saves || [];
+        state.error = null;
+        state.lastAction = 'getProjectSaves.fulfilled';
+      })
+      .addCase(getProjectSaves.rejected, (state, action) => {
+        state.savesLoading = false;
+        state.error = action.payload.message || "Failed to fetch saves";
+        state.lastAction = 'getProjectSaves.rejected';
       })
 
       // Add Project Comment
@@ -1118,6 +1358,59 @@ const projectSlice = createSlice({
         state.error = action.payload.message || "Failed to delete comment";
         state.message = null;
         state.lastAction = 'deleteProjectComment.rejected';
+      })
+
+      // Public: getPublicProjects
+      .addCase(getPublicProjects.pending, (state) => {
+        state.publicLoading = true;
+        state.error = null;
+        state.lastAction = 'getPublicProjects.pending';
+      })
+      .addCase(getPublicProjects.fulfilled, (state, action) => {
+        state.publicLoading = false;
+        // may come as { projects, pagination }
+        const payload = action.payload;
+        state.publicProjects = payload.projects || payload.data || payload || [];
+        state.lastAction = 'getPublicProjects.fulfilled';
+      })
+      .addCase(getPublicProjects.rejected, (state, action) => {
+        state.publicLoading = false;
+        state.error = action.payload.message || 'Failed to fetch public projects';
+        state.lastAction = 'getPublicProjects.rejected';
+      })
+      
+      // Public: getProjectCategories
+      .addCase(getProjectCategories.pending, (state) => {
+        state.metadataLoading = true;
+        state.error = null;
+        state.lastAction = 'getProjectCategories.pending';
+      })
+      .addCase(getProjectCategories.fulfilled, (state, action) => {
+        state.metadataLoading = false;
+        state.projectCategories = action.payload.categories || [];
+        state.lastAction = 'getProjectCategories.fulfilled';
+      })
+      .addCase(getProjectCategories.rejected, (state, action) => {
+        state.metadataLoading = false;
+        state.error = action.payload.message || 'Failed to fetch project categories';
+        state.lastAction = 'getProjectCategories.rejected';
+      })
+      
+      // Public: getProjectMetadata
+      .addCase(getProjectMetadata.pending, (state) => {
+        state.metadataLoading = true;
+        state.error = null;
+        state.lastAction = 'getProjectMetadata.pending';
+      })
+      .addCase(getProjectMetadata.fulfilled, (state, action) => {
+        state.metadataLoading = false;
+        state.projectMetadata = action.payload.metadata || action.payload || null;
+        state.lastAction = 'getProjectMetadata.fulfilled';
+      })
+      .addCase(getProjectMetadata.rejected, (state, action) => {
+        state.metadataLoading = false;
+        state.error = action.payload.message || 'Failed to fetch project metadata';
+        state.lastAction = 'getProjectMetadata.rejected';
       });
   },
 });

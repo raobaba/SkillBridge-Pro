@@ -10,7 +10,7 @@ const {
   pgEnum,
   numeric,
 } = require("drizzle-orm/pg-core");
-const { eq, and, desc } = require("drizzle-orm");
+const { eq, and, desc, or, ilike, gte, lte, asc } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 
@@ -121,14 +121,25 @@ class ProjectsModel {
   }
 
   static async listProjects({ ownerId, status } = {}) {
-    let query = db.select().from(projectsTable).where(eq(projectsTable.isDeleted, false));
+    // Build conditions array
+    const conditions = [eq(projectsTable.isDeleted, false)];
+    
     if (ownerId) {
-      query = query.where(and(eq(projectsTable.ownerId, ownerId), eq(projectsTable.isDeleted, false)));
+      conditions.push(eq(projectsTable.ownerId, ownerId));
     }
     if (status) {
-      query = query.where(and(eq(projectsTable.status, status), eq(projectsTable.isDeleted, false)));
+      conditions.push(eq(projectsTable.status, status));
     }
-    const rows = await query.orderBy(desc(projectsTable.createdAt));
+    
+    // Apply all conditions with AND
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+    
+    const rows = await db
+      .select()
+      .from(projectsTable)
+      .where(whereClause)
+      .orderBy(desc(projectsTable.createdAt));
+    
     return rows;
   }
 
@@ -158,25 +169,19 @@ class ProjectsModel {
 
   // Update project counters
   static async updateApplicantsCount(projectId, increment = 1) {
-    // First get current counts to avoid null issues
-    const [project] = await db
-      .select({ 
-        applicantsCount: projectsTable.applicantsCount, 
-        newApplicantsCount: projectsTable.newApplicantsCount 
-      })
-      .from(projectsTable)
-      .where(eq(projectsTable.id, projectId));
-    
-    if (project) {
-      const currentApplicantsCount = project.applicantsCount || 0;
-      const currentNewApplicantsCount = project.newApplicantsCount || 0;
-      
-      await db.update(projectsTable).set({
-        applicantsCount: currentApplicantsCount + increment,
-        newApplicantsCount: currentNewApplicantsCount + increment,
-        updatedAt: new Date(),
-      }).where(eq(projectsTable.id, projectId));
-    }
+    // Recompute authoritative count from applicants table to avoid drift
+    const { projectApplicantsTable } = require("./project-applicants.model");
+    const result = await db
+      .select({ count: projectApplicantsTable.id })
+      .from(projectApplicantsTable)
+      .where(eq(projectApplicantsTable.projectId, projectId));
+    const applicantsCount = Array.isArray(result) && result[0] && result[0].count != null ? Number(result[0].count) : 0;
+
+    await db.update(projectsTable).set({
+      applicantsCount,
+      // newApplicantsCount left unchanged here; separate logic can recalc if needed
+      updatedAt: new Date(),
+    }).where(eq(projectsTable.id, projectId));
   }
 
   static async updateRatingStats(projectId, ratingAvg, ratingCount) {
@@ -193,6 +198,167 @@ class ProjectsModel {
       featuredUntil: featuredUntil,
       updatedAt: new Date(),
     }).where(eq(projectsTable.id, projectId));
+  }
+
+  // Project Favorites methods
+  static async addProjectFavorite(userId, projectId) {
+    const { ProjectFavoritesModel } = require("./project-favorites.model");
+    const favorite = await ProjectFavoritesModel.addProjectFavorite(userId, projectId);
+    
+    // Update favorites count
+    await ProjectsModel.updateFavoritesCount(projectId);
+    
+    return favorite;
+  }
+
+  static async removeProjectFavorite(userId, projectId) {
+    const { ProjectFavoritesModel } = require("./project-favorites.model");
+    const result = await ProjectFavoritesModel.removeProjectFavorite(userId, projectId);
+    
+    // Update favorites count
+    await ProjectsModel.updateFavoritesCount(projectId);
+    
+    return result;
+  }
+
+  static async getProjectFavorites(userId) {
+    const { ProjectFavoritesModel } = require("./project-favorites.model");
+    return await ProjectFavoritesModel.getUserFavoriteProjects(userId);
+  }
+
+  // Project Saves (Bookmarks)
+  static async addProjectSave(userId, projectId) {
+    const { ProjectSavesModel } = require("./project-saves.model");
+    return await ProjectSavesModel.addProjectSave(userId, projectId);
+  }
+
+  static async removeProjectSave(userId, projectId) {
+    const { ProjectSavesModel } = require("./project-saves.model");
+    return await ProjectSavesModel.removeProjectSave(userId, projectId);
+  }
+
+  static async getProjectSaves(userId) {
+    const { ProjectSavesModel } = require("./project-saves.model");
+    return await ProjectSavesModel.getUserSavedProjects(userId);
+  }
+
+  static async updateFavoritesCount(projectId) {
+    const { ProjectFavoritesModel } = require("./project-favorites.model");
+    const count = await ProjectFavoritesModel.getProjectFavoritesCount(projectId);
+    
+    await db.update(projectsTable).set({
+      favoritesCount: count,
+      updatedAt: new Date(),
+    }).where(eq(projectsTable.id, projectId));
+  }
+
+  // Search projects with filters
+  static async searchProjects(filters = {}) {
+    const {
+      query,
+      category,
+      status,
+      priority,
+      experienceLevel,
+      budgetMin,
+      budgetMax,
+      isRemote,
+      location,
+      skills,
+      tags,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1,
+      limit = 20
+    } = filters;
+
+    // Build conditions array
+    const conditions = [eq(projectsTable.isDeleted, false)];
+
+    // Text search
+    if (query) {
+      conditions.push(
+        or(
+          ilike(projectsTable.title, `%${query}%`),
+          ilike(projectsTable.description, `%${query}%`),
+          ilike(projectsTable.roleNeeded, `%${query}%`),
+          ilike(projectsTable.company, `%${query}%`)
+        )
+      );
+    }
+
+    // Category filter
+    if (category) {
+      conditions.push(eq(projectsTable.category, category));
+    }
+
+    // Status filter
+    if (status) {
+      conditions.push(eq(projectsTable.status, status));
+    }
+
+    // Priority filter
+    if (priority) {
+      conditions.push(eq(projectsTable.priority, priority));
+    }
+
+    // Experience level filter
+    if (experienceLevel) {
+      conditions.push(eq(projectsTable.experienceLevel, experienceLevel));
+    }
+
+    // Budget filters
+    if (budgetMin !== undefined) {
+      conditions.push(gte(projectsTable.budgetMin, budgetMin));
+    }
+    if (budgetMax !== undefined) {
+      conditions.push(lte(projectsTable.budgetMax, budgetMax));
+    }
+
+    // Remote filter
+    if (isRemote !== undefined) {
+      conditions.push(eq(projectsTable.isRemote, isRemote));
+    }
+
+    // Location filter
+    if (location) {
+      conditions.push(ilike(projectsTable.location, `%${location}%`));
+    }
+
+    // Apply all conditions
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Build sort order
+    const sortColumn = projectsTable[sortBy] || projectsTable.createdAt;
+    const orderBy = sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
+
+    // Execute query
+    const rows = await db
+      .select()
+      .from(projectsTable)
+      .where(whereClause)
+      .orderBy(orderBy)
+      .limit(limit)
+      .offset(offset);
+
+    // Get total count for pagination
+    const totalCount = await db
+      .select({ count: projectsTable.id })
+      .from(projectsTable)
+      .where(whereClause);
+
+    return {
+      projects: rows,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: totalCount.length,
+        pages: Math.ceil(totalCount.length / limit)
+      }
+    };
   }
 }
 

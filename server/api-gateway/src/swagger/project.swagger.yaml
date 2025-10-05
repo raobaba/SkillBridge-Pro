@@ -31,6 +31,8 @@ tags:
     description: "Project Service: Project favorites and bookmarks"
   - name: "🟢 PROJECT SERVICE - Comments"
     description: "Project Service: Project comments and discussions"
+  - name: "🟢 PROJECT SERVICE - Public Discovery"
+    description: "Project Service: Public project discovery and metadata for developers"
 
 paths:
   /api/v1/projects:
@@ -88,7 +90,7 @@ paths:
 
     get:
       summary: List projects
-      description: Get a list of projects with optional filtering
+      description: Get a list of projects with optional filtering. Enhanced with public filters for developer discovery.
       tags:
         - "🟢 PROJECT SERVICE - Management"
       parameters:
@@ -103,6 +105,45 @@ paths:
           schema:
             type: string
             enum: [draft, active, completed, cancelled]
+        - name: category
+          in: query
+          description: Filter by project category
+          required: false
+          schema:
+            type: string
+            example: "Web Development"
+        - name: experienceLevel
+          in: query
+          description: Filter by required experience level
+          required: false
+          schema:
+            type: string
+            enum: [entry, mid, senior, lead]
+            example: "mid"
+        - name: isRemote
+          in: query
+          description: Filter by remote work availability
+          required: false
+          schema:
+            type: boolean
+            example: true
+        - name: limit
+          in: query
+          description: Number of results per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
       responses:
         "200":
           description: Projects retrieved successfully
@@ -123,6 +164,312 @@ paths:
                       $ref: "#/components/schemas/Project"
         "500":
           description: Internal server error
+
+  /api/v1/projects/public:
+    get:
+      summary: Get public projects for developer discovery
+      description: Get a list of projects specifically designed for developer discovery with advanced filtering options. No authentication required.
+      tags:
+        - "🟢 PROJECT SERVICE - Public Discovery"
+      parameters:
+        - name: category
+          in: query
+          description: Filter by project category
+          required: false
+          schema:
+            type: string
+            example: "Web Development"
+        - name: experienceLevel
+          in: query
+          description: Filter by required experience level
+          required: false
+          schema:
+            type: string
+            enum: [entry, mid, senior, lead]
+            example: "mid"
+        - name: isRemote
+          in: query
+          description: Filter by remote work availability
+          required: false
+          schema:
+            type: boolean
+            example: true
+        - name: location
+          in: query
+          description: Filter by location
+          required: false
+          schema:
+            type: string
+            example: "New York"
+        - name: budgetMin
+          in: query
+          description: Minimum budget filter
+          required: false
+          schema:
+            type: integer
+            example: 1000
+        - name: budgetMax
+          in: query
+          description: Maximum budget filter
+          required: false
+          schema:
+            type: integer
+            example: 5000
+        - name: status
+          in: query
+          description: Filter by project status
+          required: false
+          schema:
+            type: string
+            enum: [draft, upcoming, active, paused, completed, cancelled]
+            default: active
+        - name: sortBy
+          in: query
+          description: Sort by field
+          required: false
+          schema:
+            type: string
+            enum: [createdAt, updatedAt, title, budgetMin, budgetMax, ratingAvg]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          description: Number of results per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Successfully retrieved public projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  projects:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 20
+                      total:
+                        type: integer
+                        example: 150
+                      pages:
+                        type: integer
+                        example: 8
+                  filters:
+                    type: object
+                    properties:
+                      category:
+                        type: string
+                        example: "Web Development"
+                      experienceLevel:
+                        type: string
+                        example: "mid"
+                      isRemote:
+                        type: boolean
+                        example: true
+                      location:
+                        type: string
+                        example: "New York"
+                      budgetMin:
+                        type: integer
+                        example: 1000
+                      budgetMax:
+                        type: integer
+                        example: 5000
+                      status:
+                        type: string
+                        example: "active"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/projects/categories:
+    get:
+      summary: Get available project categories
+      description: Get a list of all available project categories for filtering and form building. No authentication required.
+      tags:
+        - "🟢 PROJECT SERVICE - Public Discovery"
+      responses:
+        '200':
+          description: Successfully retrieved categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  categories:
+                    type: array
+                    items:
+                      type: string
+                    example: 
+                      - "Web Development"
+                      - "Mobile Development"
+                      - "Desktop Application"
+                      - "Backend Development"
+                      - "Frontend Development"
+                      - "Full Stack Development"
+                      - "DevOps"
+                      - "Data Science"
+                      - "Machine Learning"
+                      - "AI Development"
+                      - "Blockchain"
+                      - "Game Development"
+                      - "UI/UX Design"
+                      - "Graphic Design"
+                      - "Content Writing"
+                      - "Digital Marketing"
+                      - "SEO"
+                      - "Video Editing"
+                      - "Audio Production"
+                      - "Translation"
+                      - "Research"
+                      - "Consulting"
+                      - "Other"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/projects/metadata:
+    get:
+      summary: Get project metadata
+      description: Get all available metadata for project filtering including experience levels, priorities, statuses, work arrangements, payment terms, and currencies. No authentication required.
+      tags:
+        - "🟢 PROJECT SERVICE - Public Discovery"
+      responses:
+        '200':
+          description: Successfully retrieved metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  metadata:
+                    type: object
+                    properties:
+                      experienceLevels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "entry"
+                            label:
+                              type: string
+                              example: "Entry Level"
+                      priorities:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "low"
+                            label:
+                              type: string
+                              example: "Low Priority"
+                      statuses:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "active"
+                            label:
+                              type: string
+                              example: "Active"
+                      workArrangements:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "remote"
+                            label:
+                              type: string
+                              example: "Remote"
+                      paymentTerms:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "fixed"
+                            label:
+                              type: string
+                              example: "Fixed Price"
+                      currencies:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            value:
+                              type: string
+                              example: "USD"
+                            label:
+                              type: string
+                              example: "US Dollar ($)"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/projects/{id}:
     get:
@@ -1268,6 +1615,111 @@ paths:
                     applicantsCount: 22
                     ratingAvg: 4.4
                     createdAt: "2024-01-11T00:00:00Z"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  # 🔖 Project Saves (Bookmarks)
+  /api/v1/projects/saves:
+    post:
+      summary: Save a project (bookmark)
+      description: Add a project to user's saved list
+      tags:
+        - "🟢 PROJECT SERVICE - Saves"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteRequest"
+            example:
+              projectId: 123
+      responses:
+        "201":
+          description: Project saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: integer
+                  message:
+                    type: string
+                  save:
+                    type: object
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Unsave a project (remove bookmark)
+      description: Remove a project from user's saved list
+      tags:
+        - "🟢 PROJECT SERVICE - Saves"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteRequest"
+            example:
+              projectId: 123
+      responses:
+        "200":
+          description: Project unsaved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: integer
+                  message:
+                    type: string
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/saves/my:
+    get:
+      summary: Get user's saved projects
+      description: Retrieve all projects saved by the authenticated user
+      tags:
+        - "🟢 PROJECT SERVICE - Saves"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Saved projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: integer
+                  saves:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
         "401":
           description: Unauthorized
         "500":

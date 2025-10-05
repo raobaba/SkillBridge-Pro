@@ -47,8 +47,9 @@ const AuthInitializer = ({ children }) => {
       }
     };
 
+    // Only run once on mount
     initializeAuthentication();
-  }, [dispatch]);
+  }, []); // Remove dispatch from dependencies to prevent re-runs
 
   return <>{children}</>;
 };

@@ -41,6 +41,24 @@ class ProjectApplicantsModel {
     return row;
   }
 
+  static async withdrawApplication(projectId, userId) {
+    // delete the application row and decrement counters
+    const { db } = require("../config/database");
+    const { and, eq } = require("drizzle-orm");
+    const { ProjectsModel } = require("./projects.model");
+
+    const [row] = await db
+      .delete(projectApplicantsTable)
+      .where(and(eq(projectApplicantsTable.projectId, projectId), eq(projectApplicantsTable.userId, userId)))
+      .returning();
+
+    if (row) {
+      await ProjectsModel.updateApplicantsCount(projectId, -1);
+    }
+
+    return row;
+  }
+
   static async updateApplicantStatus({ projectId, userId, status }) {
     const [row] = await db
       .update(projectApplicantsTable)

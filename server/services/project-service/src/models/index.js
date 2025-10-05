@@ -15,6 +15,8 @@ const { projectNotificationsTable, ProjectNotificationsModel } = require("./proj
 const { projectCommentsTable, ProjectCommentsModel } = require("./project-comments.model");
 const { projectMilestonesTable, ProjectMilestonesModel } = require("./project-milestones.model");
 const { projectTasksTable, ProjectTasksModel } = require("./project-tasks.model");
+const { projectFavoritesTable, ProjectFavoritesModel } = require("./project-favorites.model");
+const { projectSavesTable, ProjectSavesModel } = require("./project-saves.model");
 
 // Legacy ProjectModel for backward compatibility
 const ProjectModel = {
@@ -32,6 +34,7 @@ const ProjectModel = {
   
   // Applicants
   applyToProject: ProjectApplicantsModel.applyToProject,
+  withdrawApplication: ProjectApplicantsModel.withdrawApplication,
   updateApplicantStatus: ProjectApplicantsModel.updateApplicantStatus,
   listApplicants: ProjectApplicantsModel.listApplicants,
   
@@ -60,8 +63,20 @@ const ProjectModel = {
   addAnalytics: ProjectAnalyticsModel.addMetric,
   addNotification: ProjectNotificationsModel.addNotification,
   addComment: ProjectCommentsModel.addComment,
+  getProjectComments: ProjectCommentsModel.getCommentsByProjectId,
   addMilestone: ProjectMilestonesModel.addMilestone,
   addTask: ProjectTasksModel.addTask,
+  
+  // Favorites
+  addProjectFavorite: ProjectsModel.addProjectFavorite,
+  removeProjectFavorite: ProjectsModel.removeProjectFavorite,
+  getProjectFavorites: ProjectsModel.getProjectFavorites,
+  addProjectSave: ProjectsModel.addProjectSave,
+  removeProjectSave: ProjectsModel.removeProjectSave,
+  getProjectSaves: ProjectsModel.getProjectSaves,
+  
+  // Search
+  searchProjects: ProjectsModel.searchProjects,
 };
 
 module.exports = {
@@ -82,6 +97,8 @@ module.exports = {
   projectCommentsTable,
   projectMilestonesTable,
   projectTasksTable,
+  projectFavoritesTable,
+  projectSavesTable,
   
   // Model Classes (for business logic)
   ProjectsModel,
@@ -100,6 +117,8 @@ module.exports = {
   ProjectCommentsModel,
   ProjectMilestonesModel,
   ProjectTasksModel,
+  ProjectFavoritesModel,
+  ProjectSavesModel,
   
   // Legacy Model (for backward compatibility with existing controllers)
   ProjectModel,

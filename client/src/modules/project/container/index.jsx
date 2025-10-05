@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import { Button, Footer } from "../../../components";
+import { Button, Footer, CircularLoader } from "../../../components";
 import Navbar from "../../../components/header/index";
 // Role-specific components
 import DeveloperProjects from "../components/DeveloperProjects";
@@ -14,7 +14,11 @@ import {
   getProjectRecommendations,
   getProjectFavorites,
   searchProjects,
-  clearProjectState 
+  clearProjectState,
+  // New public discovery thunks
+  getPublicProjects,
+  getProjectCategories,
+  getProjectMetadata,
 } from "../slice/projectSlice";
 
 export default function Project() {
@@ -25,29 +29,82 @@ export default function Project() {
     myInvites, 
     recommendations, 
     favorites,
+    saves,
     searchResults,
     projectStats,
+    // New public discovery state
+    publicProjects,
+    projectCategories,
+    projectMetadata,
     loading: projectLoading,
     error: projectError,
     message: projectMessage
+  } = useSelector((state) => state.project);
+  // Generic slice loading flag (used by some actions like apply/favorite)
+  const generalProjectLoading = useSelector((state) => state.project.loading);
+  // Pull all loading flags for unified loader
+  const {
+    projectsLoading,
+    applicantsLoading,
+    invitesLoading,
+    filesLoading,
+    updatesLoading,
+    reviewsLoading,
+    boostsLoading,
+    statsLoading,
+    searchLoading,
+    recommendationsLoading,
+    favoritesLoading,
+    commentsLoading,
+    publicLoading,
+    metadataLoading,
   } = useSelector((state) => state.project);
   
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Unified loading flag: show CircularLoader for any in-flight request
+  const isBusy = (
+    loading ||
+    projectLoading ||
+    generalProjectLoading ||
+    projectsLoading ||
+    applicantsLoading ||
+    invitesLoading ||
+    filesLoading ||
+    updatesLoading ||
+    reviewsLoading ||
+    boostsLoading ||
+    statsLoading ||
+    searchLoading ||
+    recommendationsLoading ||
+    favoritesLoading ||
+    commentsLoading ||
+    publicLoading ||
+    metadataLoading
+  );
+
   useEffect(() => {
     // Load initial data based on user role
     const loadInitialData = async () => {
       try {
+        setLoading(true);
         // Load projects for all roles
         await dispatch(listProjects()).unwrap();
+        // Public discovery data (available to all roles)
+        await Promise.all([
+          dispatch(getPublicProjects()).unwrap(),
+          dispatch(getProjectCategories()).unwrap(),
+          dispatch(getProjectMetadata()).unwrap(),
+        ]);
         
         // Load role-specific data
         if (user?.role === 'developer') {
           await Promise.all([
             dispatch(getMyInvites()).unwrap(),
             dispatch(getProjectRecommendations(10)).unwrap(),
-            dispatch(getProjectFavorites()).unwrap()
+            dispatch(getProjectFavorites()).unwrap(),
+            dispatch(require('../slice/projectSlice').getProjectSaves()).unwrap()
           ]);
         } else if (user?.role === 'project-owner') {
           // Load owner's projects
@@ -63,11 +120,8 @@ export default function Project() {
       }
     };
 
-    if (user?.role) {
-      loadInitialData();
-    } else {
-      setLoading(false);
-    }
+    // Always fetch public and role data; defer UI until done
+    loadInitialData();
   }, [dispatch, user?.role, user?.id]);
 
   // Cleanup on unmount
@@ -81,9 +135,12 @@ export default function Project() {
   const handleSearch = async (query) => {
     if (query.trim()) {
       try {
+        setLoading(true);
         await dispatch(searchProjects({ query })).unwrap();
       } catch (error) {
         console.error('Search error:', error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -107,15 +164,22 @@ export default function Project() {
       myInvites,
       recommendations,
       favorites,
+      saves,
       searchResults,
       projectStats,
+      // Pass public discovery data
+      publicProjects,
+      projectCategories,
+      projectMetadata,
       dispatch,
-      loading: projectLoading,
+      loading: isBusy,
       error: projectError,
       message: projectMessage,
       searchQuery,
       setSearchQuery,
-      handleSearch
+      handleSearch,
+      // allow children to toggle the global loader during their API calls
+      setLoading,
     };
 
     switch (user.role) {
@@ -137,25 +201,16 @@ export default function Project() {
     }
   };
 
-  if (loading || projectLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading projects...</p>
-          {projectError && (
-            <p className="text-red-400 text-sm mt-2">Error: {projectError}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
-      <Navbar isSearchBar={true} />
+      <Navbar isSearchBar={false} />
       {renderRoleBasedContent()}
       <Footer />
+      {isBusy && (
+        <div className="fixed inset-0 z-[9999]">
+          <CircularLoader />
+        </div>
+      )}
     </>
   );
 }

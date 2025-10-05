@@ -1,58 +1,54 @@
-import React, { useState, useEffect } from "react";
-import { 
-  Search, 
-  Filter, 
-  Heart, 
-  Share2, 
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Search,
+  Filter,
+  Heart,
+  Share2,
   Bookmark,
   MapPin,
   Clock,
   DollarSign,
   Users,
-  Calendar,
   CheckCircle,
-  AlertCircle,
-  Play,
-  Pause,
-  ExternalLink,
-  Plus,
-  Minus,
-  X,
   Target,
   Briefcase,
-  Zap,
-  Globe,
-  Shield,
-  Activity,
-  BarChart3,
-  Settings,
-  Bell,
-  Download,
-  Upload,
-  ChevronDown,
-  ChevronUp,
-  Info,
-  HelpCircle,
   LayoutGrid,
   List,
-  Loader
 } from "lucide-react";
-import { Button, Input, CircularLoader, ErrorState } from "../../../components";
-import ProjectCard from "./ProjectCard";
+import { Button } from "../../../components";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
-// Project actions
-import { 
-  applyToProject, 
-  searchProjects,
+
+import {
+  applyToProject,
   addProjectFavorite,
   removeProjectFavorite,
   getProjectComments,
-  addProjectComment
+  addProjectComment,
+  withdrawApplication,
+  addProjectSave,
+  removeProjectSave,
+  getProjectSaves,
 } from "../slice/projectSlice";
 
-const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatch, loading, error, message, searchQuery, setSearchQuery, handleSearch }) => {
-  const navigate = useNavigate();
+const DeveloperProjects = ({
+  user,
+  projects,
+  publicProjects = [],
+  projectCategories = [],
+  projectMetadata = null,
+  myInvites = [],
+  recommendations,
+  favorites = [],
+  saves = [],
+  dispatch,
+  loading,
+  error,
+  message,
+  searchQuery,
+  setSearchQuery,
+  handleSearch,
+}) => {
+  // const navigate = useNavigate(); // unused
   const [activeTab, setActiveTab] = useState("discover"); // discover | applications
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -62,7 +58,8 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
   const [sortBy, setSortBy] = useState("relevance");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilters, setShowFilters] = useState(false);
-  const [applicationStatusByProjectId, setApplicationStatusByProjectId] = useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
+  const [applicationStatusByProjectId, setApplicationStatusByProjectId] =
+    useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [savedProjects, setSavedProjects] = useState([]);
@@ -70,14 +67,24 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
   const [projectComments, setProjectComments] = useState({});
   const [showComments, setShowComments] = useState({});
   const [internalSearch, setInternalSearch] = useState("");
+  const [newCommentText, setNewCommentText] = useState("");
 
-  // Load applied projects from localStorage or API
+  // Load applied and saved projects from localStorage
   useEffect(() => {
-    const applied = localStorage.getItem('appliedProjects');
+    const applied = localStorage.getItem("appliedProjects");
     if (applied) {
       setAppliedProjects(JSON.parse(applied));
     }
+    const saved = localStorage.getItem("savedProjects");
+    if (saved) {
+      setSavedProjects(JSON.parse(saved));
+    }
   }, []);
+
+  // Persist savedProjects to localStorage
+  useEffect(() => {
+    localStorage.setItem("savedProjects", JSON.stringify(savedProjects));
+  }, [savedProjects]);
 
   // Handle toast notifications
   useEffect(() => {
@@ -93,8 +100,12 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
   const mapProjectData = (project) => ({
     id: project.id,
     title: project.title,
-    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active',
-    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || 'Medium',
+    status:
+      project.status?.charAt(0).toUpperCase() + project.status?.slice(1) ||
+      "Active",
+    priority:
+      project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) ||
+      "Medium",
     description: project.description,
     startDate: project.startDate,
     deadline: project.deadline,
@@ -104,62 +115,124 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
     activity: `${project.activityCount || 0} updates`,
     tags: project.tags || [],
     rating: parseFloat(project.ratingAvg) || 0,
-    budget: project.budgetMin && project.budgetMax ? 
-      `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}` : 
-      'Budget TBD',
-    location: project.isRemote ? 'Remote' : project.location || 'Remote',
-    duration: project.duration || 'TBD',
-    experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || 'Mid Level',
-    category: project.category || 'Web Development',
+    budget:
+      project.budgetMin && project.budgetMax
+        ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
+        : "Budget TBD",
+    location: project.isRemote ? "Remote" : project.location || "Remote",
+    duration: project.duration || "TBD",
+    experience:
+      project.experienceLevel?.charAt(0).toUpperCase() +
+        project.experienceLevel?.slice(1) || "Mid Level",
+    category: project.category || "Web Development",
     isRemote: project.isRemote,
     isUrgent: project.isUrgent,
     isFeatured: project.isFeatured,
-    company: project.company || 'Company',
+    company: project.company || "Company",
     website: project.website,
     matchScore: project.matchScoreAvg || 0,
+    favoritesCount: project.favoritesCount || 0,
     skills: project.tags || [],
     benefits: project.benefits,
     requirements: project.requirements,
     createdAt: project.createdAt,
-    updatedAt: project.updatedAt
+    updatedAt: project.updatedAt,
   });
 
-  // Use projects from Redux state and map them
-  const displayProjects = (projects || []).map(mapProjectData);
+  // Prefer authenticated projects; fallback to publicProjects (memoized)
+  const baseProjects = useMemo(
+    () => (projects && projects.length > 0 ? projects : publicProjects || []),
+    [projects, publicProjects]
+  );
+  const isPublicOnly = !projects || projects.length === 0; // display-only mode when showing public feed
+
+  // Use projects from Redux state and map them (memoized)
+  const displayProjects = useMemo(
+    () => (baseProjects || []).map(mapProjectData),
+    [baseProjects]
+  );
   const [filteredProjects, setFilteredProjects] = useState(displayProjects);
 
-  const recommendedProjects = (recommendations || []).map(mapProjectData).length > 0 ? 
-    (recommendations || []).map(mapProjectData) :
-    displayProjects.filter(p => p.isFeatured || (p.matchScore || 0) >= 90).slice(0, 6);
+  const recommendedProjects =
+    (recommendations || []).map(mapProjectData).length > 0
+      ? (recommendations || []).map(mapProjectData)
+      : displayProjects
+          .filter((p) => p.isFeatured || (p.matchScore || 0) >= 90)
+          .slice(0, 6);
 
   const skillOptions = [
-    "React", "Node.js", "Python", "JavaScript", "TypeScript", "Vue.js", "Angular",
-    "Express", "Django", "Flask", "MongoDB", "PostgreSQL", "MySQL", "Redis",
-    "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "Jenkins",
-    "Git", "GraphQL", "REST API", "Microservices", "Blockchain", "Solidity",
-    "Machine Learning", "TensorFlow", "PyTorch", "Data Science", "AI", "NLP"
+    "React",
+    "Node.js",
+    "Python",
+    "JavaScript",
+    "TypeScript",
+    "Vue.js",
+    "Angular",
+    "Express",
+    "Django",
+    "Flask",
+    "MongoDB",
+    "PostgreSQL",
+    "MySQL",
+    "Redis",
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Terraform",
+    "Jenkins",
+    "Git",
+    "GraphQL",
+    "REST API",
+    "Microservices",
+    "Blockchain",
+    "Solidity",
+    "Machine Learning",
+    "TensorFlow",
+    "PyTorch",
+    "Data Science",
+    "AI",
+    "NLP",
   ];
 
-  const statusOptions = [
-    { value: "all", label: "All Status" },
-    { value: "Active", label: "Active" },
-    { value: "Upcoming", label: "Upcoming" },
-    { value: "Draft", label: "Draft" }
-  ];
+  // Build select options with metadata when available; keep current defaults otherwise
+  const statusOptions = projectMetadata?.statuses?.length
+    ? [
+        { value: "all", label: "All Status" },
+        ...projectMetadata.statuses.map((s) => ({
+          value: s.label,
+          label: s.label,
+        })),
+      ]
+    : [
+        { value: "all", label: "All Status" },
+        { value: "Active", label: "Active" },
+        { value: "Upcoming", label: "Upcoming" },
+        { value: "Draft", label: "Draft" },
+      ];
 
-  const priorityOptions = [
-    { value: "all", label: "All Priority" },
-    { value: "High", label: "High Priority" },
-    { value: "Medium", label: "Medium Priority" },
-    { value: "Low", label: "Low Priority" }
-  ];
+  const priorityOptions = projectMetadata?.priorities?.length
+    ? [
+        { value: "all", label: "All Priority" },
+        ...projectMetadata.priorities.map((p) => ({
+          value: p.label,
+          label: p.label,
+        })),
+      ]
+    : [
+        { value: "all", label: "All Priority" },
+        { value: "High", label: "High Priority" },
+        { value: "Medium", label: "Medium Priority" },
+        { value: "Low", label: "Low Priority" },
+      ];
 
   const locationOptions = [
     { value: "all", label: "All Locations" },
     { value: "Remote", label: "Remote" },
     { value: "San Francisco, CA", label: "San Francisco, CA" },
     { value: "New York, NY", label: "New York, NY" },
-    { value: "Austin, TX", label: "Austin, TX" }
+    { value: "Austin, TX", label: "Austin, TX" },
   ];
 
   const sortOptions = [
@@ -168,12 +241,20 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
     { value: "deadline", label: "Deadline" },
     { value: "budget", label: "Budget (High to Low)" },
     { value: "rating", label: "Rating" },
-    { value: "applicants", label: "Fewest Applicants" }
+    { value: "applicants", label: "Fewest Applicants" },
   ];
 
   useEffect(() => {
     filterProjects();
-  }, [searchTerm, selectedSkills, selectedStatus, selectedPriority, selectedLocation, sortBy, displayProjects]);
+  }, [
+    searchTerm,
+    selectedSkills,
+    selectedStatus,
+    selectedPriority,
+    selectedLocation,
+    sortBy,
+    displayProjects,
+  ]);
 
   // Debounce search input for better UX
   useEffect(() => {
@@ -187,26 +268,38 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
   }, [displayProjects]);
 
   const filterProjects = () => {
-    let filtered = displayProjects.filter(project => {
-      const matchesSearch = 
+    let filtered = displayProjects.filter((project) => {
+      const matchesSearch =
         project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.roleNeeded?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.company?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesSkills = selectedSkills.length === 0 || 
-        selectedSkills.some(skill => 
-          project.tags?.some(tag => 
+      const matchesSkills =
+        selectedSkills.length === 0 ||
+        selectedSkills.some((skill) =>
+          project.tags?.some((tag) =>
             tag.toLowerCase().includes(skill.toLowerCase())
           )
         );
 
-      const matchesStatus = selectedStatus === "all" || project.status === selectedStatus;
-      const matchesPriority = selectedPriority === "all" || project.priority === selectedPriority;
-      const matchesLocation = selectedLocation === "all" || 
-        (selectedLocation === "Remote" ? project.isRemote : project.location === selectedLocation);
+      const matchesStatus =
+        selectedStatus === "all" || project.status === selectedStatus;
+      const matchesPriority =
+        selectedPriority === "all" || project.priority === selectedPriority;
+      const matchesLocation =
+        selectedLocation === "all" ||
+        (selectedLocation === "Remote"
+          ? project.isRemote
+          : project.location === selectedLocation);
 
-      return matchesSearch && matchesSkills && matchesStatus && matchesPriority && matchesLocation;
+      return (
+        matchesSearch &&
+        matchesSkills &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesLocation
+      );
     });
 
     // Sort projects
@@ -217,8 +310,12 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
         case "deadline":
           return new Date(a.deadline) - new Date(b.deadline);
         case "budget":
-          const aBudget = parseInt(a.budget.split('-')[0].replace(/[^0-9]/g, ''));
-          const bBudget = parseInt(b.budget.split('-')[0].replace(/[^0-9]/g, ''));
+          const aBudget = parseInt(
+            a.budget.split("-")[0].replace(/[^0-9]/g, "")
+          );
+          const bBudget = parseInt(
+            b.budget.split("-")[0].replace(/[^0-9]/g, "")
+          );
           return bBudget - aBudget;
         case "rating":
           return b.rating - a.rating;
@@ -235,63 +332,213 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
 
   const handleApplyToProject = async (projectId) => {
     try {
-      await dispatch(applyToProject({ projectId, coverLetter: "I am interested in this project" })).unwrap();
+      await dispatch(
+        applyToProject({
+          projectId,
+          coverLetter: "I am interested in this project",
+        })
+      ).unwrap();
       if (!appliedProjects.includes(projectId)) {
-        setAppliedProjects(prev => [...prev, projectId]);
+        setAppliedProjects((prev) => [...prev, projectId]);
       }
-      setApplicationStatusByProjectId(prev => ({ ...prev, [projectId]: "Applied" }));
+      setApplicationStatusByProjectId((prev) => ({
+        ...prev,
+        [projectId]: "Applied",
+      }));
       // Save to localStorage
-      localStorage.setItem('appliedProjects', JSON.stringify([...appliedProjects, projectId]));
-      toast.success("Application submitted successfully!");
+      localStorage.setItem(
+        "appliedProjects",
+        JSON.stringify([...appliedProjects, projectId])
+      );
+      // Refresh projects so server-side applicantsCount reflects immediately
+      try {
+        if (isPublicOnly) {
+          await dispatch(require("../slice/projectSlice").getPublicProjects()).unwrap();
+        } else {
+          await dispatch(require("../slice/projectSlice").listProjects()).unwrap();
+        }
+      } catch {}
+      // Avoid duplicate toasts: rely on global message handler
       console.log(`Applied to project ${projectId}`);
     } catch (error) {
-      console.error('Failed to apply to project:', error);
-      toast.error(`Failed to apply to project: ${error.message}`);
+      console.error("Failed to apply to project:", error);
+      // Avoid duplicate toasts: rely on global error handler
     }
   };
 
-  const handleWithdrawApplication = (projectId) => {
-    setAppliedProjects(prev => prev.filter(id => id !== projectId));
-    setApplicationStatusByProjectId(prev => {
-      const next = { ...prev };
-      delete next[projectId];
-      return next;
-    });
+  const handleWithdrawApplication = async (projectId) => {
+    try {
+      const res = await dispatch(withdrawApplication({ projectId })).unwrap();
+      setAppliedProjects((prev) => prev.filter((id) => id !== projectId));
+      setApplicationStatusByProjectId((prev) => {
+        const next = { ...prev };
+        delete next[projectId];
+        return next;
+      });
+      // Persist to localStorage
+      try {
+        const updated = (appliedProjects || []).filter((id) => id !== projectId);
+        localStorage.setItem("appliedProjects", JSON.stringify(updated));
+      } catch {}
+
+      // Refresh projects so server-side applicantsCount reflects immediately
+      try {
+        if (isPublicOnly) {
+          await dispatch(require("../slice/projectSlice").getPublicProjects()).unwrap();
+        } else {
+          await dispatch(require("../slice/projectSlice").listProjects()).unwrap();
+        }
+      } catch {}
+      // Avoid duplicate toasts: rely on global message handler using res.message
+    } catch (e) {
+      toast.error(e?.message || "Failed to withdraw application");
+    }
   };
 
-  const handleOpenDetails = (project) => {
+  const handleOpenDetails = async (project) => {
     setSelectedProject(project);
     setShowDetailsModal(true);
+    if (!isPublicOnly && project?.id) {
+      try {
+        const res = await dispatch(getProjectComments(project.id)).unwrap();
+        setProjectComments((prev) => ({
+          ...prev,
+          [project.id]: res.comments || [],
+        }));
+        setShowComments((prev) => ({ ...prev, [project.id]: true }));
+      } catch (e) {
+        // silent fail
+      }
+    }
   };
 
   const handleCloseDetails = () => {
     setShowDetailsModal(false);
     setSelectedProject(null);
+    setNewCommentText("");
   };
 
-  const canJoinGroupChat = (projectId) => applicationStatusByProjectId[projectId] === "Accepted";
+  const canJoinGroupChat = (projectId) =>
+    applicationStatusByProjectId[projectId] === "Accepted";
 
   const handleSaveProject = (projectId) => {
-    setSavedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
+    (async () => {
+      try {
+        const isSavedServer = Array.isArray(saves) && (saves.includes(projectId) || saves.some((s) => (
+          s === projectId || s?.projectId === projectId || s?.project?.id === projectId || s?.id === projectId
+        )));
+        if (isSavedServer) {
+          await dispatch(removeProjectSave({ projectId })).unwrap();
+        } else {
+          await dispatch(addProjectSave({ projectId })).unwrap();
+        }
+        try { await dispatch(getProjectSaves()).unwrap(); } catch {}
+      } catch (e) {
+        // fallback to local toggle if API fails
+        setSavedProjects((prev) =>
+          prev.includes(projectId)
+            ? prev.filter((id) => id !== projectId)
+            : [...prev, projectId]
+        );
+      }
+    })();
+  };
+
+  const isProjectFavorited = (projectId) => {
+    if (!Array.isArray(favorites)) return false;
+    return (
+      favorites.includes(projectId) ||
+      favorites.some(
+        (f) =>
+          f === projectId ||
+          f?.projectId === projectId ||
+          f?.project?.id === projectId ||
+          f?.id === projectId
+      )
     );
   };
 
   const handleToggleFavorite = async (projectId) => {
     try {
-      const isFavorited = favorites?.includes(projectId);
+      const isFavorited = isProjectFavorited(projectId);
       if (isFavorited) {
         await dispatch(removeProjectFavorite({ projectId })).unwrap();
-        toast.success("Removed from favorites");
       } else {
         await dispatch(addProjectFavorite({ projectId })).unwrap();
-        toast.success("Added to favorites");
+      }
+      // Refresh favorites and projects so counts reflect immediately
+      try {
+        await dispatch(
+          require("../slice/projectSlice").getProjectFavorites()
+        ).unwrap();
+      } catch {}
+      if (isPublicOnly) {
+        try {
+          await dispatch(
+            require("../slice/projectSlice").getPublicProjects()
+          ).unwrap();
+        } catch {}
+      } else {
+        try {
+          await dispatch(
+            require("../slice/projectSlice").listProjects()
+          ).unwrap();
+        } catch {}
       }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      console.error("Failed to toggle favorite:", error);
       toast.error(`Failed to toggle favorite: ${error.message}`);
+    }
+  };
+
+  const buildProjectUrl = (project) => {
+    try {
+      const origin = window?.location?.origin || '';
+      return `${origin}/projects/${project?.id ?? ''}`;
+    } catch {
+      return `/projects/${project?.id ?? ''}`;
+    }
+  };
+
+  const handleShareProject = async (project) => {
+    const url = buildProjectUrl(project);
+    const title = project?.title || 'Project';
+    const text = project?.description || 'Check out this project on SkillBridge Pro';
+    try {
+      if (navigator?.share) {
+        await navigator.share({ title, text, url });
+        return;
+      }
+    } catch (err) {
+      // fall through to clipboard copy
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link copied to clipboard');
+    } catch (err) {
+      toast.error('Failed to share link');
+    }
+  };
+
+  const handleAddComment = async () => {
+    if (!selectedProject?.id || !newCommentText.trim()) return;
+    try {
+      await dispatch(
+        addProjectComment({
+          projectId: selectedProject.id,
+          content: newCommentText.trim(),
+        })
+      ).unwrap();
+      setNewCommentText("");
+      const res = await dispatch(
+        getProjectComments(selectedProject.id)
+      ).unwrap();
+      setProjectComments((prev) => ({
+        ...prev,
+        [selectedProject.id]: res.comments || [],
+      }));
+    } catch (e) {
+      // silent fail
     }
   };
 
@@ -304,69 +551,89 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
     setSortBy("relevance");
   };
 
+  // Build a robust unique favorites set from varying API shapes
+  const favoriteIdsSet = new Set(
+    Array.isArray(favorites)
+      ? favorites
+          .map((f) => {
+            if (typeof f === "number") return f;
+            if (f?.projectId) return f.projectId;
+            if (f?.project?.id) return f.project.id;
+            if (f?.id && displayProjects.some((p) => p.id === f.id))
+              return f.id;
+            return null;
+          })
+          .filter((id) => typeof id === "number")
+      : []
+  );
+
   const stats = {
     total: displayProjects.length,
     applied: appliedProjects.length,
     saved: savedProjects.length,
-    favorites: favorites?.length || 0,
-    matches: filteredProjects.length
+    favorites: favoriteIdsSet.size,
+    matches: filteredProjects.length,
   };
 
-  // Show loading state
-  if (loading) {
-    return <CircularLoader />;
-  }
-
-  // Redirect to home on error
-  useEffect(() => {
-    if (error) {
-      navigate('/');
-    }
-  }, [error, navigate]);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      <div className="px-6 py-8 space-y-8 max-w-7xl mx-auto">
+    <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
+      <div className='px-6 py-8 space-y-8 max-w-7xl mx-auto'>
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-                <Briefcase className="w-8 h-8 text-white" />
+        <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10'>
+          <div className='flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4'>
+            <div className='flex items-center gap-4'>
+              <div className='p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
+                <Briefcase className='w-8 h-8 text-white' />
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  {activeTab === "discover" ? "Discover Projects" : "Your Applications"}
+                <h1 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+                  {activeTab === "discover"
+                    ? "Discover Projects"
+                    : "Your Applications"}
                 </h1>
-                <p className="text-gray-300 text-sm">
-                  {activeTab === "discover" ? "Find and apply to projects that match your skills and interests" : "Track your application statuses and next steps"}
+                <p className='text-gray-300 text-sm'>
+                  {activeTab === "discover"
+                    ? "Find and apply to projects that match your skills and interests"
+                    : "Track your application statuses and next steps"}
                 </p>
               </div>
             </div>
-            
-            <div className="flex flex-wrap gap-3">
-              <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
-                <Target className="w-4 h-4 text-green-400" />
-                <span className="text-sm text-gray-300">
+
+            <div className='flex flex-wrap gap-3'>
+              <div className='flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg'>
+                <Target className='w-4 h-4 text-green-400' />
+                <span className='text-sm text-gray-300'>
                   {stats.matches} matches found
                 </span>
               </div>
-              <div className="bg-white/10 rounded-xl p-1">
-                <div className="grid grid-cols-2 gap-1">
+              {user?.role === "developer" && myInvites?.length > 0 && (
+                <div className='flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg'>
+                  <Users className='w-4 h-4 text-blue-400' />
+                  <span className='text-sm text-gray-300'>
+                    Invites: {myInvites.length}
+                  </span>
+                </div>
+              )}
+              <div className='bg-white/10 rounded-xl p-1'>
+                <div className='grid grid-cols-2 gap-1'>
                   <Button
                     onClick={() => setActiveTab("discover")}
-                    variant="ghost"
+                    variant='ghost'
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                      activeTab === "discover" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
+                      activeTab === "discover"
+                        ? "bg-white/20 text-white"
+                        : "text-gray-300 hover:bg-white/10"
                     }`}
                   >
                     Discover
                   </Button>
                   <Button
                     onClick={() => setActiveTab("applications")}
-                    variant="ghost"
+                    variant='ghost'
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                      activeTab === "applications" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"
+                      activeTab === "applications"
+                        ? "bg-white/20 text-white"
+                        : "text-gray-300 hover:bg-white/10"
                     }`}
                   >
                     Applications ({appliedProjects.length})
@@ -374,9 +641,11 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
                 </div>
               </div>
               <Button
-                onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-                variant="ghost"
-                className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
+                onClick={() =>
+                  setViewMode(viewMode === "grid" ? "list" : "grid")
+                }
+                variant='ghost'
+                className='bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2'
               >
                 {viewMode === "grid" ? "List View" : "Grid View"}
               </Button>
@@ -385,63 +654,65 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                <Briefcase className="w-5 h-5 text-white" />
+        <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+          <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg'>
+                <Briefcase className='w-5 h-5 text-white' />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
-                <p className="text-sm text-gray-400">Total Projects</p>
+                <p className='text-2xl font-bold text-white'>{stats.total}</p>
+                <p className='text-sm text-gray-400'>Total Projects</p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-white" />
+
+          <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg'>
+                <CheckCircle className='w-5 h-5 text-white' />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.applied}</p>
-                <p className="text-sm text-gray-400">Applied</p>
+                <p className='text-2xl font-bold text-white'>{stats.applied}</p>
+                <p className='text-sm text-gray-400'>Applied</p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-                <Bookmark className="w-5 h-5 text-white" />
+
+          <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg'>
+                <Bookmark className='w-5 h-5 text-white' />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.saved}</p>
-                <p className="text-sm text-gray-400">Saved</p>
+                <p className='text-2xl font-bold text-white'>{stats.saved}</p>
+                <p className='text-sm text-gray-400'>Saved</p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg">
-                <Heart className="w-5 h-5 text-white" />
+
+          <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg'>
+                <Heart className='w-5 h-5 text-white' />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.favorites}</p>
-                <p className="text-sm text-gray-400">Favorites</p>
+                <p className='text-2xl font-bold text-white'>
+                  {stats.favorites}
+                </p>
+                <p className='text-sm text-gray-400'>Favorites</p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg">
-                <Target className="w-5 h-5 text-white" />
+
+          <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
+            <div className='flex items-center gap-3'>
+              <div className='p-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg'>
+                <Target className='w-5 h-5 text-white' />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.matches}</p>
-                <p className="text-sm text-gray-400">Matches</p>
+                <p className='text-2xl font-bold text-white'>{stats.matches}</p>
+                <p className='text-sm text-gray-400'>Matches</p>
               </div>
             </div>
           </div>
@@ -449,178 +720,204 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
 
         {/* Search and Filters */}
         {activeTab === "discover" && (
-        <div className="bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10">
-            <div className="flex flex-col lg:flex-row gap-4 sticky top-4 z-20">
-              <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search projects by title, description, company, or role..."
-                className="w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <div className='bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10'>
+            <div className='flex flex-col lg:flex-row gap-4 sticky top-4 z-20'>
+              <div className='flex-1 relative'>
+                <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
+                <input
+                  type='text'
+                  placeholder='Search projects by title, description, company, or role...'
+                  className='w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
                   value={internalSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
-              />
-            </div>
-            
-              <div className="flex gap-2 items-center">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {sortOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              
-              <Button
-                onClick={() => setShowFilters(!showFilters)}
-                className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
-              >
-                <Filter className="w-4 h-4" />
-                Filters
-              </Button>
+                />
+              </div>
 
-                <div className="hidden md:flex bg-white/10 rounded-lg overflow-hidden">
+              <div className='flex gap-2 items-center'>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+                >
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <Button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className='bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2'
+                >
+                  <Filter className='w-4 h-4' />
+                  Filters
+                </Button>
+
+                <div className='hidden md:flex bg-white/10 rounded-lg overflow-hidden'>
                   <Button
                     onClick={() => setViewMode("grid")}
                     className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "grid" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
-                    title="Grid view"
+                    title='Grid view'
                   >
-                    <LayoutGrid className="w-4 h-4" /> Grid
+                    <LayoutGrid className='w-4 h-4' /> Grid
                   </Button>
                   <Button
                     onClick={() => setViewMode("list")}
                     className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "list" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
-                    title="List view"
+                    title='List view'
                   >
-                    <List className="w-4 h-4" /> List
+                    <List className='w-4 h-4' /> List
                   </Button>
                 </div>
-            </div>
-          </div>
-
-          {/* Advanced Filters */}
-          {showFilters && (
-            <div className="mt-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {statusOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                
-                <select
-                  value={selectedPriority}
-                  onChange={(e) => setSelectedPriority(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {priorityOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                
-                <select
-                  value={selectedLocation}
-                  onChange={(e) => setSelectedLocation(e.target.value)}
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {locationOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                
-                <Button
-                  onClick={clearFilters}
-                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg transition-colors duration-300"
-                >
-                  Clear Filters
-                </Button>
               </div>
+            </div>
 
-              {/* Skills Filter */}
-              <div>
-                <label className="block text-gray-300 mb-2">Filter by Skills</label>
-                <div className="flex flex-wrap gap-2">
-                  {skillOptions.map(skill => (
-                    <Button
-                      key={skill}
-                      onClick={() => {
-                        setSelectedSkills(prev => 
-                          prev.includes(skill) 
-                            ? prev.filter(s => s !== skill)
-                            : [...prev, skill]
-                        );
-                      }}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-                        selectedSkills.includes(skill)
-                          ? "bg-blue-500 text-white"
-                          : "bg-white/10 text-gray-300 hover:bg-white/20"
-                      }`}
-                    >
-                      {skill}
-                    </Button>
-                  ))}
+            {/* Advanced Filters */}
+            {showFilters && (
+              <div className='mt-6 space-y-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  >
+                    {statusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value)}
+                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  >
+                    {priorityOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  >
+                    {locationOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <Button
+                    onClick={clearFilters}
+                    className='bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg transition-colors duration-300'
+                  >
+                    Clear Filters
+                  </Button>
+                </div>
+
+                {/* Skills Filter */}
+                <div>
+                  <label className='block text-gray-300 mb-2'>
+                    Filter by Skills
+                  </label>
+                  <div className='flex flex-wrap gap-2'>
+                    {skillOptions.map((skill) => (
+                      <Button
+                        key={skill}
+                        onClick={() => {
+                          setSelectedSkills((prev) =>
+                            prev.includes(skill)
+                              ? prev.filter((s) => s !== skill)
+                              : [...prev, skill]
+                          );
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
+                          selectedSkills.includes(skill)
+                            ? "bg-blue-500 text-white"
+                            : "bg-white/10 text-gray-300 hover:bg-white/20"
+                        }`}
+                      >
+                        {skill}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         )}
 
         {/* Recommended Projects */}
         {activeTab === "discover" && recommendedProjects.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold text-white">Recommended for you</h2>
-            <div className="overflow-x-auto">
-              <div className="flex gap-4 min-w-full snap-x snap-mandatory pb-2">
-                {recommendedProjects.map(project => (
-                  <div key={project.id} className="min-w-[280px] bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300 relative snap-start">
+          <div className='space-y-3'>
+            <h2 className='text-xl font-semibold text-white'>
+              Recommended for you
+            </h2>
+            <div className='overflow-x-auto'>
+              <div className='flex gap-4 min-w-full snap-x snap-mandatory pb-2'>
+                {recommendedProjects.map((project, idx) => (
+                  <div
+                    key={project.id ?? idx}
+                    className='min-w-[280px] bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300 relative snap-start'
+                  >
                     {project.isFeatured && (
-                      <span className="absolute top-3 right-3 px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Featured</span>
+                      <span className='absolute top-3 right-3 px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'>
+                        Featured
+                      </span>
                     )}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                        <Briefcase className="w-4 h-4 text-white" />
+                    <div className='flex items-center gap-2 mb-2'>
+                      <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
+                        <Briefcase className='w-4 h-4 text-white' />
                       </div>
-                      <h3 className="text-white font-semibold truncate">{project.title}</h3>
+                      <h3 className='text-white font-semibold truncate'>
+                        {project.title}
+                      </h3>
                     </div>
-                    <p className="text-gray-300 text-sm line-clamp-3 mb-3">{project.description}</p>
-                    <div className="flex items-center justify-between text-xs text-gray-400">
-                      <span className="flex items-center gap-1"><Users className="w-3 h-3" />{project.applicantsCount}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
-                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
+                    <p className='text-gray-300 text-sm line-clamp-3 mb-3'>
+                      {project.description}
+                    </p>
+                    <div className='flex items-center justify-between text-xs text-gray-400'>
+                      <span className='flex items-center gap-1'>
+                        <Users className='w-3 h-3' />
+                        {project.applicantsCount}
+                      </span>
+                      <span className='flex items-center gap-1'>
+                        <Clock className='w-3 h-3' />
+                        {project.duration}
+                      </span>
+                      <span className='flex items-center gap-1'>
+                        <DollarSign className='w-3 h-3' />
+                        {project.budget}
+                      </span>
                     </div>
-                    <div className="flex gap-2 mt-3">
+                    <div className='flex gap-2 mt-3'>
                       <Button
                         onClick={() => handleOpenDetails(project)}
-                        className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                        className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300'
                       >
                         View
                       </Button>
-                      <Button
-                        onClick={() => handleApplyToProject(project.id)}
-                        disabled={appliedProjects.includes(project.id)}
-                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                          appliedProjects.includes(project.id)
-                            ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                            : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
-                        }`}
-                      >
-                        {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
-                      </Button>
+                      {!isPublicOnly && (
+                        <Button
+                          onClick={() => handleApplyToProject(project.id)}
+                          disabled={appliedProjects.includes(project.id)}
+                          className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                            appliedProjects.includes(project.id)
+                              ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                              : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                          }`}
+                        >
+                          {appliedProjects.includes(project.id)
+                            ? "Applied"
+                            : "Apply"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -632,95 +929,143 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
         {/* Projects Grid/List or Applications */}
         {activeTab === "discover" ? (
           viewMode === "grid" ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {loading ? (
-                Array.from({ length: 6 }).map((_, idx) => (
-                  <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-pulse">
-                    <div className="h-4 w-24 bg-white/10 rounded mb-4" />
-                    <div className="h-5 w-3/4 bg-white/10 rounded mb-2" />
-                    <div className="h-5 w-2/3 bg-white/10 rounded mb-4" />
-                    <div className="h-2 w-full bg-white/10 rounded mb-2" />
-                    <div className="h-2 w-5/6 bg-white/10 rounded mb-2" />
-                    <div className="h-2 w-2/3 bg-white/10 rounded" />
-                  </div>
-                ))
-              ) : (
-                filteredProjects.map((project) => (
-                  <div key={project.id} className="relative h-full">
-                    {/* Urgent badge only (Rewards moved into header chips) */}
-                    {project.isUrgent && (
-                      <div className="absolute top-3 right-3 z-10 px-2 py-1 text-[10px] rounded-full bg-red-500/20 text-red-300 border border-red-500/30">
-                        Urgent
-                      </div>
-                    )}
+            <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+              {filteredProjects.map((project, idx) => (
+                <div key={project.id ?? idx} className='relative h-full'>
+                  {/* Urgent badge only (Rewards moved into header chips) */}
+                  {project.isUrgent && (
+                    <div className='absolute top-3 right-3 z-10 px-2 py-1 text-[10px] rounded-full bg-red-500/20 text-red-300 border border-red-500/30'>
+                      Urgent
+                    </div>
+                  )}
 
-                    {/* Compact Card */}
-                    <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col">
-                      {/* Header */}
-                      <div className="p-5 border-b border-white/10">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0">
-                              <Briefcase className="w-4 h-4 text-white" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="text-white font-semibold truncate">{project.title}</h3>
-                              <div className="mt-1 flex items-center gap-2 flex-wrap">
-                                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                  project.status === "Active" ? "bg-green-500/20 text-green-300" :
-                                  project.status === "Upcoming" ? "bg-yellow-500/20 text-yellow-300" :
-                                  "bg-gray-500/20 text-gray-300"
-                                }`}>
-                                  {project.status}
+                  {/* Compact Card */}
+                  <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col'>
+                    {/* Header */}
+                    <div className='p-5 border-b border-white/10'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='flex items-center gap-3 min-w-0'>
+                          <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0'>
+                            <Briefcase className='w-4 h-4 text-white' />
+                          </div>
+                          <div className='min-w-0'>
+                            <h3 className='text-white font-semibold truncate'>
+                              {project.title}
+                            </h3>
+                            <div className='mt-1 flex items-center gap-2 flex-wrap'>
+                              <span
+                                className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                  project.status === "Active"
+                                    ? "bg-green-500/20 text-green-300"
+                                    : project.status === "Upcoming"
+                                      ? "bg-yellow-500/20 text-yellow-300"
+                                      : "bg-gray-500/20 text-gray-300"
+                                }`}
+                              >
+                                {project.status}
+                              </span>
+                              {project.isFeatured && (
+                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300'>
+                                  Featured
                                 </span>
-                                {project.isFeatured && (
-                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300">
-                                    Featured
-                                  </span>
-                                )}
-                                {project.benefits && (
-                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-300">
-                                    Rewards
-                                  </span>
-                                )}
-                              </div>
+                              )}
+                              {project.benefits && (
+                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-300'>
+                                  Rewards
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
+                        {!isPublicOnly && (
+                          <div className='flex gap-2 ml-auto'>
+                            <Button
+                              onClick={() => handleSaveProject(project.id)}
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                savedProjects.includes(project.id)
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : "bg-white/10 text-gray-400 hover:bg-white/20"
+                              }`}
+                              title={
+                                savedProjects.includes(project.id)
+                                  ? "Saved"
+                                  : "Save"
+                              }
+                            >
+                              <Bookmark
+                                className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`}
+                              />
+                            </Button>
+                            <Button
+                              onClick={() => handleToggleFavorite(project.id)}
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                isProjectFavorited(project.id)
+                                  ? "bg-pink-500/20 text-pink-400"
+                                  : "bg-white/10 text-gray-400 hover:bg-white/20"
+                              }`}
+                              title={
+                                isProjectFavorited(project.id)
+                                  ? "Favorited"
+                                  : "Favorite"
+                              }
+                            >
+                              <Heart
+                                className={`w-4 h-4 ${isProjectFavorited(project.id) ? "fill-current" : ""}`}
+                              />
+                            </Button>
+                            <Button
+                              className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'
+                              onClick={() => handleShareProject(project)}
+                            >
+                              <Share2 className='w-4 h-4' />
+                            </Button>
+                          </div>
+                        )}
                       </div>
+                    </div>
 
-                      {/* Body minimal info */}
-                      <div className="p-5 flex-1 flex flex-col gap-3">
-                        {/* Tags (up to 3) */}
-                        <div className="flex flex-wrap gap-1.5">
-                          {project.tags.slice(0, 3).map((tag, idx) => (
-                            <span key={idx} className="px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500">
-                              {tag}
-                            </span>
-                          ))}
-                          {project.tags.length > 3 && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10">
-                              +{project.tags.length - 3}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Meta Row (2 items only for compactness) */}
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
-                        </div>
-                      </div>
-
-                      {/* Footer actions pinned */}
-                      <div className="p-5 pt-0 mt-auto">
-                        <div className="flex gap-2">
-                          <Button
-                            onClick={() => handleOpenDetails(project)}
-                            className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300"
+                    {/* Body minimal info */}
+                    <div className='p-5 flex-1 flex flex-col gap-3'>
+                      {/* Tags (up to 3) */}
+                      <div className='flex flex-wrap gap-1.5'>
+                        {project.tags.slice(0, 3).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className='px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500'
                           >
-                            View Details
-                          </Button>
+                            {tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 3 && (
+                          <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
+                            +{project.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Meta Row (2 items only for compactness) */}
+                      <div className='flex items-center justify-between text-xs text-gray-400'>
+                        <span className='flex items-center gap-1'>
+                          <DollarSign className='w-3 h-3' />
+                          {project.budget}
+                        </span>
+                        <span className='flex items-center gap-1'>
+                          <Clock className='w-3 h-3' />
+                          {project.duration}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer actions pinned */}
+                    <div className='p-5 pt-0 mt-auto'>
+                      <div className='flex items-center gap-2'>
+                        <Button
+                          onClick={() => handleOpenDetails(project)}
+                          className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300'
+                        >
+                          View Details
+                        </Button>
+                        {!isPublicOnly && (
                           <Button
                             onClick={() => handleApplyToProject(project.id)}
                             disabled={appliedProjects.includes(project.id)}
@@ -730,131 +1075,151 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
                                 : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
                             }`}
                           >
-                            {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
+                            {appliedProjects.includes(project.id)
+                              ? "Applied"
+                              : "Apply"}
                           </Button>
-                        </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredProjects.map((project) => (
-                <div key={project.id} className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/5 transition-all duration-300">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-white">{project.title}</h3>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          project.status === "Active" ? "bg-green-500/20 text-green-400" :
-                          project.status === "Upcoming" ? "bg-yellow-500/20 text-yellow-400" :
-                          "bg-gray-500/20 text-gray-400"
-                        }`}>
+            <div className='space-y-4'>
+              {filteredProjects.map((project, idx) => (
+                <div
+                  key={project.id ?? idx}
+                  className='bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/5 transition-all duration-300'
+                >
+                  <div className='flex items-start justify-between'>
+                    <div className='flex-1'>
+                      <div className='flex items-center gap-3 mb-2'>
+                        <h3 className='text-xl font-bold text-white'>
+                          {project.title}
+                        </h3>
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            project.status === "Active"
+                              ? "bg-green-500/20 text-green-400"
+                              : project.status === "Upcoming"
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-gray-500/20 text-gray-400"
+                          }`}
+                        >
                           {project.status}
                         </span>
                         {project.isFeatured && (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400">
+                          <span className='px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400'>
                             Featured
                           </span>
                         )}
                         {project.benefits && (
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400">
+                          <span className='px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400'>
                             Rewards
                           </span>
                         )}
                       </div>
-                      
-                      <p className="text-gray-300 mb-3">{project.description}</p>
-                      
-                      <div className="flex flex-wrap gap-2 mb-3">
+
+                      <p className='text-gray-300 mb-3'>
+                        {project.description}
+                      </p>
+
+                      <div className='flex flex-wrap gap-2 mb-3'>
                         {project.tags.slice(0, 4).map((tag, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500"
+                            className='px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500'
                           >
                             {tag}
                           </span>
                         ))}
                         {project.tags.length > 4 && (
-                          <span className="px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10">
+                          <span className='px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10'>
                             +{project.tags.length - 4}
                           </span>
                         )}
                       </div>
-                      
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <DollarSign className="w-4 h-4" />
+
+                      <div className='flex flex-wrap items-center gap-4 text-sm text-gray-400'>
+                        <span className='flex items-center gap-1'>
+                          <DollarSign className='w-4 h-4' />
                           {project.budget}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
+                        <span className='flex items-center gap-1'>
+                          <MapPin className='w-4 h-4' />
                           {project.location}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
+                        <span className='flex items-center gap-1'>
+                          <Clock className='w-4 h-4' />
                           {project.duration}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="w-4 h-4" />
+                        <span className='flex items-center gap-1'>
+                          <Users className='w-4 h-4' />
                           {project.applicantsCount} applicants
                         </span>
                       </div>
                       {project.benefits && (
-                        <p className="text-xs text-green-300 mt-2">Benefits: {project.benefits}</p>
+                        <p className='text-xs text-green-300 mt-2'>
+                          Benefits: {project.benefits}
+                        </p>
                       )}
                     </div>
-                    
-                    <div className="flex flex-col gap-2 ml-4">
+
+                    <div className='flex flex-col gap-2 ml-4'>
                       <Button
                         onClick={() => handleOpenDetails(project)}
-                        className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white"
+                        className='px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white'
                       >
                         View Details
                       </Button>
-                      <Button
-                        onClick={() => handleApplyToProject(project.id)}
-                        disabled={appliedProjects.includes(project.id)}
-                        className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                          appliedProjects.includes(project.id)
-                            ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                            : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105"
-                        }`}
-                      >
-                        {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
-                      </Button>
-                      
-                      <div className="flex gap-2">
+                      {!isPublicOnly && (
                         <Button
-                          onClick={() => handleSaveProject(project.id)}
-                          className={`p-2 rounded-lg transition-colors duration-300 ${
-                            savedProjects.includes(project.id)
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-white/10 text-gray-400 hover:bg-white/20"
+                          onClick={() => handleApplyToProject(project.id)}
+                          disabled={appliedProjects.includes(project.id)}
+                          className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                            appliedProjects.includes(project.id)
+                              ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                              : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105"
                           }`}
                         >
-                          <Bookmark className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`} />
+                          {appliedProjects.includes(project.id)
+                            ? "Applied"
+                            : "Apply Now"}
                         </Button>
-                        
-                        <Button
-                          onClick={() => handleToggleFavorite(project.id)}
-                          className={`p-2 rounded-lg transition-colors duration-300 ${
-                            favorites.includes(project.id)
-                              ? "bg-pink-500/20 text-pink-400"
-                              : "bg-white/10 text-gray-400 hover:bg-white/20"
-                          }`}
-                        >
-                          <Heart className={`w-4 h-4 ${favorites.includes(project.id) ? "fill-current" : ""}`} />
-                        </Button>
-                        
-                        <Button 
-                          className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
-                        >
-                          <Share2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      )}
+                      {!isPublicOnly && (
+                        <div className='flex gap-2'>
+                          <Button
+                            onClick={() => handleSaveProject(project.id)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              savedProjects.includes(project.id)
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-white/10 text-gray-400 hover:bg-white/20"
+                            }`}
+                          >
+                            <Bookmark
+                              className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`}
+                            />
+                          </Button>
+                          <Button
+                            onClick={() => handleToggleFavorite(project.id)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              isProjectFavorited(project.id)
+                                ? "bg-pink-500/20 text-pink-400"
+                                : "bg-white/10 text-gray-400 hover:bg-white/20"
+                            }`}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${isProjectFavorited(project.id) ? "fill-current" : ""}`}
+                            />
+                          </Button>
+                          <Button className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'>
+                            <Share2 className='w-4 h-4' />
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -863,76 +1228,99 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
           )
         ) : (
           // Applications tab
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-white/5">
-                  <tr className="text-left text-gray-400 uppercase text-xs tracking-wider">
-                    <th className="px-6 py-4">Project</th>
-                    <th className="px-6 py-4">Company</th>
-                    <th className="px-6 py-4">Applied</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Actions</th>
+          <div className='bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden'>
+            <div className='overflow-x-auto'>
+              <table className='min-w-full'>
+                <thead className='bg-white/5'>
+                  <tr className='text-left text-gray-400 uppercase text-xs tracking-wider'>
+                    <th className='px-6 py-4'>Project</th>
+                    <th className='px-6 py-4'>Company</th>
+                    <th className='px-6 py-4'>Applied</th>
+                    <th className='px-6 py-4'>Status</th>
+                    <th className='px-6 py-4'>Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/10">
+                <tbody className='divide-y divide-white/10'>
                   {appliedProjects.map((projectId) => {
-                    const project = projects.find(p => p.id === projectId);
+                    const project = projects.find((p) => p.id === projectId);
                     if (!project) return null;
-                    const status = applicationStatusByProjectId[projectId] || "Applied";
+                    const status =
+                      applicationStatusByProjectId[projectId] || "Applied";
                     const statusColors = {
-                      Applied: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-                      Shortlisted: "bg-green-500/20 text-green-400 border-green-500/30",
-                      Interviewing: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-                      Accepted: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-                      Rejected: "bg-red-500/20 text-red-400 border-red-500/30"
+                      Applied:
+                        "bg-blue-500/20 text-blue-400 border-blue-500/30",
+                      Shortlisted:
+                        "bg-green-500/20 text-green-400 border-green-500/30",
+                      Interviewing:
+                        "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+                      Accepted:
+                        "bg-purple-500/20 text-purple-400 border-purple-500/30",
+                      Rejected: "bg-red-500/20 text-red-400 border-red-500/30",
                     };
                     return (
-                      <tr key={projectId} className="hover:bg-white/5 transition-colors duration-200">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                              <Briefcase className="w-4 h-4 text-white" />
+                      <tr
+                        key={projectId}
+                        className='hover:bg-white/5 transition-colors duration-200'
+                      >
+                        <td className='px-6 py-4'>
+                          <div className='flex items-center gap-3'>
+                            <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
+                              <Briefcase className='w-4 h-4 text-white' />
                             </div>
                             <div>
-                              <p className="text-white font-medium">{project.title}</p>
-                              <p className="text-gray-400 text-xs">{project.roleNeeded}</p>
+                              <p className='text-white font-medium'>
+                                {project.title}
+                              </p>
+                              <p className='text-gray-400 text-xs'>
+                                {project.roleNeeded}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-white">{project.company}</td>
-                        <td className="px-6 py-4 text-gray-300">Recently</td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}>
+                        <td className='px-6 py-4 text-white'>
+                          {project.company}
+                        </td>
+                        <td className='px-6 py-4 text-gray-300'>Recently</td>
+                        <td className='px-6 py-4'>
+                          <span
+                            className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}
+                          >
                             {status}
                           </span>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
+                        <td className='px-6 py-4'>
+                          <div className='flex items-center gap-2'>
                             <Button
                               onClick={() => handleOpenDetails(project)}
-                              className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
+                              className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'
                             >
                               View
                             </Button>
                             {canJoinGroupChat(projectId) ? (
                               <Button
-                                onClick={() => console.log("Joining group chat for", projectId)}
-                                className="p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300"
+                                onClick={() =>
+                                  console.log(
+                                    "Joining group chat for",
+                                    projectId
+                                  )
+                                }
+                                className='p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300'
                               >
                                 Join Group Chat
                               </Button>
                             ) : (
                               <Button
                                 disabled
-                                className="p-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed"
+                                className='p-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed'
                               >
                                 Group Chat Locked
                               </Button>
                             )}
                             <Button
-                              onClick={() => handleWithdrawApplication(projectId)}
-                              className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300"
+                              onClick={() =>
+                                handleWithdrawApplication(projectId)
+                              }
+                              className='p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300'
                             >
                               Withdraw
                             </Button>
@@ -943,7 +1331,12 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
                   })}
                   {appliedProjects.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-gray-400">No applications yet</td>
+                      <td
+                        colSpan='5'
+                        className='px-6 py-12 text-center text-gray-400'
+                      >
+                        No applications yet
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -954,11 +1347,15 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
 
         {/* No projects found */}
         {activeTab === "discover" && filteredProjects.length === 0 && (
-          <div className="text-center py-12">
-            <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No projects found</p>
-            <p className="text-gray-500 text-sm mt-2">
-              {searchTerm || selectedSkills.length > 0 || selectedStatus !== "all" || selectedPriority !== "all" || selectedLocation !== "all"
+          <div className='text-center py-12'>
+            <Briefcase className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+            <p className='text-gray-400 text-lg'>No projects found</p>
+            <p className='text-gray-500 text-sm mt-2'>
+              {searchTerm ||
+              selectedSkills.length > 0 ||
+              selectedStatus !== "all" ||
+              selectedPriority !== "all" ||
+              selectedLocation !== "all"
                 ? "Try adjusting your search terms or filters"
                 : "No projects are currently available"}
             </p>
@@ -967,77 +1364,104 @@ const DeveloperProjects = ({ user, projects, recommendations, favorites, dispatc
 
         {/* Details Modal */}
         {showDetailsModal && selectedProject && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-slate-900 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                    <Briefcase className="w-5 h-5 text-white" />
+          <div className='fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4'>
+            <div className='bg-slate-900 rounded-2xl border border-white/10 w-full max-w-3xl max-h-[90vh] overflow-y-auto'>
+              <div className='p-6 border-b border-white/10 flex items-center justify-between'>
+                <div className='flex items-center gap-3'>
+                  <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
+                    <Briefcase className='w-5 h-5 text-white' />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-semibold text-white">{selectedProject.title}</h3>
-                    <p className="text-gray-400 text-sm">{selectedProject.company} • {selectedProject.location}</p>
+                    <h3 className='text-2xl font-semibold text-white'>
+                      {selectedProject.title}
+                    </h3>
+                    <p className='text-gray-400 text-sm'>
+                      {selectedProject.company} • {selectedProject.location}
+                    </p>
                   </div>
                 </div>
-                <Button 
-                  onClick={handleCloseDetails} 
-                  className="bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300"
+                <Button
+                  onClick={handleCloseDetails}
+                  className='bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg transition-colors duration-300'
                 >
                   Close
                 </Button>
               </div>
 
-              <div className="p-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <p className="text-gray-400 text-xs mb-1">Budget</p>
-                    <p className="text-white font-semibold">{selectedProject.budget}</p>
+              <div className='p-6 space-y-6'>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                  <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                    <p className='text-gray-400 text-xs mb-1'>Budget</p>
+                    <p className='text-white font-semibold'>
+                      {selectedProject.budget}
+                    </p>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <p className="text-gray-400 text-xs mb-1">Duration</p>
-                    <p className="text-white font-semibold">{selectedProject.duration}</p>
+                  <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                    <p className='text-gray-400 text-xs mb-1'>Duration</p>
+                    <p className='text-white font-semibold'>
+                      {selectedProject.duration}
+                    </p>
                   </div>
-                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <p className="text-gray-400 text-xs mb-1">Applicants</p>
-                    <p className="text-white font-semibold">{selectedProject.applicantsCount}</p>
+                  <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                    <p className='text-gray-400 text-xs mb-1'>Applicants</p>
+                    <p className='text-white font-semibold'>
+                      {selectedProject.applicantsCount}
+                    </p>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-2">About the project</h4>
-                  <p className="text-gray-300 leading-relaxed">{selectedProject.description}</p>
+                  <h4 className='text-white font-semibold mb-2'>
+                    About the project
+                  </h4>
+                  <p className='text-gray-300 leading-relaxed'>
+                    {selectedProject.description}
+                  </p>
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-2">Tags</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedProject.tags.map((tag, idx) => (
-                      <span key={idx} className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">{tag}</span>
+                  <h4 className='text-white font-semibold mb-2'>Tags</h4>
+                  <div className='flex flex-wrap gap-2'>
+                    {(selectedProject.tags || []).map((tag, idx) => (
+                      <span
+                        key={idx}
+                        className='px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500'
+                      >
+                        {tag}
+                      </span>
                     ))}
                   </div>
                 </div>
                 {selectedProject.benefits && (
                   <div>
-                    <h4 className="text-white font-semibold mb-2">Rewards & Benefits</h4>
-                    <p className="text-green-300 text-sm">{selectedProject.benefits}</p>
+                    <h4 className='text-white font-semibold mb-2'>
+                      Rewards & Benefits
+                    </h4>
+                    <p className='text-green-300 text-sm'>
+                      {selectedProject.benefits}
+                    </p>
                   </div>
                 )}
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <Button 
-                    onClick={handleCloseDetails} 
-                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300"
+                <div className='flex items-center justify-end gap-2 pt-2'>
+                  <Button
+                    onClick={handleCloseDetails}
+                    className='px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors duration-300'
                   >
                     Close
                   </Button>
-                  <Button
-                    onClick={() => handleApplyToProject(selectedProject.id)}
-                    disabled={appliedProjects.includes(selectedProject.id)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                      appliedProjects.includes(selectedProject.id)
-                        ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                        : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
-                    }`}
-                  >
-                    {appliedProjects.includes(selectedProject.id) ? "Applied" : "Apply Now"}
-                  </Button>
+                  {!isPublicOnly && (
+                    <Button
+                      onClick={() => handleApplyToProject(selectedProject.id)}
+                      disabled={appliedProjects.includes(selectedProject.id)}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                        appliedProjects.includes(selectedProject.id)
+                          ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                      }`}
+                    >
+                      {appliedProjects.includes(selectedProject.id)
+                        ? "Applied"
+                        : "Apply Now"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

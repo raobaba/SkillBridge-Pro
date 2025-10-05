@@ -93,8 +93,16 @@ const createProject = async (req, res) => {
 const getProject = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id) return sendError(res, "Project id is required", 400);
-    const project = await ProjectModel.getProjectById(Number(id));
+    if (!id || id === 'null' || id === 'undefined') {
+      return sendError(res, "Project id is required", 400);
+    }
+    
+    const projectId = Number(id);
+    if (isNaN(projectId) || projectId <= 0) {
+      return sendError(res, "Invalid project id", 400);
+    }
+    
+    const project = await ProjectModel.getProjectById(projectId);
     if (!project) return sendError(res, "Project not found", 404);
     return res.status(200).json({ success: true, status: 200, project });
   } catch (error) {
@@ -108,14 +116,190 @@ const getProject = async (req, res) => {
 // List projects (optionally filter by ownerId, status)
 const listProjects = async (req, res) => {
   try {
-    const { ownerId, status } = req.query;
-    const rows = await ProjectModel.listProjects({ ownerId: ownerId ? Number(ownerId) : undefined, status });
+    const { ownerId, status, category, experienceLevel, isRemote, limit = 20, page = 1 } = req.query;
+    
+    // For public access, don't allow filtering by ownerId unless authenticated
+    const filters = { status };
+    
+    // Add public filters
+    if (category) filters.category = category;
+    if (experienceLevel) filters.experienceLevel = experienceLevel;
+    if (isRemote !== undefined) filters.isRemote = isRemote === 'true';
+    
+    // Add pagination
+    filters.limit = Number(limit);
+    filters.page = Number(page);
+    
+    const rows = await ProjectModel.listProjects(filters);
     return res.status(200).json({ success: true, status: 200, projects: rows });
   } catch (error) {
     console.error("List Projects Error:", error);
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch projects", error: error.message });
+  }
+};
+
+// Get public projects for developer discovery (no authentication required)
+const getPublicProjects = async (req, res) => {
+  try {
+    const { 
+      category, 
+      experienceLevel, 
+      isRemote, 
+      location, 
+      budgetMin, 
+      budgetMax,
+      status = 'active', // Default to active projects only
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      limit = 20, 
+      page = 1 
+    } = req.query;
+
+    // Build filters for public access
+    const filters = {
+      status, // Only show active projects by default
+      category,
+      experienceLevel,
+      isRemote: isRemote !== undefined ? isRemote === 'true' : undefined,
+      location,
+      budgetMin: budgetMin ? Number(budgetMin) : undefined,
+      budgetMax: budgetMax ? Number(budgetMax) : undefined,
+      sortBy,
+      sortOrder,
+      limit: Number(limit),
+      page: Number(page)
+    };
+
+    // Remove undefined values
+    Object.keys(filters).forEach(key => {
+      if (filters[key] === undefined) {
+        delete filters[key];
+      }
+    });
+
+    const result = await ProjectModel.searchProjects(filters);
+    
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      projects: result.projects,
+      pagination: result.pagination,
+      filters: {
+        category,
+        experienceLevel,
+        isRemote,
+        location,
+        budgetMin,
+        budgetMax,
+        status
+      }
+    });
+  } catch (error) {
+    console.error("Get Public Projects Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch public projects", error: error.message });
+  }
+};
+
+// Get project categories (public metadata)
+const getProjectCategories = async (req, res) => {
+  try {
+    const categories = [
+      'Web Development',
+      'Mobile Development', 
+      'Desktop Application',
+      'Backend Development',
+      'Frontend Development',
+      'Full Stack Development',
+      'DevOps',
+      'Data Science',
+      'Machine Learning',
+      'AI Development',
+      'Blockchain',
+      'Game Development',
+      'UI/UX Design',
+      'Graphic Design',
+      'Content Writing',
+      'Digital Marketing',
+      'SEO',
+      'Video Editing',
+      'Audio Production',
+      'Translation',
+      'Research',
+      'Consulting',
+      'Other'
+    ];
+
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      categories 
+    });
+  } catch (error) {
+    console.error("Get Project Categories Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch categories", error: error.message });
+  }
+};
+
+// Get project metadata (experience levels, priorities, etc.)
+const getProjectMetadata = async (req, res) => {
+  try {
+    const metadata = {
+      experienceLevels: [
+        { value: 'entry', label: 'Entry Level' },
+        { value: 'mid', label: 'Mid Level' },
+        { value: 'senior', label: 'Senior Level' },
+        { value: 'lead', label: 'Lead/Principal' }
+      ],
+      priorities: [
+        { value: 'low', label: 'Low Priority' },
+        { value: 'medium', label: 'Medium Priority' },
+        { value: 'high', label: 'High Priority' }
+      ],
+      statuses: [
+        { value: 'draft', label: 'Draft' },
+        { value: 'upcoming', label: 'Upcoming' },
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' }
+      ],
+      workArrangements: [
+        { value: 'remote', label: 'Remote' },
+        { value: 'onsite', label: 'On-site' },
+        { value: 'hybrid', label: 'Hybrid' }
+      ],
+      paymentTerms: [
+        { value: 'fixed', label: 'Fixed Price' },
+        { value: 'hourly', label: 'Hourly Rate' },
+        { value: 'milestone', label: 'Milestone-based' },
+        { value: 'retainer', label: 'Retainer' }
+      ],
+      currencies: [
+        { value: 'USD', label: 'US Dollar ($)' },
+        { value: 'EUR', label: 'Euro (€)' },
+        { value: 'GBP', label: 'British Pound (£)' },
+        { value: 'CAD', label: 'Canadian Dollar (C$)' },
+        { value: 'AUD', label: 'Australian Dollar (A$)' },
+        { value: 'INR', label: 'Indian Rupee (₹)' }
+      ]
+    };
+
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      metadata 
+    });
+  } catch (error) {
+    console.error("Get Project Metadata Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch metadata", error: error.message });
   }
 };
 
@@ -208,6 +392,29 @@ const applyToProject = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Apply failed", error: error.message });
+  }
+};
+
+// Withdraw application
+const withdrawApplication = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId } = req.body;
+    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
+
+    const row = await ProjectModel.withdrawApplication(Number(projectId), Number(userId));
+    // Make withdraw idempotent: return success even if nothing was deleted
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: row ? "Application withdrawn" : "No existing application found; nothing to withdraw",
+      application: row || null,
+    });
+  } catch (error) {
+    console.error("Withdraw Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Withdraw failed", error: error.message });
   }
 };
 
@@ -638,7 +845,12 @@ const addProjectFavorite = async (req, res) => {
       return sendError(res, "userId and projectId are required", 400);
     }
     
-    const favorite = await ProjectModel.addProjectFavorite(Number(userId), Number(projectId));
+    const projectIdNum = Number(projectId);
+    if (isNaN(projectIdNum) || projectIdNum <= 0) {
+      return sendError(res, "Invalid project id", 400);
+    }
+    
+    const favorite = await ProjectModel.addProjectFavorite(Number(userId), projectIdNum);
     return res.status(201).json({ success: true, status: 201, message: "Project added to favorites", favorite });
   } catch (error) {
     console.error("Add Project Favorite Error:", error);
@@ -658,7 +870,12 @@ const removeProjectFavorite = async (req, res) => {
       return sendError(res, "userId and projectId are required", 400);
     }
     
-    await ProjectModel.removeProjectFavorite(Number(userId), Number(projectId));
+    const projectIdNum = Number(projectId);
+    if (isNaN(projectIdNum) || projectIdNum <= 0) {
+      return sendError(res, "Invalid project id", 400);
+    }
+    
+    await ProjectModel.removeProjectFavorite(Number(userId), projectIdNum);
     return res.status(200).json({ success: true, status: 200, message: "Project removed from favorites" });
   } catch (error) {
     console.error("Remove Project Favorite Error:", error);
@@ -681,6 +898,45 @@ const getProjectFavorites = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch favorites", error: error.message });
+  }
+};
+
+// 🔖 Project Saves (Bookmarks)
+const addProjectSave = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId } = req.body;
+    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
+    const save = await ProjectModel.addProjectSave(Number(userId), Number(projectId));
+    return res.status(201).json({ success: true, status: 201, message: "Project saved", save });
+  } catch (error) {
+    console.error("Add Project Save Error:", error);
+    return res.status(500).json({ success: false, status: 500, message: "Failed to save project", error: error.message });
+  }
+};
+
+const removeProjectSave = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId } = req.body;
+    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
+    await ProjectModel.removeProjectSave(Number(userId), Number(projectId));
+    return res.status(200).json({ success: true, status: 200, message: "Project unsaved" });
+  } catch (error) {
+    console.error("Remove Project Save Error:", error);
+    return res.status(500).json({ success: false, status: 500, message: "Failed to unsave project", error: error.message });
+  }
+};
+
+const getProjectSaves = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    const saves = await ProjectModel.getProjectSaves(Number(userId));
+    return res.status(200).json({ success: true, status: 200, saves });
+  } catch (error) {
+    console.error("Get Project Saves Error:", error);
+    return res.status(500).json({ success: false, status: 500, message: "Failed to fetch saves", error: error.message });
   }
 };
 
@@ -775,6 +1031,7 @@ module.exports = {
   createProject,
   getProject,
   listProjects,
+  getPublicProjects,
   updateProject,
   deleteProject,
   applyToProject,
@@ -794,9 +1051,15 @@ module.exports = {
   getProjectStats,
   searchProjects,
   getProjectRecommendations,
+  getProjectCategories,
+  getProjectMetadata,
   addProjectFavorite,
   removeProjectFavorite,
   getProjectFavorites,
+  withdrawApplication,
+  addProjectSave,
+  removeProjectSave,
+  getProjectSaves,
   addProjectComment,
   getProjectComments,
   updateProjectComment,

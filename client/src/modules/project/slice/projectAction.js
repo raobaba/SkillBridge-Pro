@@ -33,6 +33,11 @@ export const applyToProjectApi = async (data) => {
   return await fetchFromApiServer("POST", url, data);
 };
 
+export const withdrawApplicationApi = async (data) => {
+  const url = `api/v1/projects/apply`;
+  return await fetchFromApiServer("DELETE", url, data);
+};
+
 export const updateApplicantStatusApi = async (data) => {
   const url = `api/v1/projects/applicants/status`;
   return await fetchFromApiServer("PUT", url, data);
@@ -122,6 +127,41 @@ export const searchProjectsApi = async (filters) => {
 // Get project recommendations
 export const getProjectRecommendationsApi = async (limit = 10) => {
   const url = `api/v1/projects/recommendations?limit=${limit}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Public developer discovery: get public projects
+export const getPublicProjectsApi = async (params = {}) => {
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `api/v1/projects/public${queryParams ? `?${queryParams}` : ''}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Public: get project categories
+export const getProjectCategoriesApi = async () => {
+  const url = `api/v1/projects/categories`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Public: get project metadata (experience levels, priorities, etc.)
+export const getProjectMetadataApi = async () => {
+  const url = `api/v1/projects/metadata`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Saves (Bookmarks)
+export const addProjectSaveApi = async (data) => {
+  const url = `api/v1/projects/saves`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const removeProjectSaveApi = async (data) => {
+  const url = `api/v1/projects/saves`;
+  return await fetchFromApiServer("DELETE", url, data);
+};
+
+export const getProjectSavesApi = async () => {
+  const url = `api/v1/projects/saves/my`;
   return await fetchFromApiServer("GET", url);
 };
 

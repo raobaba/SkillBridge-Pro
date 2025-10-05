@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -50,10 +50,12 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.user?.user);
-  
-  // Debug logging
-  console.log('Navigation user data:', user);
+  const user = useSelector((state) => state.user?.user, (prev, next) => {
+    // Only re-render if user data actually changed
+    if (!prev && !next) return true;
+    if (!prev || !next) return false;
+    return prev.id === next.id && prev.email === next.email && prev.name === next.name;
+  });
   
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
@@ -67,11 +69,17 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
   const [notifications] = useState(4);
   const [messages] = useState(1);
 
-  // Get navigation items using the configuration
-  const navigationItems = getNavigationItems(user?.role);
+  // Get navigation items using the configuration (memoized)
+  const navigationItems = useMemo(() => 
+    getNavigationItems(user?.role), 
+    [user?.role]
+  );
 
-  // Get quick access items using the configuration
-  const quickAccessItems = getQuickAccessItems(user?.role);
+  // Get quick access items using the configuration (memoized)
+  const quickAccessItems = useMemo(() => 
+    getQuickAccessItems(user?.role), 
+    [user?.role]
+  );
 
   const handleLogout = async () => {
     try {
