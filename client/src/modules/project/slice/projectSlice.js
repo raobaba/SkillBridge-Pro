@@ -1232,6 +1232,25 @@ const projectSlice = createSlice({
         state.message = action.payload.message || "Project saved";
         state.error = null;
         state.lastAction = 'addProjectSave.fulfilled';
+        const projectId = action?.meta?.arg?.projectId;
+        
+        if (projectId) {
+          // Only add if it doesn't already exist
+          const exists = Array.isArray(state.saves) && state.saves.some((s) => {
+            if (typeof s === 'number') {
+              return s === projectId;
+            } else if (typeof s === 'object' && s !== null) {
+              return s.projectId === projectId;
+            }
+            return false;
+          });
+          
+          if (!exists) {
+            // Use the save object returned by the API
+            const saveItem = action.payload.save || action.payload || { projectId };
+            state.saves.push(saveItem);
+          }
+        }
       })
       .addCase(addProjectSave.rejected, (state, action) => {
         state.loading = false;
@@ -1251,6 +1270,18 @@ const projectSlice = createSlice({
         state.message = action.payload.message || "Project unsaved";
         state.error = null;
         state.lastAction = 'removeProjectSave.fulfilled';
+        const projectId = action?.meta?.arg?.projectId;
+        
+        if (projectId && Array.isArray(state.saves)) {
+          state.saves = state.saves.filter((s) => {
+            if (typeof s === 'number') {
+              return s !== projectId;
+            } else if (typeof s === 'object' && s !== null) {
+              return s.projectId !== projectId;
+            }
+            return true; // Keep items we don't understand
+          });
+        }
       })
       .addCase(removeProjectSave.rejected, (state, action) => {
         state.loading = false;
@@ -1266,7 +1297,8 @@ const projectSlice = createSlice({
       })
       .addCase(getProjectSaves.fulfilled, (state, action) => {
         state.savesLoading = false;
-        state.saves = action.payload.saves || [];
+        // Handle different possible response structures
+        state.saves = action.payload.saves || action.payload || [];
         state.error = null;
         state.lastAction = 'getProjectSaves.fulfilled';
       })

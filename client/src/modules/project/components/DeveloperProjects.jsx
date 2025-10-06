@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search,
   Filter,
@@ -29,6 +29,46 @@ import {
   removeProjectSave,
   getProjectSaves,
 } from "../slice/projectSlice";
+
+// Constants
+const SKILL_OPTIONS = [
+  "React", "Node.js", "Python", "JavaScript", "TypeScript", "Vue.js", "Angular",
+  "Express", "Django", "Flask", "MongoDB", "PostgreSQL", "MySQL", "Redis",
+  "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "Jenkins", "Git",
+  "GraphQL", "REST API", "Microservices", "Blockchain", "Solidity",
+  "Machine Learning", "TensorFlow", "PyTorch", "Data Science", "AI", "NLP",
+];
+
+const DEFAULT_STATUS_OPTIONS = [
+  { value: "all", label: "All Status" },
+  { value: "Active", label: "Active" },
+  { value: "Upcoming", label: "Upcoming" },
+  { value: "Draft", label: "Draft" },
+];
+
+const DEFAULT_PRIORITY_OPTIONS = [
+  { value: "all", label: "All Priority" },
+  { value: "High", label: "High Priority" },
+  { value: "Medium", label: "Medium Priority" },
+  { value: "Low", label: "Low Priority" },
+];
+
+const LOCATION_OPTIONS = [
+  { value: "all", label: "All Locations" },
+  { value: "Remote", label: "Remote" },
+  { value: "San Francisco, CA", label: "San Francisco, CA" },
+  { value: "New York, NY", label: "New York, NY" },
+  { value: "Austin, TX", label: "Austin, TX" },
+];
+
+const SORT_OPTIONS = [
+  { value: "relevance", label: "Most Relevant" },
+  { value: "newest", label: "Newest First" },
+  { value: "deadline", label: "Deadline" },
+  { value: "budget", label: "Budget (High to Low)" },
+  { value: "rating", label: "Rating" },
+  { value: "applicants", label: "Fewest Applicants" },
+];
 
 const DeveloperProjects = ({
   user,
@@ -62,29 +102,20 @@ const DeveloperProjects = ({
     useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [savedProjects, setSavedProjects] = useState([]);
   const [appliedProjects, setAppliedProjects] = useState([]);
   const [projectComments, setProjectComments] = useState({});
   const [showComments, setShowComments] = useState({});
   const [internalSearch, setInternalSearch] = useState("");
   const [newCommentText, setNewCommentText] = useState("");
+  const [savingProjectId, setSavingProjectId] = useState(null);
 
-  // Load applied and saved projects from localStorage
+  // Load applied projects from localStorage
   useEffect(() => {
     const applied = localStorage.getItem("appliedProjects");
     if (applied) {
       setAppliedProjects(JSON.parse(applied));
     }
-    const saved = localStorage.getItem("savedProjects");
-    if (saved) {
-      setSavedProjects(JSON.parse(saved));
-    }
   }, []);
-
-  // Persist savedProjects to localStorage
-  useEffect(() => {
-    localStorage.setItem("savedProjects", JSON.stringify(savedProjects));
-  }, [savedProjects]);
 
   // Handle toast notifications
   useEffect(() => {
@@ -96,16 +127,12 @@ const DeveloperProjects = ({
     }
   }, [message, error]);
 
-  // Map API data to match UI expectations
-  const mapProjectData = (project) => ({
+  // Map API data to match UI expectations (memoized)
+  const mapProjectData = useCallback((project) => ({
     id: project.id,
     title: project.title,
-    status:
-      project.status?.charAt(0).toUpperCase() + project.status?.slice(1) ||
-      "Active",
-    priority:
-      project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) ||
-      "Medium",
+    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || "Active",
+    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || "Medium",
     description: project.description,
     startDate: project.startDate,
     deadline: project.deadline,
@@ -115,15 +142,12 @@ const DeveloperProjects = ({
     activity: `${project.activityCount || 0} updates`,
     tags: project.tags || [],
     rating: parseFloat(project.ratingAvg) || 0,
-    budget:
-      project.budgetMin && project.budgetMax
-        ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
-        : "Budget TBD",
+    budget: project.budgetMin && project.budgetMax
+      ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
+      : "Budget TBD",
     location: project.isRemote ? "Remote" : project.location || "Remote",
     duration: project.duration || "TBD",
-    experience:
-      project.experienceLevel?.charAt(0).toUpperCase() +
-        project.experienceLevel?.slice(1) || "Mid Level",
+    experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || "Mid Level",
     category: project.category || "Web Development",
     isRemote: project.isRemote,
     isUrgent: project.isUrgent,
@@ -137,7 +161,7 @@ const DeveloperProjects = ({
     requirements: project.requirements,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
-  });
+  }), []);
 
   // Prefer authenticated projects; fallback to publicProjects (memoized)
   const baseProjects = useMemo(
@@ -146,6 +170,13 @@ const DeveloperProjects = ({
   );
   const isPublicOnly = !projects || projects.length === 0; // display-only mode when showing public feed
 
+  // Load saves from Redux when component mounts
+  useEffect(() => {
+    if (!isPublicOnly) {
+      dispatch(getProjectSaves());
+    }
+  }, [dispatch, isPublicOnly]);
+
   // Use projects from Redux state and map them (memoized)
   const displayProjects = useMemo(
     () => (baseProjects || []).map(mapProjectData),
@@ -153,121 +184,44 @@ const DeveloperProjects = ({
   );
   const [filteredProjects, setFilteredProjects] = useState(displayProjects);
 
-  const recommendedProjects =
-    (recommendations || []).map(mapProjectData).length > 0
-      ? (recommendations || []).map(mapProjectData)
+  const recommendedProjects = useMemo(() => {
+    const mappedRecommendations = (recommendations || []).map(mapProjectData);
+    return mappedRecommendations.length > 0
+      ? mappedRecommendations
       : displayProjects
           .filter((p) => p.isFeatured || (p.matchScore || 0) >= 90)
           .slice(0, 6);
-
-  const skillOptions = [
-    "React",
-    "Node.js",
-    "Python",
-    "JavaScript",
-    "TypeScript",
-    "Vue.js",
-    "Angular",
-    "Express",
-    "Django",
-    "Flask",
-    "MongoDB",
-    "PostgreSQL",
-    "MySQL",
-    "Redis",
-    "Docker",
-    "Kubernetes",
-    "AWS",
-    "Azure",
-    "GCP",
-    "Terraform",
-    "Jenkins",
-    "Git",
-    "GraphQL",
-    "REST API",
-    "Microservices",
-    "Blockchain",
-    "Solidity",
-    "Machine Learning",
-    "TensorFlow",
-    "PyTorch",
-    "Data Science",
-    "AI",
-    "NLP",
-  ];
+  }, [recommendations, displayProjects, mapProjectData]);
 
   // Build select options with metadata when available; keep current defaults otherwise
-  const statusOptions = projectMetadata?.statuses?.length
-    ? [
-        { value: "all", label: "All Status" },
-        ...projectMetadata.statuses.map((s) => ({
-          value: s.label,
-          label: s.label,
-        })),
-      ]
-    : [
-        { value: "all", label: "All Status" },
-        { value: "Active", label: "Active" },
-        { value: "Upcoming", label: "Upcoming" },
-        { value: "Draft", label: "Draft" },
-      ];
+  const statusOptions = useMemo(() => 
+    projectMetadata?.statuses?.length
+      ? [
+          { value: "all", label: "All Status" },
+          ...projectMetadata.statuses.map((s) => ({
+            value: s.label,
+            label: s.label,
+          })),
+        ]
+      : DEFAULT_STATUS_OPTIONS,
+    [projectMetadata?.statuses]
+  );
 
-  const priorityOptions = projectMetadata?.priorities?.length
-    ? [
-        { value: "all", label: "All Priority" },
-        ...projectMetadata.priorities.map((p) => ({
-          value: p.label,
-          label: p.label,
-        })),
-      ]
-    : [
-        { value: "all", label: "All Priority" },
-        { value: "High", label: "High Priority" },
-        { value: "Medium", label: "Medium Priority" },
-        { value: "Low", label: "Low Priority" },
-      ];
+  const priorityOptions = useMemo(() =>
+    projectMetadata?.priorities?.length
+      ? [
+          { value: "all", label: "All Priority" },
+          ...projectMetadata.priorities.map((p) => ({
+            value: p.label,
+            label: p.label,
+          })),
+        ]
+      : DEFAULT_PRIORITY_OPTIONS,
+    [projectMetadata?.priorities]
+  );
 
-  const locationOptions = [
-    { value: "all", label: "All Locations" },
-    { value: "Remote", label: "Remote" },
-    { value: "San Francisco, CA", label: "San Francisco, CA" },
-    { value: "New York, NY", label: "New York, NY" },
-    { value: "Austin, TX", label: "Austin, TX" },
-  ];
-
-  const sortOptions = [
-    { value: "relevance", label: "Most Relevant" },
-    { value: "newest", label: "Newest First" },
-    { value: "deadline", label: "Deadline" },
-    { value: "budget", label: "Budget (High to Low)" },
-    { value: "rating", label: "Rating" },
-    { value: "applicants", label: "Fewest Applicants" },
-  ];
-
-  useEffect(() => {
-    filterProjects();
-  }, [
-    searchTerm,
-    selectedSkills,
-    selectedStatus,
-    selectedPriority,
-    selectedLocation,
-    sortBy,
-    displayProjects,
-  ]);
-
-  // Debounce search input for better UX
-  useEffect(() => {
-    const t = setTimeout(() => setSearchTerm(internalSearch), 300);
-    return () => clearTimeout(t);
-  }, [internalSearch]);
-
-  // Update filtered projects when displayProjects change
-  useEffect(() => {
-    setFilteredProjects(displayProjects);
-  }, [displayProjects]);
-
-  const filterProjects = () => {
+  // Optimized filter function with memoization
+  const filterProjects = useCallback(() => {
     let filtered = displayProjects.filter((project) => {
       const matchesSearch =
         project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -328,9 +282,34 @@ const DeveloperProjects = ({
     });
 
     setFilteredProjects(filtered);
-  };
+  }, [
+    displayProjects,
+    searchTerm,
+    selectedSkills,
+    selectedStatus,
+    selectedPriority,
+    selectedLocation,
+    sortBy,
+  ]);
 
-  const handleApplyToProject = async (projectId) => {
+  // Debounce search input for better UX
+  useEffect(() => {
+    const t = setTimeout(() => setSearchTerm(internalSearch), 300);
+    return () => clearTimeout(t);
+  }, [internalSearch]);
+
+  // Update filtered projects when dependencies change
+  useEffect(() => {
+    filterProjects();
+  }, [filterProjects]);
+
+  // Update filtered projects when displayProjects change
+  useEffect(() => {
+    setFilteredProjects(displayProjects);
+  }, [displayProjects]);
+
+  // Optimized handler functions
+  const handleApplyToProject = useCallback(async (projectId) => {
     try {
       await dispatch(
         applyToProject({
@@ -358,15 +337,12 @@ const DeveloperProjects = ({
           await dispatch(require("../slice/projectSlice").listProjects()).unwrap();
         }
       } catch {}
-      // Avoid duplicate toasts: rely on global message handler
-      console.log(`Applied to project ${projectId}`);
     } catch (error) {
       console.error("Failed to apply to project:", error);
-      // Avoid duplicate toasts: rely on global error handler
     }
-  };
+  }, [dispatch, appliedProjects, isPublicOnly]);
 
-  const handleWithdrawApplication = async (projectId) => {
+  const handleWithdrawApplication = useCallback(async (projectId) => {
     try {
       const res = await dispatch(withdrawApplication({ projectId })).unwrap();
       setAppliedProjects((prev) => prev.filter((id) => id !== projectId));
@@ -389,13 +365,12 @@ const DeveloperProjects = ({
           await dispatch(require("../slice/projectSlice").listProjects()).unwrap();
         }
       } catch {}
-      // Avoid duplicate toasts: rely on global message handler using res.message
     } catch (e) {
       toast.error(e?.message || "Failed to withdraw application");
     }
-  };
+  }, [dispatch, appliedProjects, isPublicOnly]);
 
-  const handleOpenDetails = async (project) => {
+  const handleOpenDetails = useCallback(async (project) => {
     setSelectedProject(project);
     setShowDetailsModal(true);
     if (!isPublicOnly && project?.id) {
@@ -410,41 +385,55 @@ const DeveloperProjects = ({
         // silent fail
       }
     }
-  };
+  }, [dispatch, isPublicOnly]);
 
-  const handleCloseDetails = () => {
+  const handleCloseDetails = useCallback(() => {
     setShowDetailsModal(false);
     setSelectedProject(null);
     setNewCommentText("");
-  };
+  }, []);
 
-  const canJoinGroupChat = (projectId) =>
-    applicationStatusByProjectId[projectId] === "Accepted";
+  const canJoinGroupChat = useCallback((projectId) =>
+    applicationStatusByProjectId[projectId] === "Accepted",
+    [applicationStatusByProjectId]
+  );
+  const isProjectSaved = useCallback((projectId) => {
+    if (!Array.isArray(saves)) return false;
+    
+    return saves.some((s) => {
+      if (typeof s === 'number') {
+        return s === projectId;
+      } else if (typeof s === 'object' && s !== null) {
+        return s.projectId === projectId;
+      }
+      return false;
+    });
+  }, [saves]);
 
-  const handleSaveProject = (projectId) => {
+  const handleSaveProject = useCallback((projectId) => {
     (async () => {
       try {
-        const isSavedServer = Array.isArray(saves) && (saves.includes(projectId) || saves.some((s) => (
-          s === projectId || s?.projectId === projectId || s?.project?.id === projectId || s?.id === projectId
-        )));
+        const isSavedServer = isProjectSaved(projectId);
+        
+        // Set loading state
+        setSavingProjectId(projectId);
+        
         if (isSavedServer) {
           await dispatch(removeProjectSave({ projectId })).unwrap();
         } else {
           await dispatch(addProjectSave({ projectId })).unwrap();
         }
-        try { await dispatch(getProjectSaves()).unwrap(); } catch {}
       } catch (e) {
-        // fallback to local toggle if API fails
-        setSavedProjects((prev) =>
-          prev.includes(projectId)
-            ? prev.filter((id) => id !== projectId)
-            : [...prev, projectId]
-        );
+        console.error("Failed to toggle save:", e);
+        toast.error("Failed to save/unsave project");
+      } finally {
+        // Clear loading state
+        setSavingProjectId(null);
       }
     })();
-  };
+  }, [dispatch, isProjectSaved]);
 
-  const isProjectFavorited = (projectId) => {
+  const isProjectFavorited = useCallback((projectId) => {
     if (!Array.isArray(favorites)) return false;
     return (
       favorites.includes(projectId) ||
@@ -456,9 +445,11 @@ const DeveloperProjects = ({
           f?.id === projectId
       )
     );
-  };
+  }, [favorites]);
 
-  const handleToggleFavorite = async (projectId) => {
+
+
+  const handleToggleFavorite = useCallback(async (projectId) => {
     try {
       const isFavorited = isProjectFavorited(projectId);
       if (isFavorited) {
@@ -489,18 +480,18 @@ const DeveloperProjects = ({
       console.error("Failed to toggle favorite:", error);
       toast.error(`Failed to toggle favorite: ${error.message}`);
     }
-  };
+  }, [dispatch, isProjectFavorited, isPublicOnly]);
 
-  const buildProjectUrl = (project) => {
+  const buildProjectUrl = useCallback((project) => {
     try {
       const origin = window?.location?.origin || '';
       return `${origin}/projects/${project?.id ?? ''}`;
     } catch {
       return `/projects/${project?.id ?? ''}`;
     }
-  };
+  }, []);
 
-  const handleShareProject = async (project) => {
+  const handleShareProject = useCallback(async (project) => {
     const url = buildProjectUrl(project);
     const title = project?.title || 'Project';
     const text = project?.description || 'Check out this project on SkillBridge Pro';
@@ -518,9 +509,9 @@ const DeveloperProjects = ({
     } catch (err) {
       toast.error('Failed to share link');
     }
-  };
+  }, [buildProjectUrl]);
 
-  const handleAddComment = async () => {
+  const handleAddComment = useCallback(async () => {
     if (!selectedProject?.id || !newCommentText.trim()) return;
     try {
       await dispatch(
@@ -540,19 +531,19 @@ const DeveloperProjects = ({
     } catch (e) {
       // silent fail
     }
-  };
+  }, [dispatch, selectedProject, newCommentText]);
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setSearchTerm("");
     setSelectedSkills([]);
     setSelectedStatus("all");
     setSelectedPriority("all");
     setSelectedLocation("all");
     setSortBy("relevance");
-  };
+  }, []);
 
   // Build a robust unique favorites set from varying API shapes
-  const favoriteIdsSet = new Set(
+  const favoriteIdsSet = useMemo(() => new Set(
     Array.isArray(favorites)
       ? favorites
           .map((f) => {
@@ -565,15 +556,15 @@ const DeveloperProjects = ({
           })
           .filter((id) => typeof id === "number")
       : []
-  );
+  ), [favorites, displayProjects]);
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: displayProjects.length,
     applied: appliedProjects.length,
-    saved: savedProjects.length,
+    saved: Array.isArray(saves) ? saves.length : 0,
     favorites: favoriteIdsSet.size,
     matches: filteredProjects.length,
-  };
+  }), [displayProjects.length, appliedProjects.length, saves, favoriteIdsSet.size, filteredProjects.length]);
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
@@ -739,7 +730,7 @@ const DeveloperProjects = ({
                   onChange={(e) => setSortBy(e.target.value)}
                   className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
                 >
-                  {sortOptions.map((option) => (
+                  {SORT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -806,7 +797,7 @@ const DeveloperProjects = ({
                     onChange={(e) => setSelectedLocation(e.target.value)}
                     className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
                   >
-                    {locationOptions.map((option) => (
+                    {LOCATION_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -827,7 +818,7 @@ const DeveloperProjects = ({
                     Filter by Skills
                   </label>
                   <div className='flex flex-wrap gap-2'>
-                    {skillOptions.map((skill) => (
+                    {SKILL_OPTIONS.map((skill) => (
                       <Button
                         key={skill}
                         onClick={() => {
@@ -981,19 +972,22 @@ const DeveloperProjects = ({
                           <div className='flex gap-2 ml-auto'>
                             <Button
                               onClick={() => handleSaveProject(project.id)}
+                              disabled={savingProjectId === project.id}
                               className={`p-2 rounded-lg transition-colors duration-300 ${
-                                savedProjects.includes(project.id)
+                                isProjectSaved(project.id)
                                   ? "bg-yellow-500/20 text-yellow-400"
                                   : "bg-white/10 text-gray-400 hover:bg-white/20"
-                              }`}
+                              } ${savingProjectId === project.id ? "opacity-50 cursor-not-allowed" : ""}`}
                               title={
-                                savedProjects.includes(project.id)
-                                  ? "Saved"
-                                  : "Save"
+                                savingProjectId === project.id
+                                  ? "Saving..."
+                                  : isProjectSaved(project.id)
+                                    ? "Saved"
+                                    : "Save"
                               }
                             >
                               <Bookmark
-                                className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`}
+                                className={`w-4 h-4 ${isProjectSaved(project.id) ? "fill-current" : ""}`}
                               />
                             </Button>
                             <Button
@@ -1193,14 +1187,22 @@ const DeveloperProjects = ({
                         <div className='flex gap-2'>
                           <Button
                             onClick={() => handleSaveProject(project.id)}
+                            disabled={savingProjectId === project.id}
                             className={`p-2 rounded-lg transition-colors duration-300 ${
-                              savedProjects.includes(project.id)
+                              isProjectSaved(project.id)
                                 ? "bg-yellow-500/20 text-yellow-400"
                                 : "bg-white/10 text-gray-400 hover:bg-white/20"
-                            }`}
+                            } ${savingProjectId === project.id ? "opacity-50 cursor-not-allowed" : ""}`}
+                            title={
+                              savingProjectId === project.id
+                                ? "Saving..."
+                                : isProjectSaved(project.id)
+                                  ? "Saved"
+                                  : "Save"
+                            }
                           >
                             <Bookmark
-                              className={`w-4 h-4 ${savedProjects.includes(project.id) ? "fill-current" : ""}`}
+                              className={`w-4 h-4 ${isProjectSaved(project.id) ? "fill-current" : ""}`}
                             />
                           </Button>
                           <Button

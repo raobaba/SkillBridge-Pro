@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 
-import { Button, Footer, CircularLoader } from "../../../components";
+import { Footer, CircularLoader } from "../../../components";
 import Navbar from "../../../components/header/index";
 // Role-specific components
 import DeveloperProjects from "../components/DeveloperProjects";
@@ -11,14 +11,11 @@ import AdminProjects from "../components/AdminProjects";
 import { 
   listProjects, 
   getMyInvites, 
-  getProjectRecommendations,
   getProjectFavorites,
   searchProjects,
   clearProjectState,
   // New public discovery thunks
   getPublicProjects,
-  getProjectCategories,
-  getProjectMetadata,
 } from "../slice/projectSlice";
 
 export default function Project() {
@@ -36,75 +33,49 @@ export default function Project() {
     publicProjects,
     projectCategories,
     projectMetadata,
-    loading: projectLoading,
     error: projectError,
     message: projectMessage
   } = useSelector((state) => state.project);
   // Generic slice loading flag (used by some actions like apply/favorite)
-  const generalProjectLoading = useSelector((state) => state.project.loading);
+  // Note: avoid using the general loading flag for overlay to prevent sticky loader
   // Pull all loading flags for unified loader
   const {
+
+    loading,
     projectsLoading,
-    applicantsLoading,
+    projectLoading,
     invitesLoading,
-    filesLoading,
-    updatesLoading,
-    reviewsLoading,
-    boostsLoading,
-    statsLoading,
-    searchLoading,
-    recommendationsLoading,
     favoritesLoading,
-    commentsLoading,
-    publicLoading,
-    metadataLoading,
+    savesLoading,
+
   } = useSelector((state) => state.project);
   
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Unified loading flag: show CircularLoader for any in-flight request
-  const isBusy = (
-    loading ||
-    projectLoading ||
-    generalProjectLoading ||
-    projectsLoading ||
-    applicantsLoading ||
-    invitesLoading ||
-    filesLoading ||
-    updatesLoading ||
-    reviewsLoading ||
-    boostsLoading ||
-    statsLoading ||
-    searchLoading ||
-    recommendationsLoading ||
-    favoritesLoading ||
-    commentsLoading ||
-    publicLoading ||
-    metadataLoading
+  const isBusy = Boolean(loading ||invitesLoading || favoritesLoading ||savesLoading ||projectLoading ||
+    projectsLoading
   );
 
   useEffect(() => {
     // Load initial data based on user role
     const loadInitialData = async () => {
       try {
-        setLoading(true);
         // Load projects for all roles
         await dispatch(listProjects()).unwrap();
         // Public discovery data (available to all roles)
         await Promise.all([
           dispatch(getPublicProjects()).unwrap(),
-          dispatch(getProjectCategories()).unwrap(),
-          dispatch(getProjectMetadata()).unwrap(),
+          // dispatch(getProjectCategories()).unwrap(),
+          // dispatch(getProjectMetadata()).unwrap(),
         ]);
         
         // Load role-specific data
         if (user?.role === 'developer') {
           await Promise.all([
             dispatch(getMyInvites()).unwrap(),
-            dispatch(getProjectRecommendations(10)).unwrap(),
-            dispatch(getProjectFavorites()).unwrap(),
-            dispatch(require('../slice/projectSlice').getProjectSaves()).unwrap()
+            // dispatch(getProjectRecommendations(10)).unwrap(),
+            dispatch(getProjectFavorites()).unwrap()
           ]);
         } else if (user?.role === 'project-owner') {
           // Load owner's projects
@@ -116,7 +87,6 @@ export default function Project() {
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
-        setLoading(false);
       }
     };
 
@@ -135,12 +105,10 @@ export default function Project() {
   const handleSearch = async (query) => {
     if (query.trim()) {
       try {
-        setLoading(true);
         await dispatch(searchProjects({ query })).unwrap();
       } catch (error) {
         console.error('Search error:', error);
       } finally {
-        setLoading(false);
       }
     }
   };
@@ -179,7 +147,6 @@ export default function Project() {
       setSearchQuery,
       handleSearch,
       // allow children to toggle the global loader during their API calls
-      setLoading,
     };
 
     switch (user.role) {
