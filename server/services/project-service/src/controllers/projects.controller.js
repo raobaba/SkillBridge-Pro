@@ -138,8 +138,9 @@ const listProjects = async (req, res) => {
       page = 1 
     } = req.query;
     
-    // For public access, don't allow filtering by ownerId unless authenticated
+    // Include ownerId in filters for authenticated requests
     const filters = { 
+      ownerId: ownerId ? Number(ownerId) : undefined,
       query,
       status,
       priority,

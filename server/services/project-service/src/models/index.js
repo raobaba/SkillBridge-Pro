@@ -77,6 +77,9 @@ const ProjectModel = {
   
   // Search
   searchProjects: ProjectsModel.searchProjects,
+  
+  // Statistics
+  getProjectStats: ProjectsModel.getProjectStats,
 };
 
 module.exports = {

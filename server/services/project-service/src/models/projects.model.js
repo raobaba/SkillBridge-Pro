@@ -18,6 +18,15 @@ const { db } = require("../config/database");
 const { projectSkillsTable } = require("./project-skills.model");
 const { projectTagsTable } = require("./project-tags.model");
 
+// Import related tables for statistics
+const { projectApplicantsTable } = require("./project-applicants.model");
+const { projectReviewsTable } = require("./project-reviews.model");
+const { projectUpdatesTable } = require("./project-updates.model");
+const { projectBoostsTable } = require("./project-boosts.model");
+const { projectFilesTable } = require("./project-files.model");
+const { projectCommentsTable } = require("./project-comments.model");
+const { projectAnalyticsTable } = require("./project-analytics.model");
+
 // Enums
 const projectStatusEnum = pgEnum("project_status", [
   "draft",
@@ -259,6 +268,7 @@ class ProjectsModel {
   // Search projects with filters
   static async searchProjects(filters = {}) {
     const {
+      ownerId,
       query,
       category,
       status,
@@ -324,6 +334,11 @@ class ProjectsModel {
     // Status filter
     if (status && status !== 'all') {
       conditions.push(eq(projectsTable.status, status));
+    }
+
+    // Owner filter
+    if (ownerId) {
+      conditions.push(eq(projectsTable.ownerId, Number(ownerId)));
     }
 
     // Priority filter
@@ -439,6 +454,136 @@ class ProjectsModel {
         pages: Math.ceil(Number(totalCount) / limit)
       }
     };
+  }
+
+  // Get project statistics
+  static async getProjectStats(projectId) {
+    try {
+      // Get basic project info
+      const project = await db
+        .select()
+        .from(projectsTable)
+        .where(eq(projectsTable.id, projectId))
+        .limit(1);
+
+      if (!project.length) {
+        throw new Error('Project not found');
+      }
+
+      const projectData = project[0];
+
+      // Get additional statistics from related tables
+      const [
+        applicantsCount,
+        reviewsCount,
+        updatesCount,
+        boostsCount,
+        filesCount,
+        commentsCount
+      ] = await Promise.all([
+        // Count applicants
+        db.select({ count: sql`count(*)` })
+          .from(projectApplicantsTable)
+          .where(eq(projectApplicantsTable.projectId, projectId)),
+        
+        // Count reviews
+        db.select({ count: sql`count(*)` })
+          .from(projectReviewsTable)
+          .where(eq(projectReviewsTable.projectId, projectId)),
+        
+        // Count updates
+        db.select({ count: sql`count(*)` })
+          .from(projectUpdatesTable)
+          .where(eq(projectUpdatesTable.projectId, projectId)),
+        
+        // Count boosts
+        db.select({ count: sql`count(*)` })
+          .from(projectBoostsTable)
+          .where(eq(projectBoostsTable.projectId, projectId)),
+        
+        // Count files
+        db.select({ count: sql`count(*)` })
+          .from(projectFilesTable)
+          .where(eq(projectFilesTable.projectId, projectId)),
+        
+        // Count comments
+        db.select({ count: sql`count(*)` })
+          .from(projectCommentsTable)
+          .where(eq(projectCommentsTable.projectId, projectId))
+      ]);
+
+      // Calculate average rating
+      const ratingResult = await db
+        .select({ 
+          avgRating: sql`COALESCE(AVG(${projectReviewsTable.rating}), 0)`,
+          ratingCount: sql`COUNT(*)`
+        })
+        .from(projectReviewsTable)
+        .where(eq(projectReviewsTable.projectId, projectId));
+
+      const avgRating = ratingResult[0]?.avgRating || 0;
+      const totalRatingCount = ratingResult[0]?.ratingCount || 0;
+
+      // Calculate views/impressions (if analytics table exists)
+      const viewsResult = await db
+        .select({ count: sql`count(*)` })
+        .from(projectAnalyticsTable)
+        .where(
+          and(
+            eq(projectAnalyticsTable.projectId, projectId),
+            eq(projectAnalyticsTable.metricName, 'view')
+          )
+        );
+
+      const totalViews = viewsResult[0]?.count || 0;
+
+      return {
+        projectId: projectId,
+        basicStats: {
+          title: projectData.title,
+          status: projectData.status,
+          priority: projectData.priority,
+          category: projectData.category,
+          experienceLevel: projectData.experienceLevel,
+          budgetMin: projectData.budgetMin,
+          budgetMax: projectData.budgetMax,
+          isRemote: projectData.isRemote,
+          location: projectData.location,
+          duration: projectData.duration,
+          createdAt: projectData.createdAt,
+          updatedAt: projectData.updatedAt
+        },
+        engagementStats: {
+          applicantsCount: applicantsCount[0]?.count || 0,
+          reviewsCount: reviewsCount[0]?.count || 0,
+          updatesCount: updatesCount[0]?.count || 0,
+          boostsCount: boostsCount[0]?.count || 0,
+          filesCount: filesCount[0]?.count || 0,
+          commentsCount: commentsCount[0]?.count || 0,
+          totalViews: totalViews
+        },
+        ratingStats: {
+          averageRating: parseFloat(avgRating),
+          totalRatings: totalRatingCount,
+          ratingDistribution: {
+            fiveStar: 0, // Could be calculated separately
+            fourStar: 0,
+            threeStar: 0,
+            twoStar: 0,
+            oneStar: 0
+          }
+        },
+        performanceStats: {
+          matchScoreAvg: projectData.matchScoreAvg || 0,
+          isFeatured: projectData.isFeatured,
+          isUrgent: projectData.isUrgent,
+          featuredUntil: projectData.featuredUntil
+        }
+      };
+    } catch (error) {
+      console.error('Error getting project stats:', error);
+      throw error;
+    }
   }
 }
 

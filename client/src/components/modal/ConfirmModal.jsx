@@ -1,48 +1,66 @@
-import React, { useEffect } from "react";
-import {Button,Input} from "../../components"
+import React from 'react';
+import Modal from './index';
+import { Button } from '../index';
 
-const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
-  // Disable body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden"; // Prevent scrolling
-    } else {
-      document.body.style.overflow = "auto"; // Restore scrolling
+const ConfirmModal = ({
+  isOpen,
+  onClose,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  confirmVariant = "default",
+  cancelVariant = "ghost"
+}) => {
+  const handleConfirm = () => {
+    if (onConfirm) {
+      onConfirm();
     }
+    if (onClose) {
+      onClose();
+    }
+  };
 
-    // Cleanup on unmount
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isOpen]);
-
-  if (!isOpen) return null;
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+    if (onClose) {
+      onClose();
+    }
+  };
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
-      <div className='bg-black/90 backdrop-blur-sm rounded-lg p-6 w-96 max-w-sm text-gray-300 shadow-lg flex flex-col items-center'>
-        <h2 className='text-xl font-semibold mb-4 text-center'>{title}</h2>
-        <p className='mb-6 text-center'>{message}</p>
-        <div className='flex justify-center gap-4 w-full'>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="small"
+      showCloseButton={false}
+      closeOnBackdropClick={false}
+    >
+      <div className="p-6">
+        <p className="text-gray-300 mb-6">{message}</p>
+        <div className="flex gap-3 justify-end">
           <Button
-            onClick={onCancel}
-            variant='outline'
-            size='md'
-            className='w-full'
+            onClick={handleCancel}
+            variant={cancelVariant}
+            className="px-4 py-2"
           >
-            No
+            {cancelText}
           </Button>
           <Button
-            onClick={onConfirm}
-            variant='default'
-            size='md'
-            className='w-full'
+            onClick={handleConfirm}
+            variant={confirmVariant}
+            className="px-4 py-2"
           >
-            Yes
+            {confirmText}
           </Button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 

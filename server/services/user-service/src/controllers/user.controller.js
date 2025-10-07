@@ -593,6 +593,70 @@ const logoutUser = async (req, res) => {
   }
 };
 
+const getDevelopers = async (req, res) => {
+  try {
+    const { 
+      search,
+      experience,
+      location,
+      skills,
+      availability,
+      limit = 20,
+      page = 1
+    } = req.query;
+
+    const filters = {
+      search,
+      experience,
+      location,
+      skills,
+      availability,
+      limit: parseInt(limit),
+      page: parseInt(page)
+    };
+
+    const developers = await UserModel.getDevelopers(filters);
+
+    // Generate signed URLs for avatars
+    const developersWithSignedUrls = await Promise.all(
+      developers.map(async (developer) => {
+        if (developer.avatarUrl) {
+          try {
+            const { data, error } = await supabase.storage
+              .from("upload")
+              .createSignedUrl(developer.avatarUrl, 60 * 60); // 1 hour
+            if (!error && data) {
+              developer.avatarUrl = data.signedUrl;
+            }
+          } catch (error) {
+            console.error("Error generating signed URL for avatar:", error);
+          }
+        }
+        return developer;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      developers: developersWithSignedUrls,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: developersWithSignedUrls.length
+      }
+    });
+  } catch (error) {
+    console.error("Get developers error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developers",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -605,4 +669,5 @@ module.exports = {
   forgetPassword,
   resetPassword,
   logoutUser,
+  getDevelopers,
 };

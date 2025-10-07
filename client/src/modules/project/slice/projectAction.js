@@ -214,3 +214,10 @@ export const deleteProjectCommentApi = async (commentId) => {
   const url = `api/v1/projects/comments/${commentId}`;
   return await fetchFromApiServer("DELETE", url);
 };
+
+// Developers API
+export const getDevelopersApi = async (params = {}) => {
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `api/v1/user/developers${queryParams ? `?${queryParams}` : ''}`;
+  return await fetchFromApiServer("GET", url);
+};

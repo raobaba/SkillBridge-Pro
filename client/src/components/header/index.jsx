@@ -5,7 +5,7 @@ import { Code, Menu, X, User, Bell, MessageSquare, Search } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { getToken } from "../../services/utils";
 import {Button,Input} from "../../components"
-import ConfirmModal from "../modal/ConfirmModal";
+import { ConfirmModal } from "../index";
 import { logOut } from "../../modules/authentication/slice/userSlice";
 
 const Navbar = ({

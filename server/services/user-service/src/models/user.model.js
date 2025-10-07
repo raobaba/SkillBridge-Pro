@@ -11,7 +11,7 @@ const {
   pgEnum,
 } = require("drizzle-orm/pg-core");
 
-const { eq, and } = require("drizzle-orm");
+const { eq, and, or, ilike, desc } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 
@@ -109,6 +109,99 @@ class UserModel {
       .from(userTable)
       .where(eq(userTable.isDeleted, false));
     return users;
+  }
+
+  static async getDevelopers(filters = {}) {
+    const { 
+      search,
+      experience,
+      location,
+      skills,
+      availability,
+      limit = 20,
+      page = 1
+    } = filters;
+
+    let query = db
+      .select()
+      .from(userTable)
+      .where(
+        and(
+          eq(userTable.isDeleted, false),
+          eq(userTable.role, 'developer')
+        )
+      );
+
+    // Add search filter if provided
+    if (search) {
+      query = query.where(
+        and(
+          eq(userTable.isDeleted, false),
+          eq(userTable.role, 'developer'),
+          or(
+            ilike(userTable.name, `%${search}%`),
+            ilike(userTable.bio, `%${search}%`),
+            ilike(userTable.domainPreferences, `%${search}%`)
+          )
+        )
+      );
+    }
+
+    // Add experience filter if provided
+    if (experience && experience !== 'all') {
+      query = query.where(
+        and(
+          eq(userTable.isDeleted, false),
+          eq(userTable.role, 'developer'),
+          eq(userTable.experience, experience)
+        )
+      );
+    }
+
+    // Add location filter if provided
+    if (location && location !== 'all') {
+      if (location === 'remote') {
+        query = query.where(
+          and(
+            eq(userTable.isDeleted, false),
+            eq(userTable.role, 'developer'),
+            or(
+              ilike(userTable.location, '%remote%'),
+              eq(userTable.location, 'Remote')
+            )
+          )
+        );
+      } else {
+        query = query.where(
+          and(
+            eq(userTable.isDeleted, false),
+            eq(userTable.role, 'developer'),
+            ilike(userTable.location, `%${location}%`)
+          )
+        );
+      }
+    }
+
+    // Add availability filter if provided
+    if (availability && availability !== 'all') {
+      query = query.where(
+        and(
+          eq(userTable.isDeleted, false),
+          eq(userTable.role, 'developer'),
+          eq(userTable.availability, availability)
+        )
+      );
+    }
+
+    // Add pagination
+    const offset = (page - 1) * limit;
+    query = query.limit(limit).offset(offset);
+
+    // Order by XP (level) descending
+    query = query.orderBy(desc(userTable.xp));
+
+    const developers = await query;
+    return developers;
   }
 
   static async verifyEmail(id) {

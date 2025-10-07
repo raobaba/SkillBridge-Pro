@@ -4,7 +4,7 @@ import { Layout } from "../../../components";
 import { Footer } from "../../../components";
 import { useDispatch } from "react-redux";
 import { logOut } from "../../authentication/slice/userSlice";
-import ConfirmModal from "../../../components/modal/ConfirmModal";
+import { ConfirmModal } from "../../../components";
 import Hero from "../components/Hero";
 import Stats from "../components/Stats";
 import Features from "../components/Features";

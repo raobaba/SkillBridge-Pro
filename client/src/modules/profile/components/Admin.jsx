@@ -24,7 +24,7 @@ import {
   Target,
   PieChart,
 } from "lucide-react";
-import ConfirmModal from "../../../components/modal/ConfirmModal";
+import { ConfirmModal } from "../../../components";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
 import {

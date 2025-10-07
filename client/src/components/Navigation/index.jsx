@@ -37,7 +37,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import {Button,Input} from "../../components"
-import ConfirmModal from "../modal/ConfirmModal";
+import { ConfirmModal } from "../index";
 import { logOut } from "../../modules/authentication/slice/userSlice";
 import { useDispatch } from "react-redux";
 import { 

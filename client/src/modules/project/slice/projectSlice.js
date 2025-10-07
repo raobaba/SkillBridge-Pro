@@ -37,6 +37,7 @@ import {
   removeProjectSaveApi,
   getProjectSavesApi,
   withdrawApplicationApi,
+  getDevelopersApi,
 } from "./projectAction";
 
 // Initial state
@@ -84,6 +85,10 @@ const initialState = {
   commentsLoading: false,
   publicLoading: false,
   filterOptionsLoading: false,
+  
+  // Developers
+  developers: [],
+  developersLoading: false,
   
   // Error and message states
   error: null,
@@ -615,6 +620,21 @@ export const deleteProjectComment = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to delete comment" }
+      );
+    }
+  }
+);
+
+// Get developers
+export const getDevelopers = createAsyncThunk(
+  "project/getDevelopers",
+  async (params, { rejectWithValue }) => {
+    try {
+      const response = await getDevelopersApi(params);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch developers" }
       );
     }
   }
@@ -1540,6 +1560,24 @@ const projectSlice = createSlice({
       })
       .addCase(saveAppliedProjects.rejected, (state, action) => {
         state.error = action.payload.message || 'Failed to save applied projects';
+      })
+
+      // Get Developers
+      .addCase(getDevelopers.pending, (state) => {
+        state.developersLoading = true;
+        state.error = null;
+        state.lastAction = 'getDevelopers.pending';
+      })
+      .addCase(getDevelopers.fulfilled, (state, action) => {
+        state.developersLoading = false;
+        state.developers = action.payload.developers || [];
+        state.error = null;
+        state.lastAction = 'getDevelopers.fulfilled';
+      })
+      .addCase(getDevelopers.rejected, (state, action) => {
+        state.developersLoading = false;
+        state.error = action.payload.message || 'Failed to fetch developers';
+        state.lastAction = 'getDevelopers.rejected';
       });
   },
 });

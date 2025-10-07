@@ -10,6 +10,8 @@ import { StackOverflowIcon } from "./StackOverflow";
 import { Footer } from "./Footer";
 import ErrorState from "./ErrorState";
 import FilterSummary from "./FilterSummary";
+import Modal from "./Modal";
+import ConfirmModal from "./Modal/ConfirmModal";
 
 export {
   CircularLoader,
@@ -24,4 +26,6 @@ export {
   Footer,
   ErrorState,
   FilterSummary,
+  Modal,
+  ConfirmModal,
 };

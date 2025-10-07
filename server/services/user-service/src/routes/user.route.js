@@ -13,6 +13,9 @@ userRouter.get("/profile", authenticate, userController.getUserProfile);
 userRouter.put("/profile", authenticate, userController.updateUserProfile);
 userRouter.delete("/profile", authenticate, userController.deleteUser);
 
+// Developers
+userRouter.get("/developers", authenticate, userController.getDevelopers);
+
 // Email Verification
 userRouter.get("/verify-email", userController.verifyEmail);
 
