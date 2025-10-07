@@ -570,21 +570,21 @@ const DeveloperProjects = ({
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
-      <div className='px-6 py-8 space-y-8 max-w-7xl mx-auto'>
+      <div className='px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto'>
         {/* Header */}
-        <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10'>
+        <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-4 sm:p-6 rounded-2xl border border-white/10'>
           <div className='flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4'>
-            <div className='flex items-center gap-4'>
-              <div className='p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
-                <Briefcase className='w-8 h-8 text-white' />
+            <div className='flex items-center gap-3 sm:gap-4'>
+              <div className='p-2 sm:p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
+                <Briefcase className='w-6 h-6 sm:w-8 sm:h-8 text-white' />
               </div>
               <div>
-                <h1 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+                <h1 className='text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
                   {activeTab === "discover"
                     ? "Discover Projects"
                     : "Your Applications"}
                 </h1>
-                <p className='text-gray-300 text-sm'>
+                <p className='text-gray-300 text-xs sm:text-sm'>
                   {activeTab === "discover"
                     ? "Find and apply to projects that match your skills and interests"
                     : "Track your application statuses and next steps"}
@@ -647,7 +647,7 @@ const DeveloperProjects = ({
         </div>
 
         {/* Stats Overview */}
-        <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
+        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4'>
           <div className='bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10'>
             <div className='flex items-center gap-3'>
               <div className='p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg'>
@@ -713,7 +713,7 @@ const DeveloperProjects = ({
 
         {/* Search and Filters */}
         {activeTab === "discover" && (
-          <div className='bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10'>
+          <div className='bg-black/20 backdrop-blur-sm p-4 sm:p-6 rounded-xl border border-white/10'>
             {/* Main Search and Controls */}
             <div className='flex flex-col lg:flex-row gap-4 mb-6'>
               <div className='flex-1 relative'>
@@ -1004,73 +1004,71 @@ const DeveloperProjects = ({
 
         {/* Recommended Projects */}
         {activeTab === "discover" && recommendedProjects.length > 0 && (
-          <div className='space-y-3'>
+          <div className='space-y-4'>
             <h2 className='text-xl font-semibold text-white'>
               Recommended for you
             </h2>
-            <div className='overflow-x-auto'>
-              <div className='flex gap-4 min-w-full snap-x snap-mandatory pb-2'>
-                {recommendedProjects.map((project, idx) => (
-                  <div
-                    key={project.id ?? idx}
-                    className='min-w-[280px] bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300 relative snap-start'
-                  >
-                    {project.isFeatured && (
-                      <span className='absolute top-3 right-3 px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'>
-                        Featured
-                      </span>
-                    )}
-                    <div className='flex items-center gap-2 mb-2'>
-                      <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
-                        <Briefcase className='w-4 h-4 text-white' />
-                      </div>
-                      <h3 className='text-white font-semibold truncate'>
-                        {project.title}
-                      </h3>
+            <div className='grid gap-4 grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'>
+              {recommendedProjects.map((project, idx) => (
+                <div
+                  key={project.id ?? idx}
+                  className='bg-white/5 border border-white/10 rounded-xl p-4 hover:bg-white/10 transition-colors duration-300 relative'
+                >
+                  {project.isFeatured && (
+                    <span className='absolute top-3 right-3 px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'>
+                      Featured
+                    </span>
+                  )}
+                  <div className='flex items-center gap-2 mb-3'>
+                    <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex-shrink-0'>
+                      <Briefcase className='w-4 h-4 text-white' />
                     </div>
-                    <p className='text-gray-300 text-sm line-clamp-3 mb-3'>
-                      {project.description}
-                    </p>
-                    <div className='flex items-center justify-between text-xs text-gray-400'>
-                      <span className='flex items-center gap-1'>
-                        <Users className='w-3 h-3' />
-                        {project.applicantsCount}
-                      </span>
-                      <span className='flex items-center gap-1'>
-                        <Clock className='w-3 h-3' />
-                        {project.duration}
-                      </span>
-                      <span className='flex items-center gap-1'>
-                        <DollarSign className='w-3 h-3' />
-                        {project.budget}
-                      </span>
-                    </div>
-                    <div className='flex gap-2 mt-3'>
-                      <Button
-                        onClick={() => handleOpenDetails(project)}
-                        className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300'
-                      >
-                        View
-                      </Button>
-                      {!isPublicOnly && (
-                        <Button
-                          onClick={() => handleApplyToProject(project.id)}
-                          disabled={appliedProjects.includes(project.id)}
-                          className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                            appliedProjects.includes(project.id)
-                              ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                              : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
-                          }`}
-                        >
-                          {appliedProjects.includes(project.id)
-                            ? "Applied"
-                            : "Apply"}
-                        </Button>
-                      )}
-                    </div>
+                    <h3 className='text-white font-semibold text-sm leading-tight line-clamp-2'>
+                      {project.title}
+                    </h3>
                   </div>
-                ))}
-              </div>
+                  <p className='text-gray-300 text-xs line-clamp-3 mb-3 leading-relaxed'>
+                    {project.description}
+                  </p>
+                  <div className='flex items-center justify-between text-xs text-gray-400 mb-3'>
+                    <span className='flex items-center gap-1'>
+                      <Users className='w-3 h-3' />
+                      {project.applicantsCount}
+                    </span>
+                    <span className='flex items-center gap-1'>
+                      <Clock className='w-3 h-3' />
+                      {project.duration}
+                    </span>
+                    <span className='flex items-center gap-1'>
+                      <DollarSign className='w-3 h-3' />
+                      {project.budget}
+                    </span>
+                  </div>
+                  <div className='flex gap-2'>
+                    <Button
+                      onClick={() => handleOpenDetails(project)}
+                      className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-xs transition-colors duration-300'
+                    >
+                      View
+                    </Button>
+                    {!isPublicOnly && (
+                      <Button
+                        onClick={() => handleApplyToProject(project.id)}
+                        disabled={appliedProjects.includes(project.id)}
+                        className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                          appliedProjects.includes(project.id)
+                            ? "bg-green-500/20 text-green-400 cursor-not-allowed"
+                            : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                        }`}
+                      >
+                        {appliedProjects.includes(project.id)
+                          ? "Applied"
+                          : "Apply"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1078,7 +1076,7 @@ const DeveloperProjects = ({
         {/* Projects Grid/List or Applications */}
         {activeTab === "discover" ? (
           viewMode === "grid" ? (
-            <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+            <div className='grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3'>
               {filteredProjects.map((project, idx) => (
                 <ProjectCard
                   key={project.id ?? idx}
@@ -1101,38 +1099,40 @@ const DeveloperProjects = ({
               {filteredProjects.map((project, idx) => (
                 <div
                   key={project.id ?? idx}
-                  className='bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:bg-white/5 transition-all duration-300'
+                  className='bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 p-4 sm:p-6 hover:bg-white/5 transition-all duration-300'
                 >
-                  <div className='flex items-start justify-between'>
-                    <div className='flex-1'>
-                      <div className='flex items-center gap-3 mb-2'>
-                        <h3 className='text-xl font-bold text-white'>
+                  <div className='flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4'>
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-3'>
+                        <h3 className='text-lg sm:text-xl font-bold text-white leading-tight'>
                           {project.title}
                         </h3>
-                        <span
-                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            project.status === "active"
-                              ? "bg-green-500/20 text-green-400"
-                              : project.status === "upcoming"
-                                ? "bg-yellow-500/20 text-yellow-400"
-                                : "bg-gray-500/20 text-gray-400"
-                          }`}
-                        >
-                          {project.statusDisplay}
-                        </span>
-                        {project.isFeatured && (
-                          <span className='px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400'>
-                            Featured
+                        <div className='flex flex-wrap gap-2'>
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              project.status === "active"
+                                ? "bg-green-500/20 text-green-400"
+                                : project.status === "upcoming"
+                                  ? "bg-yellow-500/20 text-yellow-400"
+                                  : "bg-gray-500/20 text-gray-400"
+                            }`}
+                          >
+                            {project.statusDisplay}
                           </span>
-                        )}
-                        {project.benefits && (
-                          <span className='px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400'>
-                            Rewards
-                          </span>
-                        )}
+                          {project.isFeatured && (
+                            <span className='px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400'>
+                              Featured
+                            </span>
+                          )}
+                          {project.benefits && (
+                            <span className='px-2 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400'>
+                              Rewards
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <p className='text-gray-300 mb-3'>
+                      <p className='text-gray-300 mb-3 text-sm sm:text-base leading-relaxed'>
                         {project.description}
                       </p>
 
@@ -1152,21 +1152,21 @@ const DeveloperProjects = ({
                         )}
                       </div>
 
-                      <div className='flex flex-wrap items-center gap-4 text-sm text-gray-400'>
+                      <div className='flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400'>
                         <span className='flex items-center gap-1'>
-                          <DollarSign className='w-4 h-4' />
+                          <DollarSign className='w-3 h-3 sm:w-4 sm:h-4' />
                           {project.budget}
                         </span>
                         <span className='flex items-center gap-1'>
-                          <MapPin className='w-4 h-4' />
+                          <MapPin className='w-3 h-3 sm:w-4 sm:h-4' />
                           {project.location}
                         </span>
                         <span className='flex items-center gap-1'>
-                          <Clock className='w-4 h-4' />
+                          <Clock className='w-3 h-3 sm:w-4 sm:h-4' />
                           {project.duration}
                         </span>
                         <span className='flex items-center gap-1'>
-                          <Users className='w-4 h-4' />
+                          <Users className='w-3 h-3 sm:w-4 sm:h-4' />
                           {project.applicantsCount} applicants
                         </span>
                       </div>
@@ -1177,24 +1177,28 @@ const DeveloperProjects = ({
                       )}
                     </div>
 
-                    <div className='flex flex-col gap-2 ml-4'>
-                      <Button
-                        onClick={() => handleOpenDetails(project)}
-                        className='px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white'
-                      >
-                        View Details
-                      </Button>
+                    <div className='flex flex-col sm:flex-row lg:flex-col gap-2 lg:ml-4'>
+                      <div className='flex gap-2'>
+                        <Button
+                          onClick={() => handleOpenDetails(project)}
+                          className='flex-1 sm:flex-none px-4 py-2 rounded-lg font-semibold transition-all duration-300 bg-white/10 hover:bg-white/20 text-white text-sm'
+                        >
+                          <span className='hidden sm:inline'>View Details</span>
+                          <span className='sm:hidden'>View</span>
+                        </Button>
                         {!isPublicOnly && (
                           <Button
                             onClick={() => handleApplyToProject(project.id)}
                             variant="apply-list"
                             isApplied={appliedProjects.includes(project.id)}
+                            className='flex-1 sm:flex-none text-sm'
                           >
-                            {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
+                            {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
                           </Button>
                         )}
+                      </div>
                       {!isPublicOnly && (
-                        <div className='flex gap-2'>
+                        <div className='flex gap-2 justify-center sm:justify-start'>
                           <Button
                             onClick={() => handleSaveProject(project.id)}
                             disabled={savingProjectId === project.id}
@@ -1227,7 +1231,10 @@ const DeveloperProjects = ({
                               className={`w-4 h-4 ${isProjectFavorited(project.id) ? "fill-current" : ""}`}
                             />
                           </Button>
-                          <Button className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'>
+                          <Button 
+                            onClick={() => handleShareProject(project)}
+                            className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'
+                          >
                             <Share2 className='w-4 h-4' />
                           </Button>
                         </div>
