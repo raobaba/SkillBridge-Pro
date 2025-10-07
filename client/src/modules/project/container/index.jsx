@@ -16,6 +16,8 @@ import {
   clearProjectState,
   // New public discovery thunks
   getPublicProjects,
+  getProjectCategories,
+  getFilterOptions,
 } from "../slice/projectSlice";
 
 export default function Project() {
@@ -32,7 +34,7 @@ export default function Project() {
     // New public discovery state
     publicProjects,
     projectCategories,
-    projectMetadata,
+    filterOptions,
     error: projectError,
     message: projectMessage
   } = useSelector((state) => state.project);
@@ -61,13 +63,11 @@ export default function Project() {
     // Load initial data based on user role
     const loadInitialData = async () => {
       try {
-        // Load projects for all roles
-        await dispatch(listProjects()).unwrap();
-        // Public discovery data (available to all roles)
+        // Load public discovery data (available to all roles)
         await Promise.all([
           dispatch(getPublicProjects()).unwrap(),
-          // dispatch(getProjectCategories()).unwrap(),
-          // dispatch(getProjectMetadata()).unwrap(),
+          dispatch(getProjectCategories()).unwrap(),
+          dispatch(getFilterOptions()).unwrap(),
         ]);
         
         // Load role-specific data
@@ -78,10 +78,10 @@ export default function Project() {
             dispatch(getProjectFavorites()).unwrap()
           ]);
         } else if (user?.role === 'project-owner') {
-          // Load owner's projects
+          // Load owner's projects using listProjects with ownerId filter
           await dispatch(listProjects({ ownerId: user.id })).unwrap();
         } else if (user?.role === 'admin') {
-          // Load all projects for admin
+          // Load all projects for admin using listProjects
           await dispatch(listProjects()).unwrap();
         }
       } catch (error) {
@@ -138,7 +138,7 @@ export default function Project() {
       // Pass public discovery data
       publicProjects,
       projectCategories,
-      projectMetadata,
+      filterOptions,
       dispatch,
       loading: isBusy,
       error: projectError,

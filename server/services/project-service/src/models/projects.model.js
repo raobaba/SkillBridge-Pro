@@ -10,9 +10,13 @@ const {
   pgEnum,
   numeric,
 } = require("drizzle-orm/pg-core");
-const { eq, and, desc, or, ilike, gte, lte, asc } = require("drizzle-orm");
+const { eq, and, desc, or, ilike, gte, lte, asc, inArray, exists, sql } = require("drizzle-orm");
 
 const { db } = require("../config/database");
+
+// Import skills and tags tables for metadata fetching
+const { projectSkillsTable } = require("./project-skills.model");
+const { projectTagsTable } = require("./project-tags.model");
 
 // Enums
 const projectStatusEnum = pgEnum("project_status", [
@@ -264,8 +268,6 @@ class ProjectsModel {
       budgetMax,
       isRemote,
       location,
-      skills,
-      tags,
       sortBy = 'createdAt',
       sortOrder = 'desc',
       page = 1,
@@ -275,44 +277,71 @@ class ProjectsModel {
     // Build conditions array
     const conditions = [eq(projectsTable.isDeleted, false)];
 
-    // Text search
+    // Text search - search across multiple relevant fields and related skills/tags
     if (query) {
+      // Search in project fields
+      const projectFieldSearch = or(
+        ilike(projectsTable.title, `%${query}%`),
+        ilike(projectsTable.description, `%${query}%`),
+        ilike(projectsTable.roleNeeded, `%${query}%`),
+        ilike(projectsTable.company, `%${query}%`),
+        ilike(projectsTable.category, `%${query}%`),
+        ilike(projectsTable.subcategory, `%${query}%`),
+        ilike(projectsTable.requirements, `%${query}%`),
+        ilike(projectsTable.benefits, `%${query}%`),
+        ilike(projectsTable.location, `%${query}%`),
+        ilike(projectsTable.duration, `%${query}%`),
+        ilike(projectsTable.workArrangement, `%${query}%`),
+        ilike(projectsTable.paymentTerms, `%${query}%`)
+      );
+
+      // Search in skills
+      const skillsSubquery = db
+        .select({ projectId: projectSkillsTable.projectId })
+        .from(projectSkillsTable)
+        .where(ilike(projectSkillsTable.name, `%${query}%`));
+
+      // Search in tags
+      const tagsSubquery = db
+        .select({ projectId: projectTagsTable.projectId })
+        .from(projectTagsTable)
+        .where(ilike(projectTagsTable.name, `%${query}%`));
+
       conditions.push(
         or(
-          ilike(projectsTable.title, `%${query}%`),
-          ilike(projectsTable.description, `%${query}%`),
-          ilike(projectsTable.roleNeeded, `%${query}%`),
-          ilike(projectsTable.company, `%${query}%`)
+          projectFieldSearch,
+          exists(skillsSubquery.where(eq(projectSkillsTable.projectId, projectsTable.id))),
+          exists(tagsSubquery.where(eq(projectTagsTable.projectId, projectsTable.id)))
         )
       );
     }
 
     // Category filter
-    if (category) {
+    if (category && category !== 'all') {
       conditions.push(eq(projectsTable.category, category));
     }
 
     // Status filter
-    if (status) {
+    if (status && status !== 'all') {
       conditions.push(eq(projectsTable.status, status));
     }
 
     // Priority filter
-    if (priority) {
+    if (priority && priority !== 'all') {
       conditions.push(eq(projectsTable.priority, priority));
     }
 
     // Experience level filter
-    if (experienceLevel) {
+    if (experienceLevel && experienceLevel !== 'all') {
       conditions.push(eq(projectsTable.experienceLevel, experienceLevel));
     }
 
     // Budget filters
-    if (budgetMin !== undefined) {
-      conditions.push(gte(projectsTable.budgetMin, budgetMin));
+    if (budgetMin !== undefined && budgetMin !== '') {
+      conditions.push(gte(projectsTable.budgetMin, Number(budgetMin)));
     }
-    if (budgetMax !== undefined) {
-      conditions.push(lte(projectsTable.budgetMax, budgetMax));
+    if (budgetMax !== undefined && budgetMax !== '') {
+      conditions.push(lte(projectsTable.budgetMax, Number(budgetMax)));
     }
 
     // Remote filter
@@ -321,8 +350,12 @@ class ProjectsModel {
     }
 
     // Location filter
-    if (location) {
-      conditions.push(ilike(projectsTable.location, `%${location}%`));
+    if (location && location !== 'all') {
+      if (location === 'Remote') {
+        conditions.push(eq(projectsTable.isRemote, true));
+      } else {
+        conditions.push(ilike(projectsTable.location, `%${location}%`));
+      }
     }
 
     // Apply all conditions
@@ -332,8 +365,29 @@ class ProjectsModel {
     const offset = (page - 1) * limit;
 
     // Build sort order
-    const sortColumn = projectsTable[sortBy] || projectsTable.createdAt;
-    const orderBy = sortOrder === 'asc' ? asc(sortColumn) : desc(sortColumn);
+    let orderBy;
+    switch (sortBy) {
+      case 'relevance':
+        orderBy = desc(projectsTable.matchScoreAvg);
+        break;
+      case 'newest':
+        orderBy = desc(projectsTable.createdAt);
+        break;
+      case 'deadline':
+        orderBy = asc(projectsTable.deadline);
+        break;
+      case 'budget':
+        orderBy = desc(projectsTable.budgetMin);
+        break;
+      case 'rating':
+        orderBy = desc(projectsTable.ratingAvg);
+        break;
+      case 'applicants':
+        orderBy = asc(projectsTable.applicantsCount);
+        break;
+      default:
+        orderBy = sortOrder === 'asc' ? asc(projectsTable.createdAt) : desc(projectsTable.createdAt);
+    }
 
     // Execute query
     const rows = await db
@@ -344,19 +398,37 @@ class ProjectsModel {
       .limit(limit)
       .offset(offset);
 
-    // Get total count for pagination
-    const totalCount = await db
-      .select({ count: projectsTable.id })
+    // Get total count for pagination (with all filters applied)
+    const totalCountResult = await db
+      .select({ count: sql`count(*)` })
       .from(projectsTable)
       .where(whereClause);
+    
+    const totalCount = totalCountResult[0]?.count || 0;
+
+    // Get tags and skills for each project
+    const projectsWithMetadata = await Promise.all(
+      rows.map(async (project) => {
+        const [projectSkills, projectTags] = await Promise.all([
+          db.select().from(projectSkillsTable).where(eq(projectSkillsTable.projectId, project.id)),
+          db.select().from(projectTagsTable).where(eq(projectTagsTable.projectId, project.id))
+        ]);
+
+        return {
+          ...project,
+          skills: projectSkills.map(s => s.name),
+          tags: projectTags.map(t => t.name)
+        };
+      })
+    );
 
     return {
-      projects: rows,
+      projects: projectsWithMetadata,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total: totalCount.length,
-        pages: Math.ceil(totalCount.length / limit)
+        total: Number(totalCount),
+        pages: Math.ceil(Number(totalCount) / limit)
       }
     };
   }

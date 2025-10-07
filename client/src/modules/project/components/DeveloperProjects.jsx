@@ -28,54 +28,18 @@ import {
   addProjectSave,
   removeProjectSave,
   getProjectSaves,
+  getPublicProjects,
+  getSearchSuggestions,
 } from "../slice/projectSlice";
 
-// Constants
-const SKILL_OPTIONS = [
-  "React", "Node.js", "Python", "JavaScript", "TypeScript", "Vue.js", "Angular",
-  "Express", "Django", "Flask", "MongoDB", "PostgreSQL", "MySQL", "Redis",
-  "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "Jenkins", "Git",
-  "GraphQL", "REST API", "Microservices", "Blockchain", "Solidity",
-  "Machine Learning", "TensorFlow", "PyTorch", "Data Science", "AI", "NLP",
-];
-
-const DEFAULT_STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
-  { value: "Active", label: "Active" },
-  { value: "Upcoming", label: "Upcoming" },
-  { value: "Draft", label: "Draft" },
-];
-
-const DEFAULT_PRIORITY_OPTIONS = [
-  { value: "all", label: "All Priority" },
-  { value: "High", label: "High Priority" },
-  { value: "Medium", label: "Medium Priority" },
-  { value: "Low", label: "Low Priority" },
-];
-
-const LOCATION_OPTIONS = [
-  { value: "all", label: "All Locations" },
-  { value: "Remote", label: "Remote" },
-  { value: "San Francisco, CA", label: "San Francisco, CA" },
-  { value: "New York, NY", label: "New York, NY" },
-  { value: "Austin, TX", label: "Austin, TX" },
-];
-
-const SORT_OPTIONS = [
-  { value: "relevance", label: "Most Relevant" },
-  { value: "newest", label: "Newest First" },
-  { value: "deadline", label: "Deadline" },
-  { value: "budget", label: "Budget (High to Low)" },
-  { value: "rating", label: "Rating" },
-  { value: "applicants", label: "Fewest Applicants" },
-];
+// Filter options now come from API via Redux state
 
 const DeveloperProjects = ({
   user,
   projects,
   publicProjects = [],
   projectCategories = [],
-  projectMetadata = null,
+  filterOptions = null,
   myInvites = [],
   recommendations,
   favorites = [],
@@ -91,10 +55,14 @@ const DeveloperProjects = ({
   // const navigate = useNavigate(); // unused
   const [activeTab, setActiveTab] = useState("discover"); // discover | applications
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [selectedLocation, setSelectedLocation] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedExperienceLevel, setSelectedExperienceLevel] = useState("all");
+  const [budgetMin, setBudgetMin] = useState("");
+  const [budgetMax, setBudgetMax] = useState("");
+  const [isRemoteOnly, setIsRemoteOnly] = useState(false);
   const [sortBy, setSortBy] = useState("relevance");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilters, setShowFilters] = useState(false);
@@ -108,6 +76,8 @@ const DeveloperProjects = ({
   const [internalSearch, setInternalSearch] = useState("");
   const [newCommentText, setNewCommentText] = useState("");
   const [savingProjectId, setSavingProjectId] = useState(null);
+  const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState({ skills: [], tags: [] });
 
   // Load applied projects from localStorage
   useEffect(() => {
@@ -127,12 +97,38 @@ const DeveloperProjects = ({
     }
   }, [message, error]);
 
+  // Helper function to get display labels for status and priority
+  const getDisplayLabel = useCallback((value, type) => {
+    if (type === 'status') {
+      const statusMap = {
+        'active': 'Active',
+        'upcoming': 'Upcoming', 
+        'draft': 'Draft',
+        'paused': 'Paused',
+        'completed': 'Completed',
+        'cancelled': 'Cancelled'
+      };
+      return statusMap[value] || value;
+    }
+    if (type === 'priority') {
+      const priorityMap = {
+        'high': 'High Priority',
+        'medium': 'Medium Priority',
+        'low': 'Low Priority'
+      };
+      return priorityMap[value] || value;
+    }
+    return value;
+  }, []);
+
   // Map API data to match UI expectations (memoized)
   const mapProjectData = useCallback((project) => ({
     id: project.id,
     title: project.title,
-    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || "Active",
-    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || "Medium",
+    status: project.status || "active", // Keep original case for filtering
+    priority: project.priority || "medium", // Keep original case for filtering
+    statusDisplay: getDisplayLabel(project.status || "active", 'status'), // Display label
+    priorityDisplay: getDisplayLabel(project.priority || "medium", 'priority'), // Display label
     description: project.description,
     startDate: project.startDate,
     deadline: project.deadline,
@@ -182,7 +178,7 @@ const DeveloperProjects = ({
     () => (baseProjects || []).map(mapProjectData),
     [baseProjects]
   );
-  const [filteredProjects, setFilteredProjects] = useState(displayProjects);
+  const [filteredProjects, setFilteredProjects] = useState([]);
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -193,103 +189,236 @@ const DeveloperProjects = ({
           .slice(0, 6);
   }, [recommendations, displayProjects, mapProjectData]);
 
-  // Build select options with metadata when available; keep current defaults otherwise
+  // Build select options from API data
   const statusOptions = useMemo(() => 
-    projectMetadata?.statuses?.length
+    filterOptions?.statuses?.length
       ? [
           { value: "all", label: "All Status" },
-          ...projectMetadata.statuses.map((s) => ({
-            value: s.label,
+          ...filterOptions.statuses.map((s) => ({
+            value: s.value,
             label: s.label,
           })),
         ]
-      : DEFAULT_STATUS_OPTIONS,
-    [projectMetadata?.statuses]
+      : [{ value: "all", label: "All Status" }],
+    [filterOptions?.statuses]
   );
 
   const priorityOptions = useMemo(() =>
-    projectMetadata?.priorities?.length
+    filterOptions?.priorities?.length
       ? [
           { value: "all", label: "All Priority" },
-          ...projectMetadata.priorities.map((p) => ({
-            value: p.label,
+          ...filterOptions.priorities.map((p) => ({
+            value: p.value,
             label: p.label,
           })),
         ]
-      : DEFAULT_PRIORITY_OPTIONS,
-    [projectMetadata?.priorities]
+      : [{ value: "all", label: "All Priority" }],
+    [filterOptions?.priorities]
   );
 
-  // Optimized filter function with memoization
-  const filterProjects = useCallback(() => {
-    let filtered = displayProjects.filter((project) => {
-      const matchesSearch =
-        project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.roleNeeded?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.company?.toLowerCase().includes(searchTerm.toLowerCase());
+  const sortOptions = useMemo(() => 
+    filterOptions?.sortOptions?.length
+      ? filterOptions.sortOptions
+      : [{ value: "relevance", label: "Most Relevant" }],
+    [filterOptions?.sortOptions]
+  );
 
-      const matchesSkills =
-        selectedSkills.length === 0 ||
-        selectedSkills.some((skill) =>
-          project.tags?.some((tag) =>
-            tag.toLowerCase().includes(skill.toLowerCase())
-          )
-        );
+  const locationOptions = useMemo(() => 
+    filterOptions?.locations?.length
+      ? [
+          { value: "all", label: "All Locations" },
+          ...filterOptions.locations.map((l) => ({
+            value: l.value,
+            label: l.label,
+          })),
+        ]
+      : [{ value: "all", label: "All Locations" }],
+    [filterOptions?.locations]
+  );
 
-      const matchesStatus =
-        selectedStatus === "all" || project.status === selectedStatus;
-      const matchesPriority =
-        selectedPriority === "all" || project.priority === selectedPriority;
-      const matchesLocation =
-        selectedLocation === "all" ||
-        (selectedLocation === "Remote"
-          ? project.isRemote
-          : project.location === selectedLocation);
+  const categoryOptions = useMemo(() => 
+    filterOptions?.categories?.length
+      ? [
+          { value: "all", label: "All Categories" },
+          ...filterOptions.categories.map((c) => ({
+            value: c,
+            label: c,
+          })),
+        ]
+      : [{ value: "all", label: "All Categories" }],
+    [filterOptions?.categories]
+  );
 
-      return (
-        matchesSearch &&
-        matchesSkills &&
-        matchesStatus &&
-        matchesPriority &&
-        matchesLocation
-      );
-    });
+  const experienceOptions = useMemo(() => 
+    filterOptions?.experienceLevels?.length
+      ? [
+          { value: "all", label: "All Experience Levels" },
+          ...filterOptions.experienceLevels.map((e) => ({
+            value: e.value,
+            label: e.label,
+          })),
+        ]
+      : [{ value: "all", label: "All Experience Levels" }],
+    [filterOptions?.experienceLevels]
+  );
 
-    // Sort projects
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "newest":
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case "deadline":
-          return new Date(a.deadline) - new Date(b.deadline);
-        case "budget":
-          const aBudget = parseInt(
-            a.budget.split("-")[0].replace(/[^0-9]/g, "")
-          );
-          const bBudget = parseInt(
-            b.budget.split("-")[0].replace(/[^0-9]/g, "")
-          );
-          return bBudget - aBudget;
-        case "rating":
-          return b.rating - a.rating;
-        case "applicants":
-          return a.applicantsCount - b.applicantsCount;
-        case "relevance":
-        default:
-          return b.matchScore - a.matchScore;
+  // Enhanced filter function that uses public projects API for better performance
+  const filterProjects = useCallback(async () => {
+    try {
+      // Check if any filters are actually applied
+      const hasFilters = 
+        searchTerm.trim() !== "" ||
+        selectedStatus !== "all" ||
+        selectedPriority !== "all" ||
+        selectedLocation !== "all" ||
+        selectedCategory !== "all" ||
+        selectedExperienceLevel !== "all" ||
+        budgetMin !== "" ||
+        budgetMax !== "" ||
+        isRemoteOnly;
+
+      // If no filters are applied, show all projects from displayProjects
+      if (!hasFilters) {
+        setFilteredProjects(displayProjects);
+        return;
       }
-    });
 
-    setFilteredProjects(filtered);
+      // Build filter parameters for public projects API
+      const filterParams = {
+        query: searchTerm.trim() || undefined,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        priority: selectedPriority !== "all" ? selectedPriority : undefined,
+        location: selectedLocation !== "all" ? selectedLocation : undefined,
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+        experienceLevel: selectedExperienceLevel !== "all" ? selectedExperienceLevel : undefined,
+        budgetMin: budgetMin ? Number(budgetMin) : undefined,
+        budgetMax: budgetMax ? Number(budgetMax) : undefined,
+        isRemote: isRemoteOnly ? true : undefined,
+        sortBy: sortBy,
+        sortOrder: 'desc',
+        limit: 100, // Get more results for better filtering
+        page: 1
+      };
+
+      // Remove undefined values
+      Object.keys(filterParams).forEach(key => {
+        if (filterParams[key] === undefined) {
+          delete filterParams[key];
+        }
+      });
+
+      // Debug logging
+      console.log('🔍 Frontend Filter Debug:', {
+        filterParams,
+        selectedStatus,
+        selectedPriority,
+        selectedLocation,
+        selectedCategory,
+        selectedExperienceLevel,
+        isRemoteOnly,
+        budgetMin,
+        budgetMax
+      });
+
+      // Use public projects API for filtering
+      const result = await dispatch(getPublicProjects(filterParams)).unwrap();
+      
+      console.log('📊 API Response:', {
+        projectsReceived: result.projects?.length || 0,
+        totalCount: result.pagination?.total || 0,
+        appliedFilters: filterParams
+      });
+      
+      if (result.projects) {
+        setFilteredProjects(result.projects.map(mapProjectData));
+        return;
+      }
+
+      // Fallback to local filtering if API fails
+      let filtered = displayProjects.filter((project) => {
+        const matchesSearch = !searchTerm.trim() ||
+          project.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.roleNeeded?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          project.company?.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus =
+          selectedStatus === "all" || project.status?.toLowerCase() === selectedStatus.toLowerCase();
+        const matchesPriority =
+          selectedPriority === "all" || project.priority?.toLowerCase() === selectedPriority.toLowerCase();
+        const matchesLocation =
+          selectedLocation === "all" ||
+          (selectedLocation === "Remote"
+            ? project.isRemote
+            : project.location === selectedLocation);
+        const matchesCategory =
+          selectedCategory === "all" || project.category === selectedCategory;
+        const matchesExperience =
+          selectedExperienceLevel === "all" || project.experience?.toLowerCase() === selectedExperienceLevel.toLowerCase();
+        const matchesBudget = 
+          (!budgetMin || (project.budgetMin && project.budgetMin >= Number(budgetMin))) &&
+          (!budgetMax || (project.budgetMax && project.budgetMax <= Number(budgetMax)));
+        const matchesRemote =
+          !isRemoteOnly || project.isRemote;
+
+        return (
+          matchesSearch &&
+          matchesStatus &&
+          matchesPriority &&
+          matchesLocation &&
+          matchesCategory &&
+          matchesExperience &&
+          matchesBudget &&
+          matchesRemote
+        );
+      });
+
+      // Sort projects
+      filtered.sort((a, b) => {
+        switch (sortBy) {
+          case "newest":
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          case "deadline":
+            return new Date(a.deadline) - new Date(b.deadline);
+          case "budget":
+            const aBudget = parseInt(
+              a.budget.split("-")[0].replace(/[^0-9]/g, "")
+            );
+            const bBudget = parseInt(
+              b.budget.split("-")[0].replace(/[^0-9]/g, "")
+            );
+            return bBudget - aBudget;
+          case "rating":
+            return b.rating - a.rating;
+          case "applicants":
+            return a.applicantsCount - b.applicantsCount;
+          case "relevance":
+          default:
+            return b.matchScore - a.matchScore;
+        }
+      });
+
+      setFilteredProjects(filtered);
+    } catch (error) {
+      console.error('Filtering error:', error);
+      // Fallback to local filtering on error
+      setFilteredProjects(displayProjects);
+    }
   }, [
-    displayProjects,
+    dispatch,
+    getPublicProjects,
     searchTerm,
-    selectedSkills,
     selectedStatus,
     selectedPriority,
     selectedLocation,
+    selectedCategory,
+    selectedExperienceLevel,
+    budgetMin,
+    budgetMax,
+    isRemoteOnly,
     sortBy,
+    displayProjects,
+    mapProjectData,
   ]);
 
   // Debounce search input for better UX
@@ -303,10 +432,56 @@ const DeveloperProjects = ({
     filterProjects();
   }, [filterProjects]);
 
+  // Initialize filtered projects when displayProjects first loads
+  useEffect(() => {
+    if (displayProjects.length > 0 && filteredProjects.length === 0) {
+      setFilteredProjects(displayProjects);
+    }
+  }, [displayProjects, filteredProjects.length]);
+
+  // Fetch search suggestions when search term changes
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (internalSearch.trim().length >= 2) {
+        try {
+          const result = await dispatch(getSearchSuggestions({ 
+            query: internalSearch.trim(), 
+            type: 'all' 
+          })).unwrap();
+          setSearchSuggestions(result.suggestions || { skills: [], tags: [] });
+          setShowSearchSuggestions(true);
+        } catch (error) {
+          console.error('Failed to fetch search suggestions:', error);
+          setSearchSuggestions({ skills: [], tags: [] });
+        }
+      } else {
+        setShowSearchSuggestions(false);
+        setSearchSuggestions({ skills: [], tags: [] });
+      }
+    };
+
+    const timeoutId = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timeoutId);
+  }, [internalSearch, dispatch]);
+
   // Update filtered projects when displayProjects change
   useEffect(() => {
-    setFilteredProjects(displayProjects);
-  }, [displayProjects]);
+    // Only set filtered projects if no filters are currently applied
+    const hasFilters = 
+      searchTerm.trim() !== "" ||
+      selectedStatus !== "all" ||
+      selectedPriority !== "all" ||
+      selectedLocation !== "all" ||
+      selectedCategory !== "all" ||
+      selectedExperienceLevel !== "all" ||
+      budgetMin !== "" ||
+      budgetMax !== "" ||
+      isRemoteOnly;
+    
+    if (!hasFilters) {
+      setFilteredProjects(displayProjects);
+    }
+  }, [displayProjects, searchTerm, selectedStatus, selectedPriority, selectedLocation, selectedCategory, selectedExperienceLevel, budgetMin, budgetMax, isRemoteOnly]);
 
   // Optimized handler functions
   const handleApplyToProject = useCallback(async (projectId) => {
@@ -539,6 +714,12 @@ const DeveloperProjects = ({
     setSelectedStatus("all");
     setSelectedPriority("all");
     setSelectedLocation("all");
+    setSelectedCategory("all");
+    setSelectedExperienceLevel("all");
+    setBudgetMin("");
+    setBudgetMax("");
+    setIsRemoteOnly(false);
+    setSelectedTags([]);
     setSortBy("relevance");
   }, []);
 
@@ -712,50 +893,142 @@ const DeveloperProjects = ({
         {/* Search and Filters */}
         {activeTab === "discover" && (
           <div className='bg-black/20 backdrop-blur-sm p-6 rounded-xl border border-white/10'>
-            <div className='flex flex-col lg:flex-row gap-4 sticky top-4 z-20'>
+            {/* Main Search and Controls */}
+            <div className='flex flex-col lg:flex-row gap-4 mb-6'>
               <div className='flex-1 relative'>
                 <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400' />
                 <input
                   type='text'
                   placeholder='Search projects by title, description, company, or role...'
-                  className='w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  className='w-full bg-white/10 border border-white/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300'
                   value={internalSearch}
                   onChange={(e) => setInternalSearch(e.target.value)}
+                  onFocus={() => {
+                    if (internalSearch.trim().length >= 2) {
+                      setShowSearchSuggestions(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay hiding to allow clicking on suggestions
+                    setTimeout(() => setShowSearchSuggestions(false), 200);
+                  }}
                 />
+                
+                {/* Search Suggestions Dropdown */}
+                {showSearchSuggestions && (searchSuggestions.skills.length > 0 || searchSuggestions.tags.length > 0) && (
+                  <div className='absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/20 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto'>
+                    {/* Skills Section */}
+                    {searchSuggestions.skills.length > 0 && (
+                      <div className='p-3 border-b border-white/10'>
+                        <div className='text-xs text-gray-400 mb-2 flex items-center gap-2'>
+                          <svg className='w-3 h-3 text-blue-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' />
+                          </svg>
+                          Skills
+                        </div>
+                        <div className='flex flex-wrap gap-1'>
+                          {searchSuggestions.skills.slice(0, 5).map((skill) => (
+                            <button
+                              key={skill}
+                              onClick={() => {
+                                setInternalSearch(skill);
+                                setShowSearchSuggestions(false);
+                              }}
+                              className='px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded hover:bg-blue-500/30 transition-colors'
+                            >
+                              {skill}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Tags Section */}
+                    {searchSuggestions.tags.length > 0 && (
+                      <div className='p-3'>
+                        <div className='text-xs text-gray-400 mb-2 flex items-center gap-2'>
+                          <svg className='w-3 h-3 text-purple-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' />
+                          </svg>
+                          Tags
+                        </div>
+                        <div className='flex flex-wrap gap-1'>
+                          {searchSuggestions.tags.slice(0, 5).map((tag) => (
+                            <button
+                              key={tag}
+                              onClick={() => {
+                                setInternalSearch(tag);
+                                setShowSearchSuggestions(false);
+                              }}
+                              className='px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded hover:bg-purple-500/30 transition-colors'
+                            >
+                              {tag}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className='flex gap-2 items-center'>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
-                >
-                  {SORT_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+              <div className='flex gap-3 items-center'>
+                <div className='relative'>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className='bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer min-w-[140px]'
+                    style={{ colorScheme: 'dark' }}
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                    <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                    </svg>
+                  </div>
+                </div>
 
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
-                  className='bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2'
+                  className={`px-4 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium ${
+                    showFilters 
+                      ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                      : 'bg-white/10 hover:bg-white/20 text-white'
+                  }`}
                 >
                   <Filter className='w-4 h-4' />
-                  Filters
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                  {showFilters && (
+                    <span className='ml-1 px-2 py-0.5 bg-blue-500/30 text-blue-300 text-xs rounded-full'>
+                      Active
+                    </span>
+                  )}
                 </Button>
 
-                <div className='hidden md:flex bg-white/10 rounded-lg overflow-hidden'>
+                <div className='hidden md:flex bg-white/10 rounded-lg overflow-hidden gap-1'>
                   <Button
                     onClick={() => setViewMode("grid")}
-                    className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "grid" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
+                    className={`px-3 py-2 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
+                      viewMode === "grid" 
+                        ? "bg-white/20 text-white shadow-lg" 
+                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    }`}
                     title='Grid view'
                   >
                     <LayoutGrid className='w-4 h-4' /> Grid
                   </Button>
                   <Button
                     onClick={() => setViewMode("list")}
-                    className={`px-3 py-2 flex items-center gap-1 text-sm ${viewMode === "list" ? "bg-white/20 text-white" : "text-gray-300 hover:bg-white/10"}`}
+                    className={`px-3 py-2 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
+                      viewMode === "list" 
+                        ? "bg-white/20 text-white shadow-lg" 
+                        : "text-gray-300 hover:bg-white/10 hover:text-white"
+                    }`}
                     title='List view'
                   >
                     <List className='w-4 h-4' /> List
@@ -766,77 +1039,234 @@ const DeveloperProjects = ({
 
             {/* Advanced Filters */}
             {showFilters && (
-              <div className='mt-6 space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
-                  >
-                    {statusOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedPriority}
-                    onChange={(e) => setSelectedPriority(e.target.value)}
-                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
-                  >
-                    {priorityOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
-                    className='bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500'
-                  >
-                    {LOCATION_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-
+              <div className='bg-white/5 rounded-xl p-6 border border-white/10'>
+                <div className='flex items-center justify-between mb-6'>
+                  <h3 className='text-lg font-semibold text-white flex items-center gap-2'>
+                    <Filter className='w-5 h-5 text-blue-400' />
+                    Advanced Filters
+                  </h3>
                   <Button
                     onClick={clearFilters}
-                    className='bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-2 rounded-lg transition-colors duration-300'
+                    className='bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-2 font-medium'
                   >
-                    Clear Filters
+                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                    </svg>
+                    Clear All Filters
                   </Button>
                 </div>
 
-                {/* Skills Filter */}
-                <div>
-                  <label className='block text-gray-300 mb-2'>
-                    Filter by Skills
-                  </label>
-                  <div className='flex flex-wrap gap-2'>
-                    {SKILL_OPTIONS.map((skill) => (
-                      <Button
-                        key={skill}
-                        onClick={() => {
-                          setSelectedSkills((prev) =>
-                            prev.includes(skill)
-                              ? prev.filter((s) => s !== skill)
-                              : [...prev, skill]
-                          );
-                        }}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-                          selectedSkills.includes(skill)
-                            ? "bg-blue-500 text-white"
-                            : "bg-white/10 text-gray-300 hover:bg-white/20"
-                        }`}
+                {/* Primary Filter Row */}
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6'>
+                  <div className='space-y-2'>
+                    <label className='block text-sm font-medium text-gray-300'>Status</label>
+                    <div className='relative'>
+                      <select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
+                        style={{ colorScheme: 'dark' }}
                       >
-                        {skill}
-                      </Button>
-                    ))}
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <label className='block text-sm font-medium text-gray-300'>Priority</label>
+                    <div className='relative'>
+                      <select
+                        value={selectedPriority}
+                        onChange={(e) => setSelectedPriority(e.target.value)}
+                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        {priorityOptions.map((option) => (
+                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <label className='block text-sm font-medium text-gray-300'>Location</label>
+                    <div className='relative'>
+                      <select
+                        value={selectedLocation}
+                        onChange={(e) => setSelectedLocation(e.target.value)}
+                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        {locationOptions.map((option) => (
+                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <label className='block text-sm font-medium text-gray-300'>Category</label>
+                    <div className='relative'>
+                      <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        {categoryOptions.map((option) => (
+                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <label className='block text-sm font-medium text-gray-300'>Experience</label>
+                    <div className='relative'>
+                      <select
+                        value={selectedExperienceLevel}
+                        onChange={(e) => setSelectedExperienceLevel(e.target.value)}
+                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        {experienceOptions.map((option) => (
+                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Filters Row */}
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6'>
+                  {/* Budget Range */}
+                  <div className='space-y-3'>
+                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
+                      <DollarSign className='w-4 h-4 text-green-400' />
+                      Budget Range
+                    </label>
+                    <div className='flex gap-3'>
+                      <div className='flex-1'>
+                        <input
+                          type='number'
+                          placeholder='Min Budget'
+                          value={budgetMin}
+                          onChange={(e) => setBudgetMin(e.target.value)}
+                          className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300'
+                        />
+                      </div>
+                      <div className='flex-1'>
+                        <input
+                          type='number'
+                          placeholder='Max Budget'
+                          value={budgetMax}
+                          onChange={(e) => setBudgetMax(e.target.value)}
+                          className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300'
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Remote Only Toggle */}
+                  <div className='space-y-3'>
+                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
+                      <MapPin className='w-4 h-4 text-blue-400' />
+                      Work Arrangement
+                    </label>
+                    <Button
+                      onClick={() => setIsRemoteOnly(!isRemoteOnly)}
+                      className={`w-full px-4 py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 font-medium ${
+                        isRemoteOnly
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30 shadow-lg"
+                          : "bg-white/10 text-gray-300 hover:bg-white/20 border border-white/20"
+                      }`}
+                    >
+                      {isRemoteOnly ? (
+                        <>
+                          <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+                          </svg>
+                          Remote Only
+                        </>
+                      ) : (
+                        <>
+                          <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M4 6h16M4 10h16M4 14h16M4 18h16' />
+                          </svg>
+                          All Types
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Filter Summary */}
+                  <div className='space-y-3'>
+                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
+                      <Target className='w-4 h-4 text-purple-400' />
+                      Active Filters
+                    </label>
+                    <div className='bg-white/5 rounded-lg p-3 border border-white/10'>
+                      <div className='text-xs text-gray-400 space-y-1'>
+                        {selectedStatus !== "all" && (
+                          <div className='flex items-center gap-2'>
+                            <span className='w-2 h-2 bg-blue-400 rounded-full'></span>
+                            Status: {statusOptions.find(s => s.value === selectedStatus)?.label}
+                          </div>
+                        )}
+                        {selectedPriority !== "all" && (
+                          <div className='flex items-center gap-2'>
+                            <span className='w-2 h-2 bg-orange-400 rounded-full'></span>
+                            Priority: {priorityOptions.find(p => p.value === selectedPriority)?.label}
+                          </div>
+                        )}
+                        {selectedLocation !== "all" && (
+                          <div className='flex items-center gap-2'>
+                            <span className='w-2 h-2 bg-green-400 rounded-full'></span>
+                            Location: {locationOptions.find(l => l.value === selectedLocation)?.label}
+                          </div>
+                        )}
+                        {selectedStatus === "all" && selectedPriority === "all" && selectedLocation === "all" && (
+                          <div className='text-gray-500'>No filters applied</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -946,14 +1376,14 @@ const DeveloperProjects = ({
                             <div className='mt-1 flex items-center gap-2 flex-wrap'>
                               <span
                                 className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                  project.status === "Active"
+                                  project.status === "active"
                                     ? "bg-green-500/20 text-green-300"
-                                    : project.status === "Upcoming"
+                                    : project.status === "upcoming"
                                       ? "bg-yellow-500/20 text-yellow-300"
                                       : "bg-gray-500/20 text-gray-300"
                                 }`}
                               >
-                                {project.status}
+                                {project.statusDisplay}
                               </span>
                               {project.isFeatured && (
                                 <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300'>
@@ -1095,14 +1525,14 @@ const DeveloperProjects = ({
                         </h3>
                         <span
                           className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                            project.status === "Active"
+                            project.status === "active"
                               ? "bg-green-500/20 text-green-400"
-                              : project.status === "Upcoming"
+                              : project.status === "upcoming"
                                 ? "bg-yellow-500/20 text-yellow-400"
                                 : "bg-gray-500/20 text-gray-400"
                           }`}
                         >
-                          {project.status}
+                          {project.statusDisplay}
                         </span>
                         {project.isFeatured && (
                           <span className='px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500/20 text-yellow-400'>
@@ -1294,7 +1724,7 @@ const DeveloperProjects = ({
                           <div className='flex items-center gap-2'>
                             <Button
                               onClick={() => handleOpenDetails(project)}
-                              className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'
+                              className='px-3 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors duration-300 text-sm font-medium'
                             >
                               View
                             </Button>
@@ -1306,23 +1736,23 @@ const DeveloperProjects = ({
                                     projectId
                                   )
                                 }
-                                className='p-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300'
+                                className='px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 text-sm font-medium'
                               >
-                                Join Group Chat
+                                Join Chat
                               </Button>
                             ) : (
                               <Button
                                 disabled
-                                className='p-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed'
+                                className='px-3 py-2 rounded-lg bg-white/5 text-gray-500 cursor-not-allowed text-sm font-medium'
                               >
-                                Group Chat Locked
+                                Chat Locked
                               </Button>
                             )}
                             <Button
                               onClick={() =>
                                 handleWithdrawApplication(projectId)
                               }
-                              className='p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300'
+                              className='px-3 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors duration-300 text-sm font-medium'
                             >
                               Withdraw
                             </Button>
@@ -1354,7 +1784,6 @@ const DeveloperProjects = ({
             <p className='text-gray-400 text-lg'>No projects found</p>
             <p className='text-gray-500 text-sm mt-2'>
               {searchTerm ||
-              selectedSkills.length > 0 ||
               selectedStatus !== "all" ||
               selectedPriority !== "all" ||
               selectedLocation !== "all"

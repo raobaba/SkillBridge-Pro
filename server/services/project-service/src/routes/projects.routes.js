@@ -65,7 +65,7 @@ projectRouter.delete(
   requireDeveloper,
   projectController.withdrawApplication
 );
-projectRouter.get("/:id", projectController.getProject); // Public - anyone can view project details
+// projectRouter.get("/:id", projectController.getProject); // Moved to end to avoid route conflicts
 projectRouter.put(
   "/:id",
   authenticate,
@@ -143,13 +143,15 @@ projectRouter.get("/:projectId/stats", projectController.getProjectStats);
 
 // 🔍 Advanced Search & Discovery
 projectRouter.get("/search", projectController.searchProjects);
+projectRouter.get("/search/suggestions", projectController.getSearchSuggestions); // Public - get search suggestions
 projectRouter.get(
   "/recommendations",
   authenticate,
   projectController.getProjectRecommendations
 );
 projectRouter.get("/categories", projectController.getProjectCategories); // Public - get available categories
-projectRouter.get("/metadata", projectController.getProjectMetadata); // Public - get project metadata
+// Removed /metadata route - replaced by /filter-options which provides dynamic, database-driven filter options
+projectRouter.get("/filter-options", projectController.getFilterOptions); // Public - get all filter options
 
 // (Favorites routes intentionally placed earlier to avoid collision with :id)
 
@@ -170,5 +172,8 @@ projectRouter.delete(
   authenticate,
   projectController.deleteProjectComment
 );
+
+// Generic project by ID route - MUST be last to avoid conflicts with specific routes
+projectRouter.get("/:id", projectController.getProject); // Public - anyone can view project details
 
 module.exports = projectRouter;

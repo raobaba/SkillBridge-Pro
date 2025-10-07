@@ -1,6 +1,11 @@
 const { ProjectModel } = require("../models");
+const { FilterOptionsModel } = require("../models/filter-options.model");
 const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
 const { supabase } = require("shared/utils/supabase.utils");
+const { db } = require("../config/database");
+const { ilike, asc } = require("drizzle-orm");
+const { projectSkillsTable } = require("../models/project-skills.model");
+const { projectTagsTable } = require("../models/project-tags.model");
 
 // Basic error helper to keep responses consistent
 const sendError = (res, message, status = 400) =>
@@ -116,22 +121,54 @@ const getProject = async (req, res) => {
 // List projects (optionally filter by ownerId, status)
 const listProjects = async (req, res) => {
   try {
-    const { ownerId, status, category, experienceLevel, isRemote, limit = 20, page = 1 } = req.query;
+    const { 
+      ownerId, 
+      query,
+      status, 
+      priority,
+      category, 
+      experienceLevel, 
+      isRemote, 
+      location,
+      budgetMin,
+      budgetMax,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      limit = 20, 
+      page = 1 
+    } = req.query;
     
     // For public access, don't allow filtering by ownerId unless authenticated
-    const filters = { status };
+    const filters = { 
+      query,
+      status,
+      priority,
+      category,
+      experienceLevel,
+      isRemote: isRemote !== undefined ? isRemote === 'true' : undefined,
+      location,
+      budgetMin: budgetMin ? Number(budgetMin) : undefined,
+      budgetMax: budgetMax ? Number(budgetMax) : undefined,
+      sortBy,
+      sortOrder,
+      limit: Number(limit),
+      page: Number(page)
+    };
     
-    // Add public filters
-    if (category) filters.category = category;
-    if (experienceLevel) filters.experienceLevel = experienceLevel;
-    if (isRemote !== undefined) filters.isRemote = isRemote === 'true';
+    // Remove undefined values
+    Object.keys(filters).forEach(key => {
+      if (filters[key] === undefined) {
+        delete filters[key];
+      }
+    });
     
-    // Add pagination
-    filters.limit = Number(limit);
-    filters.page = Number(page);
-    
-    const rows = await ProjectModel.listProjects(filters);
-    return res.status(200).json({ success: true, status: 200, projects: rows });
+    const result = await ProjectModel.searchProjects(filters);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      projects: result.projects,
+      pagination: result.pagination
+    });
   } catch (error) {
     console.error("List Projects Error:", error);
     return res
@@ -144,13 +181,15 @@ const listProjects = async (req, res) => {
 const getPublicProjects = async (req, res) => {
   try {
     const { 
+      query,
       category, 
       experienceLevel, 
       isRemote, 
       location, 
       budgetMin, 
       budgetMax,
-      status = 'active', // Default to active projects only
+      status, // Don't default to 'active' - let frontend control this
+      priority,
       sortBy = 'createdAt',
       sortOrder = 'desc',
       limit = 20, 
@@ -159,7 +198,9 @@ const getPublicProjects = async (req, res) => {
 
     // Build filters for public access
     const filters = {
+      query,
       status, // Only show active projects by default
+      priority,
       category,
       experienceLevel,
       isRemote: isRemote !== undefined ? isRemote === 'true' : undefined,
@@ -179,7 +220,20 @@ const getPublicProjects = async (req, res) => {
       }
     });
 
+    // Debug logging
+    console.log('🔍 Public Projects Filter Debug:', {
+      originalQuery: req.query,
+      processedFilters: filters,
+      timestamp: new Date().toISOString()
+    });
+
     const result = await ProjectModel.searchProjects(filters);
+    
+    console.log('📊 Filter Results:', {
+      projectsFound: result.projects.length,
+      totalCount: result.pagination.total,
+      filters: filters
+    });
     
     return res.status(200).json({ 
       success: true, 
@@ -187,13 +241,17 @@ const getPublicProjects = async (req, res) => {
       projects: result.projects,
       pagination: result.pagination,
       filters: {
+        query,
         category,
         experienceLevel,
         isRemote,
         location,
         budgetMin,
         budgetMax,
-        status
+        status,
+        priority,
+        skills: filters.skills,
+        tags: filters.tags
       }
     });
   } catch (error) {
@@ -247,59 +305,23 @@ const getProjectCategories = async (req, res) => {
 };
 
 // Get project metadata (experience levels, priorities, etc.)
-const getProjectMetadata = async (req, res) => {
-  try {
-    const metadata = {
-      experienceLevels: [
-        { value: 'entry', label: 'Entry Level' },
-        { value: 'mid', label: 'Mid Level' },
-        { value: 'senior', label: 'Senior Level' },
-        { value: 'lead', label: 'Lead/Principal' }
-      ],
-      priorities: [
-        { value: 'low', label: 'Low Priority' },
-        { value: 'medium', label: 'Medium Priority' },
-        { value: 'high', label: 'High Priority' }
-      ],
-      statuses: [
-        { value: 'draft', label: 'Draft' },
-        { value: 'upcoming', label: 'Upcoming' },
-        { value: 'active', label: 'Active' },
-        { value: 'paused', label: 'Paused' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' }
-      ],
-      workArrangements: [
-        { value: 'remote', label: 'Remote' },
-        { value: 'onsite', label: 'On-site' },
-        { value: 'hybrid', label: 'Hybrid' }
-      ],
-      paymentTerms: [
-        { value: 'fixed', label: 'Fixed Price' },
-        { value: 'hourly', label: 'Hourly Rate' },
-        { value: 'milestone', label: 'Milestone-based' },
-        { value: 'retainer', label: 'Retainer' }
-      ],
-      currencies: [
-        { value: 'USD', label: 'US Dollar ($)' },
-        { value: 'EUR', label: 'Euro (€)' },
-        { value: 'GBP', label: 'British Pound (£)' },
-        { value: 'CAD', label: 'Canadian Dollar (C$)' },
-        { value: 'AUD', label: 'Australian Dollar (A$)' },
-        { value: 'INR', label: 'Indian Rupee (₹)' }
-      ]
-    };
+// Removed getProjectMetadata - replaced by getFilterOptions which provides dynamic, database-driven filter options
 
+// Get all filter options (public endpoint)
+const getFilterOptions = async (req, res) => {
+  try {
+    const filterOptions = await FilterOptionsModel.getAllFilterOptions();
+    
     return res.status(200).json({ 
       success: true, 
       status: 200, 
-      metadata 
+      filterOptions 
     });
   } catch (error) {
-    console.error("Get Project Metadata Error:", error);
+    console.error("Get Filter Options Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch metadata", error: error.message });
+      .json({ success: false, status: 500, message: "Failed to fetch filter options", error: error.message });
   }
 };
 
@@ -782,8 +804,6 @@ const searchProjects = async (req, res) => {
       budgetMax,
       isRemote,
       location,
-      skills,
-      tags,
       sortBy,
       sortOrder,
       page = 1,
@@ -800,8 +820,6 @@ const searchProjects = async (req, res) => {
       budgetMax: budgetMax ? Number(budgetMax) : undefined,
       isRemote: isRemote === 'true',
       location,
-      skills: skills ? skills.split(',') : undefined,
-      tags: tags ? tags.split(',') : undefined,
       sortBy: sortBy || 'createdAt',
       sortOrder: sortOrder || 'desc',
       page: Number(page),
@@ -1027,6 +1045,61 @@ const deleteProjectComment = async (req, res) => {
   }
 };
 
+// Get search suggestions for skills and tags
+const getSearchSuggestions = async (req, res) => {
+  try {
+    const { query, type = 'all' } = req.query; // type can be 'skills', 'tags', or 'all'
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(200).json({ 
+        success: true, 
+        status: 200, 
+        suggestions: { skills: [], tags: [] }
+      });
+    }
+
+    const searchTerm = query.trim().toLowerCase();
+    const suggestions = { skills: [], tags: [] };
+
+    // Get skills suggestions
+    if (type === 'all' || type === 'skills') {
+      const skillsResult = await db
+        .select({ name: projectSkillsTable.name })
+        .from(projectSkillsTable)
+        .where(ilike(projectSkillsTable.name, `%${searchTerm}%`))
+        .groupBy(projectSkillsTable.name)
+        .orderBy(asc(projectSkillsTable.name))
+        .limit(10);
+      
+      suggestions.skills = skillsResult.map(row => row.name);
+    }
+
+    // Get tags suggestions
+    if (type === 'all' || type === 'tags') {
+      const tagsResult = await db
+        .select({ name: projectTagsTable.name })
+        .from(projectTagsTable)
+        .where(ilike(projectTagsTable.name, `%${searchTerm}%`))
+        .groupBy(projectTagsTable.name)
+        .orderBy(asc(projectTagsTable.name))
+        .limit(10);
+      
+      suggestions.tags = tagsResult.map(row => row.name);
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      suggestions 
+    });
+  } catch (error) {
+    console.error("Get Search Suggestions Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to get search suggestions", error: error.message });
+  }
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -1052,7 +1125,7 @@ module.exports = {
   searchProjects,
   getProjectRecommendations,
   getProjectCategories,
-  getProjectMetadata,
+  getFilterOptions,
   addProjectFavorite,
   removeProjectFavorite,
   getProjectFavorites,
@@ -1064,5 +1137,6 @@ module.exports = {
   getProjectComments,
   updateProjectComment,
   deleteProjectComment,
+  getSearchSuggestions,
 };
 

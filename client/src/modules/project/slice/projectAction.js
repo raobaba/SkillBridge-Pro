@@ -124,6 +124,12 @@ export const searchProjectsApi = async (filters) => {
   return await fetchFromApiServer("GET", url);
 };
 
+// Get search suggestions for skills and tags
+export const getSearchSuggestionsApi = async (query, type = 'all') => {
+  const url = `api/v1/projects/search/suggestions?query=${encodeURIComponent(query)}&type=${type}`;
+  return await fetchFromApiServer("GET", url);
+};
+
 // Get project recommendations
 export const getProjectRecommendationsApi = async (limit = 10) => {
   const url = `api/v1/projects/recommendations?limit=${limit}`;
@@ -143,9 +149,11 @@ export const getProjectCategoriesApi = async () => {
   return await fetchFromApiServer("GET", url);
 };
 
-// Public: get project metadata (experience levels, priorities, etc.)
-export const getProjectMetadataApi = async () => {
-  const url = `api/v1/projects/metadata`;
+// Removed getProjectMetadataApi - replaced by getFilterOptionsApi which provides dynamic, database-driven filter options
+
+// Public: get all filter options
+export const getFilterOptionsApi = async () => {
+  const url = `api/v1/projects/filter-options`;
   return await fetchFromApiServer("GET", url);
 };
 

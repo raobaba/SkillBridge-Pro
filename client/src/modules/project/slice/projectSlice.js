@@ -21,6 +21,7 @@ import {
   getProjectBoostsApi,
   getProjectStatsApi,
   searchProjectsApi,
+  getSearchSuggestionsApi,
   getProjectRecommendationsApi,
   addProjectFavoriteApi,
   removeProjectFavoriteApi,
@@ -31,7 +32,7 @@ import {
   deleteProjectCommentApi,
   getPublicProjectsApi,
   getProjectCategoriesApi,
-  getProjectMetadataApi,
+  getFilterOptionsApi,
   addProjectSaveApi,
   removeProjectSaveApi,
   getProjectSavesApi,
@@ -51,6 +52,7 @@ const initialState = {
   projectBoosts: [],
   projectStats: null,
   searchResults: [],
+  searchSuggestions: { skills: [], tags: [] },
   recommendations: [],
   favorites: [],
   saves: [],
@@ -58,7 +60,7 @@ const initialState = {
   // Public discovery
   publicProjects: [],
   projectCategories: [],
-  projectMetadata: null,
+  filterOptions: null,
   
   // Loading states
   loading: false,
@@ -72,12 +74,13 @@ const initialState = {
   boostsLoading: false,
   statsLoading: false,
   searchLoading: false,
+  searchSuggestionsLoading: false,
   recommendationsLoading: false,
   favoritesLoading: false,
   savesLoading: false,
   commentsLoading: false,
   publicLoading: false,
-  metadataLoading: false,
+  filterOptionsLoading: false,
   
   // Error and message states
   error: null,
@@ -406,6 +409,21 @@ export const searchProjects = createAsyncThunk(
   }
 );
 
+// Get search suggestions
+export const getSearchSuggestions = createAsyncThunk(
+  "project/getSearchSuggestions",
+  async ({ query, type = 'all' }, { rejectWithValue }) => {
+    try {
+      const response = await getSearchSuggestionsApi(query, type);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to get search suggestions" }
+      );
+    }
+  }
+);
+
 // Get project recommendations
 export const getProjectRecommendations = createAsyncThunk(
   "project/getRecommendations",
@@ -599,16 +617,18 @@ export const getProjectCategories = createAsyncThunk(
   }
 );
 
-// Public: get project metadata
-export const getProjectMetadata = createAsyncThunk(
-  "project/getProjectMetadata",
+// Removed getProjectMetadata thunk - replaced by getFilterOptions which provides dynamic, database-driven filter options
+
+// Public: get all filter options
+export const getFilterOptions = createAsyncThunk(
+  "project/getFilterOptions",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await getProjectMetadataApi();
+      const response = await getFilterOptionsApi();
       return response.data;
     } catch (error) {
       return rejectWithValue(
-        error?.response?.data || { message: "Failed to fetch project metadata" }
+        error?.response?.data || { message: "Failed to fetch filter options" }
       );
     }
   }
@@ -1086,6 +1106,24 @@ const projectSlice = createSlice({
         state.lastAction = 'searchProjects.rejected';
       })
 
+      // Get Search Suggestions
+      .addCase(getSearchSuggestions.pending, (state) => {
+        state.searchSuggestionsLoading = true;
+        state.error = null;
+        state.lastAction = 'getSearchSuggestions.pending';
+      })
+      .addCase(getSearchSuggestions.fulfilled, (state, action) => {
+        state.searchSuggestionsLoading = false;
+        state.searchSuggestions = action.payload.suggestions || { skills: [], tags: [] };
+        state.error = null;
+        state.lastAction = 'getSearchSuggestions.fulfilled';
+      })
+      .addCase(getSearchSuggestions.rejected, (state, action) => {
+        state.searchSuggestionsLoading = false;
+        state.error = action.payload.message || "Failed to get search suggestions";
+        state.lastAction = 'getSearchSuggestions.rejected';
+      })
+
       // Get Project Recommendations
       .addCase(getProjectRecommendations.pending, (state) => {
         state.recommendationsLoading = true;
@@ -1428,21 +1466,22 @@ const projectSlice = createSlice({
         state.lastAction = 'getProjectCategories.rejected';
       })
       
-      // Public: getProjectMetadata
-      .addCase(getProjectMetadata.pending, (state) => {
-        state.metadataLoading = true;
+      // Removed getProjectMetadata reducers - replaced by getFilterOptions which provides dynamic, database-driven filter options
+      // Filter Options
+      .addCase(getFilterOptions.pending, (state) => {
+        state.filterOptionsLoading = true;
         state.error = null;
-        state.lastAction = 'getProjectMetadata.pending';
+        state.lastAction = 'getFilterOptions.pending';
       })
-      .addCase(getProjectMetadata.fulfilled, (state, action) => {
-        state.metadataLoading = false;
-        state.projectMetadata = action.payload.metadata || action.payload || null;
-        state.lastAction = 'getProjectMetadata.fulfilled';
+      .addCase(getFilterOptions.fulfilled, (state, action) => {
+        state.filterOptionsLoading = false;
+        state.filterOptions = action.payload.filterOptions || action.payload || null;
+        state.lastAction = 'getFilterOptions.fulfilled';
       })
-      .addCase(getProjectMetadata.rejected, (state, action) => {
-        state.metadataLoading = false;
-        state.error = action.payload.message || 'Failed to fetch project metadata';
-        state.lastAction = 'getProjectMetadata.rejected';
+      .addCase(getFilterOptions.rejected, (state, action) => {
+        state.filterOptionsLoading = false;
+        state.error = action.payload.message || 'Failed to fetch filter options';
+        state.lastAction = 'getFilterOptions.rejected';
       });
   },
 });
