@@ -12,6 +12,7 @@ import {
   REGISTER,
 } from "redux-persist";
 import localStorage from "redux-persist/lib/storage";
+import { appliedProjectsMiddleware } from "../../modules/project/slice/projectSlice";
 
 const loggerMiddleware = createLogger({
   level: "info",
@@ -36,7 +37,7 @@ const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(loggerMiddleware),
+    }).concat(loggerMiddleware, appliedProjectsMiddleware),
   devTools: true,
 });
 

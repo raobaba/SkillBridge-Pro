@@ -29,6 +29,7 @@ export default function Project() {
     recommendations, 
     favorites,
     saves,
+    appliedProjects,
     searchResults,
     projectStats,
     // New public discovery state
@@ -133,6 +134,7 @@ export default function Project() {
       recommendations,
       favorites,
       saves,
+      appliedProjects,
       searchResults,
       projectStats,
       // Pass public discovery data

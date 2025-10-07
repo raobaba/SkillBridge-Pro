@@ -62,6 +62,9 @@ const initialState = {
   projectCategories: [],
   filterOptions: null,
   
+  // Applied projects tracking
+  appliedProjects: [],
+  
   // Loading states
   loading: false,
   projectsLoading: false,
@@ -184,6 +187,36 @@ export const withdrawApplication = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to withdraw application" }
+      );
+    }
+  }
+);
+
+// Load applied projects from localStorage
+export const loadAppliedProjects = createAsyncThunk(
+  "project/loadAppliedProjects",
+  async (_, { rejectWithValue }) => {
+    try {
+      const applied = localStorage.getItem("appliedProjects");
+      return applied ? JSON.parse(applied) : [];
+    } catch (error) {
+      return rejectWithValue(
+        error?.message || { message: "Failed to load applied projects" }
+      );
+    }
+  }
+);
+
+// Save applied projects to localStorage
+export const saveAppliedProjects = createAsyncThunk(
+  "project/saveAppliedProjects",
+  async (appliedProjects, { rejectWithValue }) => {
+    try {
+      localStorage.setItem("appliedProjects", JSON.stringify(appliedProjects));
+      return appliedProjects;
+    } catch (error) {
+      return rejectWithValue(
+        error?.message || { message: "Failed to save applied projects" }
       );
     }
   }
@@ -807,6 +840,10 @@ const projectSlice = createSlice({
           proj.newApplicantsCount = Math.max(0, (proj.newApplicantsCount || 0) + 1);
           proj.__appliedByMe = true;
         }
+        // Add to applied projects array if not already present
+        if (projectId && !state.appliedProjects.includes(projectId)) {
+          state.appliedProjects.push(projectId);
+        }
       })
       .addCase(applyToProject.rejected, (state, action) => {
         state.loading = false;
@@ -1149,6 +1186,10 @@ const projectSlice = createSlice({
           proj.applicantsCount = Math.max(0, (proj.applicantsCount || 0) - 1);
           proj.__appliedByMe = false;
         }
+        // Remove from applied projects array
+        if (projectId) {
+          state.appliedProjects = state.appliedProjects.filter(id => id !== projectId);
+        }
       })
       .addCase(withdrawApplication.rejected, (state, action) => {
         state.loading = false;
@@ -1482,6 +1523,23 @@ const projectSlice = createSlice({
         state.filterOptionsLoading = false;
         state.error = action.payload.message || 'Failed to fetch filter options';
         state.lastAction = 'getFilterOptions.rejected';
+      })
+      
+      // Load applied projects from localStorage
+      .addCase(loadAppliedProjects.fulfilled, (state, action) => {
+        state.appliedProjects = action.payload;
+      })
+      .addCase(loadAppliedProjects.rejected, (state, action) => {
+        state.error = action.payload.message || 'Failed to load applied projects';
+      })
+      
+      // Save applied projects to localStorage
+      .addCase(saveAppliedProjects.fulfilled, (state, action) => {
+        // Applied projects are already updated in state, just confirm save
+        state.appliedProjects = action.payload;
+      })
+      .addCase(saveAppliedProjects.rejected, (state, action) => {
+        state.error = action.payload.message || 'Failed to save applied projects';
       });
   },
 });
@@ -1496,5 +1554,28 @@ export const {
   clearProjectApplicants,
   clearMyInvites,
 } = projectSlice.actions;
+
+// Middleware to automatically save appliedProjects to localStorage
+export const appliedProjectsMiddleware = (store) => (next) => (action) => {
+  const result = next(action);
+  
+  // Check if appliedProjects changed
+  if (action.type === 'project/apply/fulfilled' || 
+      action.type === 'project/withdrawApplication/fulfilled' ||
+      action.type === 'project/loadAppliedProjects/fulfilled') {
+    
+    const state = store.getState();
+    const appliedProjects = state.project?.appliedProjects || [];
+    
+    // Save to localStorage (don't dispatch another action to avoid infinite loop)
+    try {
+      localStorage.setItem("appliedProjects", JSON.stringify(appliedProjects));
+    } catch (error) {
+      console.error('Failed to save applied projects to localStorage:', error);
+    }
+  }
+  
+  return result;
+};
 
 export default projectSlice.reducer;

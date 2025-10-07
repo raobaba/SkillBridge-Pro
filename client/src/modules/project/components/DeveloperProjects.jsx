@@ -15,48 +15,39 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
-import { Button } from "../../../components";
+import { Button, FilterSummary } from "../../../components";
 import Input from "../../../components/Input";
 import { toast } from "react-toastify";
 import { useFilterOptions } from "../hooks/useFilterOptions";
 import ProjectCard from "./ProjectCard";
-import FilterSummary from "./FilterSummary";
 
 import {
   applyToProject,
   addProjectFavorite,
   removeProjectFavorite,
-  getProjectComments,
-  addProjectComment,
   withdrawApplication,
   addProjectSave,
   removeProjectSave,
   getProjectSaves,
   getPublicProjects,
   getSearchSuggestions,
+  loadAppliedProjects,
 } from "../slice/projectSlice";
-
-// Filter options now come from API via Redux state
 
 const DeveloperProjects = ({
   user,
   projects,
   publicProjects = [],
-  projectCategories = [],
   filterOptions = null,
   myInvites = [],
   recommendations,
   favorites = [],
   saves = [],
+  appliedProjects = [],
   dispatch,
-  loading,
   error,
   message,
-  searchQuery,
-  setSearchQuery,
-  handleSearch,
 }) => {
-  // const navigate = useNavigate(); // unused
   const [activeTab, setActiveTab] = useState("discover"); // discover | applications
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -74,22 +65,15 @@ const DeveloperProjects = ({
     useState({}); // { [id]: 'Applied' | 'Interviewing' | 'Shortlisted' | 'Accepted' | 'Rejected' }
   const [selectedProject, setSelectedProject] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [appliedProjects, setAppliedProjects] = useState([]);
-  const [projectComments, setProjectComments] = useState({});
-  const [showComments, setShowComments] = useState({});
   const [internalSearch, setInternalSearch] = useState("");
-  const [newCommentText, setNewCommentText] = useState("");
   const [savingProjectId, setSavingProjectId] = useState(null);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState({ skills: [], tags: [] });
 
-  // Load applied projects from localStorage
+  // Load applied projects from Redux (which loads from localStorage)
   useEffect(() => {
-    const applied = localStorage.getItem("appliedProjects");
-    if (applied) {
-      setAppliedProjects(JSON.parse(applied));
-    }
-  }, []);
+    dispatch(loadAppliedProjects());
+  }, [dispatch]);
 
   // Handle toast notifications
   useEffect(() => {
@@ -129,17 +113,13 @@ const DeveloperProjects = ({
   const mapProjectData = useCallback((project) => ({
     id: project.id,
     title: project.title,
-    status: project.status || "active", // Keep original case for filtering
-    priority: project.priority || "medium", // Keep original case for filtering
-    statusDisplay: getDisplayLabel(project.status || "active", 'status'), // Display label
-    priorityDisplay: getDisplayLabel(project.priority || "medium", 'priority'), // Display label
+    status: project.status || "active",
+    priority: project.priority || "medium",
+    statusDisplay: getDisplayLabel(project.status || "active", 'status'),
+    priorityDisplay: getDisplayLabel(project.priority || "medium", 'priority'),
     description: project.description,
-    startDate: project.startDate,
-    deadline: project.deadline,
     roleNeeded: project.roleNeeded,
     applicantsCount: project.applicantsCount || 0,
-    newApplicants: project.newApplicantsCount || 0,
-    activity: `${project.activityCount || 0} updates`,
     tags: project.tags || [],
     rating: parseFloat(project.ratingAvg) || 0,
     budget: project.budgetMin && project.budgetMax
@@ -150,17 +130,11 @@ const DeveloperProjects = ({
     experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || "Mid Level",
     category: project.category || "Web Development",
     isRemote: project.isRemote,
-    isUrgent: project.isUrgent,
     isFeatured: project.isFeatured,
     company: project.company || "Company",
-    website: project.website,
     matchScore: project.matchScoreAvg || 0,
-    favoritesCount: project.favoritesCount || 0,
-    skills: project.tags || [],
     benefits: project.benefits,
-    requirements: project.requirements,
     createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
   }), []);
 
   // Prefer authenticated projects; fallback to publicProjects (memoized)
@@ -248,30 +222,12 @@ const DeveloperProjects = ({
         }
       });
 
-      // Debug logging
-      console.log('🔍 Frontend Filter Debug:', {
-        filterParams,
-        selectedStatus,
-        selectedPriority,
-        selectedLocation,
-        selectedCategory,
-        selectedExperienceLevel,
-        isRemoteOnly,
-        budgetMin,
-        budgetMax
-      });
-
       // Use public projects API for filtering
       const result = await dispatch(getPublicProjects(filterParams)).unwrap();
       
-      console.log('📊 API Response:', {
-        projectsReceived: result.projects?.length || 0,
-        totalCount: result.pagination?.total || 0,
-        appliedFilters: filterParams
-      });
-      
-      if (result.projects) {
-        setFilteredProjects(result.projects.map(mapProjectData));
+      if (result.success && Array.isArray(result.projects)) {
+        const mappedProjects = result.projects.map(mapProjectData);
+        setFilteredProjects(mappedProjects);
         return;
       }
 
@@ -341,13 +297,11 @@ const DeveloperProjects = ({
 
       setFilteredProjects(filtered);
     } catch (error) {
-      console.error('Filtering error:', error);
       // Fallback to local filtering on error
       setFilteredProjects(displayProjects);
     }
   }, [
     dispatch,
-    getPublicProjects,
     searchTerm,
     selectedStatus,
     selectedPriority,
@@ -373,12 +327,13 @@ const DeveloperProjects = ({
     filterProjects();
   }, [filterProjects]);
 
-  // Initialize filtered projects when displayProjects first loads
+  // Initialize filtered projects when component first mounts
   useEffect(() => {
     if (displayProjects.length > 0 && filteredProjects.length === 0) {
       setFilteredProjects(displayProjects);
     }
-  }, [displayProjects, filteredProjects.length]);
+  }, [displayProjects.length]); // Only run when displayProjects first loads
+
 
   // Fetch search suggestions when search term changes
   useEffect(() => {
@@ -392,7 +347,6 @@ const DeveloperProjects = ({
           setSearchSuggestions(result.suggestions || { skills: [], tags: [] });
           setShowSearchSuggestions(true);
         } catch (error) {
-          console.error('Failed to fetch search suggestions:', error);
           setSearchSuggestions({ skills: [], tags: [] });
         }
       } else {
@@ -405,24 +359,6 @@ const DeveloperProjects = ({
     return () => clearTimeout(timeoutId);
   }, [internalSearch, dispatch]);
 
-  // Update filtered projects when displayProjects change
-  useEffect(() => {
-    // Only set filtered projects if no filters are currently applied
-    const hasFilters = 
-      searchTerm.trim() !== "" ||
-      selectedStatus !== "all" ||
-      selectedPriority !== "all" ||
-      selectedLocation !== "all" ||
-      selectedCategory !== "all" ||
-      selectedExperienceLevel !== "all" ||
-      budgetMin !== "" ||
-      budgetMax !== "" ||
-      isRemoteOnly;
-    
-    if (!hasFilters) {
-      setFilteredProjects(displayProjects);
-    }
-  }, [displayProjects, searchTerm, selectedStatus, selectedPriority, selectedLocation, selectedCategory, selectedExperienceLevel, budgetMin, budgetMax, isRemoteOnly]);
 
   // Optimized handler functions
   const handleApplyToProject = useCallback(async (projectId) => {
@@ -433,18 +369,10 @@ const DeveloperProjects = ({
           coverLetter: "I am interested in this project",
         })
       ).unwrap();
-      if (!appliedProjects.includes(projectId)) {
-        setAppliedProjects((prev) => [...prev, projectId]);
-      }
       setApplicationStatusByProjectId((prev) => ({
         ...prev,
         [projectId]: "Applied",
       }));
-      // Save to localStorage
-      localStorage.setItem(
-        "appliedProjects",
-        JSON.stringify([...appliedProjects, projectId])
-      );
       // Refresh projects so server-side applicantsCount reflects immediately
       try {
         if (isPublicOnly) {
@@ -454,24 +382,18 @@ const DeveloperProjects = ({
         }
       } catch {}
     } catch (error) {
-      console.error("Failed to apply to project:", error);
+      // Silent fail for better UX
     }
-  }, [dispatch, appliedProjects, isPublicOnly]);
+  }, [dispatch, isPublicOnly]);
 
   const handleWithdrawApplication = useCallback(async (projectId) => {
     try {
       const res = await dispatch(withdrawApplication({ projectId })).unwrap();
-      setAppliedProjects((prev) => prev.filter((id) => id !== projectId));
       setApplicationStatusByProjectId((prev) => {
         const next = { ...prev };
         delete next[projectId];
         return next;
       });
-      // Persist to localStorage
-      try {
-        const updated = (appliedProjects || []).filter((id) => id !== projectId);
-        localStorage.setItem("appliedProjects", JSON.stringify(updated));
-      } catch {}
 
       // Refresh projects so server-side applicantsCount reflects immediately
       try {
@@ -484,29 +406,16 @@ const DeveloperProjects = ({
     } catch (e) {
       toast.error(e?.message || "Failed to withdraw application");
     }
-  }, [dispatch, appliedProjects, isPublicOnly]);
+  }, [dispatch, isPublicOnly]);
 
-  const handleOpenDetails = useCallback(async (project) => {
+  const handleOpenDetails = useCallback((project) => {
     setSelectedProject(project);
     setShowDetailsModal(true);
-    if (!isPublicOnly && project?.id) {
-      try {
-        const res = await dispatch(getProjectComments(project.id)).unwrap();
-        setProjectComments((prev) => ({
-          ...prev,
-          [project.id]: res.comments || [],
-        }));
-        setShowComments((prev) => ({ ...prev, [project.id]: true }));
-      } catch (e) {
-        // silent fail
-      }
-    }
-  }, [dispatch, isPublicOnly]);
+  }, []);
 
   const handleCloseDetails = useCallback(() => {
     setShowDetailsModal(false);
     setSelectedProject(null);
-    setNewCommentText("");
   }, []);
 
   const canJoinGroupChat = useCallback((projectId) =>
@@ -526,27 +435,21 @@ const DeveloperProjects = ({
     });
   }, [saves]);
 
-  const handleSaveProject = useCallback((projectId) => {
-    (async () => {
-      try {
-        const isSavedServer = isProjectSaved(projectId);
-        
-        // Set loading state
-        setSavingProjectId(projectId);
-        
-        if (isSavedServer) {
-          await dispatch(removeProjectSave({ projectId })).unwrap();
-        } else {
-          await dispatch(addProjectSave({ projectId })).unwrap();
-        }
-      } catch (e) {
-        console.error("Failed to toggle save:", e);
-        toast.error("Failed to save/unsave project");
-      } finally {
-        // Clear loading state
-        setSavingProjectId(null);
+  const handleSaveProject = useCallback(async (projectId) => {
+    try {
+      const isSavedServer = isProjectSaved(projectId);
+      setSavingProjectId(projectId);
+      
+      if (isSavedServer) {
+        await dispatch(removeProjectSave({ projectId })).unwrap();
+      } else {
+        await dispatch(addProjectSave({ projectId })).unwrap();
       }
-    })();
+    } catch (e) {
+      toast.error("Failed to save/unsave project");
+    } finally {
+      setSavingProjectId(null);
+    }
   }, [dispatch, isProjectSaved]);
 
   const isProjectFavorited = useCallback((projectId) => {
@@ -593,7 +496,6 @@ const DeveloperProjects = ({
         } catch {}
       }
     } catch (error) {
-      console.error("Failed to toggle favorite:", error);
       toast.error(`Failed to toggle favorite: ${error.message}`);
     }
   }, [dispatch, isProjectFavorited, isPublicOnly]);
@@ -627,27 +529,6 @@ const DeveloperProjects = ({
     }
   }, [buildProjectUrl]);
 
-  const handleAddComment = useCallback(async () => {
-    if (!selectedProject?.id || !newCommentText.trim()) return;
-    try {
-      await dispatch(
-        addProjectComment({
-          projectId: selectedProject.id,
-          content: newCommentText.trim(),
-        })
-      ).unwrap();
-      setNewCommentText("");
-      const res = await dispatch(
-        getProjectComments(selectedProject.id)
-      ).unwrap();
-      setProjectComments((prev) => ({
-        ...prev,
-        [selectedProject.id]: res.comments || [],
-      }));
-    } catch (e) {
-      // silent fail
-    }
-  }, [dispatch, selectedProject, newCommentText]);
 
   const clearFilters = useCallback(() => {
     setSearchTerm("");

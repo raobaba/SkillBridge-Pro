@@ -358,6 +358,14 @@ class ProjectsModel {
       }
     }
 
+    // Debug logging
+    console.log('🔍 Backend Model Filter Debug:', {
+      receivedFilters: filters,
+      conditionsCount: conditions.length,
+      conditions: conditions.map(c => c.toString()),
+      timestamp: new Date().toISOString()
+    });
+
     // Apply all conditions
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
 

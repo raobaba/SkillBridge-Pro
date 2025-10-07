@@ -9,6 +9,7 @@ import { Badge } from "./Badge";
 import { StackOverflowIcon } from "./StackOverflow";
 import { Footer } from "./Footer";
 import ErrorState from "./ErrorState";
+import FilterSummary from "./FilterSummary";
 
 export {
   CircularLoader,
@@ -22,4 +23,5 @@ export {
   StackOverflowIcon,
   Footer,
   ErrorState,
+  FilterSummary,
 };

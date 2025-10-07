@@ -224,7 +224,8 @@ const getPublicProjects = async (req, res) => {
     console.log('🔍 Public Projects Filter Debug:', {
       originalQuery: req.query,
       processedFilters: filters,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      rawQueryString: JSON.stringify(req.query, null, 2)
     });
 
     const result = await ProjectModel.searchProjects(filters);
