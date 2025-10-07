@@ -19,6 +19,7 @@ const Input = ({
   showToggle = false, // external password toggle control
   isVisible = false, // external password visibility state
   onToggle, // external password toggle handler
+  variant = "default", // "default" or "developer-projects"
   ...props
 }) => {
   const [internalShowPassword, setInternalShowPassword] = useState(false);
@@ -27,10 +28,19 @@ const Input = ({
   const showPassword = showToggle ? isVisible : internalShowPassword;
   const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
+  // Styling variants
+  const isDeveloperProjects = variant === "developer-projects";
+  const labelClass = isDeveloperProjects 
+    ? 'block text-sm font-medium text-gray-300' 
+    : 'mb-1 text-sm font-medium text-gray-200';
+  const containerClass = isDeveloperProjects 
+    ? `space-y-2 ${className}` 
+    : `flex flex-col ${className}`;
+
   return (
-    <div className={`flex flex-col ${className}`}>
+    <div className={containerClass}>
       {label && (
-        <label className='mb-1 text-sm font-medium text-gray-200'>
+        <label className={labelClass}>
           {label}
         </label>
       )}
@@ -53,25 +63,45 @@ const Input = ({
             {...props}
           />
         ) : type === "select" ? (
-          <select
-            name={name}
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-            className={`w-full px-3 py-2 rounded-lg bg-white/10 text-white focus:outline-none focus:ring-1 focus:ring-blue-400 ${
-              LeftIcon ? "pl-9" : ""
-            } ${RightIcon ? "pr-9" : ""} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
-            {...props}
-          >
-            <option value='' disabled>
-              {placeholder || "Select an option"}
-            </option>
-            {options.map((opt) => (
-              <option className="bg-blue-900 text-white" key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              name={name}
+              value={value}
+              onChange={onChange}
+              disabled={disabled}
+              className={`w-full rounded-lg bg-white/10 text-white focus:outline-none transition-all duration-300 appearance-none cursor-pointer ${
+                isDeveloperProjects 
+                  ? 'px-4 py-3 pr-8 border border-white/20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                  : 'px-3 py-2 focus:ring-1 focus:ring-blue-400'
+              } ${
+                LeftIcon ? "pl-9" : ""
+              } ${RightIcon ? "pr-9" : ""} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+              style={isDeveloperProjects ? { colorScheme: 'dark' } : {}}
+              {...props}
+            >
+              {!isDeveloperProjects && (
+                <option value='' disabled>
+                  {placeholder || "Select an option"}
+                </option>
+              )}
+              {options.map((opt) => (
+                <option 
+                  className={isDeveloperProjects ? "bg-slate-800 text-white" : "bg-blue-900 text-white"} 
+                  key={opt.value} 
+                  value={opt.value}
+                >
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {isDeveloperProjects && (
+              <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
+                <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                </svg>
+              </div>
+            )}
+          </>
         ) : (
           <input
             type={inputType}

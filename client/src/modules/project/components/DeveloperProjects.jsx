@@ -16,7 +16,11 @@ import {
   List,
 } from "lucide-react";
 import { Button } from "../../../components";
+import Input from "../../../components/Input";
 import { toast } from "react-toastify";
+import { useFilterOptions } from "../hooks/useFilterOptions";
+import ProjectCard from "./ProjectCard";
+import FilterSummary from "./FilterSummary";
 
 import {
   applyToProject,
@@ -189,78 +193,15 @@ const DeveloperProjects = ({
           .slice(0, 6);
   }, [recommendations, displayProjects, mapProjectData]);
 
-  // Build select options from API data
-  const statusOptions = useMemo(() => 
-    filterOptions?.statuses?.length
-      ? [
-          { value: "all", label: "All Status" },
-          ...filterOptions.statuses.map((s) => ({
-            value: s.value,
-            label: s.label,
-          })),
-        ]
-      : [{ value: "all", label: "All Status" }],
-    [filterOptions?.statuses]
-  );
-
-  const priorityOptions = useMemo(() =>
-    filterOptions?.priorities?.length
-      ? [
-          { value: "all", label: "All Priority" },
-          ...filterOptions.priorities.map((p) => ({
-            value: p.value,
-            label: p.label,
-          })),
-        ]
-      : [{ value: "all", label: "All Priority" }],
-    [filterOptions?.priorities]
-  );
-
-  const sortOptions = useMemo(() => 
-    filterOptions?.sortOptions?.length
-      ? filterOptions.sortOptions
-      : [{ value: "relevance", label: "Most Relevant" }],
-    [filterOptions?.sortOptions]
-  );
-
-  const locationOptions = useMemo(() => 
-    filterOptions?.locations?.length
-      ? [
-          { value: "all", label: "All Locations" },
-          ...filterOptions.locations.map((l) => ({
-            value: l.value,
-            label: l.label,
-          })),
-        ]
-      : [{ value: "all", label: "All Locations" }],
-    [filterOptions?.locations]
-  );
-
-  const categoryOptions = useMemo(() => 
-    filterOptions?.categories?.length
-      ? [
-          { value: "all", label: "All Categories" },
-          ...filterOptions.categories.map((c) => ({
-            value: c,
-            label: c,
-          })),
-        ]
-      : [{ value: "all", label: "All Categories" }],
-    [filterOptions?.categories]
-  );
-
-  const experienceOptions = useMemo(() => 
-    filterOptions?.experienceLevels?.length
-      ? [
-          { value: "all", label: "All Experience Levels" },
-          ...filterOptions.experienceLevels.map((e) => ({
-            value: e.value,
-            label: e.label,
-          })),
-        ]
-      : [{ value: "all", label: "All Experience Levels" }],
-    [filterOptions?.experienceLevels]
-  );
+  // Build select options from API data using custom hook
+  const {
+    statusOptions,
+    priorityOptions,
+    sortOptions,
+    locationOptions,
+    categoryOptions,
+    experienceOptions,
+  } = useFilterOptions(filterOptions);
 
   // Enhanced filter function that uses public projects API for better performance
   const filterProjects = useCallback(async () => {
@@ -710,7 +651,7 @@ const DeveloperProjects = ({
 
   const clearFilters = useCallback(() => {
     setSearchTerm("");
-    setSelectedSkills([]);
+    setInternalSearch("");
     setSelectedStatus("all");
     setSelectedPriority("all");
     setSelectedLocation("all");
@@ -719,7 +660,6 @@ const DeveloperProjects = ({
     setBudgetMin("");
     setBudgetMax("");
     setIsRemoteOnly(false);
-    setSelectedTags([]);
     setSortBy("relevance");
   }, []);
 
@@ -973,25 +913,14 @@ const DeveloperProjects = ({
               </div>
 
               <div className='flex gap-3 items-center'>
-                <div className='relative'>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className='bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer min-w-[140px]'
-                    style={{ colorScheme: 'dark' }}
-                  >
-                    {sortOptions.map((option) => (
-                      <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                    <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                    </svg>
-                  </div>
-                </div>
+                <Input
+                  type="select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  options={sortOptions}
+                  variant="developer-projects"
+                  className="min-w-[140px]"
+                />
 
                 <Button
                   onClick={() => setShowFilters(!showFilters)}
@@ -1010,10 +939,10 @@ const DeveloperProjects = ({
                   )}
                 </Button>
 
-                <div className='hidden md:flex bg-white/10 rounded-lg overflow-hidden gap-1'>
-                  <Button
+                <div className='hidden md:flex rounded-lg overflow-hidden gap-1'>
+                  <button
                     onClick={() => setViewMode("grid")}
-                    className={`px-3 py-2 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
+                    className={`px-4 py-3 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
                       viewMode === "grid" 
                         ? "bg-white/20 text-white shadow-lg" 
                         : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -1021,10 +950,10 @@ const DeveloperProjects = ({
                     title='Grid view'
                   >
                     <LayoutGrid className='w-4 h-4' /> Grid
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     onClick={() => setViewMode("list")}
-                    className={`px-3 py-2 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
+                    className={`px-4 py-3 flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
                       viewMode === "list" 
                         ? "bg-white/20 text-white shadow-lg" 
                         : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -1032,7 +961,7 @@ const DeveloperProjects = ({
                     title='List view'
                   >
                     <List className='w-4 h-4' /> List
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1058,120 +987,50 @@ const DeveloperProjects = ({
 
                 {/* Primary Filter Row */}
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6'>
-                  <div className='space-y-2'>
-                    <label className='block text-sm font-medium text-gray-300'>Status</label>
-                    <div className='relative'>
-                      <select
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
-                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
-                        style={{ colorScheme: 'dark' }}
-                      >
-                        {statusOptions.map((option) => (
-                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <Input
+                    label="Status"
+                    type="select"
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    options={statusOptions}
+                    variant="developer-projects"
+                  />
 
-                  <div className='space-y-2'>
-                    <label className='block text-sm font-medium text-gray-300'>Priority</label>
-                    <div className='relative'>
-                      <select
-                        value={selectedPriority}
-                        onChange={(e) => setSelectedPriority(e.target.value)}
-                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
-                        style={{ colorScheme: 'dark' }}
-                      >
-                        {priorityOptions.map((option) => (
-                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <Input
+                    label="Priority"
+                    type="select"
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value)}
+                    options={priorityOptions}
+                    variant="developer-projects"
+                  />
 
-                  <div className='space-y-2'>
-                    <label className='block text-sm font-medium text-gray-300'>Location</label>
-                    <div className='relative'>
-                      <select
-                        value={selectedLocation}
-                        onChange={(e) => setSelectedLocation(e.target.value)}
-                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
-                        style={{ colorScheme: 'dark' }}
-                      >
-                        {locationOptions.map((option) => (
-                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <Input
+                    label="Location"
+                    type="select"
+                    value={selectedLocation}
+                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    options={locationOptions}
+                    variant="developer-projects"
+                  />
 
-                  <div className='space-y-2'>
-                    <label className='block text-sm font-medium text-gray-300'>Category</label>
-                    <div className='relative'>
-                      <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
-                        style={{ colorScheme: 'dark' }}
-                      >
-                        {categoryOptions.map((option) => (
-                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <Input
+                    label="Category"
+                    type="select"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    options={categoryOptions}
+                    variant="developer-projects"
+                  />
 
-                  <div className='space-y-2'>
-                    <label className='block text-sm font-medium text-gray-300'>Experience</label>
-                    <div className='relative'>
-                      <select
-                        value={selectedExperienceLevel}
-                        onChange={(e) => setSelectedExperienceLevel(e.target.value)}
-                        className='w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 pr-8 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 appearance-none cursor-pointer'
-                        style={{ colorScheme: 'dark' }}
-                      >
-                        {experienceOptions.map((option) => (
-                          <option key={option.value} value={option.value} className='bg-slate-800 text-white'>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <div className='absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none'>
-                        <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+                  <Input
+                    label="Experience"
+                    type="select"
+                    value={selectedExperienceLevel}
+                    onChange={(e) => setSelectedExperienceLevel(e.target.value)}
+                    options={experienceOptions}
+                    variant="developer-projects"
+                  />
                 </div>
 
                 {/* Additional Filters Row */}
@@ -1237,37 +1096,25 @@ const DeveloperProjects = ({
                   </div>
 
                   {/* Filter Summary */}
-                  <div className='space-y-3'>
-                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
-                      <Target className='w-4 h-4 text-purple-400' />
-                      Active Filters
-                    </label>
-                    <div className='bg-white/5 rounded-lg p-3 border border-white/10'>
-                      <div className='text-xs text-gray-400 space-y-1'>
-                        {selectedStatus !== "all" && (
-                          <div className='flex items-center gap-2'>
-                            <span className='w-2 h-2 bg-blue-400 rounded-full'></span>
-                            Status: {statusOptions.find(s => s.value === selectedStatus)?.label}
-                          </div>
-                        )}
-                        {selectedPriority !== "all" && (
-                          <div className='flex items-center gap-2'>
-                            <span className='w-2 h-2 bg-orange-400 rounded-full'></span>
-                            Priority: {priorityOptions.find(p => p.value === selectedPriority)?.label}
-                          </div>
-                        )}
-                        {selectedLocation !== "all" && (
-                          <div className='flex items-center gap-2'>
-                            <span className='w-2 h-2 bg-green-400 rounded-full'></span>
-                            Location: {locationOptions.find(l => l.value === selectedLocation)?.label}
-                          </div>
-                        )}
-                        {selectedStatus === "all" && selectedPriority === "all" && selectedLocation === "all" && (
-                          <div className='text-gray-500'>No filters applied</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <FilterSummary
+                    filters={{
+                      selectedStatus,
+                      selectedPriority,
+                      selectedLocation,
+                      selectedCategory,
+                      selectedExperienceLevel,
+                      budgetMin,
+                      budgetMax,
+                      isRemoteOnly
+                    }}
+                    options={{
+                      statusOptions,
+                      priorityOptions,
+                      locationOptions,
+                      categoryOptions,
+                      experienceOptions
+                    }}
+                  />
                 </div>
               </div>
             )}
@@ -1352,162 +1199,20 @@ const DeveloperProjects = ({
           viewMode === "grid" ? (
             <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
               {filteredProjects.map((project, idx) => (
-                <div key={project.id ?? idx} className='relative h-full'>
-                  {/* Urgent badge only (Rewards moved into header chips) */}
-                  {project.isUrgent && (
-                    <div className='absolute top-3 right-3 z-10 px-2 py-1 text-[10px] rounded-full bg-red-500/20 text-red-300 border border-red-500/30'>
-                      Urgent
-                    </div>
-                  )}
-
-                  {/* Compact Card */}
-                  <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col'>
-                    {/* Header */}
-                    <div className='p-5 border-b border-white/10'>
-                      <div className='flex items-start justify-between gap-3'>
-                        <div className='flex items-center gap-3 min-w-0'>
-                          <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0'>
-                            <Briefcase className='w-4 h-4 text-white' />
-                          </div>
-                          <div className='min-w-0'>
-                            <h3 className='text-white font-semibold truncate'>
-                              {project.title}
-                            </h3>
-                            <div className='mt-1 flex items-center gap-2 flex-wrap'>
-                              <span
-                                className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                  project.status === "active"
-                                    ? "bg-green-500/20 text-green-300"
-                                    : project.status === "upcoming"
-                                      ? "bg-yellow-500/20 text-yellow-300"
-                                      : "bg-gray-500/20 text-gray-300"
-                                }`}
-                              >
-                                {project.statusDisplay}
-                              </span>
-                              {project.isFeatured && (
-                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300'>
-                                  Featured
-                                </span>
-                              )}
-                              {project.benefits && (
-                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-500/20 text-green-300'>
-                                  Rewards
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {!isPublicOnly && (
-                          <div className='flex gap-2 ml-auto'>
-                            <Button
-                              onClick={() => handleSaveProject(project.id)}
-                              disabled={savingProjectId === project.id}
-                              className={`p-2 rounded-lg transition-colors duration-300 ${
-                                isProjectSaved(project.id)
-                                  ? "bg-yellow-500/20 text-yellow-400"
-                                  : "bg-white/10 text-gray-400 hover:bg-white/20"
-                              } ${savingProjectId === project.id ? "opacity-50 cursor-not-allowed" : ""}`}
-                              title={
-                                savingProjectId === project.id
-                                  ? "Saving..."
-                                  : isProjectSaved(project.id)
-                                    ? "Saved"
-                                    : "Save"
-                              }
-                            >
-                              <Bookmark
-                                className={`w-4 h-4 ${isProjectSaved(project.id) ? "fill-current" : ""}`}
-                              />
-                            </Button>
-                            <Button
-                              onClick={() => handleToggleFavorite(project.id)}
-                              className={`p-2 rounded-lg transition-colors duration-300 ${
-                                isProjectFavorited(project.id)
-                                  ? "bg-pink-500/20 text-pink-400"
-                                  : "bg-white/10 text-gray-400 hover:bg-white/20"
-                              }`}
-                              title={
-                                isProjectFavorited(project.id)
-                                  ? "Favorited"
-                                  : "Favorite"
-                              }
-                            >
-                              <Heart
-                                className={`w-4 h-4 ${isProjectFavorited(project.id) ? "fill-current" : ""}`}
-                              />
-                            </Button>
-                            <Button
-                              className='p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300'
-                              onClick={() => handleShareProject(project)}
-                            >
-                              <Share2 className='w-4 h-4' />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Body minimal info */}
-                    <div className='p-5 flex-1 flex flex-col gap-3'>
-                      {/* Tags (up to 3) */}
-                      <div className='flex flex-wrap gap-1.5'>
-                        {project.tags.slice(0, 3).map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className='px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500'
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {project.tags.length > 3 && (
-                          <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
-                            +{project.tags.length - 3}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Meta Row (2 items only for compactness) */}
-                      <div className='flex items-center justify-between text-xs text-gray-400'>
-                        <span className='flex items-center gap-1'>
-                          <DollarSign className='w-3 h-3' />
-                          {project.budget}
-                        </span>
-                        <span className='flex items-center gap-1'>
-                          <Clock className='w-3 h-3' />
-                          {project.duration}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Footer actions pinned */}
-                    <div className='p-5 pt-0 mt-auto'>
-                      <div className='flex items-center gap-2'>
-                        <Button
-                          onClick={() => handleOpenDetails(project)}
-                          className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm transition-colors duration-300'
-                        >
-                          View Details
-                        </Button>
-                        {!isPublicOnly && (
-                          <Button
-                            onClick={() => handleApplyToProject(project.id)}
-                            disabled={appliedProjects.includes(project.id)}
-                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                              appliedProjects.includes(project.id)
-                                ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                                : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
-                            }`}
-                          >
-                            {appliedProjects.includes(project.id)
-                              ? "Applied"
-                              : "Apply"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ProjectCard
+                  key={project.id ?? idx}
+                  project={project}
+                  isPublicOnly={isPublicOnly}
+                  appliedProjects={appliedProjects}
+                  onApply={handleApplyToProject}
+                  onViewDetails={handleOpenDetails}
+                  onSave={handleSaveProject}
+                  onFavorite={handleToggleFavorite}
+                  onShare={handleShareProject}
+                  isProjectSaved={isProjectSaved}
+                  isProjectFavorited={isProjectFavorited}
+                  savingProjectId={savingProjectId}
+                />
               ))}
             </div>
           ) : (
@@ -1598,21 +1303,15 @@ const DeveloperProjects = ({
                       >
                         View Details
                       </Button>
-                      {!isPublicOnly && (
-                        <Button
-                          onClick={() => handleApplyToProject(project.id)}
-                          disabled={appliedProjects.includes(project.id)}
-                          className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                            appliedProjects.includes(project.id)
-                              ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                              : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105"
-                          }`}
-                        >
-                          {appliedProjects.includes(project.id)
-                            ? "Applied"
-                            : "Apply Now"}
-                        </Button>
-                      )}
+                        {!isPublicOnly && (
+                          <Button
+                            onClick={() => handleApplyToProject(project.id)}
+                            variant="apply-list"
+                            isApplied={appliedProjects.includes(project.id)}
+                          >
+                            {appliedProjects.includes(project.id) ? "Applied" : "Apply Now"}
+                          </Button>
+                        )}
                       {!isPublicOnly && (
                         <div className='flex gap-2'>
                           <Button
@@ -1881,16 +1580,10 @@ const DeveloperProjects = ({
                   {!isPublicOnly && (
                     <Button
                       onClick={() => handleApplyToProject(selectedProject.id)}
-                      disabled={appliedProjects.includes(selectedProject.id)}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                        appliedProjects.includes(selectedProject.id)
-                          ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                          : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
-                      }`}
+                      variant="apply-modal"
+                      isApplied={appliedProjects.includes(selectedProject.id)}
                     >
-                      {appliedProjects.includes(selectedProject.id)
-                        ? "Applied"
-                        : "Apply Now"}
+                      {appliedProjects.includes(selectedProject.id) ? "Applied" : "Apply Now"}
                     </Button>
                   )}
                 </div>
