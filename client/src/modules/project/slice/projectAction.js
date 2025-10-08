@@ -221,3 +221,39 @@ export const getDevelopersApi = async (params = {}) => {
   const url = `api/v1/user/developers${queryParams ? `?${queryParams}` : ''}`;
   return await fetchFromApiServer("GET", url);
 };
+
+// AI suggestion API functions
+export const generateProjectDescriptionApi = async (data) => {
+  const url = `api/v1/ai/description`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateProjectTitlesApi = async (data) => {
+  const url = `api/v1/ai/titles`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateSkillSuggestionsApi = async (data) => {
+  const url = `api/v1/ai/skills`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateRequirementsApi = async (data) => {
+  const url = `api/v1/ai/requirements`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateBenefitsApi = async (data) => {
+  const url = `api/v1/ai/benefits`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateBudgetSuggestionsApi = async (data) => {
+  const url = `api/v1/ai/budget`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateComprehensiveSuggestionsApi = async (data) => {
+  const url = `api/v1/ai/comprehensive`;
+  return await fetchFromApiServer("POST", url, data);
+};

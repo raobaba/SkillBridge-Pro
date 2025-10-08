@@ -12,6 +12,9 @@ import ErrorState from "./ErrorState";
 import FilterSummary from "./FilterSummary";
 import Modal from "./Modal";
 import ConfirmModal from "./Modal/ConfirmModal";
+import StatsCard from "./StatsCard";
+import SectionCard from "./SectionCard";
+import MetricCard from "./MetricCard";
 
 export {
   CircularLoader,
@@ -28,4 +31,7 @@ export {
   FilterSummary,
   Modal,
   ConfirmModal,
+  StatsCard,
+  SectionCard,
+  MetricCard,
 };

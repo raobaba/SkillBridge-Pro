@@ -38,6 +38,13 @@ import {
   getProjectSavesApi,
   withdrawApplicationApi,
   getDevelopersApi,
+  generateProjectDescriptionApi,
+  generateProjectTitlesApi,
+  generateSkillSuggestionsApi,
+  generateRequirementsApi,
+  generateBenefitsApi,
+  generateBudgetSuggestionsApi,
+  generateComprehensiveSuggestionsApi,
 } from "./projectAction";
 
 // Initial state
@@ -89,6 +96,17 @@ const initialState = {
   // Developers
   developers: [],
   developersLoading: false,
+  
+  // AI suggestions
+  aiSuggestions: {
+    description: '',
+    titles: [],
+    skills: [],
+    requirements: '',
+    benefits: '',
+    budget: ''
+  },
+  aiLoading: false,
   
   // Error and message states
   error: null,
@@ -640,6 +658,105 @@ export const getDevelopers = createAsyncThunk(
   }
 );
 
+// AI Suggestion Operations
+export const generateProjectDescription = createAsyncThunk(
+  "project/generateDescription",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateProjectDescriptionApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate description" }
+      );
+    }
+  }
+);
+
+export const generateProjectTitles = createAsyncThunk(
+  "project/generateTitles",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateProjectTitlesApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate titles" }
+      );
+    }
+  }
+);
+
+export const generateSkillSuggestions = createAsyncThunk(
+  "project/generateSkills",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateSkillSuggestionsApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate skills" }
+      );
+    }
+  }
+);
+
+export const generateRequirements = createAsyncThunk(
+  "project/generateRequirements",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateRequirementsApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate requirements" }
+      );
+    }
+  }
+);
+
+export const generateBenefits = createAsyncThunk(
+  "project/generateBenefits",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateBenefitsApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate benefits" }
+      );
+    }
+  }
+);
+
+export const generateBudgetSuggestions = createAsyncThunk(
+  "project/generateBudget",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateBudgetSuggestionsApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate budget" }
+      );
+    }
+  }
+);
+
+export const generateComprehensiveSuggestions = createAsyncThunk(
+  "project/generateComprehensive",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateComprehensiveSuggestionsApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate suggestions" }
+      );
+    }
+  }
+);
+
 // Public: get public projects
 export const getPublicProjects = createAsyncThunk(
   "project/getPublicProjects",
@@ -694,6 +811,14 @@ const projectSlice = createSlice({
     clearProjectState: (state) => {
       state.error = null;
       state.message = null;
+      state.aiSuggestions = {
+        description: '',
+        titles: [],
+        skills: [],
+        requirements: '',
+        benefits: '',
+        budget: ''
+      };
       state.lastAction = 'clearProjectState';
     },
     setLoading: (state, action) => {
@@ -1578,6 +1703,132 @@ const projectSlice = createSlice({
         state.developersLoading = false;
         state.error = action.payload.message || 'Failed to fetch developers';
         state.lastAction = 'getDevelopers.rejected';
+      })
+
+      // AI Description Generation
+      .addCase(generateProjectDescription.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateProjectDescription.pending';
+      })
+      .addCase(generateProjectDescription.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.description = action.payload.description;
+        state.error = null;
+        state.lastAction = 'generateProjectDescription.fulfilled';
+      })
+      .addCase(generateProjectDescription.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate description';
+        state.lastAction = 'generateProjectDescription.rejected';
+      })
+
+      // AI Title Generation
+      .addCase(generateProjectTitles.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateProjectTitles.pending';
+      })
+      .addCase(generateProjectTitles.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.titles = action.payload.titles;
+        state.error = null;
+        state.lastAction = 'generateProjectTitles.fulfilled';
+      })
+      .addCase(generateProjectTitles.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate titles';
+        state.lastAction = 'generateProjectTitles.rejected';
+      })
+
+      // AI Skill Generation
+      .addCase(generateSkillSuggestions.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateSkillSuggestions.pending';
+      })
+      .addCase(generateSkillSuggestions.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.skills = action.payload.skills;
+        state.error = null;
+        state.lastAction = 'generateSkillSuggestions.fulfilled';
+      })
+      .addCase(generateSkillSuggestions.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate skills';
+        state.lastAction = 'generateSkillSuggestions.rejected';
+      })
+
+      // AI Requirements Generation
+      .addCase(generateRequirements.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateRequirements.pending';
+      })
+      .addCase(generateRequirements.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.requirements = action.payload.requirements;
+        state.error = null;
+        state.lastAction = 'generateRequirements.fulfilled';
+      })
+      .addCase(generateRequirements.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate requirements';
+        state.lastAction = 'generateRequirements.rejected';
+      })
+
+      // AI Benefits Generation
+      .addCase(generateBenefits.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateBenefits.pending';
+      })
+      .addCase(generateBenefits.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.benefits = action.payload.benefits;
+        state.error = null;
+        state.lastAction = 'generateBenefits.fulfilled';
+      })
+      .addCase(generateBenefits.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate benefits';
+        state.lastAction = 'generateBenefits.rejected';
+      })
+
+      // AI Budget Generation
+      .addCase(generateBudgetSuggestions.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateBudgetSuggestions.pending';
+      })
+      .addCase(generateBudgetSuggestions.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions.budget = action.payload.budget;
+        state.error = null;
+        state.lastAction = 'generateBudgetSuggestions.fulfilled';
+      })
+      .addCase(generateBudgetSuggestions.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate budget';
+        state.lastAction = 'generateBudgetSuggestions.rejected';
+      })
+
+      // AI Comprehensive Generation
+      .addCase(generateComprehensiveSuggestions.pending, (state) => {
+        state.aiLoading = true;
+        state.error = null;
+        state.lastAction = 'generateComprehensiveSuggestions.pending';
+      })
+      .addCase(generateComprehensiveSuggestions.fulfilled, (state, action) => {
+        state.aiLoading = false;
+        state.aiSuggestions = { ...state.aiSuggestions, ...action.payload.suggestions };
+        state.error = null;
+        state.lastAction = 'generateComprehensiveSuggestions.fulfilled';
+      })
+      .addCase(generateComprehensiveSuggestions.rejected, (state, action) => {
+        state.aiLoading = false;
+        state.error = action.payload.message || 'Failed to generate suggestions';
+        state.lastAction = 'generateComprehensiveSuggestions.rejected';
       });
   },
 });

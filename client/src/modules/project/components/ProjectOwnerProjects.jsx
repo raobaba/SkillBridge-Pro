@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import ProjectForm from './ProjectForm'
 import ApplicantsList from './ApplicantsList'
 import InviteDevelopers from './InviteDevelopers'
-import { CircularLoader, Modal, Button } from '../../../components'
+import { Modal, Button, StatsCard, SectionCard, MetricCard } from '../../../components'
 import {
   BarChart3,
   TrendingUp,
@@ -29,6 +29,7 @@ import {
   deleteProject,
   getProjectStats,
   listApplicants,
+  listProjects,
 } from "../slice/projectSlice";
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
@@ -36,14 +37,10 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [selectedProject, setSelectedProject] = useState(null)
   const [showProjectModal, setShowProjectModal] = useState(false)
-  const [showInviteModal, setShowInviteModal] = useState(false)
   const [showInviteDevelopersModal, setShowInviteDevelopersModal] = useState(false)
   const [notifications, setNotifications] = useState([]);
   const [projectStats, setProjectStats] = useState(null);
   const [projectApplicants, setProjectApplicants] = useState({});
-  const [projectUpdates, setProjectUpdates] = useState({});
-  const [projectReviews, setProjectReviews] = useState({});
-  const [projectBoosts, setProjectBoosts] = useState({});
 
   // Load project data when component mounts
   useEffect(() => {
@@ -267,117 +264,78 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
         {/* Dashboard Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-          {/* Total Projects */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.1)] focus-within:ring-1 focus-within:ring-blue-400">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg mb-3">
-                <BarChart3 className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="Total number of projects">{dashboardStats.totalProjects}</p>
-              <p className="text-sm text-gray-400">Total Projects</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 w-full" />
-            </div>
-          </div>
-
-          {/* Active */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300 hover:shadow-[0_0_0_1px_rgba(255,255,255,0.1)]">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg mb-3">
-                <Play className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="Number of active projects">{dashboardStats.activeProjects}</p>
-              <p className="text-sm text-gray-400">Active</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500" style={{ width: `${Math.min(100, (dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100)}%` }} />
-            </div>
-          </div>
-
-          {/* Applicants */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg mb-3">
-                <Users className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="Total applicants across projects">{dashboardStats.totalApplicants}</p>
-              <p className="text-sm text-gray-400">Total Applicants</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500" style={{ width: `${Math.min(100, dashboardStats.totalApplicants ? 100 : 0)}%` }} />
-            </div>
-          </div>
-
-          {/* New Applicants */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg mb-3">
-                <Bell className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="New applicants this period">{dashboardStats.newApplicants}</p>
-              <p className="text-sm text-gray-400">New Applicants</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500" style={{ width: `${Math.min(100, (dashboardStats.newApplicants / Math.max(1, dashboardStats.totalApplicants)) * 100)}%` }} />
-            </div>
-          </div>
-
-          {/* Avg Rating */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg mb-3">
-                <Star className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="Average project rating">{dashboardStats.avgRating}</p>
-              <p className="text-sm text-gray-400">Avg Rating</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" style={{ width: `${(Number(dashboardStats.avgRating) / 5) * 100}%` }} />
-            </div>
-          </div>
-
-          {/* Total Budget */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg mb-3">
-                <DollarSign className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-lg font-bold text-white" title="Aggregate budget range">{dashboardStats.totalBudget}</p>
-              <p className="text-sm text-gray-400">Total Budget</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-green-500 to-teal-500 w-2/3" />
-            </div>
-          </div>
-
-          {/* Completion Rate */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-lg mb-3">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-2xl font-bold text-white" title="Percent of projects completed">{dashboardStats.completionRate}%</p>
-              <p className="text-sm text-gray-400">Completion Rate</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500" style={{ width: `${dashboardStats.completionRate}%` }} />
-            </div>
-          </div>
-
-          {/* Avg Response */}
-          <div className="group bg-black/20 backdrop-blur-sm p-4 rounded-xl border border-white/10 hover:bg-white/5 transition-all duration-300">
-            <div className="text-center">
-              <div className="mx-auto inline-flex p-2 bg-gradient-to-r from-pink-500 to-red-500 rounded-lg mb-3">
-                <Activity className="w-5 h-5 text-white" />
-              </div>
-              <p className="text-lg font-bold text-white" title="Average response time">{dashboardStats.responseTime}</p>
-              <p className="text-sm text-gray-400">Avg Response</p>
-            </div>
-            <div className="mt-3 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-pink-500 to-red-500 w-1/2" />
-            </div>
-          </div>
+          <MetricCard
+            icon={BarChart3}
+            value={dashboardStats.totalProjects}
+            label="Total Projects"
+            description="Total number of projects"
+            gradientFrom="from-blue-500"
+            gradientTo="to-cyan-500"
+            progressWidth={100}
+          />
+          <MetricCard
+            icon={Play}
+            value={dashboardStats.activeProjects}
+            label="Active"
+            description="Number of active projects"
+            gradientFrom="from-green-500"
+            gradientTo="to-emerald-500"
+            progressWidth={Math.min(100, (dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100)}
+          />
+          <MetricCard
+            icon={Users}
+            value={dashboardStats.totalApplicants}
+            label="Total Applicants"
+            description="Total applicants across projects"
+            gradientFrom="from-purple-500"
+            gradientTo="to-pink-500"
+            progressWidth={Math.min(100, dashboardStats.totalApplicants ? 100 : 0)}
+          />
+          <MetricCard
+            icon={Bell}
+            value={dashboardStats.newApplicants}
+            label="New Applicants"
+            description="New applicants this period"
+            gradientFrom="from-yellow-500"
+            gradientTo="to-orange-500"
+            progressWidth={Math.min(100, (dashboardStats.newApplicants / Math.max(1, dashboardStats.totalApplicants)) * 100)}
+          />
+          <MetricCard
+            icon={Star}
+            value={dashboardStats.avgRating}
+            label="Avg Rating"
+            description="Average project rating"
+            gradientFrom="from-indigo-500"
+            gradientTo="to-purple-500"
+            progressWidth={(Number(dashboardStats.avgRating) / 5) * 100}
+          />
+          <MetricCard
+            icon={DollarSign}
+            value={dashboardStats.totalBudget}
+            label="Total Budget"
+            description="Aggregate budget range"
+            gradientFrom="from-green-500"
+            gradientTo="to-teal-500"
+            progressWidth={67}
+          />
+          <MetricCard
+            icon={Target}
+            value={`${dashboardStats.completionRate}%`}
+            label="Completion Rate"
+            description="Percent of projects completed"
+            gradientFrom="from-cyan-500"
+            gradientTo="to-blue-500"
+            progressWidth={dashboardStats.completionRate}
+          />
+          <MetricCard
+            icon={Activity}
+            value={dashboardStats.responseTime}
+            label="Avg Response"
+            description="Average response time"
+            gradientFrom="from-pink-500"
+            gradientTo="to-red-500"
+            progressWidth={50}
+          />
         </div>
 
         {/* Enhanced Tabs */}
@@ -452,11 +410,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Recent Activity */}
               <div className="lg:col-span-2">
-                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-green-400" />
-                    Recent Activity
-                  </h3>
+                <SectionCard icon={Activity} title="Recent Activity" iconColor="text-green-400">
                   <div className="space-y-4">
                     {notifications.map((notification) => (
                       <div key={notification.id} className={`p-4 rounded-xl border ${
@@ -469,16 +423,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                       </div>
                     ))}
                   </div>
-                </div>
+                </SectionCard>
               </div>
               
               {/* Quick Actions */}
               <div className="lg:col-span-1">
-                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                  <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                    <Zap className="w-5 h-5 text-yellow-400" />
-                    Quick Actions
-                  </h3>
+                <SectionCard icon={Zap} title="Quick Actions" iconColor="text-yellow-400">
                   <div className="space-y-3">
                     <Button
                       onClick={() => setActiveTab('create')}
@@ -516,16 +466,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                       View Analytics
                     </Button>
                   </div>
-                </div>
+                </SectionCard>
               </div>
             </div>
             
             {/* Top Performing Projects */}
-            <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-400" />
-                Top Performing Projects
-              </h3>
+            <SectionCard icon={Star} title="Top Performing Projects" iconColor="text-yellow-400">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {ownedProjects
                   .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.applicantsCount || 0) - (a.applicantsCount || 0))
@@ -560,7 +506,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   </div>
                 ))}
               </div>
-            </div>
+            </SectionCard>
           </div>
         )}
 
@@ -693,7 +639,14 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             {/* Tips + Form */}
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
               <div className="xl:col-span-3">
-                <ProjectForm />
+                <ProjectForm 
+                  dispatch={dispatch}
+                  onProjectCreated={() => {
+                    // Refresh projects list after creation
+                    dispatch(listProjects());
+                    setActiveTab('my-projects');
+                  }}
+                />
               </div>
 
               {/* Helper Panel */}
@@ -730,6 +683,299 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
         {activeTab === 'applicants' && (
           <ApplicantsList />
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="space-y-6">
+            {/* Analytics Header */}
+            <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl">
+                  <TrendingUp className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                    Project Analytics
+                  </h2>
+                  <p className="text-gray-300 text-sm">
+                    Track performance, engagement, and growth metrics
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Key Metrics Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Project Performance Score */}
+              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-2xl font-bold text-white">
+                    {Math.round((dashboardStats.completionRate + Number(dashboardStats.avgRating) * 20) / 2)}%
+                  </span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Performance Score</h3>
+                <p className="text-gray-400 text-sm">Overall project health</p>
+                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500" 
+                    style={{ width: `${Math.min(100, (dashboardStats.completionRate + Number(dashboardStats.avgRating) * 20) / 2)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Engagement Rate */}
+              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-2xl font-bold text-white">
+                    {dashboardStats.totalApplicants > 0 ? Math.round((dashboardStats.newApplicants / dashboardStats.totalApplicants) * 100) : 0}%
+                  </span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Engagement Rate</h3>
+                <p className="text-gray-400 text-sm">New vs total applicants</p>
+                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500" 
+                    style={{ width: `${Math.min(100, dashboardStats.totalApplicants > 0 ? (dashboardStats.newApplicants / dashboardStats.totalApplicants) * 100 : 0)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Average Response Time */}
+              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                    <Clock className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-lg font-bold text-white">{dashboardStats.responseTime}</span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Avg Response Time</h3>
+                <p className="text-gray-400 text-sm">Time to first applicant</p>
+                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-3/4" />
+                </div>
+              </div>
+
+              {/* Budget Utilization */}
+              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-lg font-bold text-white">85%</span>
+                </div>
+                <h3 className="text-white font-semibold mb-1">Budget Utilization</h3>
+                <p className="text-gray-400 text-sm">Average across projects</p>
+                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-4/5" />
+                </div>
+              </div>
+            </div>
+
+            {/* Charts and Detailed Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Project Status Distribution */}
+              <SectionCard icon={BarChart3} title="Project Status Distribution" iconColor="text-blue-400">
+                <div className="space-y-4">
+                  {[
+                    { status: 'Active', count: dashboardStats.activeProjects, color: 'from-green-500 to-emerald-500', percentage: Math.round((dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100) },
+                    { status: 'Completed', count: Math.round((dashboardStats.completionRate / 100) * dashboardStats.totalProjects), color: 'from-blue-500 to-cyan-500', percentage: dashboardStats.completionRate },
+                    { status: 'Paused', count: Math.max(0, dashboardStats.totalProjects - dashboardStats.activeProjects - Math.round((dashboardStats.completionRate / 100) * dashboardStats.totalProjects)), color: 'from-yellow-500 to-orange-500', percentage: Math.max(0, 100 - Math.round((dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100) - dashboardStats.completionRate) }
+                  ].map((item) => (
+                    <div key={item.status} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white font-medium">{item.status}</span>
+                        <span className="text-gray-300">{item.count} projects</span>
+                      </div>
+                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full bg-gradient-to-r ${item.color}`}
+                          style={{ width: `${item.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+
+              {/* Applicant Trends */}
+              <SectionCard icon={TrendingUp} title="Applicant Trends" iconColor="text-purple-400">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Total Applicants</p>
+                        <p className="text-gray-400 text-sm">Across all projects</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-white">{dashboardStats.totalApplicants}</p>
+                      <p className="text-green-400 text-sm">+{dashboardStats.newApplicants} this week</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
+                        <Star className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">Average Rating</p>
+                        <p className="text-gray-400 text-sm">Project quality score</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-white">{dashboardStats.avgRating}</p>
+                      <p className="text-blue-400 text-sm">out of 5.0</p>
+                    </div>
+                  </div>
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Project Performance Rankings */}
+            <SectionCard icon={Award} title="Top Performing Projects" iconColor="text-yellow-400">
+              <div className="space-y-4">
+                {ownedProjects
+                  .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.applicantsCount || 0) - (a.applicantsCount || 0))
+                  .slice(0, 5)
+                  .map((project, index) => (
+                    <div key={project.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                          index === 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                          index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                          index === 2 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
+                          'bg-gradient-to-r from-blue-500 to-purple-500'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-semibold">{project.title}</h4>
+                          <div className="flex items-center gap-4 text-sm text-gray-400">
+                            <span className="flex items-center gap-1">
+                              <Users className="w-3 h-3" />
+                              {project.applicantsCount} applicants
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-400" />
+                              {project.rating}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${
+                              project.status === 'Active' ? 'bg-green-500/20 text-green-400' :
+                              project.status === 'Completed' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-yellow-500/20 text-yellow-400'
+                            }`}>
+                              {project.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-white font-semibold">{project.budget}</p>
+                        <p className="text-gray-400 text-sm">{project.duration}</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </SectionCard>
+
+            {/* Time-based Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Monthly Performance */}
+              <SectionCard icon={Activity} title="Monthly Performance" iconColor="text-green-400">
+                <div className="space-y-4">
+                  {[
+                    { month: 'This Month', projects: dashboardStats.totalProjects, applicants: dashboardStats.totalApplicants, color: 'from-green-500 to-emerald-500' },
+                    { month: 'Last Month', projects: Math.max(0, dashboardStats.totalProjects - 2), applicants: Math.max(0, dashboardStats.totalApplicants - 5), color: 'from-blue-500 to-cyan-500' },
+                    { month: '2 Months Ago', projects: Math.max(0, dashboardStats.totalProjects - 4), applicants: Math.max(0, dashboardStats.totalApplicants - 8), color: 'from-purple-500 to-pink-500' }
+                  ].map((item, index) => (
+                    <div key={item.month} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <span className="text-white font-medium">{item.month}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-white font-semibold">{item.projects}</p>
+                          <p className="text-gray-400 text-xs">Projects</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white font-semibold">{item.applicants}</p>
+                          <p className="text-gray-400 text-xs">Applicants</p>
+                        </div>
+                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${item.color}`} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+
+              {/* Skill Demand Analysis */}
+              <SectionCard icon={Zap} title="Top Skills in Demand" iconColor="text-yellow-400">
+                <div className="space-y-3">
+                  {['React', 'JavaScript', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
+                    .map((skill, index) => (
+                      <div key={skill} className="flex items-center justify-between">
+                        <span className="text-white font-medium">{skill}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-yellow-500 to-orange-500"
+                              style={{ width: `${Math.max(20, 100 - (index * 10))}%` }}
+                            />
+                          </div>
+                          <span className="text-gray-300 text-sm w-8 text-right">
+                            {Math.max(20, 100 - (index * 10))}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Quick Actions for Analytics */}
+            <SectionCard icon={Lightbulb} title="Analytics Actions" iconColor="text-yellow-400" className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  onClick={() => {
+                    // Export analytics data
+                    toast.success('Analytics data exported successfully!');
+                  }}
+                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  Export Data
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Generate report
+                    toast.success('Report generated successfully!');
+                  }}
+                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Generate Report
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Share insights
+                    toast.success('Insights shared successfully!');
+                  }}
+                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Share Insights
+                </Button>
+              </div>
+            </SectionCard>
+          </div>
         )}
 
         {/* Owner Project Details Modal */}

@@ -46,9 +46,10 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Input, Button } from "../../../components";
-import AIEnhancedDescription from "./AIEnhancedDescription";
+import AIProjectAssistant from "./AIProjectAssistant";
+import { createProject } from "../slice/projectSlice";
 
-const ProjectForm = () => {
+const ProjectForm = ({ dispatch, onProjectCreated }) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -205,12 +206,85 @@ const ProjectForm = () => {
     
     setIsSubmitting(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      console.log("Project Data:", formData);
+    try {
+      // Prepare data for API
+      const projectData = {
+        title: formData.title,
+        description: formData.description,
+        roleNeeded: formData.roleNeeded,
+        status: formData.status.toLowerCase(),
+        priority: formData.priority.toLowerCase(),
+        category: formData.category,
+        experienceLevel: formData.experience.toLowerCase().replace(' level', ''),
+        budgetMin: formData.budget ? parseInt(formData.budget.split('-')[0].replace(/[^0-9]/g, '')) : null,
+        budgetMax: formData.budget ? parseInt(formData.budget.split('-')[1]?.replace(/[^0-9]/g, '') || formData.budget.split('-')[0].replace(/[^0-9]/g, '')) : null,
+        currency: formData.currency,
+        isRemote: formData.isRemote,
+        location: formData.location,
+        duration: formData.duration,
+        startDate: formData.startDate,
+        deadline: formData.deadline,
+        requirements: formData.requirements,
+        benefits: formData.benefits,
+        company: formData.company,
+        website: formData.website,
+        maxApplicants: formData.maxApplicants ? parseInt(formData.maxApplicants) : null,
+        language: formData.language,
+        timezone: formData.timezone,
+        skills: formData.skills,
+        tags: formData.tags
+      };
+
+      // Dispatch createProject action
+      await dispatch(createProject(projectData)).unwrap();
+      
+      // Reset form
+      setFormData({
+        title: "",
+        description: "",
+        roleNeeded: "",
+        startDate: "",
+        deadline: "",
+        tags: [],
+        maxApplicants: "",
+        priority: "Medium",
+        status: "Active",
+        collaborators: [],
+        color: "#7f00ff",
+        budget: "",
+        location: "",
+        duration: "",
+        experience: "",
+        skills: [],
+        requirements: "",
+        benefits: "",
+        company: "",
+        website: "",
+        contactEmail: "",
+        contactPhone: "",
+        attachments: [],
+        isRemote: true,
+        isUrgent: false,
+        isFeatured: false,
+        category: "",
+        subcategory: "",
+        timezone: "",
+        language: "English",
+        currency: "USD"
+      });
+      
       setIsSubmitting(false);
-      alert("Project submitted successfully!");
-    }, 2000);
+      
+      // Call the callback function
+      if (onProjectCreated) {
+        onProjectCreated();
+      }
+      
+    } catch (error) {
+      console.error('Error creating project:', error);
+      setIsSubmitting(false);
+      // Error handling is done by Redux slice
+    }
   };
 
   const handleKeyPress = (e, action) => {
@@ -220,8 +294,34 @@ const ProjectForm = () => {
     }
   };
 
-  const handleAIDescriptionGenerated = (description) => {
-    setFormData({ ...formData, description });
+  const handleAISuggestionApplied = (type, value) => {
+    switch (type) {
+      case 'description':
+        setFormData({ ...formData, description: value });
+        break;
+      case 'title':
+        setFormData({ ...formData, title: value });
+        break;
+      case 'skill':
+        setFormData({ 
+          ...formData, 
+          skills: formData.skills.includes(value) 
+            ? formData.skills 
+            : [...formData.skills, value] 
+        });
+        break;
+      case 'requirements':
+        setFormData({ ...formData, requirements: value });
+        break;
+      case 'benefits':
+        setFormData({ ...formData, benefits: value });
+        break;
+      case 'budget':
+        setFormData({ ...formData, budget: value });
+        break;
+      default:
+        break;
+    }
   };
 
   return (
@@ -292,7 +392,7 @@ const ProjectForm = () => {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-gray-300">Description</label>
-                      <AIEnhancedDescription onDescriptionGenerated={handleAIDescriptionGenerated} />
+                      <AIProjectAssistant onSuggestionApplied={handleAISuggestionApplied} initialData={formData} />
                     </div>
                     <textarea
                       name="description"
