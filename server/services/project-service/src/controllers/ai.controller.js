@@ -1,5 +1,6 @@
 const aiService = require('../utils/aiService');
-const { asyncHandler } = require('shared/middleware/awaitHandlerFactory.middleware');
+const awaitHandlerFactory = require('shared/middleware/awaitHandlerFactory.middleware');
+const asyncHandler = awaitHandlerFactory;
 
 /**
  * Generate AI-enhanced project description

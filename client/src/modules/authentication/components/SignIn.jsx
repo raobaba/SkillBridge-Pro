@@ -55,8 +55,8 @@ const SignIn = ({ switchMode }) => {
     try {
       const result = await dispatch(loginUser(data));
       if (result?.payload?.status === 200) {
-        // Navigate to the intended route or default to home
-        const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/";
+        // Navigate to the intended route or default to dashboard
+        const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/dashboard";
         navigate(targetRoute);
       } else {
         // Login failed - show forgot password option

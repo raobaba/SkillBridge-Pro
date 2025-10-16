@@ -22,8 +22,8 @@ const Authentication = () => {
     const isLoggedIn = isAuthenticated && token && user;
     
     if (isLoggedIn) {
-      // User is already authenticated, redirect them to intended route or home
-      const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/";
+      // User is already authenticated, redirect them to intended route or dashboard
+      const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/dashboard";
       navigate(targetRoute, { replace: true });
     }
   }, [isAuthenticated, user, redirectTo, navigate]);
