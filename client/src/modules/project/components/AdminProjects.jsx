@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Badge, Input, CircularLoader, ErrorState } from "../../../components";
+import { Button, Badge, Input } from "../../../components";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Search, Download, Flag, FlagOff, ShieldCheck, CheckCircle, Ban, Trash2, Eye, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
@@ -12,7 +12,7 @@ import {
   searchProjects
 } from "../slice/projectSlice";
 
-const AdminProjects = ({ user, projects, dispatch, loading, error, message, searchQuery, setSearchQuery, handleSearch }) => {
+const AdminProjects = ({ user, projects, dispatch, error, message, searchQuery, setSearchQuery, handleSearch }) => {
   const navigate = useNavigate();
   const [selectedProject, setSelectedProject] = useState(null);
   const [disputeOpen, setDisputeOpen] = useState(false);
@@ -228,10 +228,6 @@ const AdminProjects = ({ user, projects, dispatch, loading, error, message, sear
     setSelectedIds([]);
   };
 
-  // Show loading state
-  if (loading) {
-    return <CircularLoader />;
-  }
 
   // Redirect to home on error
   useEffect(() => {

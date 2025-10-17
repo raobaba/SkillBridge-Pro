@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import ProjectForm from './ProjectForm'
-import ApplicantsList from './ApplicantsList'
-import InviteDevelopers from './InviteDevelopers'
-import { Modal, Button, StatsCard, SectionCard, MetricCard } from '../../../components'
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import ProjectForm from "./ProjectForm";
+import ApplicantsList from "./ApplicantsList";
+import InviteDevelopers from "./InviteDevelopers";
+import {
+  Modal,
+  Button,
+  StatsCard,
+  SectionCard,
+  MetricCard,
+} from "../../../components";
+import ConfirmModal from "../../../components/Modal/ConfirmModal";
 import {
   BarChart3,
   TrendingUp,
@@ -19,13 +26,18 @@ import {
   Star,
   Sparkles,
   Lightbulb,
-  Briefcase
-} from 'lucide-react'
+  Briefcase,
+  Eye,
+  Settings,
+  RefreshCcw,
+  FileText,
+  Trash2,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 // Project actions
-import { 
-  updateProject, 
+import {
+  updateProject,
   deleteProject,
   getProjectStats,
   listApplicants,
@@ -34,13 +46,25 @@ import {
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('dashboard')
-  const [selectedProject, setSelectedProject] = useState(null)
-  const [showProjectModal, setShowProjectModal] = useState(false)
-  const [showInviteDevelopersModal, setShowInviteDevelopersModal] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showInviteDevelopersModal, setShowInviteDevelopersModal] =
+    useState(false);
   const [notifications, setNotifications] = useState([]);
   const [projectStats, setProjectStats] = useState(null);
   const [projectApplicants, setProjectApplicants] = useState({});
+  const projectFormRef = useRef(null);
+  // Inline field assistants are triggered from ProjectForm via window events.
+
+  // Toggles for create form preview and advanced sections
+  const [showPreview, setShowPreview] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+
+  // Listen for inline AI assistant open events from fields
+  // No container-level assistant now
 
   // Load project data when component mounts
   useEffect(() => {
@@ -61,25 +85,35 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
   const loadProjectData = async () => {
     try {
-      // Load stats for all projects
-      const statsPromises = projects.map(project => 
-        dispatch(getProjectStats(project.id)).unwrap()
+      // Load stats for all projects (fault-tolerant)
+      const statsResults = await Promise.all(
+        projects.map(async (project) => {
+          try {
+            return await dispatch(getProjectStats(project.id)).unwrap();
+          } catch (e) {
+            return { stats: null };
+          }
+        })
       );
-      const stats = await Promise.all(statsPromises);
-      setProjectStats(stats);
+      setProjectStats(statsResults);
 
-      // Load applicants for each project
-      const applicantsPromises = projects.map(project =>
-        dispatch(listApplicants(project.id)).unwrap()
+      // Load applicants for each project (fault-tolerant)
+      const applicantsResults = await Promise.all(
+        projects.map(async (project) => {
+          try {
+            return await dispatch(listApplicants(project.id)).unwrap();
+          } catch (e) {
+            return { applicants: [] };
+          }
+        })
       );
-      const applicants = await Promise.all(applicantsPromises);
       const applicantsMap = {};
       projects.forEach((project, index) => {
-        applicantsMap[project.id] = applicants[index];
+        applicantsMap[project.id] = applicantsResults[index];
       });
       setProjectApplicants(applicantsMap);
     } catch (error) {
-      console.error('Error loading project data:', error);
+      console.error("Error loading project data:", error);
     }
   };
 
@@ -87,8 +121,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const mapProjectData = (project) => ({
     id: project.id,
     title: project.title,
-    status: project.status?.charAt(0).toUpperCase() + project.status?.slice(1) || 'Active',
-    priority: project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) || 'Medium',
+    status:
+      project.status?.charAt(0).toUpperCase() + project.status?.slice(1) ||
+      "Active",
+    priority:
+      project.priority?.charAt(0).toUpperCase() + project.priority?.slice(1) ||
+      "Medium",
     description: project.description,
     startDate: project.startDate,
     deadline: project.deadline,
@@ -98,26 +136,32 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
     activity: `${project.activityCount || 0} updates`,
     tags: project.tags || [],
     rating: parseFloat(project.ratingAvg) || 0,
-    budget: project.budgetMin && project.budgetMax ? 
-      `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}` : 
-      'Budget TBD',
+    budget:
+      project.budgetMin && project.budgetMax
+        ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
+        : "Budget TBD",
     budgetMin: project.budgetMin,
     budgetMax: project.budgetMax,
-    location: project.isRemote ? 'Remote' : project.location || 'Remote',
-    duration: project.duration || 'TBD',
-    experience: project.experienceLevel?.charAt(0).toUpperCase() + project.experienceLevel?.slice(1) || 'Mid Level',
-    category: project.category || 'Web Development',
+    location: project.isRemote ? "Remote" : project.location || "Remote",
+    duration: project.duration || "TBD",
+    experience: (() => {
+      const lvl = (project.experienceLevel || '').toString().toLowerCase();
+      const map = { entry: 'Entry Level', mid: 'Mid Level', senior: 'Senior Level', lead: 'Lead/Architect' };
+      return map[lvl] || 'Mid Level';
+    })(),
+    category: project.category || "Web Development",
     isRemote: project.isRemote,
     isUrgent: project.isUrgent,
     isFeatured: project.isFeatured,
-    company: project.company || 'Company',
+    maxApplicants: project.maxApplicants,
+    company: project.company || "Company",
     website: project.website,
     matchScore: project.matchScoreAvg || 0,
-    skills: project.tags || [],
+    skills: project.skills || [],
     benefits: project.benefits,
     requirements: project.requirements,
     createdAt: project.createdAt,
-    updatedAt: project.updatedAt
+    updatedAt: project.updatedAt,
   });
 
   // Use projects from Redux state and map them
@@ -131,38 +175,59 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
         activeProjects: 0,
         totalApplicants: 0,
         newApplicants: 0,
-        avgRating: '0.0',
-        totalBudget: 'Budget TBD',
+        avgRating: "0.0",
+        totalBudget: "Budget TBD",
         completionRate: 0,
-        responseTime: 'N/A'
+        responseTime: "N/A",
       };
     }
 
     const totalProjects = ownedProjects.length;
-    const activeProjects = ownedProjects.filter(p => p.status === 'Active').length;
-    const totalApplicants = ownedProjects.reduce((sum, p) => sum + (p.applicantsCount || 0), 0);
-    const newApplicants = ownedProjects.reduce((sum, p) => sum + (p.newApplicants || 0), 0);
-    
+    const activeProjects = ownedProjects.filter(
+      (p) => p.status === "Active"
+    ).length;
+    const totalApplicants = ownedProjects.reduce(
+      (sum, p) => sum + (p.applicantsCount || 0),
+      0
+    );
+    const newApplicants = ownedProjects.reduce(
+      (sum, p) => sum + (p.newApplicants || 0),
+      0
+    );
+
     // Calculate average rating
-    const avgRating = ownedProjects.length > 0 
-      ? (ownedProjects.reduce((sum, p) => sum + (p.rating || 0), 0) / ownedProjects.length).toFixed(1)
-      : '0.0';
+    const avgRating =
+      ownedProjects.length > 0
+        ? (
+            ownedProjects.reduce((sum, p) => sum + (p.rating || 0), 0) /
+            ownedProjects.length
+          ).toFixed(1)
+        : "0.0";
 
     // Calculate total budget range
     const budgets = ownedProjects
-      .filter(p => p.budgetMin && p.budgetMax)
-      .map(p => ({ min: p.budgetMin, max: p.budgetMax }));
-    
-    const totalBudget = budgets.length > 0 
-      ? `$${Math.min(...budgets.map(b => b.min)).toLocaleString()} - $${Math.max(...budgets.map(b => b.max)).toLocaleString()}`
-      : 'Budget TBD';
+      .filter((p) => p.budgetMin && p.budgetMax)
+      .map((p) => ({ min: p.budgetMin, max: p.budgetMax }));
+
+    const totalBudget =
+      budgets.length > 0
+        ? `$${Math.min(...budgets.map((b) => b.min)).toLocaleString()} - $${Math.max(...budgets.map((b) => b.max)).toLocaleString()}`
+        : "Budget TBD";
 
     // Calculate completion rate
-    const completedProjects = ownedProjects.filter(p => p.status === 'Completed').length;
-    const completionRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
+    const completedProjects = ownedProjects.filter(
+      (p) => p.status === "Completed"
+    ).length;
+    const completionRate =
+      totalProjects > 0
+        ? Math.round((completedProjects / totalProjects) * 100)
+        : 0;
 
     // Calculate average response time (mock calculation - could be enhanced with real data)
-    const responseTime = totalApplicants > 0 ? `${Math.max(1, Math.min(24, Math.round(totalApplicants / 2)))} hours` : 'N/A';
+    const responseTime =
+      totalApplicants > 0
+        ? `${Math.max(1, Math.min(24, Math.round(totalApplicants / 2)))} hours`
+        : "N/A";
 
     return {
       totalProjects,
@@ -172,33 +237,40 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       avgRating,
       totalBudget,
       completionRate,
-      responseTime
+      responseTime,
     };
   }, [ownedProjects]);
 
   const handleProjectAction = async (projectId, action) => {
-    const project = ownedProjects.find(p => p.id === projectId);
+    const project = ownedProjects.find((p) => p.id === projectId);
     try {
       switch (action) {
-        case 'pause':
-          await dispatch(updateProject({ id: projectId, data: { status: 'paused' } })).unwrap();
-          toast.success(`Project "${project?.title}" paused successfully!`);
+        case "pause":
+          await dispatch(
+            updateProject({ id: projectId, data: { status: "paused" } })
+          ).unwrap();
+        
           break;
-        case 'resume':
-          await dispatch(updateProject({ id: projectId, data: { status: 'active' } })).unwrap();
-          toast.success(`Project "${project?.title}" resumed successfully!`);
+        case "resume":
+          await dispatch(
+            updateProject({ id: projectId, data: { status: "active" } })
+          ).unwrap();
+        
           break;
-        case 'close':
-          await dispatch(updateProject({ id: projectId, data: { status: 'completed' } })).unwrap();
-          toast.success(`Project "${project?.title}" closed successfully!`);
+        case "close":
+          await dispatch(
+            updateProject({ id: projectId, data: { status: "completed" } })
+          ).unwrap();
+         
           break;
-        case 'boost':
-          await dispatch(updateProject({ id: projectId, data: { isFeatured: true } })).unwrap();
-          toast.success(`Project "${project?.title}" boosted successfully!`);
+        case "boost":
+          await dispatch(
+            updateProject({ id: projectId, data: { isFeatured: true } })
+          ).unwrap();
+        
           break;
-        case 'delete':
+        case "delete":
           await dispatch(deleteProject(projectId)).unwrap();
-          toast.success(`Project "${project?.title}" deleted successfully!`);
           break;
         default:
           break;
@@ -207,366 +279,412 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       console.error(`Failed to ${action} project:`, error);
       toast.error(`Failed to ${action} project: ${error.message}`);
     }
-  }
+  };
 
   const handleInviteDeveloper = (projectId) => {
-    setSelectedProject(ownedProjects.find(p => p.id === projectId))
-    setShowInviteModal(true)
-  }
+    setSelectedProject(ownedProjects.find((p) => p.id === projectId));
+    setShowInviteModal(true);
+  };
 
   const markNotificationAsRead = (notificationId) => {
-    setNotifications(prev => 
-      prev.map(notif => 
+    setNotifications((prev) =>
+      prev.map((notif) =>
         notif.id === notificationId ? { ...notif, read: true } : notif
       )
-    )
-  }
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
-      <div className="px-6 py-8 space-y-8 max-w-7xl mx-auto">
+    <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
+      <div className='px-6 py-8 space-y-8 max-w-7xl mx-auto'>
         {/* Enhanced Header with Notifications */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-              <BarChart3 className="w-8 h-8 text-white" />
+        <div className='flex items-center justify-between mb-6'>
+          <div className='flex items-center gap-4'>
+            <div className='p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
+              <BarChart3 className='w-8 h-8 text-white' />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+              <h1 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
                 Project Owner Dashboard
               </h1>
-              <p className="text-gray-300 text-sm">Manage your projects and track performance</p>
+              <p className='text-gray-300 text-sm'>
+                Manage your projects and track performance
+              </p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Button
-                className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors duration-300"
-              >
-                <Bell className="w-5 h-5 text-white" />
-                {notifications.filter(n => !n.read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {notifications.filter(n => !n.read).length}
-                  </span>
-                )}
-              </Button>
-            </div>
-            <Button 
-              onClick={() => setActiveTab('create')}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Project
-            </Button>
-          </div>
+
+          {/* Removed container-level AI Assistant button; inline field AI triggers are used instead */}
         </div>
 
         {/* Dashboard Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+        <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8'>
           <MetricCard
             icon={BarChart3}
             value={dashboardStats.totalProjects}
-            label="Total Projects"
-            description="Total number of projects"
-            gradientFrom="from-blue-500"
-            gradientTo="to-cyan-500"
+            label='Total Projects'
+            description='Total number of projects'
+            gradientFrom='from-blue-500'
+            gradientTo='to-cyan-500'
             progressWidth={100}
           />
           <MetricCard
             icon={Play}
             value={dashboardStats.activeProjects}
-            label="Active"
-            description="Number of active projects"
-            gradientFrom="from-green-500"
-            gradientTo="to-emerald-500"
-            progressWidth={Math.min(100, (dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100)}
+            label='Active'
+            description='Number of active projects'
+            gradientFrom='from-green-500'
+            gradientTo='to-emerald-500'
+            progressWidth={Math.min(
+              100,
+              (dashboardStats.activeProjects /
+                Math.max(1, dashboardStats.totalProjects)) *
+                100
+            )}
           />
           <MetricCard
             icon={Users}
             value={dashboardStats.totalApplicants}
-            label="Total Applicants"
-            description="Total applicants across projects"
-            gradientFrom="from-purple-500"
-            gradientTo="to-pink-500"
-            progressWidth={Math.min(100, dashboardStats.totalApplicants ? 100 : 0)}
+            label='Total Applicants'
+            description='Total applicants across projects'
+            gradientFrom='from-purple-500'
+            gradientTo='to-pink-500'
+            progressWidth={Math.min(
+              100,
+              dashboardStats.totalApplicants ? 100 : 0
+            )}
           />
           <MetricCard
             icon={Bell}
             value={dashboardStats.newApplicants}
-            label="New Applicants"
-            description="New applicants this period"
-            gradientFrom="from-yellow-500"
-            gradientTo="to-orange-500"
-            progressWidth={Math.min(100, (dashboardStats.newApplicants / Math.max(1, dashboardStats.totalApplicants)) * 100)}
+            label='New Applicants'
+            description='New applicants this period'
+            gradientFrom='from-yellow-500'
+            gradientTo='to-orange-500'
+            progressWidth={Math.min(
+              100,
+              (dashboardStats.newApplicants /
+                Math.max(1, dashboardStats.totalApplicants)) *
+                100
+            )}
           />
           <MetricCard
             icon={Star}
             value={dashboardStats.avgRating}
-            label="Avg Rating"
-            description="Average project rating"
-            gradientFrom="from-indigo-500"
-            gradientTo="to-purple-500"
+            label='Avg Rating'
+            description='Average project rating'
+            gradientFrom='from-indigo-500'
+            gradientTo='to-purple-500'
             progressWidth={(Number(dashboardStats.avgRating) / 5) * 100}
           />
           <MetricCard
             icon={DollarSign}
             value={dashboardStats.totalBudget}
-            label="Total Budget"
-            description="Aggregate budget range"
-            gradientFrom="from-green-500"
-            gradientTo="to-teal-500"
+            label='Total Budget'
+            description='Aggregate budget range'
+            gradientFrom='from-green-500'
+            gradientTo='to-teal-500'
             progressWidth={67}
           />
           <MetricCard
             icon={Target}
             value={`${dashboardStats.completionRate}%`}
-            label="Completion Rate"
-            description="Percent of projects completed"
-            gradientFrom="from-cyan-500"
-            gradientTo="to-blue-500"
+            label='Completion Rate'
+            description='Percent of projects completed'
+            gradientFrom='from-cyan-500'
+            gradientTo='to-blue-500'
             progressWidth={dashboardStats.completionRate}
           />
           <MetricCard
             icon={Activity}
             value={dashboardStats.responseTime}
-            label="Avg Response"
-            description="Average response time"
-            gradientFrom="from-pink-500"
-            gradientTo="to-red-500"
+            label='Avg Response'
+            description='Average response time'
+            gradientFrom='from-pink-500'
+            gradientTo='to-red-500'
             progressWidth={50}
           />
         </div>
 
         {/* Enhanced Tabs */}
-        <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-2xl border border-white/10">
-          <div className="grid grid-cols-5 gap-2">
+        <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-2xl border border-white/10'>
+          <div className='grid grid-cols-5 gap-2'>
             <Button
-              onClick={() => setActiveTab('dashboard')}
-              variant="ghost"
+              onClick={() => setActiveTab("dashboard")}
+              variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                activeTab === 'dashboard'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                activeTab === "dashboard"
+                  ? "bg-white/20 text-white"
+                  : "bg-white/10 text-gray-300 hover:bg-white/15"
               }`}
             >
-              <BarChart3 className="w-4 h-4 inline mr-2" />
+              <BarChart3 className='w-4 h-4 inline mr-2' />
               Dashboard
             </Button>
             <Button
-              onClick={() => setActiveTab('my-projects')}
-              variant="ghost"
+              onClick={() => setActiveTab("my-projects")}
+              variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                activeTab === 'my-projects'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                activeTab === "my-projects"
+                  ? "bg-white/20 text-white"
+                  : "bg-white/10 text-gray-300 hover:bg-white/15"
               }`}
             >
-              <BarChart3 className="w-4 h-4 inline mr-2" />
+              <BarChart3 className='w-4 h-4 inline mr-2' />
               My Projects
             </Button>
             <Button
-              onClick={() => setActiveTab('create')}
-              variant="ghost"
+              onClick={() => setActiveTab("create")}
+              variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                activeTab === 'create'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                activeTab === "create"
+                  ? "bg-white/20 text-white"
+                  : "bg-white/10 text-gray-300 hover:bg-white/15"
               }`}
             >
-              <Plus className="w-4 h-4 inline mr-2" />
+              <Plus className='w-4 h-4 inline mr-2' />
               Create Project
             </Button>
             <Button
-              onClick={() => setActiveTab('applicants')}
-              variant="ghost"
+              onClick={() => setActiveTab("applicants")}
+              variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                activeTab === 'applicants'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                activeTab === "applicants"
+                  ? "bg-white/20 text-white"
+                  : "bg-white/10 text-gray-300 hover:bg-white/15"
               }`}
             >
-              <Users className="w-4 h-4 inline mr-2" />
+              <Users className='w-4 h-4 inline mr-2' />
               Applicants
             </Button>
             <Button
-              onClick={() => setActiveTab('analytics')}
-              variant="ghost"
+              onClick={() => setActiveTab("analytics")}
+              variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                activeTab === 'analytics'
-                  ? 'bg-white/20 text-white'
-                  : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                activeTab === "analytics"
+                  ? "bg-white/20 text-white"
+                  : "bg-white/10 text-gray-300 hover:bg-white/15"
               }`}
             >
-              <TrendingUp className="w-4 h-4 inline mr-2" />
+              <TrendingUp className='w-4 h-4 inline mr-2' />
               Analytics
             </Button>
           </div>
         </div>
 
         {/* Content */}
-        {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {activeTab === "dashboard" && (
+          <div className='space-y-6'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
               {/* Recent Activity */}
-              <div className="lg:col-span-2">
-                <SectionCard icon={Activity} title="Recent Activity" iconColor="text-green-400">
-                  <div className="space-y-4">
+              <div className='lg:col-span-2'>
+                <SectionCard
+                  icon={Activity}
+                  title='Recent Activity'
+                  iconColor='text-green-400'
+                >
+                  <div className='space-y-4'>
                     {notifications.map((notification) => (
-                      <div key={notification.id} className={`p-4 rounded-xl border ${
-                        notification.read ? 'bg-white/5 border-white/10' : 'bg-blue-500/10 border-blue-500/20'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <p className="text-white text-sm">{notification.message}</p>
-                          <span className="text-gray-400 text-xs">{notification.timestamp}</span>
+                      <div
+                        key={notification.id}
+                        className={`p-4 rounded-xl border ${
+                          notification.read
+                            ? "bg-white/5 border-white/10"
+                            : "bg-blue-500/10 border-blue-500/20"
+                        }`}
+                      >
+                        <div className='flex items-center justify-between'>
+                          <p className='text-white text-sm'>
+                            {notification.message}
+                          </p>
+                          <span className='text-gray-400 text-xs'>
+                            {notification.timestamp}
+                          </span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </SectionCard>
               </div>
-              
+
               {/* Quick Actions */}
-              <div className="lg:col-span-1">
-                <SectionCard icon={Zap} title="Quick Actions" iconColor="text-yellow-400">
-                  <div className="space-y-3">
+              <div className='lg:col-span-1'>
+                <SectionCard
+                  icon={Zap}
+                  title='Quick Actions'
+                  iconColor='text-yellow-400'
+                >
+                  <div className='space-y-3'>
                     <Button
-                      onClick={() => setActiveTab('create')}
-                      className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      onClick={() => setActiveTab("create")}
+                      className='w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className='w-4 h-4' />
                       Create New Project
                     </Button>
                     <Button
                       onClick={() => setShowInviteDevelopersModal(true)}
-                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
-                      <Users className="w-4 h-4" />
+                      <Users className='w-4 h-4' />
                       Invite Developers
                     </Button>
                     <Button
                       onClick={() => {
                         if (ownedProjects.length > 0) {
                           const firstProject = ownedProjects[0];
-                          handleProjectAction(firstProject.id, 'boost');
+                          handleProjectAction(firstProject.id, "boost");
                         } else {
-                          toast.info('Create a project first to boost visibility');
+                          toast.info(
+                            "Create a project first to boost visibility"
+                          );
                         }
                       }}
-                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
-                      <Award className="w-4 h-4" />
+                      <Award className='w-4 h-4' />
                       Boost Project Visibility
                     </Button>
                     <Button
-                      onClick={() => setActiveTab('analytics')}
-                      className="w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      onClick={() => setActiveTab("analytics")}
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
-                      <TrendingUp className="w-4 h-4" />
+                      <TrendingUp className='w-4 h-4' />
                       View Analytics
                     </Button>
                   </div>
                 </SectionCard>
               </div>
             </div>
-            
+
             {/* Top Performing Projects */}
-            <SectionCard icon={Star} title="Top Performing Projects" iconColor="text-yellow-400">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <SectionCard
+              icon={Star}
+              title='Top Performing Projects'
+              iconColor='text-yellow-400'
+            >
+              <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
                 {ownedProjects
-                  .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.applicantsCount || 0) - (a.applicantsCount || 0))
+                  .sort(
+                    (a, b) =>
+                      (b.rating || 0) - (a.rating || 0) ||
+                      (b.applicantsCount || 0) - (a.applicantsCount || 0)
+                  )
                   .slice(0, 3)
                   .map((project) => (
-                  <div key={project.id} className="bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors duration-300">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-white font-semibold">{project.title}</h4>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        project.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {project.status}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">Applicants:</span>
-                        <span className="text-white">{project.applicantsCount}</span>
+                    <div
+                      key={project.id}
+                      className='bg-white/5 rounded-xl p-4 border border-white/10 hover:bg-white/10 transition-colors duration-300'
+                    >
+                      <div className='flex items-center justify-between mb-3'>
+                        <h4 className='text-white font-semibold'>
+                          {project.title}
+                        </h4>
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            project.status === "Active"
+                              ? "bg-green-500/20 text-green-400"
+                              : "bg-yellow-500/20 text-yellow-400"
+                          }`}
+                        >
+                          {project.status}
+                        </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">Rating:</span>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                          <span className="text-white">{project.rating}</span>
+                      <div className='space-y-2'>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className='text-gray-400'>Applicants:</span>
+                          <span className='text-white'>
+                            {project.applicantsCount}
+                          </span>
+                        </div>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className='text-gray-400'>Rating:</span>
+                          <div className='flex items-center gap-1'>
+                            <Star className='w-3 h-3 text-yellow-400 fill-yellow-400' />
+                            <span className='text-white'>{project.rating}</span>
+                          </div>
+                        </div>
+                        <div className='flex items-center justify-between text-sm'>
+                          <span className='text-gray-400'>Budget:</span>
+                          <span className='text-white'>{project.budget}</span>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-400">Budget:</span>
-                        <span className="text-white">{project.budget}</span>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </SectionCard>
           </div>
         )}
 
-        {activeTab === 'my-projects' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+        {activeTab === "my-projects" && (
+          <div className='space-y-6'>
+            <div className='flex items-center justify-between'>
+              <h1 className='text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
                 Your Projects
               </h1>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-300 text-sm">{ownedProjects.length} total</span>
-                <Button 
-                  onClick={() => setActiveTab('create')}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              <div className='flex items-center gap-3'>
+                <span className='text-gray-300 text-sm'>
+                  {ownedProjects.length} total
+                </span>
+                <Button
+                  onClick={() => setActiveTab("create")}
+                  className='bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className='w-4 h-4' />
                   New Project
                 </Button>
               </div>
             </div>
             {ownedProjects.length === 0 ? (
-              <div className="text-center py-12">
-                <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No projects yet</p>
-                <p className="text-gray-500 text-sm mt-2">Create your first project to get started</p>
-                <Button 
-                  onClick={() => setActiveTab('create')}
-                  className="mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto"
+              <div className='text-center py-12'>
+                <BarChart3 className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+                <p className='text-gray-400 text-lg'>No projects yet</p>
+                <p className='text-gray-500 text-sm mt-2'>
+                  Create your first project to get started
+                </p>
+                <Button
+                  onClick={() => setActiveTab("create")}
+                  className='mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto'
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className='w-4 h-4' />
                   Create Project
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
                 {ownedProjects.map((project) => (
-                  <div key={project.id} className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col">
-                    <div className="p-5 border-b border-white/10">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0">
-                            <Briefcase className="w-4 h-4 text-white" />
+                  <div
+                    key={project.id}
+                    className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 hover:bg-white/5 transition-all duration-300 h-full flex flex-col'
+                  >
+                    <div className='p-5 border-b border-white/10'>
+                      <div className='flex items-start justify-between gap-3'>
+                        <div className='flex items-center gap-3 min-w-0'>
+                          <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg shrink-0'>
+                            <Briefcase className='w-4 h-4 text-white' />
                           </div>
-                          <div className="min-w-0">
-                            <h3 className="text-white font-semibold truncate">{project.title}</h3>
-                            <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                                project.status === 'Active' ? 'bg-green-500/20 text-green-300' :
-                                project.status === 'Upcoming' ? 'bg-yellow-500/20 text-yellow-300' :
-                                'bg-gray-500/20 text-gray-300'
-                              }`}>
+                          <div className='min-w-0'>
+                            <h3 className='text-white font-semibold truncate'>
+                              {project.title}
+                            </h3>
+                            <div className='mt-1 flex items-center gap-2 flex-wrap'>
+                              <span
+                                className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
+                                  project.status === "Active"
+                                    ? "bg-green-500/20 text-green-300"
+                                    : project.status === "Upcoming"
+                                      ? "bg-yellow-500/20 text-yellow-300"
+                                      : "bg-gray-500/20 text-gray-300"
+                                }`}
+                              >
                                 {project.status}
                               </span>
                               {project.isFeatured && (
-                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300">
+                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-500/20 text-yellow-300'>
                                   Featured
                                 </span>
                               )}
                               {project.isUrgent && (
-                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-red-500/20 text-red-300">
+                                <span className='px-2 py-0.5 text-[10px] font-semibold rounded-full bg-red-500/20 text-red-300'>
                                   Urgent
                                 </span>
                               )}
@@ -575,32 +693,77 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="p-5 flex-1 flex flex-col gap-3">
-                      <div className="flex flex-wrap gap-1.5">
+                    <div className='p-5 flex-1 flex flex-col gap-3'>
+                      <div className='flex flex-wrap gap-1.5'>
                         {project.tags.slice(0, 3).map((tag, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500">
+                          <span
+                            key={idx}
+                            className='px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500'
+                          >
                             {tag}
                           </span>
                         ))}
                         {project.tags.length > 3 && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10">
+                          <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
                             +{project.tags.length - 3}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between text-xs text-gray-400">
-                        <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />{project.budget}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{project.duration}</span>
+                        {/* Description preview */}
+                        <p className='text-gray-300 text-xs leading-relaxed'>
+                          {(project.description || '').length > 160
+                            ? `${project.description.slice(0, 160)}…`
+                            : (project.description || '')}
+                        </p>
+                      <div className='flex items-center justify-between text-xs text-gray-400'>
+                        <span className='flex items-center gap-1'>
+                          <DollarSign className='w-3 h-3' />
+                          {project.budget}
+                        </span>
+                        <span className='flex items-center gap-1'>
+                          <Clock className='w-3 h-3' />
+                          {project.duration}
+                        </span>
                       </div>
                     </div>
-                    <div className="p-5 pt-0 mt-auto">
-                      <div className="flex gap-2">
+                    <div className='p-5 pt-0 mt-auto'>
+                      <div className='flex gap-2'>
                         <Button
-                          onClick={() => { setSelectedProject(project); setShowProjectModal(true); }}
-                          variant="ghost"
-                          className="flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm"
+                          onClick={() => {
+                            setSelectedProject(project);
+                            setShowProjectModal(true);
+                          }}
+                          variant='ghost'
+                          className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm'
                         >
                           View Details
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setActiveTab('create');
+                            // pass project to form via ref after tab switch
+                            setTimeout(() => {
+                              if (projectFormRef.current) {
+                                // no-op; form reads editingProject prop below
+                              }
+                            }, 0);
+                            setSelectedProject(project);
+                          }}
+                          variant='ghost'
+                          className='flex-1 bg-white/10 hover:bg-white/20 text-white px-3 py-2 rounded-lg text-sm'
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setProjectToDelete(project);
+                            setShowDeleteConfirm(true);
+                          }}
+                          variant='ghost'
+                          className='flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm border border-red-500/30 text-red-300 bg-red-500/10 hover:bg-red-500/20 hover:text-red-200 transition-colors'
+                        >
+                          <Trash2 className='w-4 h-4' />
+                          Delete
                         </Button>
                       </div>
                     </div>
@@ -611,69 +774,105 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
           </div>
         )}
 
-        {activeTab === 'create' && (
-          <div className="space-y-6">
+        {activeTab === "create" && (
+          <div className='space-y-6'>
             {/* Create Header */}
-            <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-                    <Sparkles className="w-8 h-8 text-white" />
+            <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10'>
+              <div className='flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4'>
+                <div className='flex items-center gap-4'>
+                  <div className='p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl'>
+                    <Sparkles className='w-8 h-8 text-white' />
                   </div>
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                      Create a New Project
+                    <h2 className='text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+                      Post a New Project
                     </h2>
-                    <p className="text-gray-300 text-sm">
+                    <p className='text-gray-300 text-sm'>
                       Fill the details below. You can use AI to draft a quality description.
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 rounded-full text-xs bg-white/10 text-gray-300 border border-white/20">Auto-save enabled</span>
-                  <span className="px-3 py-1 rounded-full text-xs bg-white/10 text-gray-300 border border-white/20">Draft friendly</span>
+                <div className='flex flex-wrap gap-2'>
+                  <Button
+                    onClick={() => setShowPreview(!showPreview)}
+                    variant='ghost'
+                    className='bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 border border-white/10'
+                  >
+                    <Eye className='w-4 h-4' />
+                    {showPreview ? 'Hide Preview' : 'Show Preview'}
+                  </Button>
+                  <Button
+                    onClick={() => setShowAdvanced(!showAdvanced)}
+                    variant='ghost'
+                    className='bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2 border border-white/10'
+                  >
+                    <Settings className='w-4 h-4' />
+                    {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+                  </Button>
+                  <div className='px-3 py-1 rounded-full text-xs bg-white/5 text-gray-300 border border-white/15 flex items-center gap-1'>
+                    <RefreshCcw className='w-3 h-3 text-blue-300' />
+                    Auto-save enabled
+                  </div>
+                  <div className='px-3 py-1 rounded-full text-xs bg-white/5 text-gray-300 border border-white/15 flex items-center gap-1'>
+                    <FileText className='w-3 h-3 text-purple-300' />
+                    Draft friendly
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Tips + Form */}
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              <div className="xl:col-span-3">
-                <ProjectForm 
+            <div className='grid grid-cols-1 xl:grid-cols-4 gap-6'>
+              <div className='xl:col-span-3'>
+                <ProjectForm
+                  ref={projectFormRef}
                   dispatch={dispatch}
+                  showPreview={showPreview}
+                  showAdvanced={showAdvanced}
+                  editingProject={selectedProject}
+                  onProjectUpdated={() => {
+                    dispatch(listProjects());
+                    setActiveTab('my-projects');
+                  }}
                   onProjectCreated={() => {
                     // Refresh projects list after creation
                     dispatch(listProjects());
-                    setActiveTab('my-projects');
+                    setActiveTab("my-projects");
                   }}
                 />
               </div>
 
               {/* Helper Panel */}
-              <aside className="xl:col-span-1">
-                <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 sticky top-6 space-y-5">
-                  <h3 className="text-xl font-semibold text-white flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 text-yellow-400" />
+              <aside className='xl:col-span-1'>
+                <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 sticky top-6 space-y-5'>
+                  <h3 className='text-xl font-semibold text-white flex items-center gap-2'>
+                    <Lightbulb className='w-5 h-5 text-yellow-400' />
                     Tips
                   </h3>
-                  <ul className="text-sm text-gray-300 space-y-2 list-disc list-inside">
+                  <ul className='text-sm text-gray-300 space-y-2 list-disc list-inside'>
                     <li>Keep the title concise and clear.</li>
                     <li>Mention key tech stack and seniority.</li>
                     <li>Add budget and duration for better matches.</li>
-                    <li>Use the AI Description button for a strong first draft.</li>
+                    <li>
+                      Use the AI Description button for a strong first draft.
+                    </li>
                   </ul>
 
-                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                    <p className="text-white font-medium mb-2">Need a hand?</p>
-                    <p className="text-gray-400 text-sm mb-3">Click “AI-Enhanced Description” beside the Description field in the form.</p>
-                    <div className="flex items-center gap-2 text-xs text-gray-300">
-                      <Sparkles className="w-4 h-4 text-purple-300" />
+                  <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                    <p className='text-white font-medium mb-2'>Need a hand?</p>
+                    <p className='text-gray-400 text-sm mb-3'>
+                      Click “AI-Enhanced Description” beside the Description
+                      field in the form.
+                    </p>
+                    <div className='flex items-center gap-2 text-xs text-gray-300'>
+                      <Sparkles className='w-4 h-4 text-purple-300' />
                       Improves clarity and attractiveness
                     </div>
                   </div>
 
-                  <div className="text-xs text-gray-400">
-                    Your project will be visible to developers once published. You can save as draft anytime.
+                  <div className='text-xs text-gray-400'>
+                    Your project will be visible to developers once published.
+                    You can save as draft anytime.
                   </div>
                 </div>
               </aside>
@@ -681,23 +880,21 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
           </div>
         )}
 
-        {activeTab === 'applicants' && (
-          <ApplicantsList />
-        )}
+        {activeTab === "applicants" && <ApplicantsList />}
 
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
+        {activeTab === "analytics" && (
+          <div className='space-y-6'>
             {/* Analytics Header */}
-            <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl">
-                  <TrendingUp className="w-8 h-8 text-white" />
+            <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10'>
+              <div className='flex items-center gap-4'>
+                <div className='p-3 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl'>
+                  <TrendingUp className='w-8 h-8 text-white' />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                  <h2 className='text-3xl font-bold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent'>
                     Project Analytics
                   </h2>
-                  <p className="text-gray-300 text-sm">
+                  <p className='text-gray-300 text-sm'>
                     Track performance, engagement, and growth metrics
                   </p>
                 </div>
@@ -705,95 +902,168 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             </div>
 
             {/* Key Metrics Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
               {/* Project Performance Score */}
-              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                    <Target className="w-5 h-5 text-white" />
+              <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div className='p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg'>
+                    <Target className='w-5 h-5 text-white' />
                   </div>
-                  <span className="text-2xl font-bold text-white">
-                    {Math.round((dashboardStats.completionRate + Number(dashboardStats.avgRating) * 20) / 2)}%
+                  <span className='text-2xl font-bold text-white'>
+                    {Math.round(
+                      (dashboardStats.completionRate +
+                        Number(dashboardStats.avgRating) * 20) /
+                        2
+                    )}
+                    %
                   </span>
                 </div>
-                <h3 className="text-white font-semibold mb-1">Performance Score</h3>
-                <p className="text-gray-400 text-sm">Overall project health</p>
-                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-cyan-500" 
-                    style={{ width: `${Math.min(100, (dashboardStats.completionRate + Number(dashboardStats.avgRating) * 20) / 2)}%` }}
+                <h3 className='text-white font-semibold mb-1'>
+                  Performance Score
+                </h3>
+                <p className='text-gray-400 text-sm'>Overall project health</p>
+                <div className='mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden'>
+                  <div
+                    className='h-full bg-gradient-to-r from-blue-500 to-cyan-500'
+                    style={{
+                      width: `${Math.min(100, (dashboardStats.completionRate + Number(dashboardStats.avgRating) * 20) / 2)}%`,
+                    }}
                   />
                 </div>
               </div>
 
               {/* Engagement Rate */}
-              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                    <Users className="w-5 h-5 text-white" />
+              <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div className='p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg'>
+                    <Users className='w-5 h-5 text-white' />
                   </div>
-                  <span className="text-2xl font-bold text-white">
-                    {dashboardStats.totalApplicants > 0 ? Math.round((dashboardStats.newApplicants / dashboardStats.totalApplicants) * 100) : 0}%
+                  <span className='text-2xl font-bold text-white'>
+                    {dashboardStats.totalApplicants > 0
+                      ? Math.round(
+                          (dashboardStats.newApplicants /
+                            dashboardStats.totalApplicants) *
+                            100
+                        )
+                      : 0}
+                    %
                   </span>
                 </div>
-                <h3 className="text-white font-semibold mb-1">Engagement Rate</h3>
-                <p className="text-gray-400 text-sm">New vs total applicants</p>
-                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500" 
-                    style={{ width: `${Math.min(100, dashboardStats.totalApplicants > 0 ? (dashboardStats.newApplicants / dashboardStats.totalApplicants) * 100 : 0)}%` }}
+                <h3 className='text-white font-semibold mb-1'>
+                  Engagement Rate
+                </h3>
+                <p className='text-gray-400 text-sm'>New vs total applicants</p>
+                <div className='mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden'>
+                  <div
+                    className='h-full bg-gradient-to-r from-purple-500 to-pink-500'
+                    style={{
+                      width: `${Math.min(100, dashboardStats.totalApplicants > 0 ? (dashboardStats.newApplicants / dashboardStats.totalApplicants) * 100 : 0)}%`,
+                    }}
                   />
                 </div>
               </div>
 
               {/* Average Response Time */}
-              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
-                    <Clock className="w-5 h-5 text-white" />
+              <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div className='p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg'>
+                    <Clock className='w-5 h-5 text-white' />
                   </div>
-                  <span className="text-lg font-bold text-white">{dashboardStats.responseTime}</span>
+                  <span className='text-lg font-bold text-white'>
+                    {dashboardStats.responseTime}
+                  </span>
                 </div>
-                <h3 className="text-white font-semibold mb-1">Avg Response Time</h3>
-                <p className="text-gray-400 text-sm">Time to first applicant</p>
-                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-green-500 to-emerald-500 w-3/4" />
+                <h3 className='text-white font-semibold mb-1'>
+                  Avg Response Time
+                </h3>
+                <p className='text-gray-400 text-sm'>Time to first applicant</p>
+                <div className='mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden'>
+                  <div className='h-full bg-gradient-to-r from-green-500 to-emerald-500 w-3/4' />
                 </div>
               </div>
 
               {/* Budget Utilization */}
-              <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
-                    <DollarSign className="w-5 h-5 text-white" />
+              <div className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <div className='p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg'>
+                    <DollarSign className='w-5 h-5 text-white' />
                   </div>
-                  <span className="text-lg font-bold text-white">85%</span>
+                  <span className='text-lg font-bold text-white'>85%</span>
                 </div>
-                <h3 className="text-white font-semibold mb-1">Budget Utilization</h3>
-                <p className="text-gray-400 text-sm">Average across projects</p>
-                <div className="mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-4/5" />
+                <h3 className='text-white font-semibold mb-1'>
+                  Budget Utilization
+                </h3>
+                <p className='text-gray-400 text-sm'>Average across projects</p>
+                <div className='mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden'>
+                  <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-4/5' />
                 </div>
               </div>
             </div>
 
             {/* Charts and Detailed Analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
               {/* Project Status Distribution */}
-              <SectionCard icon={BarChart3} title="Project Status Distribution" iconColor="text-blue-400">
-                <div className="space-y-4">
+              <SectionCard
+                icon={BarChart3}
+                title='Project Status Distribution'
+                iconColor='text-blue-400'
+              >
+                <div className='space-y-4'>
                   {[
-                    { status: 'Active', count: dashboardStats.activeProjects, color: 'from-green-500 to-emerald-500', percentage: Math.round((dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100) },
-                    { status: 'Completed', count: Math.round((dashboardStats.completionRate / 100) * dashboardStats.totalProjects), color: 'from-blue-500 to-cyan-500', percentage: dashboardStats.completionRate },
-                    { status: 'Paused', count: Math.max(0, dashboardStats.totalProjects - dashboardStats.activeProjects - Math.round((dashboardStats.completionRate / 100) * dashboardStats.totalProjects)), color: 'from-yellow-500 to-orange-500', percentage: Math.max(0, 100 - Math.round((dashboardStats.activeProjects / Math.max(1, dashboardStats.totalProjects)) * 100) - dashboardStats.completionRate) }
+                    {
+                      status: "Active",
+                      count: dashboardStats.activeProjects,
+                      color: "from-green-500 to-emerald-500",
+                      percentage: Math.round(
+                        (dashboardStats.activeProjects /
+                          Math.max(1, dashboardStats.totalProjects)) *
+                          100
+                      ),
+                    },
+                    {
+                      status: "Completed",
+                      count: Math.round(
+                        (dashboardStats.completionRate / 100) *
+                          dashboardStats.totalProjects
+                      ),
+                      color: "from-blue-500 to-cyan-500",
+                      percentage: dashboardStats.completionRate,
+                    },
+                    {
+                      status: "Paused",
+                      count: Math.max(
+                        0,
+                        dashboardStats.totalProjects -
+                          dashboardStats.activeProjects -
+                          Math.round(
+                            (dashboardStats.completionRate / 100) *
+                              dashboardStats.totalProjects
+                          )
+                      ),
+                      color: "from-yellow-500 to-orange-500",
+                      percentage: Math.max(
+                        0,
+                        100 -
+                          Math.round(
+                            (dashboardStats.activeProjects /
+                              Math.max(1, dashboardStats.totalProjects)) *
+                              100
+                          ) -
+                          dashboardStats.completionRate
+                      ),
+                    },
                   ].map((item) => (
-                    <div key={item.status} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">{item.status}</span>
-                        <span className="text-gray-300">{item.count} projects</span>
+                    <div key={item.status} className='space-y-2'>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>
+                          {item.status}
+                        </span>
+                        <span className='text-gray-300'>
+                          {item.count} projects
+                        </span>
                       </div>
-                      <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div 
+                      <div className='h-2 w-full bg-white/10 rounded-full overflow-hidden'>
+                        <div
                           className={`h-full bg-gradient-to-r ${item.color}`}
                           style={{ width: `${item.percentage}%` }}
                         />
@@ -804,37 +1074,53 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               </SectionCard>
 
               {/* Applicant Trends */}
-              <SectionCard icon={TrendingUp} title="Applicant Trends" iconColor="text-purple-400">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                        <Users className="w-4 h-4 text-white" />
+              <SectionCard
+                icon={TrendingUp}
+                title='Applicant Trends'
+                iconColor='text-purple-400'
+              >
+                <div className='space-y-4'>
+                  <div className='flex items-center justify-between p-4 bg-white/5 rounded-xl'>
+                    <div className='flex items-center gap-3'>
+                      <div className='p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg'>
+                        <Users className='w-4 h-4 text-white' />
                       </div>
                       <div>
-                        <p className="text-white font-medium">Total Applicants</p>
-                        <p className="text-gray-400 text-sm">Across all projects</p>
+                        <p className='text-white font-medium'>
+                          Total Applicants
+                        </p>
+                        <p className='text-gray-400 text-sm'>
+                          Across all projects
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-white">{dashboardStats.totalApplicants}</p>
-                      <p className="text-green-400 text-sm">+{dashboardStats.newApplicants} this week</p>
+                    <div className='text-right'>
+                      <p className='text-2xl font-bold text-white'>
+                        {dashboardStats.totalApplicants}
+                      </p>
+                      <p className='text-green-400 text-sm'>
+                        +{dashboardStats.newApplicants} this week
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-                        <Star className="w-4 h-4 text-white" />
+
+                  <div className='flex items-center justify-between p-4 bg-white/5 rounded-xl'>
+                    <div className='flex items-center gap-3'>
+                      <div className='p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg'>
+                        <Star className='w-4 h-4 text-white' />
                       </div>
                       <div>
-                        <p className="text-white font-medium">Average Rating</p>
-                        <p className="text-gray-400 text-sm">Project quality score</p>
+                        <p className='text-white font-medium'>Average Rating</p>
+                        <p className='text-gray-400 text-sm'>
+                          Project quality score
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-white">{dashboardStats.avgRating}</p>
-                      <p className="text-blue-400 text-sm">out of 5.0</p>
+                    <div className='text-right'>
+                      <p className='text-2xl font-bold text-white'>
+                        {dashboardStats.avgRating}
+                      </p>
+                      <p className='text-blue-400 text-sm'>out of 5.0</p>
                     </div>
                   </div>
                 </div>
@@ -842,46 +1128,72 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             </div>
 
             {/* Project Performance Rankings */}
-            <SectionCard icon={Award} title="Top Performing Projects" iconColor="text-yellow-400">
-              <div className="space-y-4">
+            <SectionCard
+              icon={Award}
+              title='Top Performing Projects'
+              iconColor='text-yellow-400'
+            >
+              <div className='space-y-4'>
                 {ownedProjects
-                  .sort((a, b) => (b.rating || 0) - (a.rating || 0) || (b.applicantsCount || 0) - (a.applicantsCount || 0))
+                  .sort(
+                    (a, b) =>
+                      (b.rating || 0) - (a.rating || 0) ||
+                      (b.applicantsCount || 0) - (a.applicantsCount || 0)
+                  )
                   .slice(0, 5)
                   .map((project, index) => (
-                    <div key={project.id} className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                          index === 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                          index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
-                          index === 2 ? 'bg-gradient-to-r from-orange-500 to-red-500' :
-                          'bg-gradient-to-r from-blue-500 to-purple-500'
-                        }`}>
+                    <div
+                      key={project.id}
+                      className='flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300'
+                    >
+                      <div className='flex items-center gap-4'>
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
+                            index === 0
+                              ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                              : index === 1
+                                ? "bg-gradient-to-r from-gray-400 to-gray-500"
+                                : index === 2
+                                  ? "bg-gradient-to-r from-orange-500 to-red-500"
+                                  : "bg-gradient-to-r from-blue-500 to-purple-500"
+                          }`}
+                        >
                           {index + 1}
                         </div>
                         <div>
-                          <h4 className="text-white font-semibold">{project.title}</h4>
-                          <div className="flex items-center gap-4 text-sm text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <Users className="w-3 h-3" />
+                          <h4 className='text-white font-semibold'>
+                            {project.title}
+                          </h4>
+                          <div className='flex items-center gap-4 text-sm text-gray-400'>
+                            <span className='flex items-center gap-1'>
+                              <Users className='w-3 h-3' />
                               {project.applicantsCount} applicants
                             </span>
-                            <span className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-400" />
+                            <span className='flex items-center gap-1'>
+                              <Star className='w-3 h-3 text-yellow-400' />
                               {project.rating}
                             </span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs ${
-                              project.status === 'Active' ? 'bg-green-500/20 text-green-400' :
-                              project.status === 'Completed' ? 'bg-blue-500/20 text-blue-400' :
-                              'bg-yellow-500/20 text-yellow-400'
-                            }`}>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs ${
+                                project.status === "Active"
+                                  ? "bg-green-500/20 text-green-400"
+                                  : project.status === "Completed"
+                                    ? "bg-blue-500/20 text-blue-400"
+                                    : "bg-yellow-500/20 text-yellow-400"
+                              }`}
+                            >
                               {project.status}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-white font-semibold">{project.budget}</p>
-                        <p className="text-gray-400 text-sm">{project.duration}</p>
+                      <div className='text-right'>
+                        <p className='text-white font-semibold'>
+                          {project.budget}
+                        </p>
+                        <p className='text-gray-400 text-sm'>
+                          {project.duration}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -889,27 +1201,63 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             </SectionCard>
 
             {/* Time-based Analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
               {/* Monthly Performance */}
-              <SectionCard icon={Activity} title="Monthly Performance" iconColor="text-green-400">
-                <div className="space-y-4">
+              <SectionCard
+                icon={Activity}
+                title='Monthly Performance'
+                iconColor='text-green-400'
+              >
+                <div className='space-y-4'>
                   {[
-                    { month: 'This Month', projects: dashboardStats.totalProjects, applicants: dashboardStats.totalApplicants, color: 'from-green-500 to-emerald-500' },
-                    { month: 'Last Month', projects: Math.max(0, dashboardStats.totalProjects - 2), applicants: Math.max(0, dashboardStats.totalApplicants - 5), color: 'from-blue-500 to-cyan-500' },
-                    { month: '2 Months Ago', projects: Math.max(0, dashboardStats.totalProjects - 4), applicants: Math.max(0, dashboardStats.totalApplicants - 8), color: 'from-purple-500 to-pink-500' }
+                    {
+                      month: "This Month",
+                      projects: dashboardStats.totalProjects,
+                      applicants: dashboardStats.totalApplicants,
+                      color: "from-green-500 to-emerald-500",
+                    },
+                    {
+                      month: "Last Month",
+                      projects: Math.max(0, dashboardStats.totalProjects - 2),
+                      applicants: Math.max(
+                        0,
+                        dashboardStats.totalApplicants - 5
+                      ),
+                      color: "from-blue-500 to-cyan-500",
+                    },
+                    {
+                      month: "2 Months Ago",
+                      projects: Math.max(0, dashboardStats.totalProjects - 4),
+                      applicants: Math.max(
+                        0,
+                        dashboardStats.totalApplicants - 8
+                      ),
+                      color: "from-purple-500 to-pink-500",
+                    },
                   ].map((item, index) => (
-                    <div key={item.month} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                      <span className="text-white font-medium">{item.month}</span>
-                      <div className="flex items-center gap-4">
-                        <div className="text-center">
-                          <p className="text-white font-semibold">{item.projects}</p>
-                          <p className="text-gray-400 text-xs">Projects</p>
+                    <div
+                      key={item.month}
+                      className='flex items-center justify-between p-3 bg-white/5 rounded-lg'
+                    >
+                      <span className='text-white font-medium'>
+                        {item.month}
+                      </span>
+                      <div className='flex items-center gap-4'>
+                        <div className='text-center'>
+                          <p className='text-white font-semibold'>
+                            {item.projects}
+                          </p>
+                          <p className='text-gray-400 text-xs'>Projects</p>
                         </div>
-                        <div className="text-center">
-                          <p className="text-white font-semibold">{item.applicants}</p>
-                          <p className="text-gray-400 text-xs">Applicants</p>
+                        <div className='text-center'>
+                          <p className='text-white font-semibold'>
+                            {item.applicants}
+                          </p>
+                          <p className='text-gray-400 text-xs'>Applicants</p>
                         </div>
-                        <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${item.color}`} />
+                        <div
+                          className={`w-3 h-3 rounded-full bg-gradient-to-r ${item.color}`}
+                        />
                       </div>
                     </div>
                   ))}
@@ -917,60 +1265,82 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               </SectionCard>
 
               {/* Skill Demand Analysis */}
-              <SectionCard icon={Zap} title="Top Skills in Demand" iconColor="text-yellow-400">
-                <div className="space-y-3">
-                  {['React', 'JavaScript', 'Node.js', 'Python', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
-                    .map((skill, index) => (
-                      <div key={skill} className="flex items-center justify-between">
-                        <span className="text-white font-medium">{skill}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-yellow-500 to-orange-500"
-                              style={{ width: `${Math.max(20, 100 - (index * 10))}%` }}
-                            />
-                          </div>
-                          <span className="text-gray-300 text-sm w-8 text-right">
-                            {Math.max(20, 100 - (index * 10))}%
-                          </span>
+              <SectionCard
+                icon={Zap}
+                title='Top Skills in Demand'
+                iconColor='text-yellow-400'
+              >
+                <div className='space-y-3'>
+                  {[
+                    "React",
+                    "JavaScript",
+                    "Node.js",
+                    "Python",
+                    "TypeScript",
+                    "AWS",
+                    "Docker",
+                    "MongoDB",
+                  ].map((skill, index) => (
+                    <div
+                      key={skill}
+                      className='flex items-center justify-between'
+                    >
+                      <span className='text-white font-medium'>{skill}</span>
+                      <div className='flex items-center gap-2'>
+                        <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                          <div
+                            className='h-full bg-gradient-to-r from-yellow-500 to-orange-500'
+                            style={{
+                              width: `${Math.max(20, 100 - index * 10)}%`,
+                            }}
+                          />
                         </div>
+                        <span className='text-gray-300 text-sm w-8 text-right'>
+                          {Math.max(20, 100 - index * 10)}%
+                        </span>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               </SectionCard>
             </div>
 
             {/* Quick Actions for Analytics */}
-            <SectionCard icon={Lightbulb} title="Analytics Actions" iconColor="text-yellow-400" className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <SectionCard
+              icon={Lightbulb}
+              title='Analytics Actions'
+              iconColor='text-yellow-400'
+              className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20'
+            >
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <Button
                   onClick={() => {
                     // Export analytics data
-                    toast.success('Analytics data exported successfully!');
+                    toast.success("Analytics data exported successfully!");
                   }}
-                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
-                  <TrendingUp className="w-4 h-4" />
+                  <TrendingUp className='w-4 h-4' />
                   Export Data
                 </Button>
                 <Button
                   onClick={() => {
                     // Generate report
-                    toast.success('Report generated successfully!');
+                    toast.success("Report generated successfully!");
                   }}
-                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
-                  <BarChart3 className="w-4 h-4" />
+                  <BarChart3 className='w-4 h-4' />
                   Generate Report
                 </Button>
                 <Button
                   onClick={() => {
                     // Share insights
-                    toast.success('Insights shared successfully!');
+                    toast.success("Insights shared successfully!");
                   }}
-                  className="w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className='w-4 h-4' />
                   Share Insights
                 </Button>
               </div>
@@ -986,44 +1356,141 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             title={selectedProject.title}
             subtitle={`${selectedProject.company} • ${selectedProject.location}`}
             icon={Briefcase}
-            size="large"
+            size='large'
           >
-            <div className="p-6 space-y-6 overflow-y-auto">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-gray-400 text-xs mb-1">Budget</p>
-                  <p className="text-white font-semibold">{selectedProject.budget}</p>
+            <div className='p-6 space-y-6 overflow-y-auto'>
+              {/* Key figures */}
+              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Budget</p>
+                  <p className='text-white font-semibold'>{selectedProject.budget}</p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-gray-400 text-xs mb-1">Duration</p>
-                  <p className="text-white font-semibold">{selectedProject.duration}</p>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Duration</p>
+                  <p className='text-white font-semibold'>{selectedProject.duration || 'TBD'}</p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-gray-400 text-xs mb-1">Applicants</p>
-                  <p className="text-white font-semibold">{selectedProject.applicantsCount}</p>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Applicants</p>
+                  <p className='text-white font-semibold'>{selectedProject.applicantsCount || 0}</p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Location</p>
+                  <p className='text-white font-semibold'>{selectedProject.location}</p>
                 </div>
               </div>
+
+              {/* About */}
               <div>
-                <h4 className="text-white font-semibold mb-2">About the project</h4>
-                <p className="text-gray-300 leading-relaxed">{selectedProject.description}</p>
+                <h4 className='text-white font-semibold mb-2'>About the project</h4>
+                <p className='text-gray-300 leading-relaxed whitespace-pre-wrap'>
+                  {selectedProject.description}
+                </p>
               </div>
+
+              {/* Tags / Skills */}
               <div>
-                <h4 className="text-white font-semibold mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedProject.tags.map((tag, idx) => (
-                    <span key={idx} className="px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">{tag}</span>
+                <h4 className='text-white font-semibold mb-2'>Tags</h4>
+                <div className='flex flex-wrap gap-2'>
+                  {(selectedProject.tags || []).map((tag, idx) => (
+                    <span key={idx} className='px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500'>
+                      {tag}
+                    </span>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-gray-400 text-xs mb-1">Priority</p>
-                  <p className="text-white font-semibold">{selectedProject.priority}</p>
+
+              {/* Core details */}
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Role Needed</p>
+                  <p className='text-white font-semibold'>{selectedProject.roleNeeded || '—'}</p>
                 </div>
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-gray-400 text-xs mb-1">Status</p>
-                  <p className="text-white font-semibold">{selectedProject.status}</p>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Category</p>
+                  <p className='text-white font-semibold'>{selectedProject.category || '—'}</p>
                 </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Experience</p>
+                  <p className='text-white font-semibold'>{selectedProject.experience || '—'}</p>
+                </div>
+              </div>
+
+              {/* Timeline */}
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Start Date</p>
+                  <p className='text-white font-semibold'>
+                    {selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Deadline</p>
+                  <p className='text-white font-semibold'>
+                    {selectedProject.deadline ? new Date(selectedProject.deadline).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Remote</p>
+                  <p className='text-white font-semibold'>{selectedProject.isRemote ? 'Yes' : 'No'}</p>
+                </div>
+              </div>
+
+              {/* Priority & Status */}
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Priority</p>
+                  <p className='text-white font-semibold'>{selectedProject.priority}</p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Status</p>
+                  <p className='text-white font-semibold'>{selectedProject.status}</p>
+                </div>
+              </div>
+
+              {/* Company & Website */}
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Company</p>
+                  <p className='text-white font-semibold'>{selectedProject.company || '—'}</p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Website</p>
+                  {selectedProject.website ? (
+                    <a href={selectedProject.website} target='_blank' rel='noreferrer' className='text-blue-300 hover:underline break-all'>
+                      {selectedProject.website}
+                    </a>
+                  ) : (
+                    <p className='text-white font-semibold'>—</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Language & Timezone */}
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Language</p>
+                  <p className='text-white font-semibold'>{selectedProject.language || '—'}</p>
+                </div>
+                <div className='bg-white/5 rounded-xl p-4 border border-white/10'>
+                  <p className='text-gray-400 text-xs mb-1'>Timezone</p>
+                  <p className='text-white font-semibold'>{selectedProject.timezone || '—'}</p>
+                </div>
+              </div>
+
+              {/* Requirements */}
+              <div>
+                <h4 className='text-white font-semibold mb-2'>Requirements</h4>
+                <pre className='text-gray-300 text-sm whitespace-pre-wrap bg-white/5 rounded-xl p-4 border border-white/10'>
+                  {selectedProject.requirements || '—'}
+                </pre>
+              </div>
+
+              {/* Benefits */}
+              <div>
+                <h4 className='text-white font-semibold mb-2'>Benefits & Perks</h4>
+                <pre className='text-gray-300 text-sm whitespace-pre-wrap bg-white/5 rounded-xl p-4 border border-white/10'>
+                  {selectedProject.benefits || '—'}
+                </pre>
               </div>
             </div>
           </Modal>
@@ -1035,14 +1502,40 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             selectedProject={selectedProject}
             onClose={() => setShowInviteDevelopersModal(false)}
             onInviteSent={(developer) => {
-              console.log('Invitation sent to:', developer.name);
+              console.log("Invitation sent to:", developer.name);
               // You can add additional logic here, like updating notifications
             }}
           />
         )}
       </div>
-    </div>
-  )
-}
 
-export default ProjectOwnerProjects
+      {showDeleteConfirm && projectToDelete && (
+        <ConfirmModal
+          isOpen={showDeleteConfirm}
+          title="Delete Project"
+          message={`Are you sure you want to permanently delete "${projectToDelete.title}"? This will remove the project, its applicants, updates, and files. This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+          onClose={() => {
+            setShowDeleteConfirm(false);
+            setProjectToDelete(null);
+          }}
+          onConfirm={async () => {
+            try {
+              await handleProjectAction(projectToDelete.id, 'delete');
+            } finally {
+              setShowDeleteConfirm(false);
+              setProjectToDelete(null);
+              dispatch(listProjects());
+            }
+          }}
+        />
+      )}
+      {/* Global AI Assistant Modal mounted at container level */}
+  {/* Inline assistants are rendered within ProjectForm */}
+    </div>
+  );
+};
+
+export default ProjectOwnerProjects;

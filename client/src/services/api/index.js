@@ -14,7 +14,11 @@ function getHeaderConfig(requestType, options, Authorization) {
       requestType === "MULTIPART" || requestType === "MULTIPART_PUT"
           ? "multipart/form-data"
           : "application/json",
-      authorization: Authorization || "Bearer " + (token || ""),
+      ...(Authorization
+        ? { Authorization }
+        : token
+        ? { Authorization: "Bearer " + token }
+        : {}),
       Accept: "*/*",
     },
     params: { ...options },

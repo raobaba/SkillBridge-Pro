@@ -64,6 +64,8 @@ const createProject = async (req, res) => {
       budgetMax,
       currency,
       isRemote,
+      isUrgent,
+      isFeatured,
       location,
       duration,
       startDate: startDate ? new Date(startDate) : null,

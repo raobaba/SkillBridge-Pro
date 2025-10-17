@@ -1,11 +1,13 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-// Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+// Initialize Google Generative AI (guard for missing API key)
+const GOOGLE_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+const genAI = GOOGLE_API_KEY ? new GoogleGenerativeAI(GOOGLE_API_KEY) : null;
 
 class AIService {
   constructor() {
-    this.model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    this.modelName = process.env.GOOGLE_GENERATIVE_AI_MODEL || "gemini-1.5-flash-latest"; // compatible model for generateContent
+    this.model = genAI ? genAI.getGenerativeModel({ model: this.modelName }) : null;
   }
 
   /**
@@ -14,12 +16,16 @@ class AIService {
   async generateProjectDescription(projectData) {
     try {
       const prompt = this.buildDescriptionPrompt(projectData);
+      if (!this.model) {
+        return this.generateDescriptionFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       return response.text();
     } catch (error) {
       console.error('Error generating project description:', error);
-      throw new Error('Failed to generate AI description');
+      // Return fallback instead of failing the request
+      return this.generateDescriptionFallback(projectData);
     }
   }
 
@@ -29,6 +35,9 @@ class AIService {
   async generateProjectTitles(projectData) {
     try {
       const prompt = this.buildTitlePrompt(projectData);
+      if (!this.model) {
+        return this.generateTitlesFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const titles = response.text().split('\n').filter(title => title.trim());
@@ -45,6 +54,9 @@ class AIService {
   async generateSkillSuggestions(projectData) {
     try {
       const prompt = this.buildSkillPrompt(projectData);
+      if (!this.model) {
+        return this.generateSkillsFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const skills = response.text().split('\n').filter(skill => skill.trim());
@@ -61,12 +73,16 @@ class AIService {
   async generateRequirements(projectData) {
     try {
       const prompt = this.buildRequirementsPrompt(projectData);
+      if (!this.model) {
+        return this.generateRequirementsFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       return response.text();
     } catch (error) {
       console.error('Error generating requirements:', error);
-      throw new Error('Failed to generate AI requirements');
+      // Return fallback instead of failing the request
+      return this.generateRequirementsFallback(projectData);
     }
   }
 
@@ -76,12 +92,16 @@ class AIService {
   async generateBenefits(projectData) {
     try {
       const prompt = this.buildBenefitsPrompt(projectData);
+      if (!this.model) {
+        return this.generateBenefitsFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       return response.text();
     } catch (error) {
       console.error('Error generating benefits:', error);
-      throw new Error('Failed to generate AI benefits');
+      // Return fallback instead of failing the request
+      return this.generateBenefitsFallback(projectData);
     }
   }
 
@@ -91,6 +111,9 @@ class AIService {
   async generateBudgetSuggestions(projectData) {
     try {
       const prompt = this.buildBudgetPrompt(projectData);
+      if (!this.model) {
+        return this.generateBudgetFallback(projectData);
+      }
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const budget = response.text().trim();
@@ -125,7 +148,15 @@ class AIService {
       };
     } catch (error) {
       console.error('Error generating comprehensive suggestions:', error);
-      throw new Error('Failed to generate AI suggestions');
+      // Fallback to local generation for comprehensive if AI fails
+      return {
+        description: this.generateDescriptionFallback(projectData),
+        titles: this.generateTitlesFallback(projectData),
+        skills: this.generateSkillsFallback(projectData),
+        requirements: this.generateRequirementsFallback(projectData),
+        benefits: this.generateBenefitsFallback(projectData),
+        budget: this.generateBudgetFallback(projectData)
+      };
     }
   }
 
@@ -244,6 +275,77 @@ Only return the budget range, no additional text.`;
       return budgetMatch[0];
     }
     return "Budget TBD";
+  }
+
+  // ===== Local fallback generators (no external API) =====
+  generateDescriptionFallback(details) {
+    const { title = '', category = '', skills = [], budget = '', duration = '', experience = '', location = '', company = '', requirements = '', benefits = '' } = details || {};
+    let description = `We're seeking a ${experience || 'skilled'} ${category || 'software'} professional to join an exciting project${title ? `: ${title}` : ''}. `;
+    if (skills && skills.length) {
+      description += `Ideal experience with ${skills.slice(0, 3).join(', ')}${skills.length > 3 ? ' and more' : ''}. `;
+    }
+    if (requirements) description += `${requirements} `;
+    if (budget) description += `Budget: ${budget}. `;
+    if (duration) description += `Duration: ${duration}. `;
+    if (location) description += `Location: ${location}. `;
+    if (benefits) description += `Benefits include ${benefits}. `;
+    description += `Join ${company || 'our team'} to build impactful solutions with modern best practices.`;
+    return description;
+  }
+
+  generateTitlesFallback(details) {
+    const { category = 'Project', title = '' } = details || {};
+    const base = title || category;
+    return [
+      `${base} Initiative Lead`,
+      `${base} Implementation`,
+      `Senior ${base} Specialist`,
+      `${base} Engineer (Contract)`,
+      `${base} Developer`
+    ];
+  }
+
+  generateSkillsFallback(details) {
+    const { category = '' } = details || {};
+    const common = ['JavaScript', 'TypeScript', 'Node.js', 'REST API', 'Git', 'Testing'];
+    if (/mobile/i.test(category)) return ['React Native', 'Flutter', 'Kotlin', 'Swift', ...common];
+    if (/web/i.test(category)) return ['React', 'Next.js', 'Node.js', 'PostgreSQL', ...common];
+    return ['Problem Solving', 'Communication', ...common];
+  }
+
+  generateRequirementsFallback(details) {
+    const { category = 'project', title = '', experience = 'Mid Level' } = details || {};
+    return [
+      `Technical Requirements`,
+      `- Proficiency with technologies commonly used in ${category} projects`,
+      `- Strong understanding of system design, testing, and CI/CD`,
+      `- Ability to write clean, maintainable, well-documented code`,
+      '',
+      `Experience Requirements`,
+      `- ${experience} experience delivering production-grade solutions`,
+      `- Prior work on similar ${title || category} initiatives is a plus`,
+      '',
+      `Project Responsibilities`,
+      `- Implement core features from spec, write unit/integration tests`,
+      `- Participate in code reviews and follow agreed coding standards`,
+      `- Contribute to technical documentation and release notes`,
+      '',
+      `Collaboration & Communication`,
+      `- Communicate progress and risks proactively in stand‑ups`,
+      `- Work closely with stakeholders to refine requirements`,
+      '',
+      `Timeline & Quality`,
+      `- Meet sprint milestones and definition of done`,
+      `- Ensure performance, security, and accessibility best practices`,
+    ].join('\n');
+  }
+
+  generateBenefitsFallback(details) {
+    return `Competitive compensation, flexible schedule, remote-friendly, learning budget, modern tooling.`;
+  }
+
+  generateBudgetFallback(details) {
+    return '$5,000 - $10,000';
   }
 }
 

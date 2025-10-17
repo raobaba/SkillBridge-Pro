@@ -107,10 +107,13 @@ const generateRequirements = asyncHandler(async (req, res) => {
       requirements
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to generate requirements'
-    });
+    // Fallback to local generator if AI fails
+    try {
+      const requirements = aiService.generateRequirementsFallback(projectData);
+      return res.status(200).json({ success: true, requirements });
+    } catch (e) {
+      res.status(500).json({ success: false, message: error.message || 'Failed to generate requirements' });
+    }
   }
 });
 
@@ -135,10 +138,13 @@ const generateBenefits = asyncHandler(async (req, res) => {
       benefits
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Failed to generate benefits'
-    });
+    // Fallback to local generator if AI fails
+    try {
+      const benefits = aiService.generateBenefitsFallback(projectData);
+      return res.status(200).json({ success: true, benefits });
+    } catch (e) {
+      res.status(500).json({ success: false, message: error.message || 'Failed to generate benefits' });
+    }
   }
 });
 

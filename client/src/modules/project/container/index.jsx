@@ -39,9 +39,7 @@ export default function Project() {
     error: projectError,
     message: projectMessage
   } = useSelector((state) => state.project);
-  // Generic slice loading flag (used by some actions like apply/favorite)
-  // Note: avoid using the general loading flag for overlay to prevent sticky loader
-  // Pull all loading flags for unified loader
+ 
   const {
 
     loading,

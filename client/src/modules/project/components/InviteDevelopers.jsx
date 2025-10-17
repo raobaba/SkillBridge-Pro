@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Button, Input, CircularLoader, Modal } from '../../../components';
+import { Button, Input, Modal } from '../../../components';
 import {
   Search,
   User,
@@ -34,7 +34,6 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [invitedDevelopers, setInvitedDevelopers] = useState(new Set());
   const [showFilters, setShowFilters] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   // Fetch developers on component mount
   useEffect(() => {
@@ -98,7 +97,6 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   }, [developers, searchQuery, selectedExperience, selectedLocation, selectedSkills]);
 
   const handleInviteDeveloper = async (developer) => {
-    setLoading(true);
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -112,7 +110,6 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     } catch (error) {
       toast.error('Failed to send invitation');
     } finally {
-      setLoading(false);
     }
   };
 
@@ -224,7 +221,6 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
         <div className="flex-1 overflow-y-auto p-6">
           {developersLoading ? (
             <div className="flex items-center justify-center py-12">
-              <CircularLoader />
               <span className="ml-3 text-gray-400">Loading developers...</span>
             </div>
           ) : error ? (
@@ -324,7 +320,7 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                 {/* Action Button */}
                 <Button
                   onClick={() => handleInviteDeveloper(developer)}
-                  disabled={invitedDevelopers.has(developer.id) || loading}
+                  disabled={invitedDevelopers.has(developer.id)}
                   className={`w-full ${
                     invitedDevelopers.has(developer.id)
                       ? 'bg-green-500/20 text-green-400 cursor-not-allowed'

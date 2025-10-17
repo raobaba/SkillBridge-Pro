@@ -1,5 +1,6 @@
 // components/ProjectForm.jsx
-import React, { useState } from "react";
+import React, { useState, forwardRef, useImperativeHandle } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { 
   Plus, 
   UploadCloud, 
@@ -43,13 +44,14 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  HelpCircle
+  HelpCircle,
+  Sparkles
 } from "lucide-react";
 import { Input, Button } from "../../../components";
-import AIProjectAssistant from "./AIProjectAssistant";
-import { createProject } from "../slice/projectSlice";
+import { createProject, generateProjectDescription, generateRequirements, generateBenefits, generateBudgetSuggestions, updateProject } from "../slice/projectSlice";
+import { getSearchSuggestionsApi } from "../slice/projectAction";
 
-const ProjectForm = ({ dispatch, onProjectCreated }) => {
+const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, editingProject, showPreview: externalShowPreview, showAdvanced: externalShowAdvanced }, ref) => {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -87,10 +89,20 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
   const [tagInput, setTagInput] = useState("");
   const [collabInput, setCollabInput] = useState("");
   const [skillInput, setSkillInput] = useState("");
-  const [showPreview, setShowPreview] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [skillSuggestions, setSkillSuggestions] = useState([]);
+  const [tagSuggestions, setTagSuggestions] = useState([]);
+  const [skillSearchLoading, setSkillSearchLoading] = useState(false);
+  const [tagSearchLoading, setTagSearchLoading] = useState(false);
+  // Preview/Advanced now controlled by parent
+  const showPreview = externalShowPreview ?? false;
+  const showAdvanced = externalShowAdvanced ?? false;
   const [errors, setErrors] = useState({});
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [generatingReq, setGeneratingReq] = useState(false);
+  const [generatingBenefits, setGeneratingBenefits] = useState(false);
+  const projectState = useSelector((state) => state.project);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = Boolean(editingProject && editingProject.id);
 
   const statuses = ["Active", "Draft", "Upcoming", "Paused", "Completed"];
   const priorities = ["High", "Medium", "Low"];
@@ -110,9 +122,14 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const nextValue = type === 'checkbox' ? checked : value;
+    // Enforce 1000 character limit for description regardless of source
+    const clampedValue = name === 'description' && typeof nextValue === 'string'
+      ? nextValue.slice(0, 1000)
+      : nextValue;
     setFormData({ 
       ...formData, 
-      [name]: type === 'checkbox' ? checked : value 
+      [name]: clampedValue 
     });
     
     // Clear error when user starts typing
@@ -125,6 +142,7 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
     if (tagInput && !formData.tags.includes(tagInput)) {
       setFormData({ ...formData, tags: [...formData.tags, tagInput] });
       setTagInput("");
+      setTagSuggestions([]);
     }
   };
 
@@ -156,6 +174,7 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
     if (skillInput && !formData.skills.includes(skillInput)) {
       setFormData({ ...formData, skills: [...formData.skills, skillInput] });
       setSkillInput("");
+      setSkillSuggestions([]);
     }
   };
 
@@ -220,6 +239,8 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
         budgetMax: formData.budget ? parseInt(formData.budget.split('-')[1]?.replace(/[^0-9]/g, '') || formData.budget.split('-')[0].replace(/[^0-9]/g, '')) : null,
         currency: formData.currency,
         isRemote: formData.isRemote,
+        isUrgent: formData.isUrgent,
+        isFeatured: formData.isFeatured,
         location: formData.location,
         duration: formData.duration,
         startDate: formData.startDate,
@@ -235,11 +256,17 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
         tags: formData.tags
       };
 
-      // Dispatch createProject action
-      await dispatch(createProject(projectData)).unwrap();
+      if (isEditMode) {
+        // Update existing project
+        await dispatch(updateProject({ id: editingProject.id, data: projectData })).unwrap();
+      } else {
+        // Create new project
+        await dispatch(createProject(projectData)).unwrap();
+      }
       
-      // Reset form
-      setFormData({
+      // Reset form if not editing
+      if (!isEditMode) {
+        setFormData({
         title: "",
         description: "",
         roleNeeded: "",
@@ -271,13 +298,16 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
         timezone: "",
         language: "English",
         currency: "USD"
-      });
+        });
+      }
       
       setIsSubmitting(false);
       
-      // Call the callback function
-      if (onProjectCreated) {
-        onProjectCreated();
+      // Call the appropriate callback
+      if (isEditMode) {
+        onProjectUpdated && onProjectUpdated();
+      } else {
+        onProjectCreated && onProjectCreated();
       }
       
     } catch (error) {
@@ -324,45 +354,103 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
     }
   };
 
+  // Expose imperative methods to parent container
+  useImperativeHandle(ref, () => ({
+    applyAISuggestion: handleAISuggestionApplied,
+    getFormData: () => ({ ...formData })
+  }));
+
+  // Populate form when editing
+  React.useEffect(() => {
+    if (!isEditMode) return;
+    const p = editingProject || {};
+    const formatDateInput = (d) => {
+      if (!d) return "";
+      const date = new Date(d);
+      if (Number.isNaN(date.getTime())) return "";
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+    setFormData((prev) => ({
+      ...prev,
+      title: p.title || "",
+      description: p.description || "",
+      roleNeeded: p.roleNeeded || "",
+      status: (p.status || prev.status || '').replace(/^./, (c) => c.toUpperCase()),
+      priority: (p.priority || prev.priority || '').replace(/^./, (c) => c.toUpperCase()),
+      category: p.category || "",
+      experience: p.experience || prev.experience,
+      budget: p.budget || (p.budgetMin && p.budgetMax ? `$${p.budgetMin.toLocaleString()} - $${p.budgetMax.toLocaleString()}` : ""),
+      location: p.location || "",
+      duration: p.duration || "",
+      startDate: formatDateInput(p.startDate),
+      deadline: formatDateInput(p.deadline),
+      requirements: p.requirements || "",
+      benefits: p.benefits || "",
+      company: p.company || "",
+      website: p.website || "",
+      maxApplicants: (typeof p.maxApplicants === 'number' ? String(p.maxApplicants) : (p.maxApplicants || "")),
+      language: p.language || prev.language,
+      timezone: p.timezone || "",
+      isRemote: !!p.isRemote,
+      isUrgent: !!p.isUrgent,
+      isFeatured: !!p.isFeatured,
+      // Prefer real skills array; do not fall back to tags to avoid duplication
+      skills: Array.isArray(p.skills) ? p.skills : prev.skills,
+      tags: Array.isArray(p.tags) ? p.tags : prev.tags,
+      color: p.color || prev.color,
+    }));
+  }, [isEditMode, editingProject]);
+
+  // Debounced search: skills
+  React.useEffect(() => {
+    const q = (skillInput || '').trim();
+    if (q.length < 2) {
+      setSkillSuggestions([]);
+      return;
+    }
+    setSkillSearchLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await getSearchSuggestionsApi(q, 'skills');
+        const suggestions = res?.data?.suggestions?.skills || [];
+        setSkillSuggestions(suggestions);
+      } catch {
+        setSkillSuggestions([]);
+      } finally {
+        setSkillSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [skillInput]);
+
+  // Debounced search: tags
+  React.useEffect(() => {
+    const q = (tagInput || '').trim();
+    if (q.length < 2) {
+      setTagSuggestions([]);
+      return;
+    }
+    setTagSearchLoading(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await getSearchSuggestionsApi(q, 'tags');
+        const suggestions = res?.data?.suggestions?.tags || [];
+        setTagSuggestions(suggestions);
+      } catch {
+        setTagSuggestions([]);
+      } finally {
+        setTagSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [tagInput]);
+
   return (
     <div className="space-y-6">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-              <Plus className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                Post a New Project
-              </h2>
-              <p className="text-gray-300 text-sm">
-                Create and publish your project to attract top talent
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={() => setShowPreview(!showPreview)}
-              variant="ghost"
-              className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
-            >
-              <Eye className="w-4 h-4" />
-              {showPreview ? "Hide Preview" : "Show Preview"}
-            </Button>
-            <Button
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              variant="ghost"
-              className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              {showAdvanced ? "Hide Advanced" : "Show Advanced"}
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* Header removed; toggles moved to parent */}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         {/* Main Form */}
@@ -378,8 +466,8 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                 
                 <div className="space-y-4">
                   <div>
-                    <Input
-                      label="Project Title"
+                  <Input
+                    label={isEditMode ? "Edit Project Title" : "Project Title"}
                       name="title"
                       value={formData.title}
                       onChange={handleChange}
@@ -389,10 +477,9 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                     />
                   </div>
 
-                  <div>
+                  <div className="relative">
                     <div className="flex items-center justify-between mb-2">
                       <label className="block text-gray-300">Description</label>
-                      <AIProjectAssistant onSuggestionApplied={handleAISuggestionApplied} initialData={formData} />
                     </div>
                     <textarea
                       name="description"
@@ -404,9 +491,45 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                       className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
-                    <p className="text-gray-400 text-xs mt-1">
-                      {formData.description.length}/1000 characters
-                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <p className="text-gray-400 text-xs">
+                        {Math.min(formData.description.length, 1000)}/1000 characters
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setGeneratingDesc(true);
+                            const payload = {
+                              title: formData.title,
+                              category: formData.category,
+                              skills: formData.skills,
+                              budget: formData.budget,
+                              duration: formData.duration,
+                              experience: formData.experience,
+                              location: formData.location,
+                              company: formData.company,
+                              requirements: formData.requirements,
+                              benefits: formData.benefits,
+                            };
+                            const res = await dispatch(generateProjectDescription(payload)).unwrap();
+                            const description = (res && res.description) || projectState?.aiSuggestions?.description || '';
+                            if (description) {
+                              setFormData({ ...formData, description: description.slice(0, 1000) });
+                            }
+                          } catch (e) {
+                            // ignore
+                          } finally {
+                            setGeneratingDesc(false);
+                          }
+                        }}
+                        title="AI Assistant"
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-full shadow-md transition-all duration-200 ${generatingDesc ? 'bg-purple-500/70 cursor-wait' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'} text-white`}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        {generatingDesc ? 'Generating…' : 'AI Assistant'}
+                      </Button>
+                    </div>
                     {errors.description && <p className="text-red-400 text-xs mt-1">{errors.description}</p>}
                   </div>
 
@@ -570,7 +693,7 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-gray-300 mb-2">Required Skills</label>
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 mb-1 relative">
                       <Input
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
@@ -585,7 +708,28 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                       >
                         Add
                       </Button>
+                      {skillInput && skillSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-slate-900/95 border border-white/10 rounded-lg shadow-lg max-h-44 overflow-auto">
+                          {skillSuggestions.map((s, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setSkillInput(s);
+                                setTimeout(handleAddSkill, 0);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                          {skillSearchLoading && (
+                            <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    <div className="mb-3" />
                     <div className="flex flex-wrap gap-2">
                       {formData.skills.map((skill, idx) => (
                         <span
@@ -610,7 +754,7 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
 
                   <div>
                     <label className="block text-gray-300 mb-2">Project Tags</label>
-                    <div className="flex gap-2 mb-3">
+                    <div className="flex gap-2 mb-1 relative">
                       <Input
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
@@ -625,7 +769,28 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                       >
                         Add
                       </Button>
+                      {tagInput && tagSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-slate-900/95 border border-white/10 rounded-lg shadow-lg max-h-44 overflow-auto">
+                          {tagSuggestions.map((t, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setTagInput(t);
+                                setTimeout(handleAddTag, 0);
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
+                            >
+                              {t}
+                            </button>
+                          ))}
+                          {tagSearchLoading && (
+                            <div className="px-3 py-2 text-xs text-gray-400">Searching…</div>
+                          )}
+                        </div>
+                      )}
                     </div>
+                    <div className="mb-3" />
                     <div className="flex flex-wrap gap-2">
                       {formData.tags.map((tag, idx) => (
                         <span
@@ -648,25 +813,77 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                     {errors.tags && <p className="text-red-400 text-xs mt-1">{errors.tags}</p>}
                   </div>
 
-                  <Input
-                    label="Additional Requirements"
-                    name="requirements"
-                    value={formData.requirements}
-                    onChange={handleChange}
-                    placeholder="Any specific requirements or qualifications"
-                    textarea
-                    rows={3}
-                  />
+                  <div className="relative">
+                    <Input
+                      label="Additional Requirements"
+                      name="requirements"
+                      value={formData.requirements}
+                      onChange={handleChange}
+                      placeholder="Any specific requirements or qualifications"
+                      textarea
+                      rows={3}
+                    />
+                    <div className="mt-2 flex items-center justify-end">
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setGeneratingReq(true);
+                            const payload = {
+                              title: formData.title,
+                              category: formData.category,
+                              experience: formData.experience
+                            };
+                            const res = await dispatch(generateRequirements(payload)).unwrap();
+                            const requirements = res?.requirements || projectState?.aiSuggestions?.requirements || '';
+                            if (requirements) setFormData({ ...formData, requirements });
+                          } catch {}
+                          finally {
+                            setGeneratingReq(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-full shadow-md text-white ${generatingReq ? 'bg-purple-500/70 cursor-wait' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'}`}
+                      >
+                        <Sparkles className="w-3 h-3" /> {generatingReq ? 'Generating…' : 'AI Assistant'}
+                      </Button>
+                    </div>
+                  </div>
 
-                  <Input
-                    label="Benefits & Perks"
-                    name="benefits"
-                    value={formData.benefits}
-                    onChange={handleChange}
-                    placeholder="What benefits do you offer?"
-                    textarea
-                    rows={3}
-                  />
+                  <div className="relative">
+                    <Input
+                      label="Benefits & Perks"
+                      name="benefits"
+                      value={formData.benefits}
+                      onChange={handleChange}
+                      placeholder="What benefits do you offer?"
+                      textarea
+                      rows={3}
+                    />
+                    <div className="mt-2 flex items-center justify-end">
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            setGeneratingBenefits(true);
+                            const payload = {
+                              category: formData.category,
+                              company: formData.company,
+                              budget: formData.budget
+                            };
+                            const res = await dispatch(generateBenefits(payload)).unwrap();
+                            const benefits = res?.benefits || projectState?.aiSuggestions?.benefits || '';
+                            if (benefits) setFormData({ ...formData, benefits });
+                          } catch {}
+                          finally {
+                            setGeneratingBenefits(false);
+                          }
+                        }}
+                        className={`flex items-center gap-1 px-3 py-1.5 text-xs rounded-full shadow-md text-white ${generatingBenefits ? 'bg-purple-500/70 cursor-wait' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'}`}
+                      >
+                        <Sparkles className="w-3 h-3" /> {generatingBenefits ? 'Generating…' : 'AI Assistant'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -814,8 +1031,8 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
 
               {/* Submit Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <Button 
-                  type="submit" 
+                  <Button 
+                    type="submit" 
                   variant="default" 
                   size="lg"
                   disabled={isSubmitting}
@@ -824,12 +1041,12 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Publishing...
+                        {isEditMode ? 'Saving...' : 'Publishing...'}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Publish Project
+                        {isEditMode ? 'Save Changes' : 'Publish Project'}
                     </>
                   )}
                 </Button>
@@ -901,6 +1118,6 @@ const ProjectForm = ({ dispatch, onProjectCreated }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ProjectForm;
