@@ -59,11 +59,6 @@ export const getMyApplicationsCountApi = async () => {
   return await fetchFromApiServer("GET", url);
 };
 
-export const generateApplicantsReportApi = async (data) => {
-  const url = `api/v1/projects/analytics/download`;
-  return await fetchFromApiServer("POST", url, data);
-};
-
 // Invitation Management
 export const createInviteApi = async (data) => {
   const url = `api/v1/projects/invite`;
@@ -272,4 +267,9 @@ export const generateBudgetSuggestionsApi = async (data) => {
 export const generateComprehensiveSuggestionsApi = async (data) => {
   const url = `api/v1/ai/comprehensive`;
   return await fetchFromApiServer("POST", url, data);
+};
+
+export const generateApplicantsReportApi = async (data) => {
+  const url = "api/v1/projects/export";
+  return fetchFromApiServer("POST", url, data);
 };

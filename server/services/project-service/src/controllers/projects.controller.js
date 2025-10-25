@@ -1825,7 +1825,16 @@ const getSearchSuggestions = async (req, res) => {
 const generateApplicantsReport = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const { projectId, format = 'pdf' } = req.body;
+    const { 
+      projectId, 
+      exportType = 'complete-data',
+      format = 'pdf',
+      includeApplicants = true,
+      includeInvites = true,
+      includeTeamMembers = true,
+      includeFiles = false,
+      includeUpdates = false
+    } = req.body;
     
     if (!userId) {
       return res.status(401).json({ 
@@ -1835,10 +1844,23 @@ const generateApplicantsReport = async (req, res) => {
       });
     }
 
-    // Get all projects owned by the user
-    const userProjects = await ProjectModel.listProjects({ ownerId: userId });
+    // Get specific project or all user projects
+    let projects;
+    if (projectId) {
+      const project = await ProjectModel.getProject(projectId);
+      if (!project || project.ownerId !== userId) {
+        return res.status(404).json({
+          success: false,
+          status: 404,
+          message: "Project not found or access denied"
+        });
+      }
+      projects = [project];
+    } else {
+      projects = await ProjectModel.listProjects({ ownerId: userId });
+    }
     
-    if (!userProjects || userProjects.length === 0) {
+    if (!projects || projects.length === 0) {
       return res.status(404).json({
         success: false,
         status: 404,
@@ -1846,33 +1868,95 @@ const generateApplicantsReport = async (req, res) => {
       });
     }
 
-    // Get applicants for all user's projects
-    const allApplicants = [];
-    const projectApplicantsMap = {};
-    
-    for (const project of userProjects) {
-      const applicants = await ProjectModel.listApplicants(project.id);
-      projectApplicantsMap[project.id] = applicants;
-      allApplicants.push(...applicants.map(app => ({
-        ...app,
-        projectTitle: project.title,
-        projectId: project.id
-      })));
+    // Prepare export data
+    const exportData = {
+      exportInfo: {
+        exportedAt: new Date().toISOString(),
+        exportedBy: req.user.email,
+        exportType,
+        projectId: projectId || 'all',
+        format
+      },
+      projectDetails: projects.map(project => ({
+        id: project.id,
+        title: project.title,
+        description: project.description,
+        status: project.status,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        budget: project.budget,
+        timeline: project.timeline
+      }))
+    };
+
+    // Include applicants data if requested
+    if (includeApplicants) {
+      exportData.allApplicants = [];
+      for (const project of projects) {
+        const applicants = await ProjectModel.listApplicants(project.id);
+        exportData.allApplicants.push(...applicants.map(app => ({
+          ...app,
+          projectTitle: project.title,
+          projectId: project.id
+        })));
+      }
     }
 
-    // Generate HTML report
-    const htmlReport = generateHTMLReport(userProjects, projectApplicantsMap, allApplicants);
-    
-    if (format === 'html') {
+    // Include invites data if requested
+    if (includeInvites) {
+      exportData.allInvites = [];
+      for (const project of projects) {
+        // Get invites for this project (you may need to implement this method)
+        // const invites = await ProjectModel.getProjectInvites(project.id);
+        // exportData.allInvites.push(...invites);
+      }
+    }
+
+    // Include team members if requested
+    if (includeTeamMembers) {
+      exportData.teamMembers = [];
+      // Get team members for projects
+    }
+
+    // Include project files if requested
+    if (includeFiles) {
+      exportData.projectFiles = [];
+      for (const project of projects) {
+        const files = await ProjectModel.getProjectFiles(project.id);
+        exportData.projectFiles.push(...files);
+      }
+    }
+
+    // Include project updates if requested
+    if (includeUpdates) {
+      exportData.projectUpdates = [];
+      for (const project of projects) {
+        const updates = await ProjectModel.getProjectUpdates(project.id);
+        exportData.projectUpdates.push(...updates);
+      }
+    }
+
+    // Always include statistics
+    exportData.statistics = {
+      totalProjects: projects.length,
+      totalApplicants: exportData.allApplicants?.length || 0,
+      appliedCount: exportData.allApplicants?.filter(app => app.status === 'applied').length || 0,
+      shortlistedCount: exportData.allApplicants?.filter(app => app.status === 'shortlisted').length || 0,
+      rejectedCount: exportData.allApplicants?.filter(app => app.status === 'rejected').length || 0,
+      acceptedCount: exportData.allApplicants?.filter(app => app.status === 'accepted').length || 0
+    };
+
+    if (format === 'json') {
       return res.status(200).json({
         success: true,
         status: 200,
-        data: htmlReport,
-        message: "Report generated successfully"
+        data: JSON.stringify(exportData, null, 2),
+        message: "JSON export generated successfully"
       });
     }
 
-    // For PDF format, return HTML that can be converted to PDF on frontend
+    // For PDF format, generate HTML report
+    const htmlReport = generateHTMLReport(projects, {}, exportData.allApplicants || []);
     return res.status(200).json({
       success: true,
       status: 200,

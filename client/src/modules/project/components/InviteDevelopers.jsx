@@ -14,10 +14,11 @@ import {
   Briefcase,
   Globe,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Download
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getDevelopers, createInvite, listProjects } from '../slice/projectSlice';
+import { getDevelopers, createInvite, listProjects, generateApplicantsReport } from '../slice/projectSlice';
 
 const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   const dispatch = useDispatch();
@@ -36,6 +37,15 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   const [customMessage, setCustomMessage] = useState('');
   const [currentProject, setCurrentProject] = useState(selectedProject);
   const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportType, setExportType] = useState('complete-data');
+  const [exportFormat, setExportFormat] = useState('pdf');
+  const [includeApplicants, setIncludeApplicants] = useState(true);
+  const [includeInvites, setIncludeInvites] = useState(true);
+  const [includeTeamMembers, setIncludeTeamMembers] = useState(true);
+  const [includeFiles, setIncludeFiles] = useState(false);
+  const [includeUpdates, setIncludeUpdates] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Load user's projects on component mount
   useEffect(() => {
@@ -178,6 +188,67 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     toast.success(`Selected project: ${project.title}`);
   };
 
+  const handleExportData = async () => {
+    if (!currentProject) {
+      toast.error('Please select a project first');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      
+      const exportData = {
+        projectId: currentProject.id,
+        exportType,
+        format: exportFormat,
+        includeApplicants,
+        includeInvites,
+        includeTeamMembers,
+        includeFiles,
+        includeUpdates
+      };
+
+      const response = await dispatch(generateApplicantsReport(exportData)).unwrap();
+      
+      if (response?.data) {
+        if (exportFormat === 'json') {
+          // Download JSON file
+          const blob = new Blob([response.data], { type: 'application/json' });
+          const url = window.URL.createObjectURL(blob);
+          
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${currentProject.title}-export-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          window.URL.revokeObjectURL(url);
+          toast.success('JSON export completed!');
+        } else {
+          // For PDF, convert HTML to PDF using browser's print functionality
+          const printWindow = window.open('', '_blank');
+          printWindow.document.write(response.data);
+          printWindow.document.close();
+          
+          // Wait for content to load, then trigger print
+          printWindow.onload = () => {
+            printWindow.print();
+            printWindow.close();
+          };
+          
+          toast.success('PDF export opened for printing/saving!');
+        }
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(error?.message || 'Export failed');
+    } finally {
+      setIsExporting(false);
+      setShowExportModal(false);
+    }
+  };
+
   return (
     <Modal
       isOpen={true}
@@ -303,6 +374,16 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
               <Filter className="w-4 h-4" />
               Filters
               {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+
+            {/* Export Data Button */}
+            <Button
+              onClick={() => setShowExportModal(true)}
+              disabled={!currentProject}
+              className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              Export Data
             </Button>
           </div>
 
@@ -585,6 +666,131 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                     <>
                       <Send className="w-4 h-4" />
                       Send Invitation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Export Data Modal */}
+        {showExportModal && (
+          <Modal
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
+            title="Export Project Data"
+            subtitle={`Export data for: ${currentProject?.title}`}
+            icon={Download}
+            size="medium"
+          >
+            <div className="p-6 space-y-6">
+              {/* Export Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Export Type
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: 'complete-data', label: 'Complete Data', desc: 'Everything' },
+                    { value: 'applicants-data', label: 'Applicants Only', desc: 'All applicants' },
+                    { value: 'invites-data', label: 'Invites Only', desc: 'All invitations' },
+                    { value: 'statistics-report', label: 'Statistics', desc: 'Analytics only' }
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setExportType(type.value)}
+                      className={`p-3 rounded-lg border transition-colors duration-200 text-left ${
+                        exportType === type.value
+                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                          : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="font-medium">{type.label}</div>
+                      <div className="text-sm text-gray-400">{type.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Format Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Export Format
+                </label>
+                <div className="flex gap-3">
+                  {[
+                    { value: 'pdf', label: 'PDF Document', icon: '📄' },
+                    { value: 'json', label: 'JSON Data', icon: '📊' }
+                  ].map((format) => (
+                    <button
+                      key={format.value}
+                      onClick={() => setExportFormat(format.value)}
+                      className={`flex-1 p-3 rounded-lg border transition-colors duration-200 ${
+                        exportFormat === format.value
+                          ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                          : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="text-2xl mb-1">{format.icon}</div>
+                      <div className="font-medium">{format.label}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Data Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Include Data
+                </label>
+                <div className="space-y-2">
+                  {[
+                    { key: 'includeApplicants', label: 'All Applicants', desc: 'Every person who applied', state: includeApplicants, setter: setIncludeApplicants },
+                    { key: 'includeInvites', label: 'All Invitations', desc: 'Every invitation sent', state: includeInvites, setter: setIncludeInvites },
+                    { key: 'includeTeamMembers', label: 'Team Members', desc: 'Current team & collaborators', state: includeTeamMembers, setter: setIncludeTeamMembers },
+                    { key: 'includeFiles', label: 'Project Files', desc: 'Documents and resources', state: includeFiles, setter: setIncludeFiles },
+                    { key: 'includeUpdates', label: 'Project Updates', desc: 'Timeline and progress', state: includeUpdates, setter: setIncludeUpdates }
+                  ].map((option) => (
+                    <label key={option.key} className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={option.state}
+                        onChange={(e) => option.setter(e.target.checked)}
+                        className="w-4 h-4 text-blue-500 bg-white/5 border-white/10 rounded focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-white">{option.label}</div>
+                        <div className="text-sm text-gray-400">{option.desc}</div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => setShowExportModal(false)}
+                  variant="ghost"
+                  className="flex-1 bg-white/10 hover:bg-white/20 text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleExportData}
+                  disabled={isExporting || !currentProject}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Export Data
                     </>
                   )}
                 </Button>

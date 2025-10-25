@@ -63,6 +63,8 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
+  const [analyticsExportFormat, setAnalyticsExportFormat] = useState('json');
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
   // Listen for inline AI assistant open events from fields
   // No container-level assistant now
@@ -387,37 +389,117 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   };
 
   const projectsToCsv = () => {
-    const headers = [
-      'id','title','status','priority','applicantsCount','rating','budgetMin','budgetMax','isRemote','isUrgent','isFeatured','createdAt','updatedAt'
+    const dataset = buildAnalyticsDataset();
+    
+    // Create multiple CSV sections
+    const csvSections = [];
+    
+    // 1. Summary Section
+    csvSections.push('=== PROJECT ANALYTICS SUMMARY ===');
+    csvSections.push('Metric,Value');
+    csvSections.push(`Total Projects,${dataset.summary.totalProjects}`);
+    csvSections.push(`Active Projects,${dataset.summary.activeProjects}`);
+    csvSections.push(`Total Applicants,${dataset.summary.totalApplicants}`);
+    csvSections.push(`New Applicants (7d),${dataset.summary.newApplicantsThisWeek}`);
+    csvSections.push(`Average Rating,${dataset.summary.avgRating}`);
+    csvSections.push(`Completion Rate,${dataset.summary.completionRate}%`);
+    csvSections.push(`Budget Utilization,${dataset.summary.budgetUtilizationPct}%`);
+    csvSections.push('');
+    
+    // 2. Top Skills Section
+    csvSections.push('=== TOP SKILLS ===');
+    csvSections.push('Skill,Count,Percentage');
+    dataset.topSkills.forEach(skill => {
+      csvSections.push(`${skill.name},${skill.count},${skill.pct}%`);
+    });
+    csvSections.push('');
+    
+    // 3. Monthly Performance Section
+    csvSections.push('=== MONTHLY PERFORMANCE ===');
+    csvSections.push('Month,Projects,Applicants');
+    dataset.monthlyPerformance.forEach(month => {
+      csvSections.push(`${month.label},${month.projects},${month.applicants}`);
+    });
+    csvSections.push('');
+    
+    // 4. Projects Section
+    csvSections.push('=== PROJECTS DETAILS ===');
+    const projectHeaders = [
+      'ID','Title','Status','Priority','Applicants Count','Rating','Budget Min','Budget Max',
+      'Is Remote','Is Urgent','Is Featured','Created At','Updated At','Description'
     ];
-    const rows = ownedProjects.map((p) => [
-      p.id,
-      (p.title || '').toString().replace(/\n/g, ' ').replace(/"/g, '""'),
-      p.status,
-      p.priority,
-      p.applicantsCount || 0,
-      p.rating || 0,
-      p.budgetMin || '',
-      p.budgetMax || '',
-      p.isRemote ? 'yes' : 'no',
-      p.isUrgent ? 'yes' : 'no',
-      p.isFeatured ? 'yes' : 'no',
-      p.createdAt || '',
-      p.updatedAt || '',
-    ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.map((v) => typeof v === 'string' && /[",\n]/.test(v) ? `"${v}"` : v).join(','))].join('\n');
-    return csv;
+    csvSections.push(projectHeaders.join(','));
+    
+    dataset.projects.forEach(project => {
+      const row = [
+        project.id,
+        `"${(project.title || '').replace(/"/g, '""')}"`,
+        project.status || '',
+        project.priority || '',
+        project.applicantsCount || 0,
+        project.rating || 0,
+        project.budgetMin || '',
+        project.budgetMax || '',
+        project.isRemote ? 'yes' : 'no',
+        project.isUrgent ? 'yes' : 'no',
+        project.isFeatured ? 'yes' : 'no',
+        project.createdAt || '',
+        project.updatedAt || '',
+        `"${(project.description || '').replace(/"/g, '""')}"`
+      ];
+      csvSections.push(row.join(','));
+    });
+    csvSections.push('');
+    
+    // 5. Applicants Section
+    csvSections.push('=== APPLICANTS BY PROJECT ===');
+    csvSections.push('Project ID,Project Title,Applicant Name,Applicant Email,Status,Applied At,Experience,Location,Skills');
+    
+    Object.entries(dataset.applicantsByProject).forEach(([projectId, applicants]) => {
+      const project = dataset.projects.find(p => p.id == projectId);
+      applicants.forEach(applicant => {
+        const skills = applicant.skills ? JSON.parse(applicant.skills).join('; ') : '';
+        const row = [
+          projectId,
+          `"${(project?.title || '').replace(/"/g, '""')}"`,
+          `"${(applicant.name || '').replace(/"/g, '""')}"`,
+          applicant.email || '',
+          applicant.status || '',
+          applicant.appliedAt || '',
+          applicant.experience || '',
+          applicant.location || '',
+          `"${skills.replace(/"/g, '""')}"`
+        ];
+        csvSections.push(row.join(','));
+      });
+    });
+    
+    return csvSections.join('\n');
   };
 
   const handleExportAnalytics = (format = 'json') => {
-    const dataset = buildAnalyticsDataset();
-    if (format === 'csv') {
-      const csv = projectsToCsv();
-      downloadBlob(csv, `project-analytics-projects-${Date.now()}.csv`, 'text/csv;charset=utf-8;');
-      return;
+    try {
+      const dataset = buildAnalyticsDataset();
+      if (format === 'csv') {
+        const csv = projectsToCsv();
+        downloadBlob(csv, `project-analytics-projects-${Date.now()}.csv`, 'text/csv;charset=utf-8;');
+        return;
+      }
+      const json = JSON.stringify(dataset, null, 2);
+      downloadBlob(json, `project-analytics-${Date.now()}.json`, 'application/json');
+    } catch (error) {
+      console.error('Export analytics error:', error);
+      toast.error('Failed to export analytics data');
     }
-    const json = JSON.stringify(dataset, null, 2);
-    downloadBlob(json, `project-analytics-${Date.now()}.json`, 'application/json');
+  };
+
+  const handleAnalyticsExport = () => {
+    setShowAnalyticsModal(true);
+  };
+
+  const handleConfirmAnalyticsExport = () => {
+    handleExportAnalytics(analyticsExportFormat);
+    setShowAnalyticsModal(false);
   };
 
   const handleGenerateReport = () => {
@@ -480,8 +562,8 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       const url = URL.createObjectURL(reportBlob);
       window.open(url, '_blank');
       toast.success('Report opened in a new tab');
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error('Generate report error:', error);
       toast.error('Failed to generate report');
     }
   };
@@ -506,8 +588,8 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
         // Fallback: download as .txt
         downloadBlob(summary, `project-insights-${Date.now()}.txt`, 'text/plain');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error('Share insights error:', error);
       toast.error('Failed to share insights');
     }
   };
@@ -1649,7 +1731,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             >
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <Button
-                  onClick={() => handleExportAnalytics('json')}
+                  onClick={handleAnalyticsExport}
                   className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
                   <TrendingUp className='w-4 h-4' />
@@ -1858,6 +1940,78 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
           }}
         />
       )}
+
+      {/* Analytics Export Modal */}
+      {showAnalyticsModal && (
+        <Modal
+          isOpen={showAnalyticsModal}
+          onClose={() => setShowAnalyticsModal(false)}
+          title="Export Analytics Data"
+          subtitle="Choose format for your analytics export"
+          icon={TrendingUp}
+          size="medium"
+        >
+          <div className="p-6 space-y-6">
+            {/* Format Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Export Format
+              </label>
+              <div className="flex gap-3">
+                {[
+                  { value: 'json', label: 'JSON Data', icon: '📊', desc: 'Structured data for analysis' },
+                  { value: 'csv', label: 'CSV Spreadsheet', icon: '📈', desc: 'Spreadsheet format' }
+                ].map((format) => (
+                  <button
+                    key={format.value}
+                    onClick={() => setAnalyticsExportFormat(format.value)}
+                    className={`flex-1 p-4 rounded-lg border transition-colors duration-200 ${
+                      analyticsExportFormat === format.value
+                        ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                        : 'bg-white/5 text-white border-white/10 hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">{format.icon}</div>
+                    <div className="font-medium">{format.label}</div>
+                    <div className="text-sm text-gray-400 mt-1">{format.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Export Info */}
+            <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <h4 className="text-blue-400 font-medium mb-2">What will be exported:</h4>
+              <ul className="text-sm text-gray-300 space-y-1">
+                <li>• Project summary and statistics</li>
+                <li>• Monthly performance data</li>
+                <li>• Top skills analysis</li>
+                <li>• All project details</li>
+                <li>• Applicant data by project</li>
+              </ul>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => setShowAnalyticsModal(false)}
+                variant="ghost"
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmAnalyticsExport}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white flex items-center justify-center gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                Export {analyticsExportFormat.toUpperCase()}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Global AI Assistant Modal mounted at container level */}
   {/* Inline assistants are rendered within ProjectForm */}
     </div>

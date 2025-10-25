@@ -157,6 +157,7 @@ projectRouter.get("/:projectId/stats", projectController.getProjectStats);
 
 // 📄 PDF Report Generation (Project owners only)
 projectRouter.post("/analytics/download", authenticate, requireProjectManager, projectController.generateApplicantsReport);
+projectRouter.post("/export", authenticate, requireProjectManager, projectController.generateApplicantsReport);
 
 // 🔍 Advanced Search & Discovery
 projectRouter.get("/search", projectController.searchProjects);
