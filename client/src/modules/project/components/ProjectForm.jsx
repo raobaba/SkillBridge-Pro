@@ -146,6 +146,16 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
     }
   };
 
+  const handleAddTagValue = (value) => {
+    const val = (value || '').trim();
+    if (!val) return;
+    if (!formData.tags.includes(val)) {
+      setFormData({ ...formData, tags: [...formData.tags, val] });
+    }
+    setTagInput("");
+    setTagSuggestions([]);
+  };
+
   const handleRemoveTag = (index) => {
     setFormData({ 
       ...formData, 
@@ -176,6 +186,16 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
       setSkillInput("");
       setSkillSuggestions([]);
     }
+  };
+
+  const handleAddSkillValue = (value) => {
+    const val = (value || '').trim();
+    if (!val) return;
+    if (!formData.skills.includes(val)) {
+      setFormData({ ...formData, skills: [...formData.skills, val] });
+    }
+    setSkillInput("");
+    setSkillSuggestions([]);
   };
 
   const handleRemoveSkill = (index) => {
@@ -698,7 +718,18 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                         value={skillInput}
                         onChange={(e) => setSkillInput(e.target.value)}
                         placeholder="Add a skill (e.g., React, Python)"
-                        onKeyPress={(e) => handleKeyPress(e, handleAddSkill)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (skillSuggestions && skillSuggestions.length > 0) {
+                              handleAddSkillValue(skillSuggestions[0]);
+                            } else {
+                              handleAddSkill();
+                            }
+                          } else {
+                            handleKeyPress(e, handleAddSkill);
+                          }
+                        }}
                       />
                       <Button 
                         onClick={handleAddSkill} 
@@ -714,10 +745,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                             <button
                               key={i}
                               type="button"
-                              onClick={() => {
-                                setSkillInput(s);
-                                setTimeout(handleAddSkill, 0);
-                              }}
+                              onClick={() => handleAddSkillValue(s)}
                               className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
                             >
                               {s}
@@ -759,7 +787,18 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                         value={tagInput}
                         onChange={(e) => setTagInput(e.target.value)}
                         placeholder="Add a tag"
-                        onKeyPress={(e) => handleKeyPress(e, handleAddTag)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (tagSuggestions && tagSuggestions.length > 0) {
+                              handleAddTagValue(tagSuggestions[0]);
+                            } else {
+                              handleAddTag();
+                            }
+                          } else {
+                            handleKeyPress(e, handleAddTag);
+                          }
+                        }}
                       />
                       <Button 
                         onClick={handleAddTag} 
@@ -775,10 +814,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                             <button
                               key={i}
                               type="button"
-                              onClick={() => {
-                                setTagInput(t);
-                                setTimeout(handleAddTag, 0);
-                              }}
+                              onClick={() => handleAddTagValue(t)}
                               className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-white/5"
                             >
                               {t}

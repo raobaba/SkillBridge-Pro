@@ -48,6 +48,22 @@ export const listApplicantsApi = async (projectId) => {
   return await fetchFromApiServer("GET", url);
 };
 
+// Developer self applications
+export const getMyApplicationsApi = async () => {
+  const url = `api/v1/projects/applications/my`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const getMyApplicationsCountApi = async () => {
+  const url = `api/v1/projects/applications/my/count`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const generateApplicantsReportApi = async (data) => {
+  const url = `api/v1/projects/analytics/download`;
+  return await fetchFromApiServer("POST", url, data);
+};
+
 // Invitation Management
 export const createInviteApi = async (data) => {
   const url = `api/v1/projects/invite`;

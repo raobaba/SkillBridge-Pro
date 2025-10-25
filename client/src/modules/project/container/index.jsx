@@ -18,6 +18,9 @@ import {
   getPublicProjects,
   getProjectCategories,
   getFilterOptions,
+  // Application tracking
+  getMyApplications,
+  getMyApplicationsCount,
 } from "../slice/projectSlice";
 
 export default function Project() {
@@ -59,38 +62,49 @@ export default function Project() {
   );
 
   useEffect(() => {
-    // Load initial data based on user role
+    // Load initial data based on user role - only call APIs needed for specific role
     const loadInitialData = async () => {
       try {
-        // Load public discovery data (available to all roles)
-        await Promise.all([
-          dispatch(getPublicProjects()).unwrap(),
-          dispatch(getProjectCategories()).unwrap(),
-          dispatch(getFilterOptions()).unwrap(),
-        ]);
-        
-        // Load role-specific data
-        if (user?.role === 'developer') {
+        if (!user?.role) return;
+
+        // Load role-specific data only
+        if (user.role === 'developer') {
+          // Developer only needs: public projects, categories, filters, invites, favorites, and applications
           await Promise.all([
+            dispatch(getPublicProjects()).unwrap(),
+            dispatch(getProjectCategories()).unwrap(),
+            dispatch(getFilterOptions()).unwrap(),
             dispatch(getMyInvites()).unwrap(),
-            // dispatch(getProjectRecommendations(10)).unwrap(),
-            dispatch(getProjectFavorites()).unwrap()
+            dispatch(getProjectFavorites()).unwrap(),
+            dispatch(getMyApplications()).unwrap(),
+            dispatch(getMyApplicationsCount()).unwrap()
           ]);
-        } else if (user?.role === 'project-owner') {
-          // Load owner's projects using listProjects with ownerId filter
-          await dispatch(listProjects({ ownerId: user.id })).unwrap();
-        } else if (user?.role === 'admin') {
-          // Load all projects for admin using listProjects
-          await dispatch(listProjects()).unwrap();
+        } else if (user.role === 'project-owner') {
+          // Project owner only needs: public projects, categories, filters, and their own projects
+          await Promise.all([
+            dispatch(getPublicProjects()).unwrap(),
+            dispatch(getProjectCategories()).unwrap(),
+            dispatch(getFilterOptions()).unwrap(),
+            dispatch(listProjects({ ownerId: user.id })).unwrap()
+          ]);
+        } else if (user.role === 'admin') {
+          // Admin needs: public projects, categories, filters, and all projects
+          await Promise.all([
+            dispatch(getPublicProjects()).unwrap(),
+            dispatch(getProjectCategories()).unwrap(),
+            dispatch(getFilterOptions()).unwrap(),
+            dispatch(listProjects()).unwrap()
+          ]);
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
-      } finally {
       }
     };
 
-    // Always fetch public and role data; defer UI until done
-    loadInitialData();
+    // Load data only when user role is available
+    if (user?.role) {
+      loadInitialData();
+    }
   }, [dispatch, user?.role, user?.id]);
 
   // Cleanup on unmount
@@ -124,21 +138,9 @@ export default function Project() {
       );
     }
 
-    // Common props for all components
-    const commonProps = {
+    // Base props that all roles need
+    const baseProps = {
       user,
-      projects,
-      myInvites,
-      recommendations,
-      favorites,
-      saves,
-      appliedProjects,
-      searchResults,
-      projectStats,
-      // Pass public discovery data
-      publicProjects,
-      projectCategories,
-      filterOptions,
       dispatch,
       loading: isBusy,
       error: projectError,
@@ -146,16 +148,41 @@ export default function Project() {
       searchQuery,
       setSearchQuery,
       handleSearch,
-      // allow children to toggle the global loader during their API calls
+      // Public discovery data (available to all roles)
+      publicProjects,
+      projectCategories,
+      filterOptions,
     };
 
     switch (user.role) {
       case 'developer':
-        return <DeveloperProjects {...commonProps} />;
+        // Developer only needs: invites, favorites, saves, appliedProjects, searchResults
+        return <DeveloperProjects {...baseProps} 
+          myInvites={myInvites}
+          favorites={favorites}
+          saves={saves}
+          appliedProjects={appliedProjects}
+          searchResults={searchResults}
+        />;
       case 'project-owner':
-        return <ProjectOwnerProjects {...commonProps} />;
+        // Project owner only needs: projects, projectStats, searchResults
+        return <ProjectOwnerProjects {...baseProps} 
+          projects={projects}
+          projectStats={projectStats}
+          searchResults={searchResults}
+        />;
       case 'admin':
-        return <AdminProjects {...commonProps} />;
+        // Admin needs: projects, projectStats, searchResults, and all other data
+        return <AdminProjects {...baseProps} 
+          projects={projects}
+          myInvites={myInvites}
+          recommendations={recommendations}
+          favorites={favorites}
+          saves={saves}
+          appliedProjects={appliedProjects}
+          searchResults={searchResults}
+          projectStats={projectStats}
+        />;
       default:
         return (
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">

@@ -3,13 +3,456 @@ const { FilterOptionsModel } = require("../models/filter-options.model");
 const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
 const { supabase } = require("shared/utils/supabase.utils");
 const { db } = require("../config/database");
-const { ilike, asc } = require("drizzle-orm");
+const { ilike, asc, sql } = require("drizzle-orm");
 const { projectSkillsTable } = require("../models/project-skills.model");
 const { projectTagsTable } = require("../models/project-tags.model");
+const { sendMail } = require("shared/utils/sendEmail");
 
 // Basic error helper to keep responses consistent
 const sendError = (res, message, status = 400) =>
   res.status(status).json({ success: false, status, message });
+
+// Helper function to get user information directly from database
+// Required environment variables:
+// - EMAIL_USER: Gmail address for sending emails
+// - EMAIL_PASS: Gmail app password for sending emails
+// - FRONTEND_URL: Frontend URL for email links (default: http://localhost:5173)
+const getUserInfo = async (userId) => {
+  try {
+    // Get user information directly from the database using the same connection
+    // Import the user table from the shared database schema
+    // Note: This assumes the project service has access to the same database
+    const userQuery = await db.execute(sql`
+      SELECT id, name, email, role 
+      FROM users 
+      WHERE id = ${userId} AND is_deleted = false
+    `);
+    
+    if (userQuery.rows && userQuery.rows.length > 0) {
+      return userQuery.rows[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error fetching user info:', error.message);
+    return null;
+  }
+};
+
+// Helper function to send application confirmation email to developer
+const sendApplicationConfirmationEmail = async (developerEmail, developerName, projectTitle, projectOwnerName) => {
+  try {
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: developerEmail,
+      subject: `✅ Application Submitted: "${projectTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">✅ Application Submitted!</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello ${developerName},</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Thank you for applying to <strong>"${projectTitle}"</strong>! Your application has been successfully submitted to <strong>${projectOwnerName}</strong>.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #28a745; margin-top: 0;">What Happens Next?</h3>
+              <ul style="color: #666; line-height: 1.6;">
+                <li>The project owner will review your application</li>
+                <li>You'll be notified if you're shortlisted for an interview</li>
+                <li>Keep an eye on your email for updates</li>
+                <li>You can track your application status in your dashboard</li>
+              </ul>
+            </div>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              We wish you the best of luck with your application!
+            </p>
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                View My Applications
+              </a>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This email was sent from SkillBridge Pro</p>
+          </div>
+        </div>
+      `
+    };
+
+    await sendMail(emailBody);
+    console.log(`✅ Application confirmation email sent to ${developerEmail}`);
+  } catch (error) {
+    console.error('❌ Error sending application confirmation email:', error);
+    // Don't throw error to avoid breaking the main flow
+  }
+};
+
+// Helper function to send new application notification to project owner
+const sendNewApplicationNotificationEmail = async (ownerEmail, ownerName, projectTitle, developerName, developerEmail) => {
+  try {
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: ownerEmail,
+      subject: `🔔 New Application for "${projectTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🔔 New Application!</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello ${ownerName},</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              You have received a new application for your project <strong>"${projectTitle}"</strong>!
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+              <h3 style="color: #007bff; margin-top: 0;">Applicant Details</h3>
+              <p style="color: #666; line-height: 1.6; margin: 0;">
+                <strong>Name:</strong> ${developerName}<br>
+                <strong>Email:</strong> ${developerEmail}
+              </p>
+            </div>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #ffc107; margin-top: 0;">Next Steps</h3>
+              <ul style="color: #666; line-height: 1.6;">
+                <li>Review the applicant's profile and application</li>
+                <li>Shortlist promising candidates for interviews</li>
+                <li>Update application status to keep applicants informed</li>
+                <li>Contact applicants directly if needed</li>
+              </ul>
+            </div>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Don't keep applicants waiting - timely responses help you find the best talent!
+            </p>
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                Review Applications
+              </a>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This email was sent from SkillBridge Pro</p>
+          </div>
+        </div>
+      `
+    };
+
+    await sendMail(emailBody);
+    console.log(`✅ New application notification email sent to ${ownerEmail}`);
+  } catch (error) {
+    console.error('❌ Error sending new application notification email:', error);
+    // Don't throw error to avoid breaking the main flow
+  }
+};
+
+// Helper function to send developer invite email
+const sendDeveloperInviteEmail = async (invitedEmail, invitedName, projectTitle, projectOwnerName, role, message, inviteId) => {
+  try {
+    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/invites/${inviteId}`;
+    
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: invitedEmail,
+      subject: `🎯 You're Invited to Join "${projectTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎯 Project Invitation</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello ${invitedName || 'Developer'},</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              <strong>${projectOwnerName}</strong> has invited you to join their project <strong>"${projectTitle}"</strong>!
+            </p>
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+              <h3 style="color: #007bff; margin-top: 0;">Project Details</h3>
+              <p style="color: #666; line-height: 1.6; margin: 0;">
+                <strong>Project:</strong> ${projectTitle}<br>
+                <strong>Role:</strong> ${role || 'Developer'}<br>
+                <strong>Invited by:</strong> ${projectOwnerName}
+              </p>
+            </div>
+            
+            ${message ? `
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #28a745; margin-top: 0;">Personal Message</h3>
+              <p style="color: #666; line-height: 1.6; margin: 0; font-style: italic;">
+                "${message}"
+              </p>
+            </div>
+            ` : ''}
+            
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+              <h3 style="color: #ffc107; margin-top: 0;">What's Next?</h3>
+              <ul style="color: #666; line-height: 1.6;">
+                <li>Click the button below to view the full project details</li>
+                <li>Review the project requirements and your role</li>
+                <li>Accept or decline the invitation</li>
+                <li>Start collaborating if you accept!</li>
+              </ul>
+            </div>
+            
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              This is a great opportunity to work on an exciting project. We hope you'll consider joining!
+            </p>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${inviteUrl}" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                View Invitation & Respond
+              </a>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+              <p style="color: #999; font-size: 14px; margin: 0;">
+                Or copy and paste this link: <a href="${inviteUrl}" style="color: #667eea;">${inviteUrl}</a>
+              </p>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This invitation was sent from SkillBridge Pro</p>
+          </div>
+        </div>
+      `
+    };
+
+    await sendMail(emailBody);
+    console.log(`✅ Developer invite email sent to ${invitedEmail} for project: ${projectTitle}`);
+  } catch (error) {
+    console.error('❌ Error sending developer invite email:', error);
+    // Don't throw error to avoid breaking the main flow
+  }
+};
+
+// Helper function to send invite response notification email to project owner
+const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projectTitle, responderName, responderEmail, status) => {
+  try {
+    const statusMessages = {
+      accepted: {
+        subject: `🎉 Invitation Accepted for "${projectTitle}"`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Invitation Accepted!</h1>
+            </div>
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">Hello ${ownerName},</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                Great news! <strong>${responderName}</strong> has accepted your invitation to join <strong>"${projectTitle}"</strong>!
+              </p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                <h3 style="color: #28a745; margin-top: 0;">Developer Details</h3>
+                <p style="color: #666; line-height: 1.6; margin: 0;">
+                  <strong>Name:</strong> ${responderName}<br>
+                  <strong>Email:</strong> ${responderEmail}
+                </p>
+              </div>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #007bff;">
+                <h3 style="color: #007bff; margin-top: 0;">Next Steps</h3>
+                <ul style="color: #666; line-height: 1.6;">
+                  <li>Welcome the new team member to your project</li>
+                  <li>Share project details and access credentials</li>
+                  <li>Set up communication channels</li>
+                  <li>Begin collaboration on the project</li>
+                </ul>
+              </div>
+              
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                Your project team is growing! Time to start building something amazing together.
+              </p>
+              
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project/${projectTitle.replace(/\s+/g, '-').toLowerCase()}" 
+                   style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                  View Project
+                </a>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This notification was sent from SkillBridge Pro</p>
+            </div>
+          </div>
+        `
+      },
+      declined: {
+        subject: `📝 Invitation Declined for "${projectTitle}"`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">📝 Invitation Declined</h1>
+            </div>
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">Hello ${ownerName},</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                <strong>${responderName}</strong> has declined your invitation to join <strong>"${projectTitle}"</strong>.
+              </p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d;">
+                <h3 style="color: #6c757d; margin-top: 0;">Developer Details</h3>
+                <p style="color: #666; line-height: 1.6; margin: 0;">
+                  <strong>Name:</strong> ${responderName}<br>
+                  <strong>Email:</strong> ${responderEmail}
+                </p>
+              </div>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
+                <h3 style="color: #ffc107; margin-top: 0;">Don't Give Up!</h3>
+                <ul style="color: #666; line-height: 1.6;">
+                  <li>Continue searching for other qualified developers</li>
+                  <li>Consider reaching out to more candidates</li>
+                  <li>Review your project requirements and make them more attractive</li>
+                  <li>Post your project publicly to reach a wider audience</li>
+                </ul>
+              </div>
+              
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                There are many talented developers out there. Keep looking and you'll find the perfect match for your project!
+              </p>
+              
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                  Find More Developers
+                </a>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This notification was sent from SkillBridge Pro</p>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    const emailTemplate = statusMessages[status];
+    if (!emailTemplate) {
+      console.log(`No email template found for invite response status: ${status}`);
+      return;
+    }
+
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: ownerEmail,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    };
+
+    await sendMail(emailBody);
+    console.log(`✅ Invite response notification email sent to ${ownerEmail} for status: ${status}`);
+  } catch (error) {
+    console.error('❌ Error sending invite response notification email:', error);
+    // Don't throw error to avoid breaking the main flow
+  }
+};
+
+// Helper function to send application status email
+const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, status, projectOwnerName) => {
+  try {
+    const statusMessages = {
+      shortlisted: {
+        subject: `🎉 Great News! You've been shortlisted for "${projectTitle}"`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+            </div>
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">Hello ${userName},</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                We're excited to inform you that your application for <strong>"${projectTitle}"</strong> has been <strong style="color: #28a745;">shortlisted</strong>!
+              </p>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                The project owner, <strong>${projectOwnerName}</strong>, was impressed with your profile and would like to move forward with your application.
+              </p>
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+                <h3 style="color: #28a745; margin-top: 0;">What's Next?</h3>
+                <ul style="color: #666; line-height: 1.6;">
+                  <li>You may be contacted for an interview or further discussion</li>
+                  <li>Keep an eye on your email for updates from the project owner</li>
+                  <li>Be prepared to discuss your experience and availability</li>
+                </ul>
+              </div>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                Thank you for your interest in this project. We wish you the best of luck!
+              </p>
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                  View Project Details
+                </a>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This email was sent from SkillBridge Pro</p>
+            </div>
+          </div>
+        `
+      },
+      rejected: {
+        subject: `Application Update: "${projectTitle}"`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">Application Update</h1>
+            </div>
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">Hello ${userName},</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                Thank you for your interest in <strong>"${projectTitle}"</strong>. After careful consideration, we regret to inform you that your application has not been selected for this project.
+              </p>
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d;">
+                <h3 style="color: #6c757d; margin-top: 0;">Don't Give Up!</h3>
+                <ul style="color: #666; line-height: 1.6;">
+                  <li>This decision doesn't reflect on your skills or potential</li>
+                  <li>Keep applying to other projects that match your expertise</li>
+                  <li>Consider updating your profile to make it more attractive to project owners</li>
+                  <li>Use this as an opportunity to improve and grow</li>
+                </ul>
+              </div>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                We encourage you to continue exploring other opportunities on our platform. Your next great project is just around the corner!
+              </p>
+              <div style="text-align: center; margin-top: 30px;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                  Explore More Projects
+                </a>
+              </div>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This email was sent from SkillBridge Pro</p>
+            </div>
+          </div>
+        `
+      }
+    };
+
+    const emailTemplate = statusMessages[status];
+    if (!emailTemplate) {
+      console.log(`No email template found for status: ${status}`);
+      return;
+    }
+
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: userEmail,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html
+    };
+
+    await sendMail(emailBody);
+    console.log(`✅ Application status email sent to ${userEmail} for status: ${status}`);
+  } catch (error) {
+    console.error('❌ Error sending application status email:', error);
+    // Don't throw error to avoid breaking the main flow
+  }
+};
 
 // Create a new project
 const createProject = async (req, res) => {
@@ -28,6 +471,8 @@ const createProject = async (req, res) => {
       budgetMax,
       currency,
       isRemote,
+      isUrgent,
+      isFeatured,
       location,
       duration,
       startDate,
@@ -412,6 +857,49 @@ const applyToProject = async (req, res) => {
       matchScore: matchScore ? String(matchScore) : null, // Convert to string for numeric field
       notes,
     });
+
+    // Send email notifications after successful application
+    try {
+      // Get project information
+      const project = await ProjectModel.getProjectById(Number(projectId));
+      
+      // Get developer information
+      const developer = await getUserInfo(Number(applicantId));
+      
+      // Get project owner information
+      const projectOwner = await getUserInfo(project?.ownerId);
+      
+      if (project?.title && developer?.email && developer?.name && projectOwner?.email && projectOwner?.name) {
+        // Send confirmation email to developer
+        await sendApplicationConfirmationEmail(
+          developer.email,
+          developer.name,
+          project.title,
+          projectOwner.name
+        );
+        
+        // Send notification email to project owner
+        await sendNewApplicationNotificationEmail(
+          projectOwner.email,
+          projectOwner.name,
+          project.title,
+          developer.name,
+          developer.email
+        );
+      } else {
+        console.log('Missing information for application emails:', {
+          projectTitle: project?.title,
+          developerEmail: developer?.email,
+          developerName: developer?.name,
+          ownerEmail: projectOwner?.email,
+          ownerName: projectOwner?.name
+        });
+      }
+    } catch (emailError) {
+      console.error('Application email notifications failed:', emailError);
+      // Don't fail the main request if emails fail
+    }
+
     return res.status(201).json({ success: true, status: 201, message: "Applied successfully", application: row });
   } catch (error) {
     console.error("Apply Error:", error);
@@ -422,6 +910,64 @@ const applyToProject = async (req, res) => {
 };
 
 // Withdraw application
+// Helper function to send application withdrawal notification email to project owner
+const sendApplicationWithdrawalEmail = async (ownerEmail, ownerName, projectTitle, developerName, developerEmail) => {
+  try {
+    const emailBody = {
+      from: process.env.EMAIL_USER,
+      to: ownerEmail,
+      subject: `📤 Application Withdrawn: "${projectTitle}"`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">📤 Application Withdrawn</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello ${ownerName},</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              We wanted to inform you that <strong>${developerName}</strong> has withdrawn their application for your project <strong>"${projectTitle}"</strong>.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d;">
+              <h3 style="color: #6c757d; margin-top: 0;">📋 Application Details</h3>
+              <p style="color: #666; line-height: 1.6; margin: 0;">
+                <strong>Developer:</strong> ${developerName}<br>
+                <strong>Email:</strong> ${developerEmail}<br>
+                <strong>Project:</strong> ${projectTitle}<br>
+                <strong>Status:</strong> Withdrawn
+              </p>
+            </div>
+            <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 20px 0;">
+              <h4 style="color: #0c5460; margin-top: 0;">💡 What This Means:</h4>
+              <ul style="color: #0c5460; line-height: 1.6; margin: 0; padding-left: 20px;">
+                <li>The developer is no longer interested in this project</li>
+                <li>You can focus on other applicants</li>
+                <li>Your project remains active for new applications</li>
+                <li>Consider reaching out to other shortlisted candidates</li>
+              </ul>
+            </div>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Don't worry - there are many talented developers looking for great projects like yours!
+            </p>
+            <div style="text-align: center; margin-top: 30px;">
+              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/projects"
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
+                View Other Applications
+              </a>
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This email was sent from SkillBridge Pro</p>
+          </div>
+        </div>
+      `
+    };
+    await sendMail(emailBody);
+    console.log(`✅ Application withdrawal notification email sent to ${ownerEmail}`);
+  } catch (error) {
+    console.error('❌ Error sending application withdrawal email:', error);
+  }
+};
+
 const withdrawApplication = async (req, res) => {
   try {
     const userId = req.user?.userId;
@@ -429,6 +975,36 @@ const withdrawApplication = async (req, res) => {
     if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
 
     const row = await ProjectModel.withdrawApplication(Number(projectId), Number(userId));
+    
+    // Send email notification if application was actually withdrawn
+    if (row) {
+      try {
+        const project = await ProjectModel.getProjectById(Number(projectId));
+        const developer = await getUserInfo(Number(userId));
+        const projectOwner = await getUserInfo(project?.ownerId);
+
+        if (project?.title && developer?.email && developer?.name && projectOwner?.email && projectOwner?.name) {
+          await sendApplicationWithdrawalEmail(
+            projectOwner.email,
+            projectOwner.name,
+            project.title,
+            developer.name,
+            developer.email
+          );
+        } else {
+          console.log('Missing information for withdrawal email:', {
+            projectTitle: project?.title,
+            developerEmail: developer?.email,
+            developerName: developer?.name,
+            ownerEmail: projectOwner?.email,
+            ownerName: projectOwner?.name
+          });
+        }
+      } catch (emailError) {
+        console.error('Application withdrawal email notification failed:', emailError);
+      }
+    }
+    
     // Make withdraw idempotent: return success even if nothing was deleted
     return res.status(200).json({
       success: true,
@@ -449,11 +1025,47 @@ const updateApplicantStatus = async (req, res) => {
   try {
     const { projectId, userId, status } = req.body;
     if (!projectId || !userId || !status) return sendError(res, "projectId, userId and status are required", 400);
+    
+    // Update the applicant status
     const row = await ProjectModel.updateApplicantStatus({
       projectId: Number(projectId),
       userId: Number(userId),
       status,
     });
+
+    // Send email notification for shortlisted or rejected status
+    if (status === 'shortlisted' || status === 'rejected') {
+      try {
+        // Get project information
+        const project = await ProjectModel.getProjectById(Number(projectId));
+        
+        // Get user information
+        const user = await getUserInfo(Number(userId));
+        
+        // Get project owner information
+        const projectOwner = await getUserInfo(project?.ownerId);
+        
+        if (user?.email && project?.title && projectOwner?.name) {
+          await sendApplicationStatusEmail(
+            user.email,
+            user.name || 'Developer',
+            project.title,
+            status,
+            projectOwner.name
+          );
+        } else {
+          console.log('Missing information for email notification:', {
+            userEmail: user?.email,
+            projectTitle: project?.title,
+            projectOwnerName: projectOwner?.name
+          });
+        }
+      } catch (emailError) {
+        console.error('Email notification failed:', emailError);
+        // Don't fail the main request if email fails
+      }
+    }
+
     return res.status(200).json({ success: true, status: 200, message: "Applicant status updated", application: row });
   } catch (error) {
     console.error("Update Applicant Status Error:", error);
@@ -475,6 +1087,36 @@ const listApplicants = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch applicants", error: error.message });
+  }
+};
+
+// List applications for the authenticated developer
+const listMyApplications = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    const rows = await ProjectModel.listApplicationsByUser(Number(userId));
+    return res.status(200).json({ success: true, status: 200, applications: rows });
+  } catch (error) {
+    console.error("List My Applications Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch my applications", error: error.message });
+  }
+};
+
+// Get count of applications for the authenticated developer
+const getMyApplicationsCount = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    const count = await ProjectModel.countApplicationsByUser(Number(userId));
+    return res.status(200).json({ success: true, status: 200, count });
+  } catch (error) {
+    console.error("Get My Applications Count Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch applications count", error: error.message });
   }
 };
 
@@ -515,6 +1157,43 @@ const createInvite = async (req, res) => {
       role,
       message,
     });
+
+    // Send email notification after successful invite creation
+    try {
+      // Get project owner information
+      const projectOwner = await getUserInfo(Number(inviterUserId));
+      
+      // Get invited user information if userId is provided
+      let invitedUser = null;
+      if (invitedUserId) {
+        invitedUser = await getUserInfo(Number(invitedUserId));
+      }
+      
+      if (project?.title && projectOwner?.name) {
+        // Send invite email to developer
+        await sendDeveloperInviteEmail(
+          invitedEmail,
+          invitedUser?.name || null, // Use name if available, otherwise null
+          project.title,
+          projectOwner.name,
+          role,
+          message,
+          row.id // Pass the invite ID for the link
+        );
+        
+        console.log(`✅ Invite email sent to ${invitedEmail} for project: ${project.title}`);
+      } else {
+        console.log('Missing information for invite email:', {
+          projectTitle: project?.title,
+          ownerName: projectOwner?.name,
+          invitedEmail
+        });
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending invite email:', emailError);
+      // Don't fail the invite creation if email fails
+    }
+
     return res.status(201).json({ success: true, status: 201, message: "Invite created", invite: row });
   } catch (error) {
     console.error("Create Invite Error:", error);
@@ -568,6 +1247,44 @@ const respondInvite = async (req, res) => {
     }
     
     const row = await ProjectModel.respondInvite({ inviteId: Number(inviteId), status });
+    
+    // Send email notification to project owner about invite response
+    try {
+      // Get project information
+      const project = await ProjectModel.getProjectById(Number(invite.projectId));
+      
+      // Get project owner information
+      const projectOwner = await getUserInfo(Number(project?.ownerId));
+      
+      // Get responder information
+      const responder = await getUserInfo(Number(responderUserId));
+      
+      if (project?.title && projectOwner?.email && projectOwner?.name && responder?.name) {
+        // Send notification email to project owner about the response
+        await sendInviteResponseNotificationEmail(
+          projectOwner.email,
+          projectOwner.name,
+          project.title,
+          responder.name,
+          responder.email,
+          status
+        );
+        
+        console.log(`✅ Invite response notification sent to ${projectOwner.email} for project: ${project.title}`);
+      } else {
+        console.log('Missing information for invite response email:', {
+          projectTitle: project?.title,
+          ownerEmail: projectOwner?.email,
+          ownerName: projectOwner?.name,
+          responderName: responder?.name,
+          responderEmail: responder?.email
+        });
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending invite response notification email:', emailError);
+      // Don't fail the response if email fails
+    }
+    
     return res.status(200).json({ success: true, status: 200, message: "Invite updated", invite: row });
   } catch (error) {
     console.error("Respond Invite Error:", error);
@@ -1104,6 +1821,329 @@ const getSearchSuggestions = async (req, res) => {
   }
 };
 
+// Generate PDF report for applicants
+const generateApplicantsReport = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { projectId, format = 'pdf' } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({ 
+        success: false, 
+        status: 401, 
+        message: "User not authenticated" 
+      });
+    }
+
+    // Get all projects owned by the user
+    const userProjects = await ProjectModel.listProjects({ ownerId: userId });
+    
+    if (!userProjects || userProjects.length === 0) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "No projects found for this user"
+      });
+    }
+
+    // Get applicants for all user's projects
+    const allApplicants = [];
+    const projectApplicantsMap = {};
+    
+    for (const project of userProjects) {
+      const applicants = await ProjectModel.listApplicants(project.id);
+      projectApplicantsMap[project.id] = applicants;
+      allApplicants.push(...applicants.map(app => ({
+        ...app,
+        projectTitle: project.title,
+        projectId: project.id
+      })));
+    }
+
+    // Generate HTML report
+    const htmlReport = generateHTMLReport(userProjects, projectApplicantsMap, allApplicants);
+    
+    if (format === 'html') {
+      return res.status(200).json({
+        success: true,
+        status: 200,
+        data: htmlReport,
+        message: "Report generated successfully"
+      });
+    }
+
+    // For PDF format, return HTML that can be converted to PDF on frontend
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: htmlReport,
+      message: "HTML report generated for PDF conversion"
+    });
+
+  } catch (error) {
+    console.error("Generate Report Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to generate report",
+      error: error.message
+    });
+  }
+};
+
+// Helper function to generate HTML report
+const generateHTMLReport = (projects, projectApplicantsMap, allApplicants) => {
+  const currentDate = new Date().toLocaleDateString();
+  
+  // Calculate statistics
+  const stats = {
+    totalProjects: projects.length,
+    totalApplicants: allApplicants.length,
+    appliedCount: allApplicants.filter(app => app.status === 'applied').length,
+    shortlistedCount: allApplicants.filter(app => app.status === 'shortlisted').length,
+    rejectedCount: allApplicants.filter(app => app.status === 'rejected').length,
+    acceptedCount: allApplicants.filter(app => app.status === 'accepted').length
+  };
+
+  let html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SkillBridge Pro - Applicants Report</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                line-height: 1.6; 
+                color: #333; 
+                background: #f8f9fa;
+                padding: 20px;
+            }
+            .container { 
+                max-width: 1200px; 
+                margin: 0 auto; 
+                background: white; 
+                padding: 30px; 
+                border-radius: 10px; 
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+            .header { 
+                text-align: center; 
+                margin-bottom: 40px; 
+                padding-bottom: 20px; 
+                border-bottom: 3px solid #667eea;
+            }
+            .header h1 { 
+                color: #667eea; 
+                font-size: 2.5em; 
+                margin-bottom: 10px;
+            }
+            .header p { 
+                color: #666; 
+                font-size: 1.1em;
+            }
+            .stats-grid { 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                gap: 20px; 
+                margin-bottom: 40px;
+            }
+            .stat-card { 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+                padding: 20px; 
+                border-radius: 10px; 
+                text-align: center;
+            }
+            .stat-card h3 { 
+                font-size: 2em; 
+                margin-bottom: 5px;
+            }
+            .stat-card p { 
+                opacity: 0.9;
+            }
+            .section { 
+                margin-bottom: 40px;
+            }
+            .section h2 { 
+                color: #333; 
+                margin-bottom: 20px; 
+                padding-bottom: 10px; 
+                border-bottom: 2px solid #eee;
+            }
+            .project-card { 
+                background: #f8f9fa; 
+                border: 1px solid #dee2e6; 
+                border-radius: 8px; 
+                padding: 20px; 
+                margin-bottom: 20px;
+            }
+            .project-title { 
+                color: #667eea; 
+                font-size: 1.3em; 
+                margin-bottom: 15px;
+            }
+            .applicant-table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 15px;
+            }
+            .applicant-table th, .applicant-table td { 
+                padding: 12px; 
+                text-align: left; 
+                border-bottom: 1px solid #dee2e6;
+            }
+            .applicant-table th { 
+                background: #667eea; 
+                color: white; 
+                font-weight: 600;
+            }
+            .applicant-table tr:nth-child(even) { 
+                background: #f8f9fa;
+            }
+            .status-badge { 
+                padding: 4px 12px; 
+                border-radius: 20px; 
+                font-size: 0.8em; 
+                font-weight: 600; 
+                text-transform: uppercase;
+            }
+            .status-applied { background: #e3f2fd; color: #1976d2; }
+            .status-shortlisted { background: #e8f5e8; color: #2e7d32; }
+            .status-rejected { background: #ffebee; color: #c62828; }
+            .status-accepted { background: #f3e5f5; color: #7b1fa2; }
+            .skills { 
+                display: flex; 
+                flex-wrap: wrap; 
+                gap: 5px;
+            }
+            .skill-tag { 
+                background: #667eea; 
+                color: white; 
+                padding: 2px 8px; 
+                border-radius: 12px; 
+                font-size: 0.7em;
+            }
+            .footer { 
+                text-align: center; 
+                margin-top: 40px; 
+                padding-top: 20px; 
+                border-top: 2px solid #eee; 
+                color: #666;
+            }
+            @media print {
+                body { background: white; }
+                .container { box-shadow: none; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>📊 SkillBridge Pro - Applicants Report</h1>
+                <p>Generated on ${currentDate}</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>${stats.totalProjects}</h3>
+                    <p>Total Projects</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${stats.totalApplicants}</h3>
+                    <p>Total Applicants</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${stats.appliedCount}</h3>
+                    <p>Applied</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${stats.shortlistedCount}</h3>
+                    <p>Shortlisted</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${stats.rejectedCount}</h3>
+                    <p>Rejected</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${stats.acceptedCount}</h3>
+                    <p>Accepted</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📋 Project-wise Applicants</h2>
+  `;
+
+  // Add project-wise applicants
+  projects.forEach(project => {
+    const applicants = projectApplicantsMap[project.id] || [];
+    
+    html += `
+      <div class="project-card">
+        <div class="project-title">${project.title}</div>
+        <p><strong>Description:</strong> ${project.description || 'No description'}</p>
+        <p><strong>Total Applicants:</strong> ${applicants.length}</p>
+        
+        ${applicants.length > 0 ? `
+          <table class="applicant-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Experience</th>
+                <th>Location</th>
+                <th>Skills</th>
+                <th>Applied Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${applicants.map(applicant => `
+                <tr>
+                  <td><strong>${applicant.name || 'N/A'}</strong></td>
+                  <td>${applicant.email || 'N/A'}</td>
+                  <td>
+                    <span class="status-badge status-${applicant.status}">
+                      ${applicant.status || 'applied'}
+                    </span>
+                  </td>
+                  <td>${applicant.experience || 'N/A'}</td>
+                  <td>${applicant.location || 'N/A'}</td>
+                  <td>
+                    <div class="skills">
+                      ${applicant.skills ? JSON.parse(applicant.skills).slice(0, 3).map(skill => 
+                        `<span class="skill-tag">${skill}</span>`
+                      ).join('') : 'N/A'}
+                    </div>
+                  </td>
+                  <td>${new Date(applicant.appliedAt).toLocaleDateString()}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : '<p><em>No applicants for this project yet.</em></p>'}
+      </div>
+    `;
+  });
+
+  html += `
+            </div>
+
+            <div class="footer">
+                <p>Generated by SkillBridge Pro • ${currentDate}</p>
+                <p>This report contains confidential applicant information. Please handle with care.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+
+  return html;
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -1142,5 +2182,10 @@ module.exports = {
   updateProjectComment,
   deleteProjectComment,
   getSearchSuggestions,
+  listMyApplications,
+  getMyApplicationsCount,
+  generateApplicantsReport,
 };
+
+
 

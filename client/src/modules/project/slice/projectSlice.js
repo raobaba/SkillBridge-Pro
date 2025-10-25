@@ -45,6 +45,9 @@ import {
   generateBenefitsApi,
   generateBudgetSuggestionsApi,
   generateComprehensiveSuggestionsApi,
+  getMyApplicationsApi,
+  getMyApplicationsCountApi,
+  generateApplicantsReportApi,
 } from "./projectAction";
 
 // Initial state
@@ -72,6 +75,8 @@ const initialState = {
   
   // Applied projects tracking
   appliedProjects: [],
+  myApplications: [],
+  myApplicationsCount: 0,
   
   // Loading states
   loading: false,
@@ -268,6 +273,50 @@ export const listApplicants = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to fetch applicants" }
+      );
+    }
+  }
+);
+
+// Developer: self applications
+export const getMyApplications = createAsyncThunk(
+  "project/getMyApplications",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getMyApplicationsApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch my applications" }
+      );
+    }
+  }
+);
+
+export const getMyApplicationsCount = createAsyncThunk(
+  "project/getMyApplicationsCount",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getMyApplicationsCountApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch applications count" }
+      );
+    }
+  }
+);
+
+// Generate applicants report
+export const generateApplicantsReport = createAsyncThunk(
+  "project/generateApplicantsReport",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await generateApplicantsReportApi(data);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to generate report" }
       );
     }
   }
@@ -988,6 +1037,7 @@ const projectSlice = createSlice({
         // Add to applied projects array if not already present
         if (projectId && !state.appliedProjects.includes(projectId)) {
           state.appliedProjects.push(projectId);
+          state.myApplicationsCount = (state.myApplicationsCount || 0) + 1;
         }
       })
       .addCase(applyToProject.rejected, (state, action) => {
@@ -1331,9 +1381,11 @@ const projectSlice = createSlice({
           proj.applicantsCount = Math.max(0, (proj.applicantsCount || 0) - 1);
           proj.__appliedByMe = false;
         }
-        // Remove from applied projects array
+        // Remove from applied projects array and myApplications
         if (projectId) {
           state.appliedProjects = state.appliedProjects.filter(id => id !== projectId);
+          state.myApplications = state.myApplications.filter(app => app.projectId !== projectId);
+          state.myApplicationsCount = Math.max(0, (state.myApplicationsCount || 0) - 1);
         }
       })
       .addCase(withdrawApplication.rejected, (state, action) => {
@@ -1829,6 +1881,65 @@ const projectSlice = createSlice({
         state.aiLoading = false;
         state.error = action.payload.message || 'Failed to generate suggestions';
         state.lastAction = 'generateComprehensiveSuggestions.rejected';
+      })
+
+      // Get My Applications
+      .addCase(getMyApplications.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.lastAction = 'getMyApplications.pending';
+      })
+      .addCase(getMyApplications.fulfilled, (state, action) => {
+        state.loading = false;
+        const apps = action.payload.applications || [];
+        state.myApplications = apps;
+        const ids = apps.map(a => a.projectId).filter(id => typeof id === 'number');
+        state.appliedProjects = Array.from(new Set([...(state.appliedProjects || []), ...ids]));
+        state.error = null;
+        state.lastAction = 'getMyApplications.fulfilled';
+      })
+      .addCase(getMyApplications.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || 'Failed to fetch my applications';
+        state.lastAction = 'getMyApplications.rejected';
+      })
+
+      // Get My Applications Count
+      .addCase(getMyApplicationsCount.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.lastAction = 'getMyApplicationsCount.pending';
+      })
+      .addCase(getMyApplicationsCount.fulfilled, (state, action) => {
+        state.loading = false;
+        state.myApplicationsCount = Number(action.payload.count || 0);
+        state.error = null;
+        state.lastAction = 'getMyApplicationsCount.fulfilled';
+      })
+      .addCase(getMyApplicationsCount.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || 'Failed to fetch applications count';
+        state.lastAction = 'getMyApplicationsCount.rejected';
+      })
+
+      // Generate applicants report
+      .addCase(generateApplicantsReport.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.message = null;
+        state.lastAction = 'generateApplicantsReport.pending';
+      })
+      .addCase(generateApplicantsReport.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message || 'Report generated successfully';
+        state.error = null;
+        state.lastAction = 'generateApplicantsReport.fulfilled';
+      })
+      .addCase(generateApplicantsReport.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || 'Failed to generate report';
+        state.message = null;
+        state.lastAction = 'generateApplicantsReport.rejected';
       });
   },
 });

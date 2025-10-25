@@ -37,6 +37,8 @@ const ProjectModel = {
   withdrawApplication: ProjectApplicantsModel.withdrawApplication,
   updateApplicantStatus: ProjectApplicantsModel.updateApplicantStatus,
   listApplicants: ProjectApplicantsModel.listApplicants,
+  listApplicationsByUser: ProjectApplicantsModel.listApplicationsByUser,
+  countApplicationsByUser: ProjectApplicantsModel.countApplicationsByUser,
   
   // Invites
   createInvite: ProjectInvitesModel.createInvite,

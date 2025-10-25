@@ -1,5 +1,8 @@
 // components/ApplicantsList.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getDevelopers, listProjects, listApplicants, updateApplicantStatus, generateApplicantsReport } from "../slice/projectSlice";
+import { toast } from "react-toastify";
 import Button from '../../../components/Button';
 import { 
   Star, 
@@ -38,142 +41,114 @@ const ApplicantsList = () => {
   const [sortOption, setSortOption] = useState("name");
   const [statusFilter, setStatusFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const dispatch = useDispatch();
+  const developers = useSelector((state) => state.project?.developers || []);
+  const ownerProjects = useSelector((state) => state.project?.projects || []);
+  const user = useSelector((state) => state.user?.user || null);
+  const [showAppliedOnly, setShowAppliedOnly] = useState(true);
   const [favorites, setFavorites] = useState([]);
   const [selectedApplicants, setSelectedApplicants] = useState([]);
   const [viewMode, setViewMode] = useState("table"); // table or card
   const [showFilters, setShowFilters] = useState(false);
   const [expandedApplicant, setExpandedApplicant] = useState(null);
 
-  const applicants = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      role: "Frontend Developer",
-      skills: ["React", "TailwindCSS", "Next.js", "TypeScript"],
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-      status: "Applied",
-      rating: 4,
-      notes: "Top Performer in last project",
-      experience: "3 years",
-      location: "San Francisco, CA",
-      availability: "Available",
-      appliedDate: "2024-01-15",
-      lastActive: "2 hours ago",
-      portfolio: "https://alicejohnson.dev",
-      linkedin: "https://linkedin.com/in/alicejohnson",
-      github: "https://github.com/alicejohnson",
-      expectedSalary: "$80,000 - $100,000",
-      matchScore: 92,
-      tags: ["Senior", "Remote", "UI/UX"]
-    },
-    {
-      id: 2,
-      name: "Michael Smith",
-      role: "Backend Developer",
-      skills: ["Node.js", "Express", "MongoDB", "PostgreSQL", "Docker"],
-      avatar: "https://randomuser.me/api/portraits/men/33.jpg",
-      status: "Shortlisted",
-      rating: 5,
-      notes: "Strong in DB optimization",
-      experience: "5 years",
-      location: "New York, NY",
-      availability: "Available",
-      appliedDate: "2024-01-14",
-      lastActive: "1 day ago",
-      portfolio: "https://michaelsmith.dev",
-      linkedin: "https://linkedin.com/in/michaelsmith",
-      github: "https://github.com/michaelsmith",
-      expectedSalary: "$90,000 - $120,000",
-      matchScore: 88,
-      tags: ["Lead", "On-site", "Architecture"]
-    },
-    {
-      id: 3,
-      name: "Sara Williams",
-      role: "Data Scientist",
-      skills: ["Python", "Pandas", "TensorFlow", "Scikit-learn", "SQL"],
-      avatar: "https://randomuser.me/api/portraits/women/55.jpg",
-      status: "Interviewing",
-      rating: 3,
-      notes: "Needs more ML project exposure",
-      experience: "2 years",
-      location: "Austin, TX",
-      availability: "Available",
-      appliedDate: "2024-01-13",
-      lastActive: "3 hours ago",
-      portfolio: "https://sarawilliams.dev",
-      linkedin: "https://linkedin.com/in/sarawilliams",
-      github: "https://github.com/sarawilliams",
-      expectedSalary: "$70,000 - $90,000",
-      matchScore: 75,
-      tags: ["Junior", "Hybrid", "ML"]
-    },
-    {
-      id: 4,
-      name: "David Lee",
-      role: "Full Stack Developer",
-      skills: ["React", "Node.js", "Docker", "AWS", "GraphQL"],
-      avatar: "https://randomuser.me/api/portraits/men/22.jpg",
-      status: "Applied",
-      rating: 4,
-      notes: "Good team player",
-      experience: "4 years",
-      location: "Seattle, WA",
-      availability: "Available",
-      appliedDate: "2024-01-12",
-      lastActive: "5 hours ago",
-      portfolio: "https://davidlee.dev",
-      linkedin: "https://linkedin.com/in/davidlee",
-      github: "https://github.com/davidlee",
-      expectedSalary: "$85,000 - $110,000",
-      matchScore: 85,
-      tags: ["Mid-level", "Remote", "DevOps"]
-    },
-    {
-      id: 5,
-      name: "Emily Chen",
-      role: "UI/UX Designer",
-      skills: ["Figma", "Adobe XD", "Sketch", "Prototyping", "User Research"],
-      avatar: "https://randomuser.me/api/portraits/women/68.jpg",
-      status: "Shortlisted",
-      rating: 5,
-      notes: "Excellent design portfolio",
-      experience: "6 years",
-      location: "Los Angeles, CA",
-      availability: "Available",
-      appliedDate: "2024-01-11",
-      lastActive: "1 hour ago",
-      portfolio: "https://emilychen.design",
-      linkedin: "https://linkedin.com/in/emilychen",
-      github: "https://github.com/emilychen",
-      expectedSalary: "$75,000 - $95,000",
-      matchScore: 90,
-      tags: ["Senior", "Remote", "Design"]
-    },
-    {
-      id: 6,
-      name: "James Wilson",
-      role: "DevOps Engineer",
-      skills: ["Kubernetes", "AWS", "Terraform", "Jenkins", "Linux"],
-      avatar: "https://randomuser.me/api/portraits/men/45.jpg",
-      status: "Applied",
-      rating: 4,
-      notes: "Strong infrastructure knowledge",
-      experience: "7 years",
-      location: "Chicago, IL",
-      availability: "Available",
-      appliedDate: "2024-01-10",
-      lastActive: "4 hours ago",
-      portfolio: "https://jameswilson.dev",
-      linkedin: "https://linkedin.com/in/jameswilson",
-      github: "https://github.com/jameswilson",
-      expectedSalary: "$95,000 - $125,000",
-      matchScore: 87,
-      tags: ["Senior", "On-site", "Infrastructure"]
+  // Ensure owner's projects are loaded when showing applied-only
+  useEffect(() => {
+    if (showAppliedOnly && (!ownerProjects || ownerProjects.length === 0)) {
+      // Fetch only projects owned by the authenticated user so applicant listing is authorized
+      const ownerId = user?.id || user?.userId;
+      dispatch(listProjects(ownerId ? { ownerId } : undefined));
     }
-  ];
+  }, [dispatch, showAppliedOnly, user?.id, user?.userId, ownerProjects?.length]);
+
+  // Fetch developers when showing 'All Developers'
+  useEffect(() => {
+    if (!showAppliedOnly) {
+      dispatch(getDevelopers());
+    }
+  }, [dispatch, showAppliedOnly]);
+
+  // Build applicants list depending on toggle
+  const [appliedApplicants, setAppliedApplicants] = useState([]);
+
+  useEffect(() => {
+    const fetchApplied = async () => {
+      try {
+        if (!showAppliedOnly) {
+          setAppliedApplicants([]);
+          return;
+        }
+        if (!ownerProjects || ownerProjects.length === 0) {
+          setAppliedApplicants([]);
+          return;
+        }
+        // Use only projects owned by the current user when calling the protected applicants endpoint
+        const myProjects = (ownerProjects || []).filter((p) => {
+          const ownerId = user?.id || user?.userId;
+          return ownerId ? p.ownerId === ownerId : true;
+        });
+
+        const results = await Promise.all(
+          myProjects.map(async (p) => {
+            try {
+              const res = await dispatch(listApplicants(p.id)).unwrap();
+              return Array.isArray(res?.applicants) ? res.applicants : [];
+            } catch {
+              return [];
+            }
+          })
+        );
+        const merged = [].concat(...results);
+        setAppliedApplicants(merged);
+      } catch {
+        setAppliedApplicants([]);
+      }
+    };
+    fetchApplied();
+  }, [dispatch, showAppliedOnly, ownerProjects]);
+
+  const mapDevToApplicant = (dev, idx) => ({
+      id: dev.id || dev.userId || idx,
+      projectId: dev.projectId,
+      userId: dev.userId,
+      name: dev.name || dev.fullName || dev.username || 'Developer',
+      email: dev.email || '',
+      role: dev.role || dev.title || dev.primaryRole || 'Developer',
+      skills: Array.isArray(dev.skills) ? dev.skills : (dev.skills ? JSON.parse(dev.skills) : []),
+      avatar: dev.avatarUrl || dev.avatar || dev.photoUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(dev.name || dev.username || idx)}`,
+      status: dev.status || 'applied',
+      rating: Number(dev.rating || dev.ratingAvg || 0),
+      notes: dev.notes || dev.bio || '',
+      bio: dev.bio || '',
+      experience: dev.experience || dev.yearsOfExperience ? `${dev.yearsOfExperience} years` : '—',
+      location: dev.location || dev.city || '—',
+      availability: dev.availability || 'Available',
+      appliedDate: dev.appliedAt || dev.appliedDate || dev.createdAt || new Date().toISOString().slice(0,10),
+      updatedAt: dev.updatedAt || '—',
+      portfolio: dev.portfolioUrl || dev.portfolio || dev.website || '',
+      linkedin: dev.linkedinUrl || dev.linkedin || '',
+      github: dev.githubUrl || dev.github || '',
+      level: dev.level || 1,
+      xp: dev.xp || 0,
+      expectedSalary: dev.expectedSalary || dev.salaryRange || '',
+      matchScore: Number(dev.matchScore || dev.matchScoreAvg || 0),
+      tags: Array.isArray(dev.tags) ? dev.tags : (dev.tags ? JSON.parse(dev.tags) : []),
+  });
+
+  const applicants = useMemo(() => {
+    if (showAppliedOnly) {
+      return (appliedApplicants || []).map(mapDevToApplicant);
+    }
+    return (developers || []).map(mapDevToApplicant);
+  }, [showAppliedOnly, appliedApplicants, developers]);
 
   const statusColors = {
+    applied: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    shortlisted: "bg-green-500/20 text-green-400 border-green-500/30",
+    interviewing: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+    rejected: "bg-red-500/20 text-red-400 border-red-500/30",
+    accepted: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    // Legacy support
     Applied: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     Shortlisted: "bg-green-500/20 text-green-400 border-green-500/30",
     Interviewing: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -237,34 +212,113 @@ const ApplicantsList = () => {
     );
   };
 
-  const handleBulkAction = (action) => {
-    if (action === "shortlist") {
-      // Handle bulk shortlist
-      console.log("Shortlisting:", selectedApplicants);
-    } else if (action === "reject") {
-      // Handle bulk reject
-      console.log("Rejecting:", selectedApplicants);
+  const handleStatusUpdate = async (applicantId, projectId, userId, newStatus) => {
+    try {
+      await dispatch(updateApplicantStatus({
+        projectId,
+        userId,
+        status: newStatus
+      })).unwrap();
+      
+      toast.success(`Application ${newStatus} successfully!`);
+      
+      // Refresh the applicants list
+      if (showAppliedOnly) {
+        const myProjects = (ownerProjects || []).filter((p) => {
+          const ownerId = user?.id || user?.userId;
+          return ownerId ? p.ownerId === ownerId : true;
+        });
+        
+        const results = await Promise.all(
+          myProjects.map(async (p) => {
+            try {
+              const res = await dispatch(listApplicants(p.id)).unwrap();
+              return Array.isArray(res?.applicants) ? res.applicants : [];
+            } catch {
+              return [];
+            }
+          })
+        );
+        const merged = [].concat(...results);
+        setAppliedApplicants(merged);
+      }
+    } catch (error) {
+      toast.error(error?.message || `Failed to ${newStatus} application`);
     }
-    setSelectedApplicants([]);
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedApplicants.length === 0) return;
+    
+    try {
+      const status = action === "shortlist" ? "shortlisted" : "rejected";
+      
+      // Find the selected applicants and their project info
+      const applicantsToUpdate = filteredAndSortedApplicants.filter(app => 
+        selectedApplicants.includes(app.id)
+      );
+      
+      // Update each selected applicant
+      await Promise.all(
+        applicantsToUpdate.map(app => 
+          handleStatusUpdate(app.id, app.projectId, app.userId, status)
+        )
+      );
+      
+      toast.success(`${applicantsToUpdate.length} application(s) ${action}ed successfully!`);
+      setSelectedApplicants([]);
+    } catch (error) {
+      toast.error(`Failed to ${action} applications`);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      const response = await dispatch(generateApplicantsReport({ format: 'pdf' })).unwrap();
+      
+      if (response?.data) {
+        // Create a blob from the HTML content
+        const blob = new Blob([response.data], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create a temporary link element and trigger download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `applicants-report-${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the URL object
+        window.URL.revokeObjectURL(url);
+        
+        toast.success("Report downloaded successfully!");
+      }
+    } catch (error) {
+      toast.error(error?.message || "Failed to download report");
+    }
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case "Applied": return <Clock className="w-3 h-3" />;
-      case "Shortlisted": return <CheckCircle className="w-3 h-3" />;
-      case "Interviewing": return <Users className="w-3 h-3" />;
-      case "Rejected": return <UserX className="w-3 h-3" />;
-      case "Hired": return <UserCheck className="w-3 h-3" />;
+    switch (status.toLowerCase()) {
+      case "applied": return <Clock className="w-3 h-3" />;
+      case "shortlisted": return <CheckCircle className="w-3 h-3" />;
+      case "interviewing": return <Users className="w-3 h-3" />;
+      case "rejected": return <UserX className="w-3 h-3" />;
+      case "accepted": 
+      case "hired": return <UserCheck className="w-3 h-3" />;
       default: return <AlertCircle className="w-3 h-3" />;
     }
   };
 
   const stats = {
     total: applicants.length,
-    applied: applicants.filter(a => a.status === "Applied").length,
-    shortlisted: applicants.filter(a => a.status === "Shortlisted").length,
-    interviewing: applicants.filter(a => a.status === "Interviewing").length,
-    averageRating: (applicants.reduce((sum, a) => sum + a.rating, 0) / applicants.length).toFixed(1)
+    applied: applicants.filter(a => a.status === "applied" || a.status === "Applied").length,
+    shortlisted: applicants.filter(a => a.status === "shortlisted" || a.status === "Shortlisted").length,
+    interviewing: applicants.filter(a => a.status === "interviewing" || a.status === "Interviewing").length,
+    averageRating: applicants.length ? (
+      applicants.reduce((sum, a) => sum + (Number(a.rating) || 0), 0) / applicants.length
+    ).toFixed(1) : '0.0'
   };
 
   // Helpers to reduce repetition
@@ -343,6 +397,22 @@ const ApplicantsList = () => {
           
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
+              <button
+                onClick={() => setShowAppliedOnly(true)}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${showAppliedOnly ? 'bg-white/20 text-white' : 'text-gray-300 hover:bg-white/10'}`}
+                title="Show only applicants who applied to your projects"
+              >
+                Applied
+              </button>
+              <button
+                onClick={() => setShowAppliedOnly(false)}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${!showAppliedOnly ? 'bg-white/20 text-white' : 'text-gray-300 hover:bg-white/10'}`}
+                title="Show all developers"
+              >
+                All Developers
+              </button>
+            </div>
+            <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-lg">
               <Users className="w-4 h-4 text-green-400" />
               <span className="text-sm text-gray-300">
                 {stats.total} Total Applicants
@@ -353,6 +423,14 @@ const ApplicantsList = () => {
               className="bg-white/10 hover:bg-white/20 px-3 py-2 rounded-lg transition-colors duration-300"
             >
               {viewMode === "table" ? "Card View" : "Table View"}
+            </Button>
+            
+            <Button
+              onClick={handleDownloadReport}
+              className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30 px-3 py-2 rounded-lg transition-colors duration-300 flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download Report
             </Button>
           </div>
         </div>
@@ -514,8 +592,12 @@ const ApplicantsList = () => {
                         </div>
                         <div>
                           <p className="text-white font-medium">{app.name}</p>
-                          <p className="text-gray-400 text-sm">{app.location}</p>
-                          <p className="text-gray-500 text-xs">{app.experience}</p>
+                          <p className="text-gray-400 text-sm">{app.email}</p>
+                          <p className="text-gray-500 text-xs">{app.location} • Level {app.level}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Award className="w-3 h-3 text-yellow-400" />
+                            <span className="text-xs text-gray-400">{app.xp} XP</span>
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -586,11 +668,28 @@ const ApplicantsList = () => {
                           <Eye className="w-4 h-4" />
                         </Button>
                         
-                        <Button 
-                          className="p-2 rounded-lg bg-white/10 text-gray-400 hover:bg-white/20 transition-colors duration-300"
-                        >
-                          <MessageSquare className="w-4 h-4" />
-                        </Button>
+                        {app.status === 'applied' || app.status === 'Applied' ? (
+                          <div className="flex gap-1">
+                            <Button
+                              onClick={() => handleStatusUpdate(app.id, app.projectId, app.userId, 'shortlisted')}
+                              className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-500/30 transition-colors duration-300"
+                            >
+                              <CheckCircle className="w-3 h-3 mr-1 inline" />
+                              Shortlist
+                            </Button>
+                            <Button
+                              onClick={() => handleStatusUpdate(app.id, app.projectId, app.userId, 'rejected')}
+                              className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs hover:bg-red-500/30 transition-colors duration-300"
+                            >
+                              <UserX className="w-3 h-3 mr-1 inline" />
+                              Reject
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[app.status]}`}>
+                            {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -620,8 +719,14 @@ const ApplicantsList = () => {
                   </div>
                   <div>
                     <h3 className="text-white font-semibold text-lg">{app.name}</h3>
-                    <p className="text-gray-400 text-sm">{app.role}</p>
-                    <p className="text-gray-500 text-xs">{app.location}</p>
+                    <p className="text-gray-400 text-sm">{app.email}</p>
+                    <p className="text-gray-500 text-xs">{app.location} • Level {app.level}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Award className="w-3 h-3 text-yellow-400" />
+                      <span className="text-xs text-gray-400">{app.xp} XP</span>
+                      <span className="text-xs text-gray-400">•</span>
+                      <span className="text-xs text-gray-400">{app.experience}</span>
+                    </div>
                   </div>
                 </div>
                 
@@ -668,7 +773,41 @@ const ApplicantsList = () => {
                   )}
                 </div>
                 
-                <p className="text-gray-300 text-sm">{app.notes}</p>
+                <p className="text-gray-300 text-sm">{app.bio || app.notes}</p>
+                
+                {/* Portfolio and Social Links */}
+                <div className="flex gap-2 mt-2">
+                  {app.portfolio && (
+                    <a 
+                      href={app.portfolio} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-xs"
+                    >
+                      Portfolio
+                    </a>
+                  )}
+                  {app.github && (
+                    <a 
+                      href={app.github} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white text-xs"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  {app.linkedin && (
+                    <a 
+                      href={app.linkedin} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-xs"
+                    >
+                      LinkedIn
+                    </a>
+                  )}
+                </div>
               </div>
               
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
@@ -698,18 +837,28 @@ const ApplicantsList = () => {
                 </div>
                 
                 <div className="flex gap-1">
-                  <Button 
-                    className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-sm hover:bg-green-500/30 transition-colors duration-300"
-                  >
-                    <CheckCircle className="w-3 h-3 mr-1 inline" />
-                    Shortlist
-                  </Button>
-                  <Button 
-                    className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-sm hover:bg-red-500/30 transition-colors duration-300"
-                  >
-                    <UserX className="w-3 h-3 mr-1 inline" />
-                    Reject
-                  </Button>
+                  {app.status === 'applied' || app.status === 'Applied' ? (
+                    <>
+                      <Button
+                        onClick={() => handleStatusUpdate(app.id, app.projectId, app.userId, 'shortlisted')}
+                        className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-sm hover:bg-green-500/30 transition-colors duration-300"
+                      >
+                        <CheckCircle className="w-3 h-3 mr-1 inline" />
+                        Shortlist
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusUpdate(app.id, app.projectId, app.userId, 'rejected')}
+                        className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-sm hover:bg-red-500/30 transition-colors duration-300"
+                      >
+                        <UserX className="w-3 h-3 mr-1 inline" />
+                        Reject
+                      </Button>
+                    </>
+                  ) : (
+                    <span className={`px-3 py-1 text-sm font-semibold rounded-full border ${statusColors[app.status]}`}>
+                      {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

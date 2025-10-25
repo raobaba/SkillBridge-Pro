@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useSelector } from "react-redux";
 import {
   Search,
   Filter,
@@ -32,6 +33,9 @@ import {
   getPublicProjects,
   getSearchSuggestions,
   loadAppliedProjects,
+  getProject,
+  getMyApplications,
+  getMyApplicationsCount,
 } from "../slice/projectSlice";
 
 const DeveloperProjects = ({
@@ -138,11 +142,13 @@ const DeveloperProjects = ({
   }), []);
 
   // Prefer authenticated projects; fallback to publicProjects (memoized)
+  const isDeveloper = user?.role === "developer";
   const baseProjects = useMemo(
     () => (projects && projects.length > 0 ? projects : publicProjects || []),
     [projects, publicProjects]
   );
-  const isPublicOnly = !projects || projects.length === 0; // display-only mode when showing public feed
+  // If user is a developer, always allow actions (apply/save/favorite) even when using public feed
+  const isPublicOnly = (!isDeveloper) && (!projects || projects.length === 0);
 
   // Load saves from Redux when component mounts
   useEffect(() => {
@@ -157,6 +163,66 @@ const DeveloperProjects = ({
     [baseProjects]
   );
   const [filteredProjects, setFilteredProjects] = useState([]);
+  const [appliedProjectsData, setAppliedProjectsData] = useState({}); // { [id]: project }
+  const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount) ?? appliedProjects.length;
+  const myApplications = useSelector((state) => state.project?.myApplications) || [];
+
+  // Create proper application status mapping from myApplications data
+  const applicationStatusMap = useMemo(() => {
+    const statusMap = {};
+    (myApplications || []).forEach(app => {
+      if (app.projectId) {
+        statusMap[app.projectId] = {
+          status: app.status || 'applied',
+          appliedAt: app.appliedAt || app.createdAt,
+          notes: app.notes || '',
+          id: app.id
+        };
+      }
+    });
+    return statusMap;
+  }, [myApplications]);
+
+  // Normalize applied state for list rendering using proper application data
+  const isAppliedTo = useCallback((projectId) => {
+    return applicationStatusByProjectId[projectId] || applicationStatusMap[projectId] || false;
+  }, [applicationStatusByProjectId, applicationStatusMap]);
+
+  // Get application status for a project
+  const getApplicationStatus = useCallback((projectId) => {
+    // Check optimistic updates first
+    if (applicationStatusByProjectId[projectId]) {
+      return applicationStatusByProjectId[projectId];
+    }
+    // Then check actual application data
+    const appData = applicationStatusMap[projectId];
+    if (appData) {
+      return appData.status;
+    }
+    return null;
+  }, [applicationStatusByProjectId, applicationStatusMap]);
+
+  // Resolve a project by id from multiple sources
+  const getProjectById = useCallback((id) => {
+    if (!id) return null;
+    const fromLocal = (projects || []).find((p) => p.id === id);
+    if (fromLocal) return mapProjectData(fromLocal);
+    const fromPublic = (publicProjects || []).find((p) => p.id === id);
+    if (fromPublic) return mapProjectData(fromPublic);
+    const fromAppliedCache = appliedProjectsData[id];
+    if (fromAppliedCache) return mapProjectData(fromAppliedCache);
+    return null;
+  }, [projects, publicProjects, appliedProjectsData, mapProjectData]);
+
+  // Build unified list of application project objects for Applications tab
+  const applicationProjectItems = useMemo(() => {
+    const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
+    const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
+    const uniqueIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
+    return uniqueIds
+      .map((id) => ({ id, project: getProjectById(id) }))
+      .filter((x) => !!x.project && isAppliedTo(x.id));
+  }, [myApplications, appliedProjects, getProjectById, isAppliedTo]);
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -366,7 +432,7 @@ const DeveloperProjects = ({
       await dispatch(
         applyToProject({
           projectId,
-          coverLetter: "I am interested in this project",
+          notes: "I am interested in this project",
         })
       ).unwrap();
       setApplicationStatusByProjectId((prev) => ({
@@ -380,6 +446,9 @@ const DeveloperProjects = ({
         } else {
           await dispatch(require("../slice/projectSlice").listProjects()).unwrap();
         }
+        // Refresh my applications state
+        await dispatch(getMyApplications());
+        await dispatch(getMyApplicationsCount());
       } catch {}
     } catch (error) {
       // Silent fail for better UX
@@ -389,13 +458,19 @@ const DeveloperProjects = ({
   const handleWithdrawApplication = useCallback(async (projectId) => {
     try {
       const res = await dispatch(withdrawApplication({ projectId })).unwrap();
+      
+      // Update local state immediately for better UX
       setApplicationStatusByProjectId((prev) => {
         const next = { ...prev };
         delete next[projectId];
         return next;
       });
 
-      // Refresh projects so server-side applicantsCount reflects immediately
+      // Show success message
+      // toast.success("Application withdrawn successfully");
+
+      // Optional: Refresh projects to ensure server-side data is in sync
+      // This is now optional since Redux state is updated immediately
       try {
         if (isPublicOnly) {
           await dispatch(require("../slice/projectSlice").getPublicProjects()).unwrap();
@@ -407,6 +482,45 @@ const DeveloperProjects = ({
       toast.error(e?.message || "Failed to withdraw application");
     }
   }, [dispatch, isPublicOnly]);
+
+  // Load my applications and count when switching to Applications tab
+  useEffect(() => {
+    if (activeTab === "applications") {
+      dispatch(getMyApplications());
+      dispatch(getMyApplicationsCount());
+    }
+  }, [activeTab, dispatch]);
+
+  // Ensure Applications tab shows applied projects even if not in current lists
+  useEffect(() => {
+    const populateAppliedDetails = async () => {
+      if (activeTab !== "applications") return;
+      const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
+      const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
+      const allIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
+      if (allIds.length === 0) return;
+
+      const existingIds = new Set([
+        ...((projects || []).map((p) => p.id)),
+        ...((publicProjects || []).map((p) => p.id)),
+        ...Object.keys(appliedProjectsData).map((k) => Number(k)),
+      ]);
+
+      for (const id of allIds) {
+        if (!existingIds.has(id)) {
+          try {
+            const res = await dispatch(getProject(id)).unwrap();
+            const proj = res?.project;
+            if (proj?.id) {
+              setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
+            }
+          } catch {}
+        }
+      }
+    };
+    populateAppliedDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, appliedProjects, myApplications, dispatch, projects, publicProjects]);
 
   const handleOpenDetails = useCallback((project) => {
     setSelectedProject(project);
@@ -568,6 +682,8 @@ const DeveloperProjects = ({
     matches: filteredProjects.length,
   }), [displayProjects.length, appliedProjects.length, saves, favoriteIdsSet.size, filteredProjects.length]);
 
+  console.log("appliedProjects",appliedProjects)
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
       <div className='px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto'>
@@ -629,7 +745,7 @@ const DeveloperProjects = ({
                         : "text-gray-300 hover:bg-white/10"
                     }`}
                   >
-                    Applications ({appliedProjects.length})
+                    Applications ({applicationProjectItems.length})
                   </Button>
                 </div>
               </div>
@@ -1054,15 +1170,15 @@ const DeveloperProjects = ({
                     {!isPublicOnly && (
                       <Button
                         onClick={() => handleApplyToProject(project.id)}
-                        disabled={appliedProjects.includes(project.id)}
+                        disabled={!!getApplicationStatus(project.id)}
                         className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
-                          appliedProjects.includes(project.id)
+                          getApplicationStatus(project.id)
                             ? "bg-green-500/20 text-green-400 cursor-not-allowed"
                             : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
                         }`}
                       >
-                        {appliedProjects.includes(project.id)
-                          ? "Applied"
+                        {getApplicationStatus(project.id)
+                          ? getApplicationStatus(project.id).charAt(0).toUpperCase() + getApplicationStatus(project.id).slice(1)
                           : "Apply"}
                       </Button>
                     )}
@@ -1260,21 +1376,21 @@ const DeveloperProjects = ({
                   </tr>
                 </thead>
                 <tbody className='divide-y divide-white/10'>
-                  {appliedProjects.map((projectId) => {
-                    const project = projects.find((p) => p.id === projectId);
+                  {applicationProjectItems.map(({ id: projectId, project }) => {
                     if (!project) return null;
-                    const status =
-                      applicationStatusByProjectId[projectId] || "Applied";
+                    const applicationData = applicationStatusMap[projectId];
+                    const status = applicationData ? applicationData.status : null;
+                    const appliedAt = applicationData ? applicationData.appliedAt : null;
                     const statusColors = {
-                      Applied:
+                      applied:
                         "bg-blue-500/20 text-blue-400 border-blue-500/30",
-                      Shortlisted:
+                      shortlisted:
                         "bg-green-500/20 text-green-400 border-green-500/30",
-                      Interviewing:
+                      interviewing:
                         "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-                      Accepted:
+                      accepted:
                         "bg-purple-500/20 text-purple-400 border-purple-500/30",
-                      Rejected: "bg-red-500/20 text-red-400 border-red-500/30",
+                      rejected: "bg-red-500/20 text-red-400 border-red-500/30",
                     };
                     return (
                       <tr
@@ -1299,13 +1415,19 @@ const DeveloperProjects = ({
                         <td className='px-6 py-4 text-white'>
                           {project.company}
                         </td>
-                        <td className='px-6 py-4 text-gray-300'>Recently</td>
+                        <td className='px-6 py-4 text-gray-300'>
+                          {appliedAt ? new Date(appliedAt).toLocaleDateString() : 'Recently'}
+                        </td>
                         <td className='px-6 py-4'>
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}
-                          >
-                            {status}
-                          </span>
+                          {status ? (
+                            <span
+                              className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}
+                            >
+                              {status ? status.charAt(0).toUpperCase() + status.slice(1) : '—'}
+                            </span>
+                          ) : (
+                            <span className='text-gray-400 text-xs'>—</span>
+                          )}
                         </td>
                         <td className='px-6 py-4'>
                           <div className='flex items-center gap-2'>
@@ -1348,7 +1470,7 @@ const DeveloperProjects = ({
                       </tr>
                     );
                   })}
-                  {appliedProjects.length === 0 && (
+                  {applicationProjectItems.length === 0 && (
                     <tr>
                       <td
                         colSpan='5'

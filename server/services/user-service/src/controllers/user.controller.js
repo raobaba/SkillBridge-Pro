@@ -52,12 +52,45 @@ const registerUser = async (req, res) => {
     const emailBody = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Email Verification",
+      subject: "✅ Welcome to SkillBridge Pro - Verify Your Email",
       html: `
-        <p>Hello ${name},</p>
-        <p>Please verify your email by clicking below:</p>
-        <a href="${verificationUrl}" style="color:blue;">Verify Email</a>
-        <p>This link is valid for 15 minutes.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Welcome to SkillBridge Pro!</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello ${name},</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              Thank you for joining SkillBridge Pro! We're excited to have you on board. To get started, please verify your email address.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
+              <h3 style="color: #28a745; margin-top: 0;">🚀 What's Next?</h3>
+              <ul style="color: #666; line-height: 1.6;">
+                <li>Verify your email to activate your account</li>
+                <li>Complete your profile setup</li>
+                <li>Start exploring projects or posting your own</li>
+                <li>Connect with developers and project owners</li>
+              </ul>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${verificationUrl}" 
+                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                ✅ Verify My Email
+              </a>
+            </div>
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+              <p style="color: #856404; margin: 0; font-size: 14px;">
+                <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
+              </p>
+            </div>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              If you didn't create an account with SkillBridge Pro, you can safely ignore this email.
+            </p>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This email was sent from SkillBridge Pro</p>
+          </div>
+        </div>
       `,
     };
 
@@ -171,12 +204,42 @@ const loginUser = async (req, res) => {
       const emailBody = {
         from: process.env.EMAIL_USER,
         to: user.email,
-        subject: "Verify Your Email",
+        subject: "🔐 Email Verification Required - SkillBridge Pro",
         html: `
-          <p>Hello ${user.name},</p>
-          <p>Please verify your email to login:</p>
-          <a href="${verificationUrl}" style="color:blue;">Verify Email</a>
-          <p>This link will expire in 15 minutes.</p>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🔐 Email Verification Required</h1>
+            </div>
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">Hello ${user.name},</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                We noticed you're trying to log in to SkillBridge Pro, but your email address hasn't been verified yet. Please verify your email to access your account.
+              </p>
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+                <h3 style="color: #dc3545; margin-top: 0;">⚠️ Action Required</h3>
+                <p style="color: #666; line-height: 1.6; margin: 0;">
+                  To complete your login and access all features of SkillBridge Pro, please verify your email address by clicking the button below.
+                </p>
+              </div>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" 
+                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                  ✅ Verify My Email Now
+                </a>
+              </div>
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">
+                  <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
+                </p>
+              </div>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                Once verified, you'll be able to log in and access all the amazing features of SkillBridge Pro!
+              </p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This email was sent from SkillBridge Pro</p>
+            </div>
+          </div>
         `,
       };
 
@@ -275,12 +338,49 @@ const forgetPassword = async (req, res) => {
     const emailBody = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: "Password Reset Request",
+      subject: "🔒 Password Reset Request - SkillBridge Pro",
       html: `
-        <p>Hello,</p>
-        <p>You requested a password reset. Click the link below to reset your password:</p>
-        <a href="${resetUrl}" style="color:blue;">Reset Password</a>
-        <p>This link is valid for 15 minutes.</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🔒 Password Reset Request</h1>
+          </div>
+          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+            <h2 style="color: #333; margin-top: 0;">Hello,</h2>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              We received a request to reset your password for your SkillBridge Pro account. If you made this request, please click the button below to reset your password.
+            </p>
+            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
+              <h3 style="color: #dc3545; margin-top: 0;">🔐 Security Notice</h3>
+              <p style="color: #666; line-height: 1.6; margin: 0;">
+                For your security, this password reset link will expire in 15 minutes. If you didn't request this reset, please ignore this email and your password will remain unchanged.
+              </p>
+            </div>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" 
+                 style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                🔒 Reset My Password
+              </a>
+            </div>
+            <div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8; margin: 20px 0;">
+              <h4 style="color: #0c5460; margin-top: 0;">💡 Security Tips:</h4>
+              <ul style="color: #0c5460; line-height: 1.6; margin: 0; padding-left: 20px;">
+                <li>Use a strong, unique password</li>
+                <li>Don't share your password with anyone</li>
+                <li>Enable two-factor authentication if available</li>
+                <li>Log out from shared devices</li>
+              </ul>
+            </div>
+            <p style="color: #666; font-size: 16px; line-height: 1.6;">
+              If you're having trouble with the button above, copy and paste the following link into your browser:
+            </p>
+            <div style="background: #e9ecef; padding: 10px; border-radius: 5px; word-break: break-all; font-family: monospace; font-size: 12px; color: #495057;">
+              ${resetUrl}
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+            <p>This email was sent from SkillBridge Pro</p>
+          </div>
+        </div>
       `,
     };
 

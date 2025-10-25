@@ -3,30 +3,26 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Button, Input, Modal } from '../../../components';
 import {
   Search,
-  User,
-  Mail,
   MapPin,
   Star,
   Clock,
   Award,
-  Code,
   Filter,
   Send,
   CheckCircle,
   Users,
   Briefcase,
-  Calendar,
-  DollarSign,
   Globe,
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getDevelopers } from '../slice/projectSlice';
+import { getDevelopers, createInvite, listProjects } from '../slice/projectSlice';
 
 const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   const dispatch = useDispatch();
-  const { developers, developersLoading, error } = useSelector((state) => state.project);
+  const { developers, developersLoading, projects, error } = useSelector((state) => state.project);
+  const { user } = useSelector((state) => state.user);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -34,6 +30,24 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [invitedDevelopers, setInvitedDevelopers] = useState(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [invitingDeveloper, setInvitingDeveloper] = useState(null);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedDeveloper, setSelectedDeveloper] = useState(null);
+  const [customMessage, setCustomMessage] = useState('');
+  const [currentProject, setCurrentProject] = useState(selectedProject);
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+
+  // Load user's projects on component mount
+  useEffect(() => {
+    if (user?.id && user?.role === 'project-owner') {
+      dispatch(listProjects({ ownerId: user.id }));
+    }
+  }, [dispatch, user?.id, user?.role]);
+
+  // Update current project when selectedProject prop changes
+  useEffect(() => {
+    setCurrentProject(selectedProject);
+  }, [selectedProject]);
 
   // Fetch developers on component mount
   useEffect(() => {
@@ -96,20 +110,57 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     });
   }, [developers, searchQuery, selectedExperience, selectedLocation, selectedSkills]);
 
-  const handleInviteDeveloper = async (developer) => {
+  const handleInviteDeveloper = (developer) => {
+    if (!currentProject) {
+      toast.error('No project selected');
+      return;
+    }
+
+    // Set default message
+    const defaultMessage = `Hi ${developer.name}, I'd like to invite you to join my project "${currentProject.title}". Your skills in ${developer.skills?.join(', ') || 'development'} would be a great fit for this project.`;
+    setCustomMessage(defaultMessage);
+    setSelectedDeveloper(developer);
+    setShowInviteModal(true);
+  };
+
+  const handleSendInvite = async () => {
+    if (!selectedDeveloper || !currentProject) {
+      toast.error('Missing required information');
+      return;
+    }
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setInvitingDeveloper(selectedDeveloper.id);
       
-      setInvitedDevelopers(prev => new Set([...prev, developer.id]));
-      toast.success(`Invitation sent to ${developer.name}!`);
+      // Prepare invite data
+      const inviteData = {
+        projectId: currentProject.id,
+        invitedEmail: selectedDeveloper.email,
+        invitedUserId: selectedDeveloper.id, // Use developer ID if available
+        role: selectedDeveloper.domainPreferences || 'Developer',
+        message: customMessage.trim() || `Hi ${selectedDeveloper.name}, I'd like to invite you to join my project "${currentProject.title}".`
+      };
+
+      // Dispatch the createInvite action
+      const result = await dispatch(createInvite(inviteData)).unwrap();
+      
+      // If successful, update local state
+      setInvitedDevelopers(prev => new Set([...prev, selectedDeveloper.id]));
+      toast.success(`Invitation sent to ${selectedDeveloper.name}!`);
       
       if (onInviteSent) {
-        onInviteSent(developer);
+        onInviteSent(selectedDeveloper);
       }
+
+      // Close modal and reset state
+      setShowInviteModal(false);
+      setSelectedDeveloper(null);
+      setCustomMessage('');
     } catch (error) {
-      toast.error('Failed to send invitation');
+      console.error('Invite error:', error);
+      toast.error(error?.message || 'Failed to send invitation');
     } finally {
+      setInvitingDeveloper(null);
     }
   };
 
@@ -121,18 +172,113 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     );
   };
 
+  const handleProjectSelect = (project) => {
+    setCurrentProject(project);
+    setShowProjectSelector(false);
+    toast.success(`Selected project: ${project.title}`);
+  };
+
   return (
     <Modal
       isOpen={true}
       onClose={onClose}
       title="Invite Developers"
-      subtitle={selectedProject ? `For: ${selectedProject.title}` : 'Find the perfect developer for your project'}
+      subtitle={currentProject ? `For: ${currentProject.title}` : 'Find the perfect developer for your project'}
       icon={Users}
       size="xlarge"
     >
 
         {/* Search and Filters */}
         <div className="p-6 border-b border-white/10">
+          {/* Project Selector */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Project for Invitation
+              </label>
+              {projects && projects.length > 1 && (
+                <Button
+                  onClick={() => setShowProjectSelector(!showProjectSelector)}
+                  variant="ghost"
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  {showProjectSelector ? 'Hide Projects' : 'Change Project'}
+                </Button>
+              )}
+            </div>
+            
+            {/* Current Project Display */}
+            <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+              currentProject 
+                ? 'bg-white/5 border-white/10' 
+                : 'bg-red-500/10 border-red-500/20'
+            }`}>
+              <div className="flex-1 min-w-0">
+                <h4 className={`font-semibold truncate ${
+                  currentProject ? 'text-white' : 'text-red-400'
+                }`}>
+                  {currentProject?.title || 'No project selected'}
+                </h4>
+                <p className={`text-sm truncate ${
+                  currentProject ? 'text-gray-400' : 'text-red-300'
+                }`}>
+                  {currentProject?.description || 'Select a project to invite developers'}
+                </p>
+              </div>
+              {currentProject ? (
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400 border border-green-500/30">
+                    {currentProject.status || 'Active'}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-400 border border-red-500/30">
+                    Required
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Project Selector Dropdown */}
+            {showProjectSelector && projects && projects.length > 0 && (
+              <div className="mt-3 p-3 bg-white/5 rounded-lg border border-white/10 max-h-40 overflow-y-auto">
+                <div className="space-y-2">
+                  {projects.map(project => (
+                    <button
+                      key={project.id}
+                      onClick={() => handleProjectSelect(project)}
+                      className={`w-full text-left p-3 rounded-lg transition-colors duration-200 ${
+                        currentProject?.id === project.id
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-white/5 hover:bg-white/10 text-white border border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="font-medium truncate">{project.title}</h5>
+                          <p className="text-sm text-gray-400 truncate">{project.description}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            project.status === 'Active' 
+                              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                              : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                          }`}>
+                            {project.status || 'Active'}
+                          </span>
+                          {currentProject?.id === project.id && (
+                            <CheckCircle className="w-4 h-4 text-blue-400" />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
@@ -320,10 +466,12 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                 {/* Action Button */}
                 <Button
                   onClick={() => handleInviteDeveloper(developer)}
-                  disabled={invitedDevelopers.has(developer.id)}
+                  disabled={invitedDevelopers.has(developer.id) || invitingDeveloper === developer.id}
                   className={`w-full ${
                     invitedDevelopers.has(developer.id)
                       ? 'bg-green-500/20 text-green-400 cursor-not-allowed'
+                      : invitingDeveloper === developer.id
+                      ? 'bg-yellow-500/20 text-yellow-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white'
                   } px-3 py-2 rounded-lg text-sm transition-all duration-300 flex items-center justify-center gap-2`}
                 >
@@ -331,6 +479,11 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                     <>
                       <CheckCircle className="w-4 h-4" />
                       Invited
+                    </>
+                  ) : invitingDeveloper === developer.id ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                      Sending...
                     </>
                   ) : (
                     <>
@@ -353,6 +506,92 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
             </>
           )}
         </div>
+
+        {/* Invite Customization Modal */}
+        {showInviteModal && selectedDeveloper && (
+          <Modal
+            isOpen={showInviteModal}
+            onClose={() => {
+              setShowInviteModal(false);
+              setSelectedDeveloper(null);
+              setCustomMessage('');
+            }}
+            title="Customize Invitation"
+            subtitle={`Send invitation to ${selectedDeveloper.name}`}
+            icon={Send}
+            size="medium"
+          >
+            <div className="p-6 space-y-4">
+              {/* Developer Info */}
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg border border-white/10">
+                <img
+                  src={selectedDeveloper.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedDeveloper.name)}&background=random`}
+                  alt={selectedDeveloper.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                <div>
+                  <h4 className="text-white font-semibold">{selectedDeveloper.name}</h4>
+                  <p className="text-gray-400 text-sm">{selectedDeveloper.domainPreferences || 'Developer'}</p>
+                </div>
+              </div>
+
+              {/* Project Info */}
+              <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <h5 className="text-blue-400 font-medium mb-1">Project: {currentProject?.title}</h5>
+                <p className="text-gray-300 text-sm">Role: {selectedDeveloper.domainPreferences || 'Developer'}</p>
+              </div>
+
+              {/* Custom Message */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Personal Message (Optional)
+                </label>
+                <textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Add a personal message to your invitation..."
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-gray-400 resize-none"
+                  rows={4}
+                />
+                <p className="text-gray-400 text-xs mt-1">
+                  This message will be included in the email invitation.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setSelectedDeveloper(null);
+                    setCustomMessage('');
+                  }}
+                  variant="ghost"
+                  className="flex-1 bg-white/10 hover:bg-white/20 text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSendInvite}
+                  disabled={invitingDeveloper === selectedDeveloper.id}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {invitingDeveloper === selectedDeveloper.id ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send Invitation
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
     </Modal>
   );
 };

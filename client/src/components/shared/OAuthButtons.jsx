@@ -1,8 +1,13 @@
 import React from "react";
 import { Github, Linkedin, Mail } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import {Button,Input} from "../../components"
 
 const OAuthButtons = ({ onOAuthClick, className = "" }) => {
+  const [searchParams] = useSearchParams();
+  
+  // Get redirect URL from query parameters
+  const redirectTo = searchParams.get('redirect_to');
   const oauthProviders = [
     {
       id: "github",
@@ -25,7 +30,16 @@ const OAuthButtons = ({ onOAuthClick, className = "" }) => {
   ];
 
   const handleOAuthClick = (provider) => {
-    window.location.href = `${import.meta.env.VITE_APP_API_URL}api/v1/auth/${provider}`;
+    // Build OAuth URL with redirect parameter if present
+    let oauthUrl = `${import.meta.env.VITE_APP_API_URL}api/v1/auth/${provider}`;
+    
+    if (redirectTo) {
+      // Add redirect parameter to OAuth URL
+      const redirectParam = encodeURIComponent(redirectTo);
+      oauthUrl += `?redirect_to=${redirectParam}`;
+    }
+    
+    window.location.href = oauthUrl;
     if (onOAuthClick) onOAuthClick(provider);
   };
 

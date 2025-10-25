@@ -93,6 +93,20 @@ projectRouter.get(
   projectController.listApplicants
 );
 
+// 👤 Developer self applications
+projectRouter.get(
+  "/applications/my",
+  authenticate,
+  requireDeveloper,
+  projectController.listMyApplications
+);
+projectRouter.get(
+  "/applications/my/count",
+  authenticate,
+  requireDeveloper,
+  projectController.getMyApplicationsCount
+);
+
 // 📧 Invitation Management (Only project owners can send invites, developers can respond)
 projectRouter.post(
   "/invite",
@@ -140,6 +154,9 @@ projectRouter.get("/:projectId/updates", projectController.getProjectUpdates);
 projectRouter.get("/:projectId/reviews", projectController.getProjectReviews);
 projectRouter.get("/:projectId/boosts", projectController.getProjectBoosts);
 projectRouter.get("/:projectId/stats", projectController.getProjectStats);
+
+// 📄 PDF Report Generation (Project owners only)
+projectRouter.post("/analytics/download", authenticate, requireProjectManager, projectController.generateApplicantsReport);
 
 // 🔍 Advanced Search & Discovery
 projectRouter.get("/search", projectController.searchProjects);

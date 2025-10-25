@@ -2,7 +2,7 @@ const { pgTable, serial, text, integer, timestamp, pgEnum, numeric } = require("
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { ProjectsModel, projectsTable } = require("./projects.model");
+const { projectsTable } = require("./projects.model");
 
 // Enums
 const applicantStatusEnum = pgEnum("applicant_status", [
@@ -36,7 +36,8 @@ class ProjectApplicantsModel {
       status: "applied",
     }).returning();
     
-    // bump counters (best effort)
+    // bump counters (best effort) - lazy require to avoid circular dependency
+    const { ProjectsModel } = require("./projects.model");
     await ProjectsModel.updateApplicantsCount(projectId, 1);
     return row;
   }
@@ -69,10 +70,40 @@ class ProjectApplicantsModel {
   }
 
   static async listApplicants(projectId) {
-    return await db
-      .select()
-      .from(projectApplicantsTable)
-      .where(eq(projectApplicantsTable.projectId, projectId));
+    const { sql } = require("drizzle-orm");
+    
+    // Get applicants with user profile information
+    const applicants = await db.execute(sql`
+      SELECT 
+        pa.id,
+        pa.project_id as "projectId",
+        pa.user_id as "userId",
+        pa.status,
+        pa.match_score as "matchScore",
+        pa.rating,
+        pa.notes,
+        pa.applied_at as "appliedAt",
+        pa.updated_at as "updatedAt",
+        u.name,
+        u.email,
+        u.bio,
+        u.avatar_url as "avatarUrl",
+        u.experience,
+        u.location,
+        u.availability,
+        u.skills,
+        u.github_url as "githubUrl",
+        u.linkedin_url as "linkedinUrl",
+        u.portfolio_url as "portfolioUrl",
+        u.level,
+        u.xp
+      FROM project_applicants pa
+      LEFT JOIN users u ON pa.user_id = u.id
+      WHERE pa.project_id = ${projectId} AND u.is_deleted = false
+      ORDER BY pa.applied_at DESC
+    `);
+    
+    return applicants.rows || [];
   }
 
   static async getApplicantByProjectAndUser(projectId, userId) {
@@ -88,6 +119,23 @@ class ProjectApplicantsModel {
       .select()
       .from(projectApplicantsTable)
       .where(and(eq(projectApplicantsTable.projectId, projectId), eq(projectApplicantsTable.status, status)));
+  }
+
+  static async listApplicationsByUser(userId) {
+    return await db
+      .select()
+      .from(projectApplicantsTable)
+      .where(eq(projectApplicantsTable.userId, userId));
+  }
+
+  static async countApplicationsByUser(userId) {
+    const { sql } = require("drizzle-orm");
+    const result = await db
+      .select({ count: sql`count(*)` })
+      .from(projectApplicantsTable)
+      .where(eq(projectApplicantsTable.userId, userId));
+    const countVal = Array.isArray(result) && result[0] && result[0].count != null ? Number(result[0].count) : 0;
+    return countVal;
   }
 }
 

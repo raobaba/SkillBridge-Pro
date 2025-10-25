@@ -42,6 +42,7 @@ import {
   getProjectStats,
   listApplicants,
   listProjects,
+  updateApplicantStatus,
 } from "../slice/projectSlice";
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
@@ -73,6 +74,14 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
     }
   }, [projects]);
 
+  // Ensure owner's projects are loaded into Redux when viewing Applicants tab
+  useEffect(() => {
+    if (activeTab === 'applicants') {
+      const ownerId = user?.id || user?.userId;
+      dispatch(listProjects(ownerId ? { ownerId } : undefined));
+    }
+  }, [activeTab, user?.id, user?.userId, dispatch]);
+
   // Handle toast notifications
   useEffect(() => {
     if (message) {
@@ -97,23 +106,41 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       );
       setProjectStats(statsResults);
 
-      // Load applicants for each project (fault-tolerant)
-      const applicantsResults = await Promise.all(
-        projects.map(async (project) => {
-          try {
-            return await dispatch(listApplicants(project.id)).unwrap();
-          } catch (e) {
-            return { applicants: [] };
-          }
-        })
-      );
+      // Load applicants for each owned project (fault-tolerant)
       const applicantsMap = {};
-      projects.forEach((project, index) => {
-        applicantsMap[project.id] = applicantsResults[index];
-      });
+      for (const project of projects) {
+        try {
+          const res = await dispatch(listApplicants(project.id)).unwrap();
+          applicantsMap[project.id] = res?.applicants || [];
+        } catch (e) {
+          applicantsMap[project.id] = [];
+        }
+      }
       setProjectApplicants(applicantsMap);
     } catch (error) {
       console.error("Error loading project data:", error);
+    }
+  };
+
+  const handleApplicantStatus = async (projectId, userId, status) => {
+    try {
+      await dispatch(updateApplicantStatus({ projectId, userId, status })).unwrap();
+      // Optimistically update local state so UI reflects immediately
+      setProjectApplicants((prev) => {
+        const current = Array.isArray(prev[projectId]) ? [...prev[projectId]] : [];
+        const idx = current.findIndex((a) => a.userId === userId);
+        if (idx !== -1) {
+          current[idx] = { ...current[idx], status };
+        }
+        return { ...prev, [projectId]: current };
+      });
+      // Best-effort refresh from server to ensure we reflect canonical state
+      try {
+        const res = await dispatch(listApplicants(projectId)).unwrap();
+        setProjectApplicants((prev) => ({ ...prev, [projectId]: res?.applicants || [] }));
+      } catch {}
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -240,6 +267,250 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       responseTime,
     };
   }, [ownedProjects]);
+
+  // Additional computed analytics derived from applicants and project metadata
+  const computedAnalytics = useMemo(() => {
+    // Flatten all applicants with timestamps
+    const allApplicants = Object.values(projectApplicants || {}).flat().filter(Boolean);
+
+    // Helper: date boundaries
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const sevenDaysAgo = new Date(startOfToday);
+    sevenDaysAgo.setDate(startOfToday.getDate() - 7);
+
+    const thisWeekApplicants = allApplicants.filter((a) => {
+      const ts = a?.appliedAt ? new Date(a.appliedAt) : null;
+      return ts && ts >= sevenDaysAgo;
+    }).length;
+
+    // Budget utilization: percent of projects that have both min & max defined
+    const totalProjects = ownedProjects.length;
+    const withBudget = ownedProjects.filter((p) => Boolean(p.budgetMin) && Boolean(p.budgetMax)).length;
+    const budgetUtilizationPct = totalProjects > 0 ? Math.round((withBudget / totalProjects) * 100) : 0;
+
+    // Top skills by frequency across owned projects
+    const skillCounts = new Map();
+    ownedProjects.forEach((p) => {
+      (Array.isArray(p.skills) ? p.skills : []).forEach((skill) => {
+        const key = String(skill).trim();
+        if (!key) return;
+        skillCounts.set(key, (skillCounts.get(key) || 0) + 1);
+      });
+    });
+    const sortedSkills = Array.from(skillCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+    const topSkillMax = sortedSkills[0]?.[1] || 1;
+    const topSkills = sortedSkills.map(([name, count]) => ({
+      name,
+      count,
+      pct: Math.max(10, Math.round((count / topSkillMax) * 100)),
+    }));
+
+    // Monthly performance (last 3 months) based on applicants and project createdAt
+    const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const months = [0, 1, 2].map((i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      return { key: monthKey(d), label: i === 0 ? 'This Month' : i === 1 ? 'Last Month' : '2 Months Ago' };
+    });
+
+    const applicantsByMonth = new Map();
+    allApplicants.forEach((a) => {
+      const ts = a?.appliedAt ? new Date(a.appliedAt) : null;
+      if (!ts) return;
+      const key = monthKey(ts);
+      applicantsByMonth.set(key, (applicantsByMonth.get(key) || 0) + 1);
+    });
+
+    const projectsByMonth = new Map();
+    ownedProjects.forEach((p) => {
+      const ts = p?.createdAt ? new Date(p.createdAt) : null;
+      if (!ts) return;
+      const key = monthKey(ts);
+      projectsByMonth.set(key, (projectsByMonth.get(key) || 0) + 1);
+    });
+
+    const monthlyPerformance = months.map((m) => ({
+      label: m.label,
+      projects: projectsByMonth.get(m.key) || 0,
+      applicants: applicantsByMonth.get(m.key) || 0,
+    }));
+
+    const totalApplicantsDyn = allApplicants.length;
+
+    return {
+      thisWeekApplicants,
+      budgetUtilizationPct,
+      topSkills,
+      monthlyPerformance,
+      totalApplicantsDyn,
+    };
+  }, [projectApplicants, ownedProjects]);
+
+  // ----- Analytics Actions: Export, Report, Share -----
+  const buildAnalyticsDataset = () => {
+    return {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        totalProjects: dashboardStats.totalProjects,
+        activeProjects: dashboardStats.activeProjects,
+        totalApplicants: computedAnalytics.totalApplicantsDyn || dashboardStats.totalApplicants,
+        newApplicantsThisWeek: computedAnalytics.thisWeekApplicants,
+        avgRating: Number(dashboardStats.avgRating || 0),
+        completionRate: dashboardStats.completionRate,
+        budgetUtilizationPct: computedAnalytics.budgetUtilizationPct,
+      },
+      monthlyPerformance: computedAnalytics.monthlyPerformance,
+      topSkills: computedAnalytics.topSkills,
+      projects: ownedProjects,
+      applicantsByProject: projectApplicants,
+    };
+  };
+
+  const downloadBlob = (dataString, filename, mimeType) => {
+    try {
+      const blob = new Blob([dataString], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${filename}`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to download file');
+    }
+  };
+
+  const projectsToCsv = () => {
+    const headers = [
+      'id','title','status','priority','applicantsCount','rating','budgetMin','budgetMax','isRemote','isUrgent','isFeatured','createdAt','updatedAt'
+    ];
+    const rows = ownedProjects.map((p) => [
+      p.id,
+      (p.title || '').toString().replace(/\n/g, ' ').replace(/"/g, '""'),
+      p.status,
+      p.priority,
+      p.applicantsCount || 0,
+      p.rating || 0,
+      p.budgetMin || '',
+      p.budgetMax || '',
+      p.isRemote ? 'yes' : 'no',
+      p.isUrgent ? 'yes' : 'no',
+      p.isFeatured ? 'yes' : 'no',
+      p.createdAt || '',
+      p.updatedAt || '',
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.map((v) => typeof v === 'string' && /[",\n]/.test(v) ? `"${v}"` : v).join(','))].join('\n');
+    return csv;
+  };
+
+  const handleExportAnalytics = (format = 'json') => {
+    const dataset = buildAnalyticsDataset();
+    if (format === 'csv') {
+      const csv = projectsToCsv();
+      downloadBlob(csv, `project-analytics-projects-${Date.now()}.csv`, 'text/csv;charset=utf-8;');
+      return;
+    }
+    const json = JSON.stringify(dataset, null, 2);
+    downloadBlob(json, `project-analytics-${Date.now()}.json`, 'application/json');
+  };
+
+  const handleGenerateReport = () => {
+    try {
+      const ds = buildAnalyticsDataset();
+      const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Project Analytics Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; padding: 24px; color: #111827; }
+    h1 { margin: 0 0 8px; }
+    h2 { margin: 24px 0 8px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 8px; }
+    th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; font-size: 12px; }
+    th { background: #f3f4f6; }
+    small { color: #6b7280; }
+  </style>
+  </head>
+  <body>
+    <h1>Project Analytics Report</h1>
+    <small>Generated at ${ds.generatedAt}</small>
+    <h2>Summary</h2>
+    <ul>
+      <li>Total Projects: ${ds.summary.totalProjects}</li>
+      <li>Active Projects: ${ds.summary.activeProjects}</li>
+      <li>Total Applicants: ${ds.summary.totalApplicants}</li>
+      <li>New Applicants (7d): ${ds.summary.newApplicantsThisWeek}</li>
+      <li>Average Rating: ${ds.summary.avgRating}</li>
+      <li>Completion Rate: ${ds.summary.completionRate}%</li>
+      <li>Budget Utilization: ${ds.summary.budgetUtilizationPct}%</li>
+    </ul>
+    <h2>Top Skills</h2>
+    <table>
+      <thead><tr><th>Skill</th><th>Count</th><th>Percent</th></tr></thead>
+      <tbody>
+        ${ds.topSkills.map(s => `<tr><td>${s.name}</td><td>${s.count}</td><td>${s.pct}%</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <h2>Monthly Performance</h2>
+    <table>
+      <thead><tr><th>Month</th><th>Projects</th><th>Applicants</th></tr></thead>
+      <tbody>
+        ${ds.monthlyPerformance.map(m => `<tr><td>${m.label}</td><td>${m.projects}</td><td>${m.applicants}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <h2>Projects</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Title</th><th>Status</th><th>Applicants</th><th>Rating</th><th>Budget Min</th><th>Budget Max</th></tr></thead>
+      <tbody>
+        ${ds.projects.map(p => `<tr><td>${p.id}</td><td>${(p.title || '').replace(/</g,'&lt;')}</td><td>${p.status}</td><td>${p.applicantsCount || 0}</td><td>${p.rating || 0}</td><td>${p.budgetMin || ''}</td><td>${p.budgetMax || ''}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    <script>window.onload = () => { setTimeout(() => window.print(), 300); };</script>
+  </body>
+</html>`;
+      const reportBlob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(reportBlob);
+      window.open(url, '_blank');
+      toast.success('Report opened in a new tab');
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to generate report');
+    }
+  };
+
+  const handleShareInsights = async () => {
+    const ds = buildAnalyticsDataset();
+    const summary = [
+      `Project Analytics Summary`,
+      `Total Projects: ${ds.summary.totalProjects}`,
+      `Active Projects: ${ds.summary.activeProjects}`,
+      `Total Applicants: ${ds.summary.totalApplicants}`,
+      `New Applicants (7d): ${ds.summary.newApplicantsThisWeek}`,
+      `Average Rating: ${ds.summary.avgRating}`,
+      `Completion Rate: ${ds.summary.completionRate}%`,
+      `Budget Utilization: ${ds.summary.budgetUtilizationPct}%`,
+    ].join('\n');
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(summary);
+        toast.success('Insights copied to clipboard');
+      } else {
+        // Fallback: download as .txt
+        downloadBlob(summary, `project-insights-${Date.now()}.txt`, 'text/plain');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to share insights');
+    }
+  };
 
   const handleProjectAction = async (projectId, action) => {
     const project = ownedProjects.find((p) => p.id === projectId);
@@ -880,7 +1151,102 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
           </div>
         )}
 
-        {activeTab === "applicants" && <ApplicantsList />}
+        {activeTab === "applicants" && (
+          <div className='space-y-6'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>Applicants</h2>
+              <span className='text-gray-300 text-sm'>
+                {projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).length || 0), 0)} total applicants
+              </span>
+            </div>
+
+            {/* Per-project applicants tables */}
+            {projects.length === 0 ? (
+              <div className='text-center py-12'>
+                <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+                <p className='text-gray-400 text-lg'>No projects yet</p>
+              </div>
+            ) : (
+              (() => {
+                const projectsWithApplicants = projects.filter((p) => (projectApplicants[p.id] || []).length > 0);
+                if (projectsWithApplicants.length === 0) {
+                  return (
+                    <div className='text-center py-12'>
+                      <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+                      <p className='text-gray-400 text-lg'>No applicants found</p>
+                      <p className='text-gray-500 text-sm mt-2'>Applicants will appear here once developers apply to your projects</p>
+                    </div>
+                  );
+                }
+                return projectsWithApplicants.map((project) => {
+                  const applicants = projectApplicants[project.id] || [];
+                  return (
+                    <div key={project.id} className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden'>
+                      <div className='p-4 border-b border-white/10 flex items-center justify-between'>
+                        <div className='flex items-center gap-3'>
+                          <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
+                            <Briefcase className='w-4 h-4 text-white' />
+                          </div>
+                          <div>
+                            <p className='text-white font-semibold'>{project.title}</p>
+                            <p className='text-gray-400 text-xs'>{project.company || 'Company'} • {project.location || 'Remote'}</p>
+                          </div>
+                        </div>
+                        <div className='text-gray-300 text-sm'>
+                          {applicants.length} applicant{applicants.length === 1 ? '' : 's'}
+                        </div>
+                      </div>
+
+                      <div className='overflow-x-auto'>
+                        <table className='min-w-full'>
+                          <thead className='bg-white/5'>
+                            <tr className='text-left text-gray-400 uppercase text-xs tracking-wider'>
+                              <th className='px-6 py-4'>User ID</th>
+                              <th className='px-6 py-4'>Status</th>
+                              <th className='px-6 py-4'>Notes</th>
+                              <th className='px-6 py-4'>Applied</th>
+                              <th className='px-6 py-4'>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className='divide-y divide-white/10'>
+                            {applicants.map((a) => (
+                              <tr key={a.id} className='hover:bg-white/5 transition-colors duration-200'>
+                                <td className='px-6 py-4 text-white'>{a.userId}</td>
+                                <td className='px-6 py-4'>
+                                  <span className='inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30'>
+                                    {a.status}
+                                  </span>
+                                </td>
+                                <td className='px-6 py-4 text-gray-300'>{a.notes || '—'}</td>
+                                <td className='px-6 py-4 text-gray-300'>{new Date(a.appliedAt).toLocaleString()}</td>
+                                <td className='px-6 py-4'>
+                                  <div className='flex items-center gap-2'>
+                                    <Button
+                                      onClick={() => handleApplicantStatus(project.id, a.userId, 'shortlisted')}
+                                      className='px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30'
+                                    >
+                                      Shortlist
+                                    </Button>
+                                    <Button
+                                      onClick={() => handleApplicantStatus(project.id, a.userId, 'rejected')}
+                                      className='px-2 py-1 text-xs bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30'
+                                    >
+                                      Reject
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            )}
+          </div>
+        )}
 
         {activeTab === "analytics" && (
           <div className='space-y-6'>
@@ -988,14 +1354,17 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   <div className='p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg'>
                     <DollarSign className='w-5 h-5 text-white' />
                   </div>
-                  <span className='text-lg font-bold text-white'>85%</span>
+                  <span className='text-lg font-bold text-white'>{computedAnalytics.budgetUtilizationPct}%</span>
                 </div>
                 <h3 className='text-white font-semibold mb-1'>
                   Budget Utilization
                 </h3>
                 <p className='text-gray-400 text-sm'>Average across projects</p>
                 <div className='mt-3 h-2 w-full bg-white/10 rounded-full overflow-hidden'>
-                  <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-4/5' />
+                  <div
+                    className='h-full bg-gradient-to-r from-yellow-500 to-orange-500'
+                    style={{ width: `${Math.min(100, Math.max(0, computedAnalytics.budgetUtilizationPct))}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -1096,10 +1465,10 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                     </div>
                     <div className='text-right'>
                       <p className='text-2xl font-bold text-white'>
-                        {dashboardStats.totalApplicants}
+                        {computedAnalytics.totalApplicantsDyn || dashboardStats.totalApplicants}
                       </p>
                       <p className='text-green-400 text-sm'>
-                        +{dashboardStats.newApplicants} this week
+                        +{computedAnalytics.thisWeekApplicants} this week
                       </p>
                     </div>
                   </div>
@@ -1209,38 +1578,13 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 iconColor='text-green-400'
               >
                 <div className='space-y-4'>
-                  {[
-                    {
-                      month: "This Month",
-                      projects: dashboardStats.totalProjects,
-                      applicants: dashboardStats.totalApplicants,
-                      color: "from-green-500 to-emerald-500",
-                    },
-                    {
-                      month: "Last Month",
-                      projects: Math.max(0, dashboardStats.totalProjects - 2),
-                      applicants: Math.max(
-                        0,
-                        dashboardStats.totalApplicants - 5
-                      ),
-                      color: "from-blue-500 to-cyan-500",
-                    },
-                    {
-                      month: "2 Months Ago",
-                      projects: Math.max(0, dashboardStats.totalProjects - 4),
-                      applicants: Math.max(
-                        0,
-                        dashboardStats.totalApplicants - 8
-                      ),
-                      color: "from-purple-500 to-pink-500",
-                    },
-                  ].map((item, index) => (
+                  {computedAnalytics.monthlyPerformance.map((item, index) => (
                     <div
-                      key={item.month}
+                      key={item.label}
                       className='flex items-center justify-between p-3 bg-white/5 rounded-lg'
                     >
                       <span className='text-white font-medium'>
-                        {item.month}
+                        {item.label}
                       </span>
                       <div className='flex items-center gap-4'>
                         <div className='text-center'>
@@ -1256,7 +1600,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                           <p className='text-gray-400 text-xs'>Applicants</p>
                         </div>
                         <div
-                          className={`w-3 h-3 rounded-full bg-gradient-to-r ${item.color}`}
+                          className={`w-3 h-3 rounded-full bg-gradient-to-r ${index === 0 ? 'from-green-500 to-emerald-500' : index === 1 ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-pink-500'}`}
                         />
                       </div>
                     </div>
@@ -1271,32 +1615,23 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 iconColor='text-yellow-400'
               >
                 <div className='space-y-3'>
-                  {[
-                    "React",
-                    "JavaScript",
-                    "Node.js",
-                    "Python",
-                    "TypeScript",
-                    "AWS",
-                    "Docker",
-                    "MongoDB",
-                  ].map((skill, index) => (
+                  {computedAnalytics.topSkills.map((s, index) => (
                     <div
-                      key={skill}
+                      key={s.name}
                       className='flex items-center justify-between'
                     >
-                      <span className='text-white font-medium'>{skill}</span>
+                      <span className='text-white font-medium'>{s.name}</span>
                       <div className='flex items-center gap-2'>
                         <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
                           <div
                             className='h-full bg-gradient-to-r from-yellow-500 to-orange-500'
                             style={{
-                              width: `${Math.max(20, 100 - index * 10)}%`,
+                              width: `${Math.min(100, Math.max(10, s.pct))}%`,
                             }}
                           />
                         </div>
                         <span className='text-gray-300 text-sm w-8 text-right'>
-                          {Math.max(20, 100 - index * 10)}%
+                          {Math.min(100, Math.max(10, s.pct))}%
                         </span>
                       </div>
                     </div>
@@ -1314,30 +1649,21 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             >
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <Button
-                  onClick={() => {
-                    // Export analytics data
-                    toast.success("Analytics data exported successfully!");
-                  }}
+                  onClick={() => handleExportAnalytics('json')}
                   className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
                   <TrendingUp className='w-4 h-4' />
                   Export Data
                 </Button>
                 <Button
-                  onClick={() => {
-                    // Generate report
-                    toast.success("Report generated successfully!");
-                  }}
+                  onClick={handleGenerateReport}
                   className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
                   <BarChart3 className='w-4 h-4' />
                   Generate Report
                 </Button>
                 <Button
-                  onClick={() => {
-                    // Share insights
-                    toast.success("Insights shared successfully!");
-                  }}
+                  onClick={handleShareInsights}
                   className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
                   <Sparkles className='w-4 h-4' />
