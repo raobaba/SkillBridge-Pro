@@ -1,318 +1,230 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
-  updateUserProfileApi,
-  getUserProfileApi,
-  deleteUserProfileApi,
-  updateOAuthDetailsApi,
-  emailVerification,
-  changeCurrentPassword,
-  resetPassword,
-  forgetPassword,
-  logoutApi,
-} from "./profileAction";
-import { removeToken, setToken } from "../../../services/utils";
+  getProjectOwnerStatsApi,
+  getProjectOwnerProjectsApi,
+  getProjectOwnerReviewsApi,
+  getProjectOwnerDevelopersApi,
+} from './profileAction';
+
+// Re-export user profile functions from user slice
+export {
+  getUserProfile,
+  updateUserProfile,
+  deleteUser,
+  clearAuthState,
+} from '../../authentication/slice/userSlice';
+
+// Project Owner Profile Async Thunks
+export const fetchProjectOwnerStats = createAsyncThunk(
+  'profile/fetchProjectOwnerStats',
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('Fetching project owner stats...');
+      const response = await getProjectOwnerStatsApi();
+      console.log('Project owner stats response:', response);
+      
+      // Handle different response formats
+      if (response.data && response.data.stats) {
+        return response.data.stats;
+      } else if (response.data) {
+        return response.data;
+      } else {
+        return response;
+      }
+    } catch (error) {
+      console.error('Project owner stats error:', error);
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch project owner stats');
+    }
+  }
+);
+
+export const fetchProjectOwnerProjects = createAsyncThunk(
+  'profile/fetchProjectOwnerProjects',
+  async (_, { rejectWithValue }) => {
+    try {
+      console.log('Fetching project owner projects...');
+      const response = await getProjectOwnerProjectsApi();
+      console.log('Project owner projects response:', response);
+      
+      // Handle different response formats
+      if (response.data && response.data.projects) {
+        return response.data.projects;
+      } else if (response.data) {
+        return response.data;
+      } else {
+        return response;
+      }
+    } catch (error) {
+      console.error('Project owner projects error:', error);
+      return rejectWithValue(error.response?.data?.message || error.message || 'Failed to fetch project owner projects');
+    }
+  }
+);
+
+export const fetchProjectOwnerReviews = createAsyncThunk(
+  'profile/fetchProjectOwnerReviews',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectOwnerReviewsApi();
+      return response.data.reviews;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch project owner reviews');
+    }
+  }
+);
+
+export const fetchProjectOwnerDevelopers = createAsyncThunk(
+  'profile/fetchProjectOwnerDevelopers',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectOwnerDevelopersApi();
+      return response.data.developers;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch project owner developers');
+    }
+  }
+);
 
 // Initial state
 const initialState = {
-  user: null,
-  isAuthenticated: false,
-  loading: false,
-  error: null,
-  message: null,
+  // Project Owner Profile Data
+  projectOwnerStats: {
+    totalProjects: 0,
+    activeProjects: 0,
+    completedProjects: 0,
+    totalApplicants: 0,
+    newApplicantsThisWeek: 0,
+    avgRating: 0,
+    completionRate: 0,
+    developerReviews: 0
+  },
+  projectOwnerProjects: [],
+  projectOwnerReviews: [],
+  projectOwnerDevelopers: [],
+  
+  // Project Owner Loading States
+  projectOwnerLoading: {
+    stats: false,
+    projects: false,
+    reviews: false,
+    developers: false
+  },
+  
+  // Project Owner Error States
+  projectOwnerError: {
+    stats: null,
+    projects: null,
+    reviews: null,
+    developers: null
+  }
 };
 
-export const updateUserProfile = createAsyncThunk(
-  "profile/update",
-  async (formData, { rejectWithValue }) => {
-    try {
-      const response = await updateUserProfileApi(formData);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Profile update failed");
-    }
-  }
-);
-
-export const getUserProfile = createAsyncThunk(
-  "profile/get",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await getUserProfileApi();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Failed to get profile");
-    }
-  }
-);
-
-export const deleteUser = createAsyncThunk(
-  "profile/delete",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await deleteUserProfileApi();
-      removeToken();
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data || "Failed to delete profile"
-      );
-    }
-  }
-);
-
-export const updateOAuth = createAsyncThunk(
-  "profile/updateOAuth",
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await updateOAuthDetailsApi(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "OAuth update failed");
-    }
-  }
-);
-
-export const verifyEmail = createAsyncThunk(
-  "profile/verifyEmail",
-  async (id, { rejectWithValue }) => {
-    try {
-      const response = await emailVerification(id);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data || "Email verification failed"
-      );
-    }
-  }
-);
-
-export const changePassword = createAsyncThunk(
-  "profile/changePassword",
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await changeCurrentPassword(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Change password failed");
-    }
-  }
-);
-
-export const forgetPassPassword = createAsyncThunk(
-  "profile/forgetPassword",
-  async (data, { rejectWithValue }) => {
-    try {
-      const response = await forgetPassword(data);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Forgot password failed");
-    }
-  }
-);
-
-export const resetPassPassword = createAsyncThunk(
-  "profile/resetPassword",
-  async (params, { rejectWithValue }) => {
-    try {
-      const response = await resetPassword(params);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error?.response?.data || "Reset password failed");
-    }
-  }
-);
-
-// Logout
-export const logOut = createAsyncThunk(
-  "user/logout",
-  async (_, { rejectWithValue }) => {
-    try {
-      await logoutApi(); // optional backend call
-      removeToken();
-      return {}; // reset state
-    } catch (error) {
-      return rejectWithValue(
-        error?.response?.data || { message: "Logout failed" }
-      );
-    }
-  }
-);
-
-const userSlice = createSlice({
-  name: "user",
+// Profile slice
+const profileSlice = createSlice({
+  name: 'profile',
   initialState,
   reducers: {
-    clearAuthState: (state) => {
-      state.error = null;
-      state.message = null;
+    // Clear all project owner data
+    clearProjectOwnerData: (state) => {
+      state.projectOwnerStats = initialState.projectOwnerStats;
+      state.projectOwnerProjects = [];
+      state.projectOwnerReviews = [];
+      state.projectOwnerDevelopers = [];
+      state.projectOwnerError = initialState.projectOwnerError;
     },
+    
+    // Clear specific error
+    clearProjectOwnerError: (state, action) => {
+      const { type } = action.payload;
+      state.projectOwnerError[type] = null;
+    },
+    
+    // Update developer status (for developer management)
+    updateDeveloperStatus: (state, action) => {
+      const { developerId, newStatus } = action.payload;
+      const developer = state.projectOwnerDevelopers.find(dev => dev.id === developerId);
+      if (developer) {
+        developer.status = newStatus;
+      }
+    }
   },
   extraReducers: (builder) => {
+    // Fetch project owner stats
     builder
-      // Logout
-      .addCase(logOut.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
+      .addCase(fetchProjectOwnerStats.pending, (state) => {
+        state.projectOwnerLoading.stats = true;
+        state.projectOwnerError.stats = null;
       })
-      .addCase(logOut.fulfilled, (state) => {
-        state.loading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-        state.message = "Logout successful";
-        state.error = null;
+      .addCase(fetchProjectOwnerStats.fulfilled, (state, action) => {
+        state.projectOwnerLoading.stats = false;
+        state.projectOwnerStats = action.payload;
       })
-      .addCase(logOut.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload?.message || "Logout failed";
-        state.message = null;
+      .addCase(fetchProjectOwnerStats.rejected, (state, action) => {
+        state.projectOwnerLoading.stats = false;
+        state.projectOwnerError.stats = action.payload;
       })
-
-      // Update Profile
-      .addCase(updateUserProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
+      
+    // Fetch project owner projects
+    builder
+      .addCase(fetchProjectOwnerProjects.pending, (state) => {
+        state.projectOwnerLoading.projects = true;
+        state.projectOwnerError.projects = null;
       })
-      .addCase(updateUserProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user || action.payload;
-        state.message =
-          action.payload.message || "Profile updated successfully";
-        state.error = null;
+      .addCase(fetchProjectOwnerProjects.fulfilled, (state, action) => {
+        state.projectOwnerLoading.projects = false;
+        state.projectOwnerProjects = action.payload;
       })
-      .addCase(updateUserProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Profile update failed";
-        state.message = null;
+      .addCase(fetchProjectOwnerProjects.rejected, (state, action) => {
+        state.projectOwnerLoading.projects = false;
+        state.projectOwnerError.projects = action.payload;
       })
-
-      // Get Profile
-      .addCase(getUserProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
+      
+    // Fetch project owner reviews
+    builder
+      .addCase(fetchProjectOwnerReviews.pending, (state) => {
+        state.projectOwnerLoading.reviews = true;
+        state.projectOwnerError.reviews = null;
       })
-      .addCase(getUserProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user || action.payload;
-        state.error = null;
+      .addCase(fetchProjectOwnerReviews.fulfilled, (state, action) => {
+        state.projectOwnerLoading.reviews = false;
+        state.projectOwnerReviews = action.payload;
       })
-      .addCase(getUserProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Failed to get profile";
-        state.message = null;
+      .addCase(fetchProjectOwnerReviews.rejected, (state, action) => {
+        state.projectOwnerLoading.reviews = false;
+        state.projectOwnerError.reviews = action.payload;
       })
-
-      // Delete Profile
-      .addCase(deleteUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
+      
+    // Fetch project owner developers
+    builder
+      .addCase(fetchProjectOwnerDevelopers.pending, (state) => {
+        state.projectOwnerLoading.developers = true;
+        state.projectOwnerError.developers = null;
       })
-      .addCase(deleteUser.fulfilled, (state) => {
-        state.loading = false;
-        state.user = null;
-        state.isAuthenticated = false;
-        state.message = "Profile deleted successfully";
-        state.error = null;
+      .addCase(fetchProjectOwnerDevelopers.fulfilled, (state, action) => {
+        state.projectOwnerLoading.developers = false;
+        state.projectOwnerDevelopers = action.payload;
       })
-      .addCase(deleteUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Failed to delete profile";
-        state.message = null;
-      })
-
-      // Update OAuth
-      .addCase(updateOAuth.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(updateOAuth.fulfilled, (state, action) => {
-        state.loading = false;
-        state.user = action.payload.user || action.payload;
-        state.message =
-          action.payload.message || "OAuth details updated successfully";
-        state.error = null;
-      })
-      .addCase(updateOAuth.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "OAuth update failed";
-        state.message = null;
-      })
-
-      // Verify Email
-      .addCase(verifyEmail.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(verifyEmail.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message = action.payload.message || "Email verified successfully";
-        state.error = null;
-      })
-      .addCase(verifyEmail.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Email verification failed";
-        state.message = null;
-      })
-
-      // Change Password
-      .addCase(changePassword.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(changePassword.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message =
-          action.payload.message || "Password changed successfully";
-        state.error = null;
-      })
-      .addCase(changePassword.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Change password failed";
-        state.message = null;
-      })
-
-      // Forget Password
-      .addCase(forgetPassPassword.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(forgetPassPassword.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message =
-          action.payload.message || "Password reset email sent successfully";
-        state.error = null;
-      })
-      .addCase(forgetPassPassword.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Forgot password failed";
-        state.message = null;
-      })
-
-      // Reset Password
-      .addCase(resetPassPassword.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.message = null;
-      })
-      .addCase(resetPassPassword.fulfilled, (state, action) => {
-        state.loading = false;
-        state.message = action.payload.message || "Password reset successfully";
-        state.error = null;
-      })
-      .addCase(resetPassPassword.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload.message || "Reset password failed";
-        state.message = null;
+      .addCase(fetchProjectOwnerDevelopers.rejected, (state, action) => {
+        state.projectOwnerLoading.developers = false;
+        state.projectOwnerError.developers = action.payload;
       });
-  },
+  }
 });
 
-export const { clearAuthState } = userSlice.actions;
-export default userSlice.reducer;
+// Export actions
+export const { 
+  clearProjectOwnerData, 
+  clearProjectOwnerError, 
+  updateDeveloperStatus 
+} = profileSlice.actions;
+
+// Export selectors
+export const selectProjectOwnerStats = (state) => state.profile.projectOwnerStats;
+export const selectProjectOwnerProjects = (state) => state.profile.projectOwnerProjects;
+export const selectProjectOwnerReviews = (state) => state.profile.projectOwnerReviews;
+export const selectProjectOwnerDevelopers = (state) => state.profile.projectOwnerDevelopers;
+export const selectProjectOwnerLoading = (state) => state.profile.projectOwnerLoading;
+export const selectProjectOwnerError = (state) => state.profile.projectOwnerError;
+
+// Export reducer
+export default profileSlice.reducer;

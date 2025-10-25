@@ -456,6 +456,25 @@ class ProjectsModel {
     };
   }
 
+  // Get projects by owner
+  static async getProjectsByOwner(ownerId) {
+    try {
+      const projects = await db
+        .select()
+        .from(projectsTable)
+        .where(and(
+          eq(projectsTable.ownerId, ownerId),
+          eq(projectsTable.isDeleted, false)
+        ))
+        .orderBy(desc(projectsTable.createdAt));
+
+      return projects;
+    } catch (error) {
+      console.error('Error fetching projects by owner:', error);
+      throw error;
+    }
+  }
+
   // Get project statistics
   static async getProjectStats(projectId) {
     try {

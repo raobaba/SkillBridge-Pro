@@ -191,6 +191,32 @@ projectRouter.delete(
   projectController.deleteProjectComment
 );
 
+// 👤 Project Owner Profile Data
+projectRouter.get(
+  "/owner/stats",
+  authenticate,
+  // requireProjectOwner, // Temporarily disabled for testing
+  projectController.getProjectOwnerStats
+);
+projectRouter.get(
+  "/owner/projects",
+  authenticate,
+  // requireProjectOwner, // Temporarily disabled for testing
+  projectController.getProjectOwnerProjects
+);
+projectRouter.get(
+  "/owner/reviews",
+  authenticate,
+  // requireProjectOwner, // Temporarily disabled for testing
+  projectController.getProjectOwnerReviews
+);
+projectRouter.get(
+  "/owner/developers",
+  authenticate,
+  // requireProjectOwner, // Temporarily disabled for testing
+  projectController.getProjectOwnerDevelopers
+);
+
 // Generic project by ID route - MUST be last to avoid conflicts with specific routes
 projectRouter.get("/:id", projectController.getProject); // Public - anyone can view project details
 

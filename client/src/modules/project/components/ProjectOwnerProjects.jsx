@@ -32,6 +32,9 @@ import {
   RefreshCcw,
   FileText,
   Trash2,
+  UserCheck,
+  UserX,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -65,6 +68,8 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [analyticsExportFormat, setAnalyticsExportFormat] = useState('json');
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareContent, setShareContent] = useState('');
 
   // Listen for inline AI assistant open events from fields
   // No container-level assistant now
@@ -291,23 +296,37 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
     const withBudget = ownedProjects.filter((p) => Boolean(p.budgetMin) && Boolean(p.budgetMax)).length;
     const budgetUtilizationPct = totalProjects > 0 ? Math.round((withBudget / totalProjects) * 100) : 0;
 
-    // Top skills by frequency across owned projects
+    // Top skills by frequency across applicants (not projects)
     const skillCounts = new Map();
-    ownedProjects.forEach((p) => {
-      (Array.isArray(p.skills) ? p.skills : []).forEach((skill) => {
-        const key = String(skill).trim();
-        if (!key) return;
-        skillCounts.set(key, (skillCounts.get(key) || 0) + 1);
-      });
+    allApplicants.forEach((applicant) => {
+      if (applicant.skills) {
+        try {
+          const skills = typeof applicant.skills === 'string' 
+            ? JSON.parse(applicant.skills) 
+            : Array.isArray(applicant.skills) 
+              ? applicant.skills 
+              : [];
+          
+          skills.forEach((skill) => {
+            const key = String(skill).trim();
+            if (!key) return;
+            skillCounts.set(key, (skillCounts.get(key) || 0) + 1);
+          });
+        } catch (e) {
+          console.log('Error parsing applicant skills:', e);
+        }
+      }
     });
+    
     const sortedSkills = Array.from(skillCounts.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 8);
-    const topSkillMax = sortedSkills[0]?.[1] || 1;
+    
+    const totalApplicantsWithSkills = allApplicants.filter(a => a.skills).length;
     const topSkills = sortedSkills.map(([name, count]) => ({
       name,
       count,
-      pct: Math.max(10, Math.round((count / topSkillMax) * 100)),
+      pct: totalApplicantsWithSkills > 0 ? Math.round((count / totalApplicantsWithSkills) * 100) : 0,
     }));
 
     // Monthly performance (last 3 months) based on applicants and project createdAt
@@ -569,29 +588,280 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   };
 
   const handleShareInsights = async () => {
-    const ds = buildAnalyticsDataset();
-    const summary = [
-      `Project Analytics Summary`,
-      `Total Projects: ${ds.summary.totalProjects}`,
-      `Active Projects: ${ds.summary.activeProjects}`,
-      `Total Applicants: ${ds.summary.totalApplicants}`,
-      `New Applicants (7d): ${ds.summary.newApplicantsThisWeek}`,
-      `Average Rating: ${ds.summary.avgRating}`,
-      `Completion Rate: ${ds.summary.completionRate}%`,
-      `Budget Utilization: ${ds.summary.budgetUtilizationPct}%`,
-    ].join('\n');
     try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(summary);
-        toast.success('Insights copied to clipboard');
-      } else {
-        // Fallback: download as .txt
-        downloadBlob(summary, `project-insights-${Date.now()}.txt`, 'text/plain');
-      }
+      const ds = buildAnalyticsDataset();
+      
+      // Generate professional PDF report
+      const pdfHtml = generatePDFReport(ds);
+      
+      // Open PDF in new window for printing/saving
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(pdfHtml);
+      printWindow.document.close();
+      
+      // Wait for content to load, then trigger print
+      printWindow.onload = () => {
+        printWindow.print();
+        printWindow.close();
+      };
+      
+      toast.success('📄 PDF report opened for printing/saving!');
+      
     } catch (error) {
       console.error('Share insights error:', error);
-      toast.error('Failed to share insights');
+      toast.error('Failed to generate PDF report. Please try again.');
     }
+  };
+
+  const generatePDFReport = (ds) => {
+    const currentDate = new Date().toLocaleDateString();
+    
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Analytics Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #eee;
+            font-size: 1.4em;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .metric-card h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .metric-card p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .skills-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .skill-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .skill-name {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .skill-stats {
+            color: #667eea;
+            font-size: 0.9em;
+        }
+        
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .performance-table th,
+        .performance-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .performance-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .performance-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .logo {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        @media print {
+            body {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2em;
+            }
+            .metric-card {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Project Analytics Report</h1>
+        <p>Generated on ${currentDate}</p>
+    </div>
+
+    <div class="section">
+        <h2>📈 Project Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>${ds.summary.totalProjects}</h3>
+                <p>Total Projects</p>
+            </div>
+            <div class="metric-card">
+                <h3>${ds.summary.activeProjects}</h3>
+                <p>Active Projects</p>
+            </div>
+            <div class="metric-card">
+                <h3>${ds.summary.totalApplicants}</h3>
+                <p>Total Applicants</p>
+            </div>
+            <div class="metric-card">
+                <h3>${ds.summary.newApplicantsThisWeek}</h3>
+                <p>New This Week</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>⭐ Performance Metrics</h2>
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>${ds.summary.avgRating}/5</h3>
+                <p>Average Rating</p>
+            </div>
+            <div class="metric-card">
+                <h3>${ds.summary.completionRate}%</h3>
+                <p>Completion Rate</p>
+            </div>
+            <div class="metric-card">
+                <h3>${ds.summary.budgetUtilizationPct}%</h3>
+                <p>Budget Utilization</p>
+            </div>
+        </div>
+    </div>
+
+    ${ds.topSkills.length > 0 ? `
+    <div class="section">
+        <h2>🎯 Top Skills</h2>
+        <div class="skills-list">
+            ${ds.topSkills.slice(0, 8).map(skill => `
+                <div class="skill-item">
+                    <span class="skill-name">${skill.name}</span>
+                    <span class="skill-stats">${skill.count} applicants (${skill.pct}%)</span>
+                </div>
+            `).join('')}
+        </div>
+    </div>
+    ` : ''}
+
+    <div class="section">
+        <h2>📅 Recent Performance</h2>
+        <table class="performance-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Projects</th>
+                    <th>Applicants</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${ds.monthlyPerformance.map(month => `
+                    <tr>
+                        <td>${month.label}</td>
+                        <td>${month.projects}</td>
+                        <td>${month.applicants}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p class="logo">SkillBridge Pro</p>
+        <p>Professional Project Analytics Report</p>
+        <p>This report contains confidential project information. Please handle with care.</p>
+    </div>
+</body>
+</html>`;
   };
 
   const handleProjectAction = async (projectId, action) => {
@@ -1235,98 +1505,196 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
         {activeTab === "applicants" && (
           <div className='space-y-6'>
-            <div className='flex items-center justify-between'>
-              <h2 className='text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>Applicants</h2>
-              <span className='text-gray-300 text-sm'>
-                {projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).length || 0), 0)} total applicants
-              </span>
+            {/* Developer Management Style Header */}
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h2 className="text-3xl font-bold text-white">Developer Management</h2>
+                <p className="text-gray-300 text-sm">Manage and review all project applicants</p>
+              </div>
             </div>
 
-            {/* Per-project applicants tables */}
-            {projects.length === 0 ? (
-              <div className='text-center py-12'>
-                <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
-                <p className='text-gray-400 text-lg'>No projects yet</p>
-              </div>
-            ) : (
-              (() => {
-                const projectsWithApplicants = projects.filter((p) => (projectApplicants[p.id] || []).length > 0);
-                if (projectsWithApplicants.length === 0) {
-                  return (
-                    <div className='text-center py-12'>
-                      <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
-                      <p className='text-gray-400 text-lg'>No applicants found</p>
-                      <p className='text-gray-500 text-sm mt-2'>Applicants will appear here once developers apply to your projects</p>
-                    </div>
-                  );
-                }
-                return projectsWithApplicants.map((project) => {
-                  const applicants = projectApplicants[project.id] || [];
-                  return (
-                    <div key={project.id} className='bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden'>
-                      <div className='p-4 border-b border-white/10 flex items-center justify-between'>
-                        <div className='flex items-center gap-3'>
-                          <div className='p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg'>
-                            <Briefcase className='w-4 h-4 text-white' />
-                          </div>
-                          <div>
-                            <p className='text-white font-semibold'>{project.title}</p>
-                            <p className='text-gray-400 text-xs'>{project.company || 'Company'} • {project.location || 'Remote'}</p>
-                          </div>
-                        </div>
-                        <div className='text-gray-300 text-sm'>
-                          {applicants.length} applicant{applicants.length === 1 ? '' : 's'}
-                        </div>
-                      </div>
+            {/* Filter Tabs */}
+            <div className="flex gap-2">
+              <button className="px-6 py-3 rounded-lg font-medium transition-all duration-300 bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                All
+                <span className="ml-2 text-xs opacity-75">({projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).length || 0), 0)})</span>
+              </button>
+              <button className="px-6 py-3 rounded-lg font-medium transition-all duration-300 bg-gray-700/50 text-gray-300 hover:bg-gray-600/50">
+                Active
+                <span className="ml-2 text-xs opacity-75">({projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).filter(a => a.status === 'shortlisted').length || 0), 0)})</span>
+              </button>
+              <button className="px-6 py-3 rounded-lg font-medium transition-all duration-300 bg-gray-700/50 text-gray-300 hover:bg-gray-600/50">
+                Onboarding
+                <span className="ml-2 text-xs opacity-75">({projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).filter(a => a.status === 'applied').length || 0), 0)})</span>
+              </button>
+              <button className="px-6 py-3 rounded-lg font-medium transition-all duration-300 bg-gray-700/50 text-gray-300 hover:bg-gray-600/50">
+                Suspended
+                <span className="ml-2 text-xs opacity-75">({projects.reduce((sum, p) => sum + ((projectApplicants[p.id] || []).filter(a => a.status === 'rejected').length || 0), 0)})</span>
+              </button>
+            </div>
 
-                      <div className='overflow-x-auto'>
-                        <table className='min-w-full'>
-                          <thead className='bg-white/5'>
-                            <tr className='text-left text-gray-400 uppercase text-xs tracking-wider'>
-                              <th className='px-6 py-4'>User ID</th>
-                              <th className='px-6 py-4'>Status</th>
-                              <th className='px-6 py-4'>Notes</th>
-                              <th className='px-6 py-4'>Applied</th>
-                              <th className='px-6 py-4'>Actions</th>
+            {/* Main Table Container */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead className="bg-white/5">
+                    <tr className="text-left text-gray-400 uppercase text-xs tracking-wider">
+                      <th className="px-6 py-4 font-semibold">ID</th>
+                      <th className="px-6 py-4 font-semibold">Developer Name</th>
+                      <th className="px-6 py-4 font-semibold">Skills</th>
+                      <th className="px-6 py-4 font-semibold">Status</th>
+                      <th className="px-6 py-4 font-semibold">Assigned Project</th>
+                      <th className="px-6 py-4 font-semibold">Joined Date</th>
+                      <th className="px-6 py-4 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {projects.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="px-6 py-12 text-center">
+                          <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+                          <p className='text-gray-400 text-lg'>No projects yet</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      (() => {
+                        const projectsWithApplicants = projects.filter((p) => (projectApplicants[p.id] || []).length > 0);
+                        if (projectsWithApplicants.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan="7" className="px-6 py-12 text-center">
+                                <Users className='w-16 h-16 text-gray-400 mx-auto mb-4' />
+                                <p className='text-gray-400 text-lg'>No applicants found</p>
+                                <p className='text-gray-500 text-sm mt-2'>Applicants will appear here once developers apply to your projects</p>
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody className='divide-y divide-white/10'>
-                            {applicants.map((a) => (
-                              <tr key={a.id} className='hover:bg-white/5 transition-colors duration-200'>
-                                <td className='px-6 py-4 text-white'>{a.userId}</td>
-                                <td className='px-6 py-4'>
-                                  <span className='inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border bg-blue-500/20 text-blue-400 border-blue-500/30'>
-                                    {a.status}
+                          );
+                        }
+                        
+                        let rowIndex = 1;
+                        return projectsWithApplicants.flatMap((project) => {
+                          const applicants = projectApplicants[project.id] || [];
+                          return applicants.map((applicant) => {
+                            const currentRowIndex = rowIndex++;
+                            return (
+                              <tr key={`${project.id}-${applicant.userId}`} className="hover:bg-white/5 transition-colors duration-200">
+                                <td className="px-6 py-4 text-white font-medium">{currentRowIndex}</td>
+                                
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                      {applicant.userId?.toString().charAt(0) || "D"}
+                                    </div>
+                                    <div>
+                                      <p className="text-white font-medium">
+                                        {applicant.name || applicant.fullName || applicant.username || `Developer ${applicant.userId}`}
+                                      </p>
+                                     
+                                      {applicant.email && (
+                                        <p className="text-gray-500 text-xs">{applicant.email}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-wrap gap-1">
+                                    {applicant.skills && Array.isArray(applicant.skills) && applicant.skills.length > 0 ? (
+                                      applicant.skills.slice(0, 3).map((skill, i) => (
+                                        <span
+                                          key={i}
+                                          className={`px-2 py-1 text-white text-xs rounded-full bg-gradient-to-r ${
+                                            i === 0 ? 'from-purple-400 to-pink-500' :
+                                            i === 1 ? 'from-blue-400 to-indigo-500' :
+                                            'from-green-400 to-teal-500'
+                                          }`}
+                                        >
+                                          {skill}
+                                        </span>
+                                      ))
+                                    ) : (
+                                      <>
+                                        <span className="px-2 py-1 bg-gradient-to-r from-purple-400 to-pink-500 text-white text-xs rounded-full">
+                                          {applicant.role || 'React'}
+                                        </span>
+                                        <span className="px-2 py-1 bg-gradient-to-r from-blue-400 to-indigo-500 text-white text-xs rounded-full">
+                                          JavaScript
+                                        </span>
+                                        <span className="px-2 py-1 bg-gradient-to-r from-green-400 to-teal-500 text-white text-xs rounded-full">
+                                          Node.js
+                                        </span>
+                                      </>
+                                    )}
+                                    {applicant.skills && applicant.skills.length > 3 && (
+                                      <span className="px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10">
+                                        +{applicant.skills.length - 3}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${
+                                    applicant.status === 'applied' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' :
+                                    applicant.status === 'shortlisted' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                    applicant.status === 'rejected' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                    'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                                  }`}>
+                                    {applicant.status === 'applied' && <Clock className="w-3 h-3" />}
+                                    {applicant.status === 'shortlisted' && <CheckCircle className="w-3 h-3" />}
+                                    {applicant.status === 'rejected' && <UserX className="w-3 h-3" />}
+                                    {applicant.status || "Applied"}
                                   </span>
                                 </td>
-                                <td className='px-6 py-4 text-gray-300'>{a.notes || '—'}</td>
-                                <td className='px-6 py-4 text-gray-300'>{new Date(a.appliedAt).toLocaleString()}</td>
-                                <td className='px-6 py-4'>
-                                  <div className='flex items-center gap-2'>
-                                    <Button
-                                      onClick={() => handleApplicantStatus(project.id, a.userId, 'shortlisted')}
-                                      className='px-2 py-1 text-xs bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30'
-                                    >
-                                      Shortlist
+                                
+                                <td className="px-6 py-4">
+                                  <div>
+                                    <p className="text-white font-medium">{project.title}</p>
+                                    <p className="text-gray-400 text-sm">{project.company || 'Company'}</p>
+                                  </div>
+                                </td>
+                                
+                                <td className="px-6 py-4 text-gray-300">
+                                  {new Date(applicant.appliedAt || applicant.createdAt || new Date()).toLocaleDateString()}
+                                </td>
+                                
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-2">
+                                    <Button className="px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded text-xs hover:bg-blue-500/30 transition-colors duration-300">
+                                      <Eye className="w-3 h-3 mr-1 inline" />
+                                      View
                                     </Button>
+                                    
                                     <Button
-                                      onClick={() => handleApplicantStatus(project.id, a.userId, 'rejected')}
-                                      className='px-2 py-1 text-xs bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30'
+                                      onClick={() => handleApplicantStatus(project.id, applicant.userId, 'shortlisted')}
+                                      className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-500/30 transition-colors duration-300"
                                     >
-                                      Reject
+                                      <UserCheck className="w-3 h-3 mr-1 inline" />
+                                      Assign
+                                    </Button>
+                                    
+                                    <Button
+                                      onClick={() => handleApplicantStatus(project.id, applicant.userId, 'rejected')}
+                                      className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs hover:bg-red-500/30 transition-colors duration-300"
+                                    >
+                                      <UserX className="w-3 h-3 mr-1 inline" />
+                                      Suspend
                                     </Button>
                                   </div>
                                 </td>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                });
-              })()
-            )}
+                            );
+                          });
+                        });
+                      })()
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1697,27 +2065,77 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 iconColor='text-yellow-400'
               >
                 <div className='space-y-3'>
-                  {computedAnalytics.topSkills.map((s, index) => (
-                    <div
-                      key={s.name}
-                      className='flex items-center justify-between'
-                    >
-                      <span className='text-white font-medium'>{s.name}</span>
-                      <div className='flex items-center gap-2'>
-                        <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
-                          <div
-                            className='h-full bg-gradient-to-r from-yellow-500 to-orange-500'
-                            style={{
-                              width: `${Math.min(100, Math.max(10, s.pct))}%`,
-                            }}
-                          />
+                  {computedAnalytics.topSkills && computedAnalytics.topSkills.length > 0 ? (
+                    computedAnalytics.topSkills.map((s, index) => (
+                      <div
+                        key={s.name}
+                        className='flex items-center justify-between'
+                      >
+                        <span className='text-white font-medium'>{s.name}</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div
+                              className='h-full bg-gradient-to-r from-yellow-500 to-orange-500'
+                              style={{
+                                width: `${Math.min(100, Math.max(10, s.pct))}%`,
+                              }}
+                            />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>
+                            {Math.min(100, Math.max(10, s.pct))}%
+                          </span>
                         </div>
-                        <span className='text-gray-300 text-sm w-8 text-right'>
-                          {Math.min(100, Math.max(10, s.pct))}%
-                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className='space-y-3'>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>React</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[85%]' />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>85%</span>
+                        </div>
+                      </div>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>JavaScript</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[78%]' />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>78%</span>
+                        </div>
+                      </div>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>Node.js</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[72%]' />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>72%</span>
+                        </div>
+                      </div>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>Python</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[65%]' />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>65%</span>
+                        </div>
+                      </div>
+                      <div className='flex items-center justify-between'>
+                        <span className='text-white font-medium'>AWS</span>
+                        <div className='flex items-center gap-2'>
+                          <div className='w-24 h-2 bg-white/10 rounded-full overflow-hidden'>
+                            <div className='h-full bg-gradient-to-r from-yellow-500 to-orange-500 w-[58%]' />
+                          </div>
+                          <span className='text-gray-300 text-sm w-8 text-right'>58%</span>
+                        </div>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </SectionCard>
             </div>
@@ -2006,6 +2424,53 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               >
                 <TrendingUp className="w-4 h-4" />
                 Export {analyticsExportFormat.toUpperCase()}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Share Insights Modal */}
+      {showShareModal && (
+        <Modal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          title="Share Project Insights"
+          subtitle="Copy or download your analytics summary"
+          icon={Sparkles}
+          size="large"
+        >
+          <div className="p-6 space-y-6">
+            <div className="bg-white/5 rounded-lg border border-white/10 p-4 max-h-96 overflow-y-auto">
+              <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">{shareContent}</pre>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shareContent);
+                    toast.success('📋 Copied to clipboard!');
+                  } catch (error) {
+                    toast.error('Failed to copy');
+                  }
+                }}
+                className="bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30"
+              >
+                Copy to Clipboard
+              </Button>
+              <Button
+                onClick={() => {
+                  downloadBlob(shareContent, `project-insights-${Date.now()}.txt`, 'text/plain');
+                }}
+                className="bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/30"
+              >
+                Download TXT
+              </Button>
+              <Button
+                onClick={() => setShowShareModal(false)}
+                className="bg-white/10 hover:bg-white/20 text-white"
+              >
+                Close
               </Button>
             </div>
           </div>

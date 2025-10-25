@@ -82,6 +82,11 @@ const ProjectModel = {
   
   // Statistics
   getProjectStats: ProjectsModel.getProjectStats,
+  
+  // Project Owner Profile Methods
+  getProjectsByOwner: ProjectsModel.getProjectsByOwner,
+  getProjectApplicants: ProjectApplicantsModel.listApplicants,
+  getProjectReviews: ProjectReviewsModel.getReviewsByProjectId,
 };
 
 module.exports = {
