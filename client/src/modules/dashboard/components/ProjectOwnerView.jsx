@@ -275,7 +275,7 @@ export default function ProjectOwnerView() {
   ];
 
   const quickAccessLinks = [
-    { name: "Post New Project", icon: Plus, color: "blue", description: "Create project listing", path: "/project?action=create" },
+    { name: "Post New Project", icon: Plus, color: "blue", description: "Create project listing", path: "/project?tab=create" },
     { name: "Manage Team", icon: Users, color: "green", description: "Team management", path: "/project?tab=team" },
     { name: "View Applicants", icon: UserCheck, color: "purple", description: "Review applications", path: "/project?tab=applicants" },
     { name: "Billing & Subscriptions", icon: DollarSign, color: "yellow", description: "Payment management", path: "/billing-subscription" },

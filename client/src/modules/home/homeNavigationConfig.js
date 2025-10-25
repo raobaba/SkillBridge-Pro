@@ -182,7 +182,7 @@ export const navigationConfig = {
     "project-owner": [
       {
         label: "Post Project",
-        path: "/project?action=create",
+        path: "/project?tab=create",
         icon: Plus,
         color: "blue",
         description: "Create new project",

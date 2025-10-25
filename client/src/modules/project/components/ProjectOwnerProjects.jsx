@@ -37,7 +37,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 // Project actions
 import {
   updateProject,
@@ -50,7 +50,14 @@ import {
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Get tab from URL parameters, default to "dashboard" if not provided
+  const urlTab = searchParams.get('tab');
+  const validTabs = ['dashboard', 'my-projects', 'create', 'applicants', 'analytics'];
+  const initialTab = validTabs.includes(urlTab) ? urlTab : 'dashboard';
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showInviteDevelopersModal, setShowInviteDevelopersModal] =
@@ -70,6 +77,15 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareContent, setShareContent] = useState('');
+
+  // Handle tab changes and update URL
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    // Update URL with the new tab parameter
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set('tab', tab);
+    setSearchParams(newSearchParams);
+  };
 
   // Listen for inline AI assistant open events from fields
   // No container-level assistant now
@@ -1032,7 +1048,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
         <div className='bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-2 rounded-2xl border border-white/10'>
           <div className='grid grid-cols-5 gap-2'>
             <Button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => handleTabChange("dashboard")}
               variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === "dashboard"
@@ -1044,7 +1060,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               Dashboard
             </Button>
             <Button
-              onClick={() => setActiveTab("my-projects")}
+              onClick={() => handleTabChange("my-projects")}
               variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === "my-projects"
@@ -1056,7 +1072,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               My Projects
             </Button>
             <Button
-              onClick={() => setActiveTab("create")}
+              onClick={() => handleTabChange("create")}
               variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === "create"
@@ -1068,7 +1084,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               Create Project
             </Button>
             <Button
-              onClick={() => setActiveTab("applicants")}
+              onClick={() => handleTabChange("applicants")}
               variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === "applicants"
@@ -1080,7 +1096,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               Applicants
             </Button>
             <Button
-              onClick={() => setActiveTab("analytics")}
+              onClick={() => handleTabChange("analytics")}
               variant='ghost'
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                 activeTab === "analytics"
@@ -1138,7 +1154,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 >
                   <div className='space-y-3'>
                     <Button
-                      onClick={() => setActiveTab("create")}
+                      onClick={() => handleTabChange("create")}
                       className='w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
                       <Plus className='w-4 h-4' />
@@ -1168,7 +1184,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                       Boost Project Visibility
                     </Button>
                     <Button
-                      onClick={() => setActiveTab("analytics")}
+                      onClick={() => handleTabChange("analytics")}
                       className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                     >
                       <TrendingUp className='w-4 h-4' />
@@ -1249,7 +1265,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   {ownedProjects.length} total
                 </span>
                 <Button
-                  onClick={() => setActiveTab("create")}
+                  onClick={() => handleTabChange("create")}
                   className='bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
                 >
                   <Plus className='w-4 h-4' />
@@ -1265,7 +1281,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   Create your first project to get started
                 </p>
                 <Button
-                  onClick={() => setActiveTab("create")}
+                  onClick={() => handleTabChange("create")}
                   className='mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto'
                 >
                   <Plus className='w-4 h-4' />
@@ -1363,7 +1379,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                         </Button>
                         <Button
                           onClick={() => {
-                            setActiveTab('create');
+                            handleTabChange('create');
                             // pass project to form via ref after tab switch
                             setTimeout(() => {
                               if (projectFormRef.current) {
@@ -1455,12 +1471,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   editingProject={selectedProject}
                   onProjectUpdated={() => {
                     dispatch(listProjects());
-                    setActiveTab('my-projects');
+                    handleTabChange('my-projects');
                   }}
                   onProjectCreated={() => {
                     // Refresh projects list after creation
                     dispatch(listProjects());
-                    setActiveTab("my-projects");
+                    handleTabChange("my-projects");
                   }}
                 />
               </div>
