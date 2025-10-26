@@ -47,6 +47,7 @@ import {
   generateComprehensiveSuggestionsApi,
   getMyApplicationsApi,
   getMyApplicationsCountApi,
+  getDeveloperAppliedProjectsApi,
   generateApplicantsReportApi,
 } from "./projectAction";
 
@@ -302,6 +303,21 @@ export const getMyApplicationsCount = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to fetch applications count" }
+      );
+    }
+  }
+);
+
+// Get developer applied projects list
+export const getDeveloperAppliedProjects = createAsyncThunk(
+  "project/getDeveloperAppliedProjects",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getDeveloperAppliedProjectsApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch applied projects" }
       );
     }
   }
@@ -1891,7 +1907,9 @@ const projectSlice = createSlice({
       })
       .addCase(getMyApplications.fulfilled, (state, action) => {
         state.loading = false;
+        console.log('Redux: getMyApplications.fulfilled - action.payload:', action.payload);
         const apps = action.payload.applications || [];
+        console.log('Redux: extracted applications:', apps);
         state.myApplications = apps;
         const ids = apps.map(a => a.projectId).filter(id => typeof id === 'number');
         state.appliedProjects = Array.from(new Set([...(state.appliedProjects || []), ...ids]));
@@ -1920,6 +1938,28 @@ const projectSlice = createSlice({
         state.loading = false;
         state.error = action.payload.message || 'Failed to fetch applications count';
         state.lastAction = 'getMyApplicationsCount.rejected';
+      })
+
+      // Get developer applied projects
+      .addCase(getDeveloperAppliedProjects.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.lastAction = 'getDeveloperAppliedProjects.pending';
+      })
+      .addCase(getDeveloperAppliedProjects.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log('Redux: getDeveloperAppliedProjects.fulfilled - action.payload:', action.payload);
+        const appliedProjects = action.payload.appliedProjects || [];
+        console.log('Redux: extracted applied projects:', appliedProjects);
+        state.myApplications = appliedProjects;
+        state.myApplicationsCount = appliedProjects.length;
+        state.error = null;
+        state.lastAction = 'getDeveloperAppliedProjects.fulfilled';
+      })
+      .addCase(getDeveloperAppliedProjects.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload.message || 'Failed to fetch applied projects';
+        state.lastAction = 'getDeveloperAppliedProjects.rejected';
       })
 
       // Generate applicants report

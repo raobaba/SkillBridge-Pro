@@ -123,6 +123,7 @@ class ProjectApplicantsModel {
 
   static async listApplicationsByUser(userId) {
     try {
+      console.log('listApplicationsByUser - userId:', userId);
       const applications = await db
         .select({
           id: projectApplicantsTable.id,
@@ -157,7 +158,10 @@ class ProjectApplicantsModel {
         .orderBy(projectApplicantsTable.appliedAt);
 
       // Filter out applications where project data is missing (due to deleted projects)
-      return applications.filter(app => app.projectTitle !== null);
+      const filteredApplications = applications.filter(app => app.projectTitle !== null);
+      console.log('listApplicationsByUser - raw applications:', applications?.length);
+      console.log('listApplicationsByUser - filtered applications:', filteredApplications?.length);
+      return filteredApplications;
     } catch (error) {
       console.error('Error in listApplicationsByUser:', error);
       return [];

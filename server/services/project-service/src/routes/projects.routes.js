@@ -107,6 +107,14 @@ projectRouter.get(
   projectController.getMyApplicationsCount
 );
 
+// 👤 Developer applied projects list
+projectRouter.get(
+  "/developer/applied-projects",
+  authenticate,
+  requireDeveloper,
+  projectController.getDeveloperAppliedProjects
+);
+
 // 📧 Invitation Management (Only project owners can send invites, developers can respond)
 projectRouter.post(
   "/invite",

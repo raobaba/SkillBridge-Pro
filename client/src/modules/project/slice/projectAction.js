@@ -59,6 +59,12 @@ export const getMyApplicationsCountApi = async () => {
   return await fetchFromApiServer("GET", url);
 };
 
+// Developer applied projects list
+export const getDeveloperAppliedProjectsApi = async () => {
+  const url = `api/v1/projects/developer/applied-projects`;
+  return await fetchFromApiServer("GET", url);
+};
+
 // Invitation Management
 export const createInviteApi = async (data) => {
   const url = `api/v1/projects/invite`;

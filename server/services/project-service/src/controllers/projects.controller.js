@@ -1092,8 +1092,10 @@ const listApplicants = async (req, res) => {
 const listMyApplications = async (req, res) => {
   try {
     const userId = req.user?.userId;
+    console.log('listMyApplications - userId:', userId);
     if (!userId) return sendError(res, "Authentication required", 401);
     const rows = await ProjectModel.listApplicationsByUser(Number(userId));
+    console.log('listMyApplications - rows returned:', rows?.length, rows);
     return res.status(200).json({ success: true, status: 200, applications: rows });
   } catch (error) {
     console.error("List My Applications Error:", error);
@@ -1115,6 +1117,126 @@ const getMyApplicationsCount = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch applications count", error: error.message });
+  }
+};
+
+// Get developer applied projects list
+const getDeveloperAppliedProjects = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    console.log('getDeveloperAppliedProjects - req.user:', req.user);
+    console.log('getDeveloperAppliedProjects - userId:', userId);
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    // Direct database query instead of using the model
+    const { Pool } = require('pg');
+    require('dotenv').config({ path: './.env' });
+    
+    const pool = new Pool({
+      host: process.env.DB_HOST || '127.0.0.1',
+      port: Number(process.env.DB_PORT) || 5432,
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'password',
+      database: process.env.DB_NAME || 'skillbridge_db',
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+    });
+    
+    const client = await pool.connect();
+    
+    try {
+      // Direct SQL query to get applied projects
+      const result = await client.query(`
+        SELECT 
+          pa.id as "applicationId",
+          pa.project_id as "projectId",
+          pa.user_id as "userId",
+          pa.status,
+          pa.match_score as "matchScore",
+          pa.rating,
+          pa.notes,
+          pa.applied_at as "appliedAt",
+          pa.updated_at as "updatedAt",
+          p.title as "projectTitle",
+          p.description as "projectDescription",
+          p.company as "projectCompany",
+          p.status as "projectStatus",
+          p.category as "projectCategory",
+          p.experience_level as "projectExperienceLevel",
+          p.budget_min as "projectBudgetMin",
+          p.budget_max as "projectBudgetMax",
+          p.currency as "projectCurrency",
+          p.location as "projectLocation",
+          p.is_remote as "projectIsRemote",
+          p.duration as "projectDuration",
+          p.start_date as "projectStartDate",
+          p.deadline as "projectDeadline",
+          p.owner_id as "projectOwnerId"
+        FROM project_applicants pa
+        LEFT JOIN projects p ON pa.project_id = p.id
+        WHERE pa.user_id = $1 AND p.title IS NOT NULL
+        ORDER BY pa.applied_at DESC
+      `, [userId]);
+      
+      console.log('getDeveloperAppliedProjects - direct query result:', result.rows.length);
+      
+      // Transform the data
+      const appliedProjects = result.rows.map(app => ({
+        applicationId: app.applicationId,
+        projectId: app.projectId,
+        status: app.status,
+        appliedAt: app.appliedAt,
+        matchScore: app.matchScore,
+        notes: app.notes,
+        project: {
+          id: app.projectId,
+          title: app.projectTitle,
+          description: app.projectDescription,
+          company: app.projectCompany,
+          category: app.projectCategory,
+          experienceLevel: app.projectExperienceLevel,
+          budgetMin: app.projectBudgetMin,
+          budgetMax: app.projectBudgetMax,
+          currency: app.projectCurrency,
+          isRemote: app.projectIsRemote,
+          location: app.projectLocation,
+          duration: app.projectDuration,
+          status: app.projectStatus,
+          ownerId: app.projectOwnerId,
+          startDate: app.projectStartDate,
+          deadline: app.projectDeadline
+        }
+      }));
+      
+      console.log('getDeveloperAppliedProjects - transformed projects:', appliedProjects.length);
+      
+      await client.release();
+      await pool.end();
+      
+      return res.status(200).json({ 
+        success: true, 
+        status: 200, 
+        message: "Applied projects retrieved successfully",
+        count: appliedProjects.length,
+        appliedProjects 
+      });
+      
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      await client.release();
+      await pool.end();
+      throw dbError;
+    }
+    
+  } catch (error) {
+    console.error("Get Developer Applied Projects Error:", error);
+    return res
+      .status(500)
+      .json({ 
+        success: false, 
+        status: 500, 
+        message: "Failed to fetch applied projects", 
+        error: error.message 
+      });
   }
 };
 
@@ -2533,6 +2655,7 @@ module.exports = {
   getSearchSuggestions,
   listMyApplications,
   getMyApplicationsCount,
+  getDeveloperAppliedProjects,
   generateApplicantsReport,
   getProjectOwnerStats,
   getProjectOwnerProjects,

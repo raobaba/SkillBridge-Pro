@@ -74,11 +74,44 @@ const DeveloperProjects = ({
   const [savingProjectId, setSavingProjectId] = useState(null);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState({ skills: [], tags: [] });
+  const [appliedProjectsData, setAppliedProjectsData] = useState({}); // { [id]: project }
 
   // Load applied projects from Redux (which loads from localStorage)
   useEffect(() => {
     dispatch(loadAppliedProjects());
   }, [dispatch]);
+
+  // Fetch project data for all applied projects on mount
+  useEffect(() => {
+    const fetchAppliedProjectData = async () => {
+      if (!appliedProjects || appliedProjects.length === 0) return;
+      
+      const existingIds = new Set([
+        ...((projects || []).map((p) => p.id)),
+        ...((publicProjects || []).map((p) => p.id)),
+        ...Object.keys(appliedProjectsData).map((k) => Number(k)),
+      ]);
+
+      const missingIds = appliedProjects.filter(id => !existingIds.has(id));
+      
+      if (missingIds.length > 0) {
+        console.log('Fetching data for applied projects:', missingIds);
+        for (const id of missingIds) {
+          try {
+            const res = await dispatch(getProject(id)).unwrap();
+            const proj = res?.project || res?.data?.project || res;
+            if (proj && proj.id) {
+              setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
+            }
+          } catch (error) {
+            console.error('Failed to load project details for application:', id, error);
+          }
+        }
+      }
+    };
+    
+    fetchAppliedProjectData();
+  }, [appliedProjects, dispatch, projects, publicProjects, appliedProjectsData]);
 
   // Handle toast notifications
   useEffect(() => {
@@ -165,7 +198,6 @@ const DeveloperProjects = ({
     [baseProjects]
   );
   const [filteredProjects, setFilteredProjects] = useState([]);
-  const [appliedProjectsData, setAppliedProjectsData] = useState({}); // { [id]: project }
   const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount) ?? appliedProjects.length;
   const myApplications = useSelector((state) => state.project?.myApplications) || [];
 
@@ -221,14 +253,32 @@ const DeveloperProjects = ({
     const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
     const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
     const uniqueIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
-    return uniqueIds
-      .map((id) => ({ id, project: getProjectById(id) }))
-      .filter((x) => !!x.project && isAppliedTo(x.id));
-  }, [myApplications, appliedProjects, getProjectById, isAppliedTo]);
+    
+    console.log('Building applicationProjectItems:', {
+      idsFromServer,
+      idsFromLocal,
+      uniqueIds,
+      myApplicationsLength: myApplications?.length,
+      appliedProjectsLength: appliedProjects?.length
+    });
+    
+    const items = uniqueIds.map((id) => {
+      const project = getProjectById(id);
+      console.log(`Project data for ID ${id}:`, project ? 'Found' : 'Not found');
+      return { id, project };
+    });
+    
+    const validItems = items.filter((x) => !!x.project);
+    console.log('Valid application items:', validItems.length);
+    
+    return validItems;
+  }, [myApplications, appliedProjects, getProjectById]);
 
 console.log("appliedProjects",appliedProjects)
 console.log("applicationProjectItems",applicationProjectItems);
 console.log("myApplications",myApplications)
+console.log("appliedProjectsData", appliedProjectsData)
+console.log("projects", projects?.length, "publicProjects", publicProjects?.length)
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -508,21 +558,30 @@ console.log("myApplications",myApplications)
     }
   }, [dispatch, isPublicOnly]);
 
-  // Load my applications and count when switching to Applications tab
+  // Load my applications and count on component mount and when switching to Applications tab
   useEffect(() => {
-    if (activeTab === "applications") {
+    if (isDeveloper && !isPublicOnly) {
       dispatch(getMyApplications());
       dispatch(getMyApplicationsCount());
     }
-  }, [activeTab, dispatch]);
+  }, [dispatch, isDeveloper, isPublicOnly]);
+
+  useEffect(() => {
+    if (activeTab === "applications" && isDeveloper && !isPublicOnly) {
+      dispatch(getMyApplications());
+      dispatch(getMyApplicationsCount());
+    }
+  }, [activeTab, dispatch, isDeveloper, isPublicOnly]);
 
   // Ensure Applications tab shows applied projects even if not in current lists
   useEffect(() => {
     const populateAppliedDetails = async () => {
-      if (activeTab !== "applications") return;
       const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
       const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
       const allIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
+      
+      console.log('populateAppliedDetails - allIds:', allIds);
+      
       if (allIds.length === 0) return;
 
       const existingIds = new Set([
@@ -531,23 +590,30 @@ console.log("myApplications",myApplications)
         ...Object.keys(appliedProjectsData).map((k) => Number(k)),
       ]);
 
-      for (const id of allIds) {
-        if (!existingIds.has(id)) {
-          try {
-            const res = await dispatch(getProject(id)).unwrap();
-            const proj = res?.project || res?.data?.project || res;
-            if (proj && proj.id) {
-              setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
-            }
-          } catch (error) {
-            console.error('Failed to load project details for application:', id, error);
+      console.log('existingIds:', existingIds);
+      
+      const missingIds = allIds.filter(id => !existingIds.has(id));
+      console.log('missingIds to fetch:', missingIds);
+
+      for (const id of missingIds) {
+        try {
+          console.log(`Fetching project data for ID: ${id}`);
+          const res = await dispatch(getProject(id)).unwrap();
+          const proj = res?.project || res?.data?.project || res;
+          if (proj && proj.id) {
+            console.log(`Successfully fetched project data for ID: ${id}`);
+            setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
+          } else {
+            console.warn(`No project data found for ID: ${id}`);
           }
+        } catch (error) {
+          console.error('Failed to load project details for application:', id, error);
         }
       }
     };
     populateAppliedDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, appliedProjects, myApplications, dispatch, projects, publicProjects, appliedProjectsData]);
+  }, [appliedProjects, myApplications, dispatch, projects, publicProjects, appliedProjectsData]);
 
   const handleOpenDetails = useCallback((project) => {
     setSelectedProject(project);
@@ -1528,7 +1594,28 @@ console.log("myApplications",myApplications)
                         colSpan='5'
                         className='px-6 py-12 text-center text-gray-400'
                       >
-                        No applications yet
+                        <div className='flex flex-col items-center gap-4'>
+                          <Briefcase className='w-12 h-12 text-gray-500' />
+                          <div>
+                            <p className='text-lg font-medium text-gray-300 mb-2'>
+                              {myApplications?.length > 0 || appliedProjects?.length > 0 
+                                ? 'Loading your applications...' 
+                                : 'No applications yet'
+                              }
+                            </p>
+                            <p className='text-sm text-gray-500'>
+                              {myApplications?.length > 0 || appliedProjects?.length > 0
+                                ? 'Fetching project details...'
+                                : 'Start applying to projects to see them here'
+                              }
+                            </p>
+                            {(myApplications?.length > 0 || appliedProjects?.length > 0) && (
+                              <div className='mt-4'>
+                                <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto'></div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   )}

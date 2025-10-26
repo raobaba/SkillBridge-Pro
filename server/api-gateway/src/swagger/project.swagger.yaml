@@ -63,6 +63,8 @@ paths:
               budgetMax: 15000
               currency: "USD"
               isRemote: true
+              isUrgent: false
+              isFeatured: true
               location: "Remote"
               duration: "3 months"
               startDate: "2024-02-01T00:00:00Z"
@@ -1177,7 +1179,7 @@ paths:
           description: Required experience level
           schema:
             type: string
-            enum: [entry, mid, senior, expert]
+            enum: [entry, mid, senior, lead]
           example: "mid"
         - name: isRemote
           in: query
@@ -1977,6 +1979,119 @@ paths:
         "500":
           description: Internal server error
 
+  /api/v1/projects/developer/applied-projects:
+    get:
+      summary: Get developer applied projects list
+      description: Get a comprehensive list of all projects that the authenticated developer has applied to, including project details and application status
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Applied projects retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Applied projects retrieved successfully"
+                  count:
+                    type: integer
+                    example: 3
+                  appliedProjects:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        applicationId:
+                          type: integer
+                          example: 1
+                        projectId:
+                          type: integer
+                          example: 123
+                        status:
+                          type: string
+                          enum: [applied, shortlisted, interviewing, accepted, rejected]
+                          example: "applied"
+                        appliedAt:
+                          type: string
+                          format: date-time
+                          example: "2024-01-15T10:30:00Z"
+                        matchScore:
+                          type: number
+                          example: 85
+                        notes:
+                          type: string
+                          example: "I'm interested in this project"
+                        project:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                              example: 123
+                            title:
+                              type: string
+                              example: "E-commerce Platform Development"
+                            description:
+                              type: string
+                              example: "Build a modern e-commerce platform with React and Node.js"
+                            company:
+                              type: string
+                              example: "TechCorp Inc"
+                            category:
+                              type: string
+                              example: "Web Development"
+                            experienceLevel:
+                              type: string
+                              enum: [entry, mid, senior, lead]
+                              example: "mid"
+                            budgetMin:
+                              type: number
+                              example: 5000
+                            budgetMax:
+                              type: number
+                              example: 15000
+                            currency:
+                              type: string
+                              example: "USD"
+                            isRemote:
+                              type: boolean
+                              example: true
+                            location:
+                              type: string
+                              example: "Remote"
+                            duration:
+                              type: string
+                              example: "3 months"
+                            status:
+                              type: string
+                              enum: [draft, active, completed, cancelled]
+                              example: "active"
+                            ownerId:
+                              type: integer
+                              example: 456
+                            startDate:
+                              type: string
+                              format: date-time
+                              example: "2024-02-01T00:00:00Z"
+                            deadline:
+                              type: string
+                              format: date-time
+                              example: "2024-05-01T00:00:00Z"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
   /api/v1/projects/global/skills-tags:
     get:
       summary: Get global skills and tags
@@ -2236,7 +2351,7 @@ components:
           type: string
         experienceLevel:
           type: string
-          enum: [entry, mid, senior, expert]
+          enum: [entry, mid, senior, lead]
         budgetMin:
           type: number
         budgetMax:
@@ -2245,6 +2360,10 @@ components:
           type: string
           default: USD
         isRemote:
+          type: boolean
+        isUrgent:
+          type: boolean
+        isFeatured:
           type: boolean
         location:
           type: string
@@ -2311,7 +2430,7 @@ components:
           example: "Web Development"
         experienceLevel:
           type: string
-          enum: [entry, mid, senior, expert]
+          enum: [entry, mid, senior, lead]
           default: mid
         budgetMin:
           type: number
@@ -2325,6 +2444,12 @@ components:
         isRemote:
           type: boolean
           default: true
+        isUrgent:
+          type: boolean
+          default: false
+        isFeatured:
+          type: boolean
+          default: false
         location:
           type: string
           example: "Remote"
@@ -2390,7 +2515,7 @@ components:
           type: string
         experienceLevel:
           type: string
-          enum: [entry, mid, senior, expert]
+          enum: [entry, mid, senior, lead]
         budgetMin:
           type: number
         budgetMax:
@@ -2398,6 +2523,10 @@ components:
         currency:
           type: string
         isRemote:
+          type: boolean
+        isUrgent:
+          type: boolean
+        isFeatured:
           type: boolean
         location:
           type: string

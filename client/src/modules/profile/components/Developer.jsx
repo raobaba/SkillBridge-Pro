@@ -52,7 +52,7 @@ import {
   InfoCard,
 } from "../../../components/Profile";
 import {
-  getMyApplications,
+  getDeveloperAppliedProjects,
 } from "../../project/slice/projectSlice";
 
 // Enhanced data for Developer portfolio features
@@ -320,12 +320,6 @@ const BADGES_DATA = [
   { name: "Mentor", description: "Helps others grow and learn", color: "bg-purple-500" },
 ];
 
-const APPLIED_PROJECTS_DATA = [
-  { id: 1, title: "E-commerce Platform", status: "Applied", date: "2025-01-15", company: "TechCorp" },
-  { id: 2, title: "Mobile Banking App", status: "Under Review", date: "2025-01-10", company: "FinTech Inc" },
-  { id: 3, title: "AI Chatbot System", status: "Interview Scheduled", date: "2025-01-08", company: "AI Solutions" },
-];
-
 const ONGOING_TASKS_DATA = [
   { id: 1, task: "Implement user authentication", project: "Web Dashboard", progress: 75, deadline: "2025-02-01" },
   { id: 2, task: "Optimize database queries", project: "API Backend", progress: 40, deadline: "2025-02-15" },
@@ -366,49 +360,40 @@ const Developer = memo(function Developer({
   const applicationsError = useSelector((state) => state.project?.error);
 
 
-  // Fetch applied projects on component mount
-  useEffect(() => {
-    dispatch(getMyApplications());
-  }, [dispatch]);
-
-  // Debug: Log the applications data
-  useEffect(() => {
-    if (myApplications && myApplications.length > 0) {
-      console.log('My Applications Data:', myApplications);
-    }
-  }, [myApplications]);
-
 
   // Transform applications data for display
   const appliedProjectsData = useMemo(() => {
     if (!myApplications || myApplications.length === 0) {
+      console.log('No applications data to transform');
       return [];
     }
     
-    return myApplications.map((application, index) => ({
-      id: application.id || index + 1,
-      title: application.projectTitle || `Project ${application.projectId}`,
-      description: application.projectDescription || '',
+    const transformed = myApplications.map((application, index) => ({
+      id: application.applicationId || application.id || index + 1,
+      title: application.project?.title || application.projectTitle || `Project ${application.projectId}`,
+      description: application.project?.description || application.projectDescription || '',
       status: application.status === 'applied' ? 'Applied' : 
               application.status === 'shortlisted' ? 'Under Review' :
               application.status === 'interviewing' ? 'Interview Scheduled' :
               application.status === 'accepted' ? 'Accepted' :
               application.status === 'rejected' ? 'Rejected' : 'Applied',
       date: application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'N/A',
-      company: application.projectCompany || 'Company',
+      company: application.project?.company || application.projectCompany || 'Company',
       projectId: application.projectId,
       notes: application.notes || '',
       matchScore: application.matchScore || null,
-      category: application.projectCategory || '',
-      experienceLevel: application.projectExperienceLevel || '',
-      budget: application.projectBudgetMin && application.projectBudgetMax ? 
-              `${application.projectCurrency || 'USD'} ${application.projectBudgetMin} - ${application.projectBudgetMax}` : 
+      category: application.project?.category || application.projectCategory || '',
+      experienceLevel: application.project?.experienceLevel || application.projectExperienceLevel || '',
+      budget: application.project?.budgetMin && application.project?.budgetMax ? 
+              `${application.project?.currency || 'USD'} ${application.project.budgetMin} - ${application.project.budgetMax}` : 
               null,
-      location: application.projectLocation || '',
-      isRemote: application.projectIsRemote,
-      duration: application.projectDuration || '',
-      projectStatus: application.projectStatus || ''
+      location: application.project?.location || application.projectLocation || '',
+      isRemote: application.project?.isRemote || application.projectIsRemote,
+      duration: application.project?.duration || application.projectDuration || '',
+      projectStatus: application.project?.status || application.projectStatus || ''
     }));
+    
+    return transformed;
   }, [myApplications]);
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
@@ -561,7 +546,7 @@ const Developer = memo(function Developer({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => dispatch(getMyApplications())}
+                    onClick={() => dispatch(getDeveloperAppliedProjects())}
                     className="mt-2"
                   >
                     Retry
