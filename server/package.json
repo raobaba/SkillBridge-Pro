@@ -16,14 +16,16 @@
     "db:generate:settings": "cd services/settings-service && npm run db:generate",
     "db:generate:project": "cd services/project-service && npm run db:generate",
 
-    "db:migrate": "concurrently \"npm run db:migrate:user\" \"npm run db:migrate:settings\" \"npm run db:migrate:project\"",
+    "db:migrate": "npm run db:reset-all && npm run db:create-enums && concurrently \"npm run db:migrate:user\" \"npm run db:migrate:settings\" \"npm run db:migrate:project\"",
+    "db:reset-all": "node scripts/reset-database.js",
+    "db:create-enums": "node scripts/create-enums.js",
     "db:migrate:user": "cd services/user-service && npm run db:migrate",
     "db:migrate:settings": "cd services/settings-service && npm run db:migrate",
     "db:migrate:project": "cd services/project-service && npm run db:migrate",
 
-    "db:seed": "echo 'No seed files available for services'",
-    "db:seed:user": "echo 'No seed file available for user service'",
-    "db:seed:project": "echo 'No seed file available for project service'"
+    "db:seed": "node scripts/seed-database.js",
+    "db:seed:user": "echo 'Use db:seed for comprehensive seeding'",
+    "db:seed:project": "echo 'Use db:seed for comprehensive seeding'"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

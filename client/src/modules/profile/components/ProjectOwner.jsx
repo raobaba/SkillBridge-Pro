@@ -307,7 +307,7 @@ const ProjectOwner = memo(function ProjectOwner({
                                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                                   <Briefcase className="w-6 h-6 text-white" />
                                 </div>
-                                <div>
+                    <div>
                                   <h3 className="text-xl font-bold text-white">{project.title}</h3>
                                   <p className="text-gray-400 text-sm">Project ID: {project.id}</p>
                                 </div>
@@ -327,13 +327,13 @@ const ProjectOwner = memo(function ProjectOwner({
                                 </span>
                                 
                                 <div className="flex items-center gap-2 text-sm text-gray-400">
-                                  <span>Posted: {project.postedDate}</span>
-                                  <span>•</span>
-                                  <span>Duration: {project.duration}</span>
-                                  <span>•</span>
-                                  <span>Budget: {project.budget}</span>
-                                </div>
-                              </div>
+                        <span>Posted: {project.postedDate}</span>
+                        <span>•</span>
+                        <span>Duration: {project.duration}</span>
+                        <span>•</span>
+                        <span>Budget: {project.budget}</span>
+                      </div>
+                    </div>
                               
                               {/* Project Skills */}
                               <div className="flex flex-wrap gap-2">
@@ -356,7 +356,7 @@ const ProjectOwner = memo(function ProjectOwner({
                                     </span>
                                     <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300">
                                       MongoDB
-                                    </span>
+                    </span>
                                   </>
                                 )}
                               </div>
@@ -387,8 +387,8 @@ const ProjectOwner = memo(function ProjectOwner({
                               <div className="text-xs text-gray-400">Avg Rating</div>
                             </div>
                           </div>
-                        </div>
-                        
+                  </div>
+                  
                         {/* Applicants Section */}
                         <div className="p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -399,14 +399,14 @@ const ProjectOwner = memo(function ProjectOwner({
                             <div className="text-sm text-gray-400">
                               {projectApplicantsList.filter(app => app.status === 'applied').length} New Applications
                             </div>
-                          </div>
+                    </div>
                           
                           {projectApplicantsList.length === 0 ? (
                             <div className="text-center py-8">
                               <Users className='w-12 h-12 text-gray-400 mx-auto mb-3' />
                               <p className='text-gray-400'>No applicants yet</p>
                               <p className='text-gray-500 text-sm mt-1'>Applicants will appear here once developers apply to this project</p>
-                            </div>
+                    </div>
                           ) : (
                             <div className="space-y-3">
                               {projectApplicantsList.map((applicant, index) => (
@@ -415,7 +415,7 @@ const ProjectOwner = memo(function ProjectOwner({
                                     <div className="flex items-center gap-4">
                                       <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-semibold">
                                         {applicant.name?.charAt(0) || "A"}
-                                      </div>
+                    </div>
                                       <div>
                                         <p className="text-white font-medium">{applicant.name || 'Applicant'}</p>
                                         {applicant.email && (
@@ -424,9 +424,9 @@ const ProjectOwner = memo(function ProjectOwner({
                                         {applicant.experience && (
                                           <p className="text-gray-500 text-xs">{applicant.experience}</p>
                                         )}
-                                      </div>
-                                    </div>
-                                    
+                    </div>
+                  </div>
+
                                     <div className="flex items-center gap-6">
                                       {/* Application Status */}
                                       <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${
@@ -441,7 +441,7 @@ const ProjectOwner = memo(function ProjectOwner({
                                         {applicant.status === 'rejected' && <XCircle className="w-3 h-3" />}
                                         {applicant.status === 'accepted' && <Star className="w-3 h-3" />}
                                         {applicant.status || "Applied"}
-                                      </span>
+                      </span>
                                       
                                       {/* Application Date */}
                                       <div className="text-center">
@@ -478,10 +478,10 @@ const ProjectOwner = memo(function ProjectOwner({
                                         </Button>
                                       </div>
                                     </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                  </div>
+                </div>
+              ))}
+            </div>
                           )}
                         </div>
                       </div>
@@ -679,8 +679,8 @@ const ProjectOwner = memo(function ProjectOwner({
               </div>
             </div>
           </div>
-          {/* Developer Reviews */}
-          <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
+ {/* Developer Reviews */}
+ <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
             <h2 className='text-xl font-semibold mb-4 flex items-center'>
               <MessageSquare className='w-8 h-8 mr-2 text-yellow-400' /> Developer Reviews
             </h2>
@@ -723,9 +723,9 @@ const ProjectOwner = memo(function ProjectOwner({
                       <ThumbsUp className='w-4 h-4 text-yellow-400' />
                     </div>
                     <span>Ask for reviews after project completion</span>
+                    </div>
+                    </div>
                   </div>
-                </div>
-              </div>
               
               {/* Stats Preview */}
               <div className='mt-8 grid grid-cols-3 gap-4 max-w-sm mx-auto'>
@@ -741,7 +741,7 @@ const ProjectOwner = memo(function ProjectOwner({
                   <div className='text-2xl font-bold text-blue-400'>0</div>
                   <div className='text-xs text-gray-400'>Projects</div>
                 </div>
-              </div>
+                </div>
             </div>
           </div>
           <ConfirmModal

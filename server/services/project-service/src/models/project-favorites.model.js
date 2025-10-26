@@ -9,6 +9,7 @@ const {
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
+const { projectsTable } = require("./projects.model");
 
 // Project Favorites table
 const projectFavoritesTable = pgTable("project_favorites", {
@@ -137,7 +138,6 @@ class ProjectFavoritesModel {
 
   // Get favorite projects with project details
   static async getUserFavoriteProjects(userId) {
-    const { projectsTable } = require("./projects.model");
     
     const favoriteProjects = await db
       .select({

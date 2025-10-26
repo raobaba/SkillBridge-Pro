@@ -162,6 +162,7 @@ projectRouter.post("/export", authenticate, requireProjectManager, projectContro
 // 🔍 Advanced Search & Discovery
 projectRouter.get("/search", projectController.searchProjects);
 projectRouter.get("/search/suggestions", projectController.getSearchSuggestions); // Public - get search suggestions
+projectRouter.get("/global/skills-tags", projectController.getGlobalSkillsAndTags); // Public - get all global skills and tags
 projectRouter.get(
   "/recommendations",
   authenticate,

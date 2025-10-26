@@ -2,12 +2,11 @@ const { pgTable, serial, text, integer, timestamp } = require("drizzle-orm/pg-co
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { projectsTable } = require("./projects.model");
 
 // Project Team table
 const projectTeamTable = pgTable("project_team", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
+  projectId: integer("project_id").notNull(), // FK -> projects.id
   userId: integer("user_id").notNull(), // FK -> users.id
   role: text("role"),
   joinedAt: timestamp("joined_at").defaultNow(),

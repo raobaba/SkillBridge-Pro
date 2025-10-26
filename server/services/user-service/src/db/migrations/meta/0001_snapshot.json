@@ -1,6 +1,6 @@
 {
-  "id": "1b72fdfb-bd80-4351-90e1-52d8b641fd00",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "5bdee9d3-30af-484f-8a40-fc542bc79981",
+  "prevId": "1b72fdfb-bd80-4351-90e1-52d8b641fd00",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -183,6 +183,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'developer'"
+        },
+        "roles": {
+          "name": "roles",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::json"
         },
         "is_deleted": {
           "name": "is_deleted",

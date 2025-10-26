@@ -2,12 +2,11 @@ const { pgTable, serial, text, integer, timestamp, boolean } = require("drizzle-
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { projectsTable } = require("./projects.model");
 
 // Project Notifications table
 const projectNotificationsTable = pgTable("project_notifications", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
+  projectId: integer("project_id").notNull(), // FK -> projects.id
   userId: integer("user_id").notNull(), // FK -> users.id
   type: text("type").notNull(), // application, update, comment, deadline, etc.
   title: text("title").notNull(),

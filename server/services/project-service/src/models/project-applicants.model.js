@@ -16,7 +16,7 @@ const applicantStatusEnum = pgEnum("applicant_status", [
 // Project Applicants table
 const projectApplicantsTable = pgTable("project_applicants", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
+  projectId: integer("project_id").notNull(), // FK -> projects.id
   userId: integer("user_id").notNull(), // FK -> users.id
   status: applicantStatusEnum("status").default("applied").notNull(),
   matchScore: numeric("match_score"),
@@ -122,10 +122,46 @@ class ProjectApplicantsModel {
   }
 
   static async listApplicationsByUser(userId) {
-    return await db
-      .select()
-      .from(projectApplicantsTable)
-      .where(eq(projectApplicantsTable.userId, userId));
+    try {
+      const applications = await db
+        .select({
+          id: projectApplicantsTable.id,
+          projectId: projectApplicantsTable.projectId,
+          userId: projectApplicantsTable.userId,
+          status: projectApplicantsTable.status,
+          matchScore: projectApplicantsTable.matchScore,
+          rating: projectApplicantsTable.rating,
+          notes: projectApplicantsTable.notes,
+          appliedAt: projectApplicantsTable.appliedAt,
+          updatedAt: projectApplicantsTable.updatedAt,
+          // Project details
+          projectTitle: projectsTable.title,
+          projectDescription: projectsTable.description,
+          projectCompany: projectsTable.company,
+          projectStatus: projectsTable.status,
+          projectCategory: projectsTable.category,
+          projectExperienceLevel: projectsTable.experienceLevel,
+          projectBudgetMin: projectsTable.budgetMin,
+          projectBudgetMax: projectsTable.budgetMax,
+          projectCurrency: projectsTable.currency,
+          projectLocation: projectsTable.location,
+          projectIsRemote: projectsTable.isRemote,
+          projectDuration: projectsTable.duration,
+          projectStartDate: projectsTable.startDate,
+          projectDeadline: projectsTable.deadline,
+          projectOwnerId: projectsTable.ownerId,
+        })
+        .from(projectApplicantsTable)
+        .leftJoin(projectsTable, eq(projectApplicantsTable.projectId, projectsTable.id))
+        .where(eq(projectApplicantsTable.userId, userId))
+        .orderBy(projectApplicantsTable.appliedAt);
+
+      // Filter out applications where project data is missing (due to deleted projects)
+      return applications.filter(app => app.projectTitle !== null);
+    } catch (error) {
+      console.error('Error in listApplicationsByUser:', error);
+      return [];
+    }
   }
 
   static async countApplicationsByUser(userId) {

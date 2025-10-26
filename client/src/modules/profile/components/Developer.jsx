@@ -1,4 +1,5 @@
-import React, { memo, useState, useMemo } from "react";
+import React, { memo, useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   FileText,
   Award,
@@ -50,8 +51,12 @@ import {
   UserCard,
   InfoCard,
 } from "../../../components/Profile";
+import {
+  getMyApplications,
+} from "../../project/slice/projectSlice";
 
 // Enhanced data for Developer portfolio features
+
 const PORTFOLIO_PROJECTS = [
   {
     id: 1,
@@ -352,6 +357,59 @@ const Developer = memo(function Developer({
   handleAvatarChange,
   navigate,
 }) {
+  const dispatch = useDispatch();
+  
+  // Redux selectors for applied projects
+  const myApplications = useSelector((state) => state.project?.myApplications || []);
+  const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount || 0);
+  const applicationsLoading = useSelector((state) => state.project?.loading);
+  const applicationsError = useSelector((state) => state.project?.error);
+
+
+  // Fetch applied projects on component mount
+  useEffect(() => {
+    dispatch(getMyApplications());
+  }, [dispatch]);
+
+  // Debug: Log the applications data
+  useEffect(() => {
+    if (myApplications && myApplications.length > 0) {
+      console.log('My Applications Data:', myApplications);
+    }
+  }, [myApplications]);
+
+
+  // Transform applications data for display
+  const appliedProjectsData = useMemo(() => {
+    if (!myApplications || myApplications.length === 0) {
+      return [];
+    }
+    
+    return myApplications.map((application, index) => ({
+      id: application.id || index + 1,
+      title: application.projectTitle || `Project ${application.projectId}`,
+      description: application.projectDescription || '',
+      status: application.status === 'applied' ? 'Applied' : 
+              application.status === 'shortlisted' ? 'Under Review' :
+              application.status === 'interviewing' ? 'Interview Scheduled' :
+              application.status === 'accepted' ? 'Accepted' :
+              application.status === 'rejected' ? 'Rejected' : 'Applied',
+      date: application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'N/A',
+      company: application.projectCompany || 'Company',
+      projectId: application.projectId,
+      notes: application.notes || '',
+      matchScore: application.matchScore || null,
+      category: application.projectCategory || '',
+      experienceLevel: application.projectExperienceLevel || '',
+      budget: application.projectBudgetMin && application.projectBudgetMax ? 
+              `${application.projectCurrency || 'USD'} ${application.projectBudgetMin} - ${application.projectBudgetMax}` : 
+              null,
+      location: application.projectLocation || '',
+      isRemote: application.projectIsRemote,
+      duration: application.projectDuration || '',
+      projectStatus: application.projectStatus || ''
+    }));
+  }, [myApplications]);
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       {/* Navbar */}
@@ -453,42 +511,172 @@ const Developer = memo(function Developer({
           {/* Endorsements & Ratings */}
           <SectionCard
             icon={<Star className='w-8 h-8 mr-2 text-yellow-400' />}
-            title="Endorsements & Ratings"
+            title={`Endorsements & Ratings (${ENDORSEMENTS_DATA.length})`}
           >
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-              {ENDORSEMENTS_DATA.map((endorsement, index) => (
-                <div key={index} className='bg-white/5 rounded-lg p-4 border border-white/10'>
-                  <div className='flex justify-between items-center mb-2'>
-                    <span className='font-medium'>{endorsement.skill}</span>
-                    <div className='flex items-center'>
-                      <Star className='w-4 h-4 text-yellow-400 fill-current' />
-                      <span className='ml-1 text-sm'>{endorsement.rating}</span>
+            <div className='space-y-4'>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                {ENDORSEMENTS_DATA.map((skill) => (
+                  <div key={skill.id} className='bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors'>
+                    <div className='flex justify-between items-center mb-2'>
+                      <span className='font-medium text-lg'>{skill.skill}</span>
+                      <div className='flex items-center'>
+                        <Star className='w-5 h-5 text-yellow-400 fill-current' />
+                        <span className='ml-1 text-lg font-semibold'>{skill.rating}</span>
+                      </div>
+                    </div>
+                    <div className='text-sm text-gray-400 mb-2'>
+                      {skill.endorsements} endorsement{skill.endorsements !== 1 ? 's' : ''}
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <div className='flex-1 bg-gray-700 rounded-full h-2'>
+                        <div
+                          className='bg-yellow-400 h-2 rounded-full transition-all duration-300'
+                          style={{ width: `${(skill.rating / 5) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className='text-xs text-gray-500'>5.0</span>
                     </div>
                   </div>
-                  <div className='text-sm text-gray-400'>
-                    {endorsement.endorsements} endorsements
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </SectionCard>
 
           {/* Applied Projects */}
           <SectionCard
             icon={<Briefcase className='w-8 h-8 mr-2 text-green-400' />}
-            title="Applied Projects"
+            title={`Applied Projects (${appliedProjectsData.length})`}
           >
             <div className='space-y-3'>
-              {APPLIED_PROJECTS_DATA.map((project) => (
-                <div key={project.id} className='bg-white/5 rounded-lg p-4 border border-white/10'>
-                  <div className='flex justify-between items-start mb-2'>
-                    <h3 className='font-medium'>{project.title}</h3>
-                    <StatusBadge status={project.status} type="project" />
-                  </div>
-                  <div className='text-sm text-gray-400 mb-1'>{project.company}</div>
-                  <div className='text-sm text-gray-500'>Applied: {project.date}</div>
+              {applicationsLoading ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <div className='animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4'></div>
+                  <p>Loading applications...</p>
                 </div>
-              ))}
+              ) : applicationsError ? (
+                <div className='text-center py-8 text-red-400'>
+                  <XCircle className='w-12 h-12 mx-auto mb-4 opacity-50' />
+                  <p>Error loading applications</p>
+                  <p className='text-sm text-gray-500'>{applicationsError}</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => dispatch(getMyApplications())}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : appliedProjectsData.length > 0 ? (
+                appliedProjectsData.map((project) => (
+                  <div key={project.id} className='bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors'>
+                    <div className='flex justify-between items-start mb-3'>
+                      <div className='flex-1'>
+                        <h3 className='font-medium text-lg mb-1'>{project.title}</h3>
+                        {project.description && (
+                          <p className='text-sm text-gray-300 mb-2 line-clamp-2'>{project.description}</p>
+                        )}
+                      </div>
+                      <StatusBadge status={project.status} type="project" />
+                    </div>
+                    
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-3 mb-3'>
+                      <div className='flex items-center text-sm text-gray-400'>
+                        <MapPin className='w-4 h-4 mr-2' />
+                        <span>{project.company}</span>
+                      </div>
+                      
+                      {project.category && (
+                        <div className='flex items-center text-sm text-gray-400'>
+                          <Code className='w-4 h-4 mr-2' />
+                          <span>{project.category}</span>
+                        </div>
+                      )}
+                      
+                      {project.experienceLevel && (
+                        <div className='flex items-center text-sm text-gray-400'>
+                          <Target className='w-4 h-4 mr-2' />
+                          <span>{project.experienceLevel}</span>
+                        </div>
+                      )}
+                      
+                      {project.budget && (
+                        <div className='flex items-center text-sm text-gray-400'>
+                          <BarChart3 className='w-4 h-4 mr-2' />
+                          <span>{project.budget}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className='flex items-center justify-between text-sm text-gray-500 mb-2'>
+                      <span>Applied: {project.date}</span>
+                      {project.matchScore && (
+                        <span className='text-blue-400 font-medium'>
+                          Match: {project.matchScore}%
+                        </span>
+                      )}
+                    </div>
+                    
+                    {project.notes && (
+                      <div className='text-xs text-gray-400 bg-gray-800/50 p-2 rounded border-l-2 border-gray-600'>
+                        <strong>Notes:</strong> {project.notes}
+                      </div>
+                    )}
+                    
+                    <div className='flex items-center justify-between mt-3 pt-2 border-t border-gray-700'>
+                      <div className='flex items-center space-x-4 text-xs text-gray-500'>
+                        {project.isRemote && (
+                          <span className='flex items-center'>
+                            <Globe className='w-3 h-3 mr-1' />
+                            Remote
+                          </span>
+                        )}
+                        {project.duration && (
+                          <span className='flex items-center'>
+                            <Clock className='w-3 h-3 mr-1' />
+                            {project.duration}
+                          </span>
+                        )}
+                        {project.location && !project.isRemote && (
+                          <span className='flex items-center'>
+                            <MapPin className='w-3 h-3 mr-1' />
+                            {project.location}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className='flex items-center space-x-2'>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 bg-white/10 hover:bg-gray-600/50"
+                          leftIcon={Eye}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-2 bg-white/10 hover:bg-gray-600/50"
+                          leftIcon={ExternalLink}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className='text-center py-12 text-gray-400'>
+                  <Briefcase className='w-16 h-16 mx-auto mb-4 opacity-50' />
+                  <h3 className='text-lg font-medium mb-2'>No Applications Yet</h3>
+                  <p className='text-sm mb-4'>Start applying to projects to see them here</p>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => navigate('/projects')}
+                    leftIcon={Plus}
+                  >
+                    Browse Projects
+                  </Button>
+                </div>
+              )}
             </div>
           </SectionCard>
 

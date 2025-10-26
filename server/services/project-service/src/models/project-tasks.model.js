@@ -2,13 +2,12 @@ const { pgTable, serial, text, integer, timestamp, boolean } = require("drizzle-
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { projectsTable } = require("./projects.model");
 const { projectMilestonesTable } = require("./project-milestones.model");
 
 // Project Tasks table
 const projectTasksTable = pgTable("project_tasks", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
+  projectId: integer("project_id").notNull(), // FK -> projects.id
   milestoneId: integer("milestone_id").references(() => projectMilestonesTable.id, { onDelete: "set null" }), // FK -> project_milestones.id
   assignedTo: integer("assigned_to"), // FK -> users.id
   title: text("title").notNull(),

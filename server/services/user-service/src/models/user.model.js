@@ -46,7 +46,8 @@ const userTable = pgTable("users", {
   resetPasswordToken: text("reset_password_token"),
   resetPasswordExpire: timestamp("reset_password_expire"),
   notificationPrefs: json("notification_prefs").default({}),
-  role: roleEnum("role").default("developer").notNull(),
+  role: roleEnum("role").default("developer").notNull(), // Keep for backward compatibility
+  roles: json("roles").default([]), // New: array of roles
   isDeleted: boolean("is_deleted").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -326,6 +327,103 @@ class UserModel {
       .returning();
 
     return user;
+  }
+
+  // Role management methods
+  static async assignRole(userId, role, assignedBy = null) {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get current roles
+    let currentRoles = user.roles || [];
+    
+    // Check if user already has this role
+    if (currentRoles.includes(role)) {
+      throw new Error(`User already has the role: ${role}`);
+    }
+
+    // Add the new role
+    currentRoles.push(role);
+
+    // Update user with new roles
+    const [updatedUser] = await db
+      .update(userTable)
+      .set({ 
+        roles: currentRoles,
+        updatedAt: new Date()
+      })
+      .where(and(eq(userTable.id, userId), eq(userTable.isDeleted, false)))
+      .returning();
+
+    return updatedUser;
+  }
+
+  static async removeRole(userId, role) {
+    const user = await this.getUserById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    // Get current roles
+    let currentRoles = user.roles || [];
+    
+    // Check if user has this role
+    if (!currentRoles.includes(role)) {
+      throw new Error(`User does not have the role: ${role}`);
+    }
+
+    // Remove the role
+    currentRoles = currentRoles.filter(r => r !== role);
+
+    // Update user with updated roles
+    const [updatedUser] = await db
+      .update(userTable)
+      .set({ 
+        roles: currentRoles,
+        updatedAt: new Date()
+      })
+      .where(and(eq(userTable.id, userId), eq(userTable.isDeleted, false)))
+      .returning();
+
+    return updatedUser;
+  }
+
+  static async getUserRoles(userId) {
+    const user = await this.getUserById(userId);
+    if (!user) return [];
+
+    return user.roles || [];
+  }
+
+  static async hasRole(userId, role) {
+    const user = await this.getUserById(userId);
+    if (!user) return false;
+
+    const roles = user.roles || [];
+    return roles.includes(role);
+  }
+
+  static async hasAnyRole(userId, roles) {
+    const user = await this.getUserById(userId);
+    if (!user) return false;
+
+    const userRoles = user.roles || [];
+    return roles.some(role => userRoles.includes(role));
+  }
+
+  // Get user with roles (roles are already included in user object)
+  static async getUserWithRoles(id) {
+    return await this.getUserById(id);
+  }
+
+  static async getUserByEmailWithRoles(email) {
+    return await this.getUserByEmail(email);
+  }
+
+  static async getUserByUUIDWithRoles(uuid) {
+    return await this.getUserByUUID(uuid);
   }
 }
 

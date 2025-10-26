@@ -38,7 +38,7 @@ const registerUser = async (req, res) => {
     const user = await UserModel.createUser({
       name,
       email,
-      role,
+      role, // Keep for backward compatibility
       domains,
       experience,
       availability,
@@ -47,6 +47,9 @@ const registerUser = async (req, res) => {
       resetPasswordToken: verificationToken,
       resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000),
     });
+
+    // Assign the initial role to the user
+    await UserModel.assignRole(user.id, role);
 
     const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
     const emailBody = {
@@ -176,10 +179,11 @@ const loginUser = async (req, res) => {
       return new ErrorHandler("Invalid credentials", 401).sendError(res);
     }
 
-    // ✅ Check role
-    if (user.role !== role) {
+    // ✅ Check if user has the requested role
+    const hasRole = await UserModel.hasRole(user.id, role);
+    if (!hasRole) {
       return new ErrorHandler(
-        "Role mismatch. Please check your role.",
+        "You don't have the requested role. Please check your roles.",
         403
       ).sendError(res);
     }
@@ -285,9 +289,17 @@ const loginUser = async (req, res) => {
       }
     }
 
-    // ✅ Generate JWT including role
+    // ✅ Get user roles for JWT
+    const roles = await UserModel.getUserRoles(user.id);
+
+    // ✅ Generate JWT including roles
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
+      { 
+        userId: user.id, 
+        email: user.email, 
+        role: role, // Keep for backward compatibility
+        roles: roles // New: array of all user roles
+      },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -757,6 +769,187 @@ const getDevelopers = async (req, res) => {
   }
 };
 
+// Role Management Functions
+
+// Assign role to user
+const assignRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    const assignedBy = req.user.userId; // Admin who is assigning the role
+
+    if (!role) {
+      return new ErrorHandler("Role is required", 400).sendError(res);
+    }
+
+    const validRoles = ['developer', 'project-owner', 'admin'];
+    if (!validRoles.includes(role)) {
+      return new ErrorHandler("Invalid role. Must be one of: developer, project-owner, admin", 400).sendError(res);
+    }
+
+    // Check if user exists
+    const user = await UserModel.getUserById(userId);
+    if (!user) {
+      return new ErrorHandler("User not found", 404).sendError(res);
+    }
+
+    // Assign the role
+    const userRole = await UserModel.assignRole(userId, role, assignedBy);
+
+    res.status(201).json({
+      success: true,
+      status: 201,
+      message: `Role '${role}' assigned successfully`,
+      data: userRole
+    });
+  } catch (error) {
+    console.error("Assign role error:", error);
+    if (error.message.includes("already has the role")) {
+      return new ErrorHandler(error.message, 409).sendError(res);
+    }
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to assign role",
+      error: error.message,
+    });
+  }
+};
+
+// Remove role from user
+const removeRole = async (req, res) => {
+  try {
+    const { userId, role } = req.params;
+
+    // Check if user exists
+    const user = await UserModel.getUserById(userId);
+    if (!user) {
+      return new ErrorHandler("User not found", 404).sendError(res);
+    }
+
+    // Check if user has this role
+    const hasRole = await UserModel.hasRole(userId, role);
+    if (!hasRole) {
+      return new ErrorHandler(`User does not have the role '${role}'`, 404).sendError(res);
+    }
+
+    // Remove the role
+    const removedRole = await UserModel.removeRole(userId, role);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: `Role '${role}' removed successfully`,
+      data: removedRole
+    });
+  } catch (error) {
+    console.error("Remove role error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to remove role",
+      error: error.message,
+    });
+  }
+};
+
+// Get user roles
+const getUserRoles = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists
+    const user = await UserModel.getUserById(userId);
+    if (!user) {
+      return new ErrorHandler("User not found", 404).sendError(res);
+    }
+
+    // Get user roles
+    const roles = await UserModel.getUserRoles(userId);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      data: {
+        userId: parseInt(userId),
+        roles: roles
+      }
+    });
+  } catch (error) {
+    console.error("Get user roles error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch user roles",
+      error: error.message,
+    });
+  }
+};
+
+// Get user with roles
+const getUserWithRoles = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await UserModel.getUserWithRoles(userId);
+    if (!user) {
+      return new ErrorHandler("User not found", 404).sendError(res);
+    }
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      data: user
+    });
+  } catch (error) {
+    console.error("Get user with roles error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch user with roles",
+      error: error.message,
+    });
+  }
+};
+
+// Get role statistics
+const getRoleStats = async (req, res) => {
+  try {
+    const allUsers = await UserModel.getAllUsers();
+    
+    // Count roles
+    const roleStats = {
+      developer: 0,
+      'project-owner': 0,
+      admin: 0
+    };
+
+    allUsers.forEach(user => {
+      const roles = user.roles || [];
+      roles.forEach(role => {
+        if (roleStats.hasOwnProperty(role)) {
+          roleStats[role]++;
+        }
+      });
+    });
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      data: roleStats
+    });
+  } catch (error) {
+    console.error("Get role stats error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch role statistics",
+      error: error.message,
+    });
+  }
+};
+
+
 module.exports = {
   registerUser,
   loginUser,
@@ -770,4 +963,10 @@ module.exports = {
   resetPassword,
   logoutUser,
   getDevelopers,
+  // Role management functions
+  assignRole,
+  removeRole,
+  getUserRoles,
+  getUserWithRoles,
+  getRoleStats,
 };

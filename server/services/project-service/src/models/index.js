@@ -1,7 +1,7 @@
 // Import all models (each model exports both table and model class)
 const { projectsTable, ProjectsModel } = require("./projects.model");
-const { projectSkillsTable, ProjectSkillsModel } = require("./project-skills.model");
-const { projectTagsTable, ProjectTagsModel } = require("./project-tags.model");
+const { skillsTable, projectSkillsTable, ProjectSkillsModel } = require("./project-skills.model");
+const { tagsTable, projectTagsTable, ProjectTagsModel } = require("./project-tags.model");
 const { projectApplicantsTable, ProjectApplicantsModel } = require("./project-applicants.model");
 const { projectInvitesTable, ProjectInvitesModel } = require("./project-invites.model");
 const { projectTeamTable, ProjectTeamModel } = require("./project-team.model");
@@ -92,6 +92,8 @@ const ProjectModel = {
 module.exports = {
   // Tables (for database operations)
   projectsTable,
+  skillsTable,
+  tagsTable,
   projectSkillsTable,
   projectTagsTable,
   projectApplicantsTable,

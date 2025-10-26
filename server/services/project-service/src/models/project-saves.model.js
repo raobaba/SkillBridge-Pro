@@ -9,6 +9,7 @@ const {
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
+const { projectsTable } = require("./projects.model");
 
 // Project Saves (Bookmarks) table
 const projectSavesTable = pgTable("project_saves", {
@@ -106,7 +107,6 @@ class ProjectSavesModel {
 
   // Get user's saved projects with details
   static async getUserSavedProjects(userId) {
-    const { projectsTable } = require("./projects.model");
     return await db
       .select({
         id: projectSavesTable.id,

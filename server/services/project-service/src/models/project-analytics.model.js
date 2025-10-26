@@ -2,12 +2,11 @@ const { pgTable, serial, text, integer, timestamp, numeric, date } = require("dr
 const { eq, and } = require("drizzle-orm");
 
 const { db } = require("../config/database");
-const { projectsTable } = require("./projects.model");
 
 // Project Analytics table
 const projectAnalyticsTable = pgTable("project_analytics", {
   id: serial("id").primaryKey(),
-  projectId: integer("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }), // FK -> projects.id
+  projectId: integer("project_id").notNull(), // FK -> projects.id
   metricName: text("metric_name").notNull(),
   metricValue: numeric("metric_value").notNull(),
   metricDate: date("metric_date").notNull(),

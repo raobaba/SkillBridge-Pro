@@ -4,8 +4,6 @@ const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
 const { supabase } = require("shared/utils/supabase.utils");
 const { db } = require("../config/database");
 const { ilike, asc, sql } = require("drizzle-orm");
-const { projectSkillsTable } = require("../models/project-skills.model");
-const { projectTagsTable } = require("../models/project-tags.model");
 const { sendMail } = require("shared/utils/sendEmail");
 
 // Basic error helper to keep responses consistent
@@ -1766,6 +1764,42 @@ const deleteProjectComment = async (req, res) => {
   }
 };
 
+// Get all skills and tags (for dropdowns, filters, etc.)
+const getGlobalSkillsAndTags = async (req, res) => {
+  try {
+    const { ProjectSkillsModel } = require('../models/project-skills.model');
+    const { ProjectTagsModel } = require('../models/project-tags.model');
+
+    // Get all skills from reference table
+    const skills = await ProjectSkillsModel.getAllSkills();
+
+    // Get all tags from reference table
+    const tags = await ProjectTagsModel.getAllTags();
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      data: {
+        skills: skills.map(skill => ({
+          id: skill.id,
+          name: skill.name,
+          category: skill.category
+        })),
+        tags: tags.map(tag => ({
+          id: tag.id,
+          name: tag.name,
+          category: tag.category
+        }))
+      }
+    });
+  } catch (error) {
+    console.error("Get Skills and Tags Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to get skills and tags", error: error.message });
+  }
+};
+
 // Get search suggestions for skills and tags
 const getSearchSuggestions = async (req, res) => {
   try {
@@ -1782,29 +1816,17 @@ const getSearchSuggestions = async (req, res) => {
     const searchTerm = query.trim().toLowerCase();
     const suggestions = { skills: [], tags: [] };
 
-    // Get skills suggestions
+    // Get skills suggestions from reference table
     if (type === 'all' || type === 'skills') {
-      const skillsResult = await db
-        .select({ name: projectSkillsTable.name })
-        .from(projectSkillsTable)
-        .where(ilike(projectSkillsTable.name, `%${searchTerm}%`))
-        .groupBy(projectSkillsTable.name)
-        .orderBy(asc(projectSkillsTable.name))
-        .limit(10);
-      
+      const { ProjectSkillsModel } = require('../models/project-skills.model');
+      const skillsResult = await ProjectSkillsModel.searchSkills(searchTerm);
       suggestions.skills = skillsResult.map(row => row.name);
     }
 
-    // Get tags suggestions
+    // Get tags suggestions from reference table
     if (type === 'all' || type === 'tags') {
-      const tagsResult = await db
-        .select({ name: projectTagsTable.name })
-        .from(projectTagsTable)
-        .where(ilike(projectTagsTable.name, `%${searchTerm}%`))
-        .groupBy(projectTagsTable.name)
-        .orderBy(asc(projectTagsTable.name))
-        .limit(10);
-      
+      const { ProjectTagsModel } = require('../models/project-tags.model');
+      const tagsResult = await ProjectTagsModel.searchTags(searchTerm);
       suggestions.tags = tagsResult.map(row => row.name);
     }
 
@@ -2507,6 +2529,7 @@ module.exports = {
   getProjectComments,
   updateProjectComment,
   deleteProjectComment,
+  getGlobalSkillsAndTags,
   getSearchSuggestions,
   listMyApplications,
   getMyApplicationsCount,

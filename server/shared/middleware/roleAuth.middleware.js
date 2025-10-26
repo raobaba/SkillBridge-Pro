@@ -13,16 +13,19 @@ const requireRole = (allowedRoles) => {
         return next(new HttpException(401, "Authentication required"));
       }
 
-      // Get user role from JWT token
-      const userRole = req.user.role;
+      // Get user roles from JWT token (support both old and new format)
+      const userRoles = req.user.roles || (req.user.role ? [req.user.role] : []);
+      const userRole = req.user.role; // Keep for backward compatibility
 
-      if (!userRole) {
-        return next(new HttpException(403, "User role not found in token"));
+      if (!userRoles || userRoles.length === 0) {
+        return next(new HttpException(403, "User roles not found in token"));
       }
 
-      // Check if user's role is in the allowed roles
-      if (!allowedRoles.includes(userRole)) {
-        return next(new HttpException(403, `Access denied. Required roles: ${allowedRoles.join(', ')}. Your role: ${userRole}`));
+      // Check if user has any of the allowed roles
+      const hasRequiredRole = userRoles.some(role => allowedRoles.includes(role));
+      
+      if (!hasRequiredRole) {
+        return next(new HttpException(403, `Access denied. Required roles: ${allowedRoles.join(', ')}. Your roles: ${userRoles.join(', ')}`));
       }
 
       next();

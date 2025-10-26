@@ -85,6 +85,8 @@ export const fetchProjectOwnerDevelopers = createAsyncThunk(
   }
 );
 
+
+
 // Initial state
 const initialState = {
   // Project Owner Profile Data
@@ -116,7 +118,8 @@ const initialState = {
     projects: null,
     reviews: null,
     developers: null
-  }
+  },
+
 };
 
 // Profile slice
@@ -146,6 +149,19 @@ const profileSlice = createSlice({
       if (developer) {
         developer.status = newStatus;
       }
+    },
+
+    // Clear endorsements data
+    clearEndorsementsData: (state) => {
+      state.userEndorsements = [];
+      state.userSkillRatings = [];
+      state.endorsementsError = initialState.endorsementsError;
+    },
+    
+    // Clear specific endorsement error
+    clearEndorsementError: (state, action) => {
+      const { type } = action.payload;
+      state.endorsementsError[type] = null;
     }
   },
   extraReducers: (builder) => {
@@ -207,15 +223,16 @@ const profileSlice = createSlice({
       .addCase(fetchProjectOwnerDevelopers.rejected, (state, action) => {
         state.projectOwnerLoading.developers = false;
         state.projectOwnerError.developers = action.payload;
-      });
+      })
+      
   }
 });
 
 // Export actions
-export const { 
-  clearProjectOwnerData, 
-  clearProjectOwnerError, 
-  updateDeveloperStatus 
+export const {
+  clearProjectOwnerData,
+  clearProjectOwnerError,
+  updateDeveloperStatus
 } = profileSlice.actions;
 
 // Export selectors
@@ -225,6 +242,7 @@ export const selectProjectOwnerReviews = (state) => state.profile.projectOwnerRe
 export const selectProjectOwnerDevelopers = (state) => state.profile.projectOwnerDevelopers;
 export const selectProjectOwnerLoading = (state) => state.profile.projectOwnerLoading;
 export const selectProjectOwnerError = (state) => state.profile.projectOwnerError;
+
 
 // Export reducer
 export default profileSlice.reducer;
