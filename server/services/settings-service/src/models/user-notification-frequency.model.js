@@ -5,9 +5,9 @@ const { db } = require("../config/database");
 const userNotificationFrequencyTable = pgTable("user_notification_frequency", {
   id: serial("id").primaryKey(),
   userId: integer("user_id"),
-  emailFrequency: text("email_frequency").notNull().default("daily"),
-  pushFrequency: text("push_frequency").notNull().default("immediate"),
-  remindersFrequency: text("reminders_frequency").notNull().default("weekly"),
+  email: text("email_frequency").notNull().default("daily"),
+  push: text("push_frequency").notNull().default("immediate"),
+  reminders: text("reminders_frequency").notNull().default("weekly"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });

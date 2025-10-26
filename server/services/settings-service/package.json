@@ -7,10 +7,19 @@
     "start": "nodemon src/server.js",
     "dev": "nodemon src/server.js",
     "db:generate": "drizzle-kit generate",
+    "db:create": "npm run db:migrate",
     "db:migrate": "cross-env SERVICE_NAME=settings-service node ../../shared/migration/migrate.js",
     "db:rollback": "cross-env SERVICE_NAME=settings-service node ../../shared/migration/rollback.js",
     "db:status": "cross-env SERVICE_NAME=settings-service node ../../shared/migration/status.js",
-    "db:reset": "npm run db:rollback && npm run db:migrate"
+    "db:reset": "npm run db:rollback && npm run db:migrate",
+    "db:seed": "node src/db/seed.js seed",
+    "db:seed:clear": "node src/db/seed.js clear",
+    "db:seed:reset": "node src/db/seed.js reset",
+    "db:setup": "npm run db:migrate && npm run db:seed",
+    "db:test": "node src/db/test-seed.js",
+    "db:test:user": "node src/db/test-seed.js",
+    "build": "drizzle-kit generate && npm run db:migrate",
+    "fresh": "npm run db:reset && npm run db:seed"
   },
   "dependencies": {
     "dotenv": "^17.2.2",

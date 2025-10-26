@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Navbar from "../../../components/header";
 import { Footer } from "../../../components";
 import { Badge, Button } from "../../../components";
@@ -25,53 +25,13 @@ import DangerZone from "./DangerZone";
 export default function SettingsPage() {
   const user = useSelector((state) => state.user?.user) || {};
 
-  // Initialize state with user data or default/static values
-  const [formData, setFormData] = useState({
-    name: user.name || "",
-    email: user.email || "",
-    password: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
-  const [notifPrefs, setNotifPrefs] = useState(
-    user.notificationPrefs || { email: true, sms: false }
-  );
-
-  const [privacyPrefs, setPrivacyPrefs] = useState(
-    user.privacy || { profilePublic: true, dataSharing: false }
-  );
-
-  const [integrations, setIntegrations] = useState({
-    github: !!user.githubUrl,
-    linkedin: !!user.linkedinUrl,
-    googleCalendar: true,
-  });
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const toggleNotif = (type) =>
-    setNotifPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
-  const togglePrivacy = (type) =>
-    setPrivacyPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
-  const toggleIntegration = (type) =>
-    setIntegrations((prev) => ({ ...prev, [type]: !prev[type] }));
-
-  const handleSaveProfile = () => console.log("Profile saved", formData);
-  const handleSaveNotifications = () =>
-    console.log("Notifications saved", notifPrefs);
-  const handleSavePrivacy = () => console.log("Privacy saved", privacyPrefs);
-
   return (
     <>
       <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
         <Navbar data={user} isSearchBar={false} />
         <div className='w-full px-6 py-8'>
           <h1 className='text-4xl font-bold text-white drop-shadow-lg mb-6'>
-            SettingsPage
+            Settings
           </h1>
 
           {/* Two-column layout */}
@@ -79,18 +39,10 @@ export default function SettingsPage() {
             {/* Left Column */}
             <div className='space-y-6'>
               {/* Profile Settings */}
-              <ProfileSettings
-                formData={formData}
-                handleInputChange={handleInputChange}
-                handleSaveProfile={handleSaveProfile}
-              />
+              <ProfileSettings />
 
               {/* Account Settings */}
-              <AccountSettings
-                formData={formData}
-                handleInputChange={handleInputChange}
-                handleSaveProfile={handleSaveProfile}
-              />
+              <AccountSettings />
 
               {/* Notification Preferences */}
               <NotificationSettings />
@@ -108,10 +60,7 @@ export default function SettingsPage() {
               <SubsBilling />
 
               {/* Integrations */}
-              <Integrations
-                integrations={integrations}
-                toggleIntegration={toggleIntegration}
-              />
+              <Integrations />
 
               {/* Portfolio & Resume */}
               <PortfolioResume user={user} />

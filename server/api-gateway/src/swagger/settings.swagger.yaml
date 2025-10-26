@@ -22,7 +22,7 @@ paths:
   /api/v1/settings/notifications:
     get:
       summary: Get notification settings
-      description: Retrieve user's notification preferences
+      description: Retrieve user's notification preferences and toggles
       tags:
         - "🟡 SETTINGS SERVICE - Notifications"
       security:
@@ -37,12 +37,31 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
-                    type: object
+                    $ref: "#/components/schemas/NotificationSettings"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update notification settings
-      description: Update user's notification preferences
+      description: Update user's notification preferences and toggles
       tags:
         - "🟡 SETTINGS SERVICE - Notifications"
       security:
@@ -52,115 +71,576 @@ paths:
         content:
           application/json:
             schema:
-              type: object
+              $ref: "#/components/schemas/NotificationSettingsUpdate"
+            examples:
+              example1:
+                summary: Enable all notifications
+                value:
+                  email: true
+                  sms: false
+                  push: true
+                  reminders: true
+                  projectUpdates: true
+                  xpNotifications: true
+                  aiSuggestions: true
+                  profileReminders: false
+                  securityAlerts: true
+                  soundEnabled: true
+              example2:
+                summary: Disable most notifications
+                value:
+                  email: false
+                  push: false
+                  reminders: false
+                  projectUpdates: false
+                  xpNotifications: false
+                  aiSuggestions: false
+                  securityAlerts: true
       responses:
         '200':
           description: Notification settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/NotificationSettings"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/settings/notifications/frequency:
     get:
       summary: Get notification frequency settings
+      description: Retrieve user's notification frequency preferences
       tags:
         - "🟡 SETTINGS SERVICE - Notifications"
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Notification frequency settings retrieved
+          description: Notification frequency settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/NotificationFrequency"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update notification frequency
+      description: Update user's notification frequency preferences
       tags:
         - "🟡 SETTINGS SERVICE - Notifications"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationFrequencyUpdate"
+            examples:
+              example1:
+                summary: Set immediate notifications
+                value:
+                  email: "immediate"
+                  push: "immediate"
+                  reminders: "daily"
+              example2:
+                summary: Set weekly digest
+                value:
+                  email: "weekly"
+                  push: "immediate"
+                  reminders: "weekly"
       responses:
         '200':
-          description: Notification frequency updated
+          description: Notification frequency updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/NotificationFrequency"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/settings/quiet-hours:
     get:
       summary: Get quiet hours settings
+      description: Retrieve user's quiet hours configuration
       tags:
         - "🟡 SETTINGS SERVICE - Privacy"
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Quiet hours settings retrieved
+          description: Quiet hours settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/QuietHours"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update quiet hours
+      description: Update user's quiet hours configuration
       tags:
         - "🟡 SETTINGS SERVICE - Privacy"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuietHoursUpdate"
+            examples:
+              example1:
+                summary: Enable quiet hours 10 PM to 8 AM
+                value:
+                  enabled: true
+                  start: "22:00"
+                  end: "08:00"
+              example2:
+                summary: Disable quiet hours
+                value:
+                  enabled: false
       responses:
         '200':
-          description: Quiet hours updated
+          description: Quiet hours updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/QuietHours"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/settings/privacy:
     get:
       summary: Get privacy settings
+      description: Retrieve user's privacy and security preferences
       tags:
         - "🟡 SETTINGS SERVICE - Privacy"
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Privacy settings retrieved
+          description: Privacy settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/PrivacySettings"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update privacy settings
+      description: Update user's privacy and security preferences
       tags:
         - "🟡 SETTINGS SERVICE - Privacy"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrivacySettingsUpdate"
+            examples:
+              example1:
+                summary: Public profile with limited sharing
+                value:
+                  profilePublic: true
+                  dataSharing: false
+                  showEmail: false
+                  showPhone: false
+                  allowMessages: true
+                  showOnlineStatus: true
+                  allowProjectInvites: true
+                  allowJobOffers: true
+                  searchVisibility: true
+                  personalizedAds: false
+              example2:
+                summary: Private profile
+                value:
+                  profilePublic: false
+                  dataSharing: false
+                  showEmail: false
+                  showPhone: false
+                  allowMessages: false
+                  showOnlineStatus: false
+                  allowProjectInvites: false
+                  allowJobOffers: false
+                  searchVisibility: false
+                  personalizedAds: false
       responses:
         '200':
-          description: Privacy settings updated
+          description: Privacy settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/PrivacySettings"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/settings/integrations:
     get:
       summary: Get integration settings
+      description: Retrieve user's third-party integration connections
       tags:
         - "🟡 SETTINGS SERVICE - Integrations"
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Integration settings retrieved
+          description: Integration settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Integrations"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update integration settings
+      description: Update user's third-party integration connections. Automatically sets connection timestamps when integrations are enabled/disabled.
       tags:
         - "🟡 SETTINGS SERVICE - Integrations"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationsUpdate"
+            examples:
+              example1:
+                summary: Connect GitHub and LinkedIn
+                value:
+                  github: true
+                  linkedin: true
+                  googleCalendar: false
+                  slack: false
+                  discord: false
+                  trello: false
+                  asana: false
+              example2:
+                summary: Connect all productivity tools
+                value:
+                  github: true
+                  linkedin: true
+                  googleCalendar: true
+                  slack: true
+                  discord: true
+                  trello: true
+                  asana: true
       responses:
         '200':
-          description: Integration settings updated
+          description: Integration settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Integrations"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/v1/settings/subscription:
     get:
       summary: Get subscription settings
+      description: Retrieve user's subscription plan and billing information
       tags:
         - "🟡 SETTINGS SERVICE - Subscriptions"
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Subscription settings retrieved
+          description: Subscription settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Subscription"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     
     put:
       summary: Update subscription settings
+      description: Update user's subscription plan and billing preferences
       tags:
         - "🟡 SETTINGS SERVICE - Subscriptions"
       security:
         - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionUpdate"
+            examples:
+              example1:
+                summary: Upgrade to Pro plan
+                value:
+                  plan: "pro"
+                  status: "active"
+                  billingCycle: "monthly"
+                  features:
+                    maxProjects: 10
+                    maxTeamMembers: 5
+                    prioritySupport: true
+                    advancedAnalytics: true
+                    customBranding: false
+              example2:
+                summary: Switch to annual billing
+                value:
+                  billingCycle: "yearly"
       responses:
         '200':
-          description: Subscription settings updated
+          description: Subscription settings updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Subscription"
+        '400':
+          description: Bad request - userId is required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
 components:
   securitySchemes:
@@ -168,4 +648,478 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        status:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "userId is required"
+        error:
+          type: string
+          example: "Error details"
+
+    NotificationSettings:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        email:
+          type: boolean
+          example: true
+        sms:
+          type: boolean
+          example: false
+        push:
+          type: boolean
+          example: true
+        reminders:
+          type: boolean
+          example: true
+        projectUpdates:
+          type: boolean
+          example: true
+        xpNotifications:
+          type: boolean
+          example: true
+        aiSuggestions:
+          type: boolean
+          example: true
+        profileReminders:
+          type: boolean
+          example: false
+        securityAlerts:
+          type: boolean
+          example: true
+        soundEnabled:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    NotificationSettingsUpdate:
+      type: object
+      properties:
+        email:
+          type: boolean
+          example: true
+        sms:
+          type: boolean
+          example: false
+        push:
+          type: boolean
+          example: true
+        reminders:
+          type: boolean
+          example: true
+        projectUpdates:
+          type: boolean
+          example: true
+        xpNotifications:
+          type: boolean
+          example: true
+        aiSuggestions:
+          type: boolean
+          example: true
+        profileReminders:
+          type: boolean
+          example: false
+        securityAlerts:
+          type: boolean
+          example: true
+        soundEnabled:
+          type: boolean
+          example: true
+
+    NotificationFrequency:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        email:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "daily"
+        push:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "immediate"
+        reminders:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "weekly"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    NotificationFrequencyUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "daily"
+        push:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "immediate"
+        reminders:
+          type: string
+          enum: [immediate, daily, weekly, monthly]
+          example: "weekly"
+
+    QuietHours:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        enabled:
+          type: boolean
+          example: true
+        start:
+          type: string
+          format: time
+          example: "22:00"
+        end:
+          type: string
+          format: time
+          example: "08:00"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    QuietHoursUpdate:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          example: true
+        start:
+          type: string
+          format: time
+          example: "22:00"
+        end:
+          type: string
+          format: time
+          example: "08:00"
+
+    PrivacySettings:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        profilePublic:
+          type: boolean
+          example: true
+        dataSharing:
+          type: boolean
+          example: false
+        showEmail:
+          type: boolean
+          example: false
+        showPhone:
+          type: boolean
+          example: false
+        allowMessages:
+          type: boolean
+          example: true
+        showOnlineStatus:
+          type: boolean
+          example: true
+        allowProjectInvites:
+          type: boolean
+          example: true
+        allowJobOffers:
+          type: boolean
+          example: true
+        searchVisibility:
+          type: boolean
+          example: true
+        personalizedAds:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    PrivacySettingsUpdate:
+      type: object
+      properties:
+        profilePublic:
+          type: boolean
+          example: true
+        dataSharing:
+          type: boolean
+          example: false
+        showEmail:
+          type: boolean
+          example: false
+        showPhone:
+          type: boolean
+          example: false
+        allowMessages:
+          type: boolean
+          example: true
+        showOnlineStatus:
+          type: boolean
+          example: true
+        allowProjectInvites:
+          type: boolean
+          example: true
+        allowJobOffers:
+          type: boolean
+          example: true
+        searchVisibility:
+          type: boolean
+          example: true
+        personalizedAds:
+          type: boolean
+          example: false
+
+    Integrations:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        github:
+          type: boolean
+          example: true
+        linkedin:
+          type: boolean
+          example: true
+        googleCalendar:
+          type: boolean
+          example: false
+        slack:
+          type: boolean
+          example: false
+        discord:
+          type: boolean
+          example: false
+        trello:
+          type: boolean
+          example: false
+        asana:
+          type: boolean
+          example: false
+        githubConnectedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        linkedinConnectedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        googleCalendarConnectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        slackConnectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        discordConnectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        trelloConnectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        asanaConnectedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    IntegrationsUpdate:
+      type: object
+      properties:
+        github:
+          type: boolean
+          example: true
+        linkedin:
+          type: boolean
+          example: true
+        googleCalendar:
+          type: boolean
+          example: false
+        slack:
+          type: boolean
+          example: false
+        discord:
+          type: boolean
+          example: false
+        trello:
+          type: boolean
+          example: false
+        asana:
+          type: boolean
+          example: false
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        plan:
+          type: string
+          enum: [free, pro, enterprise]
+          example: "pro"
+        status:
+          type: string
+          enum: [active, inactive, cancelled, suspended]
+          example: "active"
+        billingCycle:
+          type: string
+          enum: [monthly, yearly]
+          example: "monthly"
+        nextBillingDate:
+          type: string
+          format: date-time
+          example: "2024-02-01T00:00:00Z"
+        features:
+          type: object
+          properties:
+            maxProjects:
+              type: integer
+              example: 10
+            maxTeamMembers:
+              type: integer
+              example: 5
+            prioritySupport:
+              type: boolean
+              example: true
+            advancedAnalytics:
+              type: boolean
+              example: true
+            customBranding:
+              type: boolean
+              example: false
+        currentPeriodStart:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          example: "2024-02-01T00:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+
+    SubscriptionUpdate:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, pro, enterprise]
+          example: "pro"
+        status:
+          type: string
+          enum: [active, inactive, cancelled, suspended]
+          example: "active"
+        billingCycle:
+          type: string
+          enum: [monthly, yearly]
+          example: "monthly"
+        nextBillingDate:
+          type: string
+          format: date-time
+          example: "2024-02-01T00:00:00Z"
+        features:
+          type: object
+          properties:
+            maxProjects:
+              type: integer
+              example: 10
+            maxTeamMembers:
+              type: integer
+              example: 5
+            prioritySupport:
+              type: boolean
+              example: true
+            advancedAnalytics:
+              type: boolean
+              example: true
+            customBranding:
+              type: boolean
+              example: false
+        currentPeriodStart:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          example: "2024-02-01T00:00:00Z"
 

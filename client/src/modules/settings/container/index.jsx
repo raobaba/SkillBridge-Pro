@@ -40,40 +40,50 @@ const Settings = () => {
     googleCalendar: true,
   });
 
-  // Role-based section visibility
-  const roleSections = {
-    developer: [
-      'profile',
-      'account',
-      'notifications',
-      'privacy',
-      'billing',
-      'integrations',
-      'portfolio',
-      'skills',
-      'danger',
-    ],
-    'project-owner': [
-      'profile',
-      'account',
-      'notifications',
-      'privacy',
-      'billing',
-      'integrations',
-      'portfolio',
-      'danger',
-    ],
-    admin: [
-      'profile',
-      'account',
-      'notifications',
-      'privacy',
-      'integrations',
-      'danger',
-    ],
+  // Dynamic role-based section visibility
+  // Base sections available to all roles
+  const baseSections = ['profile', 'account', 'notifications', 'privacy', 'integrations', 'danger'];
+  
+  // Additional sections based on role
+  const roleBasedSections = {
+    developer: ['billing', 'portfolio', 'skills'],
+    'project-owner': ['billing', 'portfolio'],
+    admin: [],
   };
-
-  const visible = (key) => (roleSections[role] || roleSections.developer).includes(key);
+  
+  // Check if user has a specific role
+  const hasRole = (checkRole) => {
+    if (Array.isArray(user.roles)) {
+      return user.roles.includes(checkRole);
+    }
+    return role === checkRole.toLowerCase();
+  };
+  
+  // Build visible sections dynamically based on user roles
+  const getVisibleSections = () => {
+    let visible = [...baseSections];
+    
+    // Add developer-specific sections
+    if (hasRole('developer')) {
+      visible.push(...roleBasedSections.developer);
+    }
+    
+    // Add project-owner specific sections
+    if (hasRole('project-owner')) {
+      visible.push(...roleBasedSections['project-owner']);
+    }
+    
+    // Admins only get base sections (no billing/portfolio/skills)
+    if (hasRole('admin')) {
+      // Admin already has access to base sections
+    }
+    
+    return visible;
+  };
+  
+  const visibleSections = getVisibleSections();
+  
+  const visible = (key) => visibleSections.includes(key);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

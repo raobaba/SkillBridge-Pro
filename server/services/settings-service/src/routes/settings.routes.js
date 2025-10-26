@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("shared/middleware/auth.middleware");
 const {
   getNotificationSettings,
   upsertNotificationSettings,
@@ -16,6 +17,9 @@ const {
 } = require("../controllers/settings.controller");
 
 // Base: /api/v1/settings
+// All routes require authentication
+router.use(auth);
+
 router.get("/notifications", getNotificationSettings);
 router.put("/notifications", upsertNotificationSettings);
 

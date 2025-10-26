@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Badge, Button } from "../../../components";
 import { 
   Bell, 
@@ -16,57 +17,104 @@ import {
   Volume2,
   VolumeX,
   Save,
-  RotateCcw
+  RotateCcw,
+  Loader2
 } from "lucide-react";
+import {
+  getNotificationSettings,
+  updateNotificationSettings,
+  getNotificationFrequency,
+  updateNotificationFrequency,
+  getQuietHours,
+  updateQuietHours,
+  updateNotificationPreference,
+  updateNotificationFrequencyLocal,
+  updateQuietHoursLocal,
+  resetNotificationSuccess,
+} from "../slice/settingsSlice";
 
 export default function NotificationSettings() {
-  // Enhanced notification preferences with more categories
-  const [notifPrefs, setNotifPrefs] = useState({
-    email: true,
-    sms: false,
-    push: true,
-    reminders: true,
-    projectUpdates: true,
-    xpNotifications: true,
-    aiSuggestions: true,
-    profileReminders: false,
-    securityAlerts: true,
-    soundEnabled: true,
-  });
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const {
+    notificationSettings,
+    notificationFrequency,
+    quietHours,
+    notificationLoading,
+    notificationError,
+    notificationSuccess,
+  } = useSelector((state) => state.settings);
 
-  // Notification frequency settings
-  const [frequency, setFrequency] = useState({
-    email: "daily",
-    push: "immediate",
-    reminders: "weekly"
-  });
+  // Local state for immediate UI updates
+  const [localNotifPrefs, setLocalNotifPrefs] = useState(notificationSettings);
+  const [localFrequency, setLocalFrequency] = useState(notificationFrequency);
+  const [localQuietHours, setLocalQuietHours] = useState(quietHours);
 
-  // Quiet hours settings
-  const [quietHours, setQuietHours] = useState({
-    enabled: false,
-    start: "22:00",
-    end: "08:00"
-  });
+  // Load settings on component mount
+  useEffect(() => {
+    dispatch(getNotificationSettings());
+    dispatch(getNotificationFrequency());
+    dispatch(getQuietHours());
+  }, [dispatch]);
 
-  const toggleNotif = (type) =>
-    setNotifPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
+  // Update local state when Redux state changes
+  useEffect(() => {
+    setLocalNotifPrefs(notificationSettings);
+  }, [notificationSettings]);
 
-  const toggleQuietHours = () =>
-    setQuietHours((prev) => ({ ...prev, enabled: !prev.enabled }));
+  useEffect(() => {
+    setLocalFrequency(notificationFrequency);
+  }, [notificationFrequency]);
 
-  const handleSaveNotifications = () => {
-    // Simulate API call
-    const settings = {
-      preferences: notifPrefs,
-      frequency,
-      quietHours
-    };
-    console.log("Saving notification settings:", settings);
-    alert("Notification settings saved successfully!");
+  useEffect(() => {
+    setLocalQuietHours(quietHours);
+  }, [quietHours]);
+
+  // Show success message
+  useEffect(() => {
+    if (notificationSuccess) {
+      alert("Notification settings saved successfully!");
+      dispatch(resetNotificationSuccess());
+    }
+  }, [notificationSuccess, dispatch]);
+
+  const toggleNotif = (type) => {
+    const newValue = !localNotifPrefs[type];
+    setLocalNotifPrefs((prev) => ({ ...prev, [type]: newValue }));
+    dispatch(updateNotificationPreference({ key: type, value: newValue }));
+  };
+
+  const updateFrequency = (type, value) => {
+    setLocalFrequency((prev) => ({ ...prev, [type]: value }));
+    dispatch(updateNotificationFrequencyLocal({ key: type, value }));
+  };
+
+  const updateQuietHoursSetting = (key, value) => {
+    setLocalQuietHours((prev) => ({ ...prev, [key]: value }));
+    dispatch(updateQuietHoursLocal({ key, value }));
+  };
+
+  const toggleQuietHours = () => {
+    const newValue = !localQuietHours.enabled;
+    updateQuietHoursSetting('enabled', newValue);
+  };
+
+  const handleSaveNotifications = async () => {
+    try {
+      await Promise.all([
+        dispatch(updateNotificationSettings(localNotifPrefs)).unwrap(),
+        dispatch(updateNotificationFrequency(localFrequency)).unwrap(),
+        dispatch(updateQuietHours(localQuietHours)).unwrap(),
+      ]);
+    } catch (error) {
+      console.error('Failed to save notification settings:', error);
+      alert('Failed to save settings. Please try again.');
+    }
   };
 
   const handleResetToDefault = () => {
-    setNotifPrefs({
+    const defaultNotifPrefs = {
       email: true,
       sms: false,
       push: true,
@@ -77,16 +125,35 @@ export default function NotificationSettings() {
       profileReminders: false,
       securityAlerts: true,
       soundEnabled: true,
-    });
-    setFrequency({
+    };
+    
+    const defaultFrequency = {
       email: "daily",
       push: "immediate",
       reminders: "weekly"
-    });
-    setQuietHours({
+    };
+    
+    const defaultQuietHours = {
       enabled: false,
       start: "22:00",
       end: "08:00"
+    };
+
+    setLocalNotifPrefs(defaultNotifPrefs);
+    setLocalFrequency(defaultFrequency);
+    setLocalQuietHours(defaultQuietHours);
+    
+    // Update Redux state
+    Object.entries(defaultNotifPrefs).forEach(([key, value]) => {
+      dispatch(updateNotificationPreference({ key, value }));
+    });
+    
+    Object.entries(defaultFrequency).forEach(([key, value]) => {
+      dispatch(updateNotificationFrequencyLocal({ key, value }));
+    });
+    
+    Object.entries(defaultQuietHours).forEach(([key, value]) => {
+      dispatch(updateQuietHoursLocal({ key, value }));
     });
   };
 
@@ -205,15 +272,16 @@ export default function NotificationSettings() {
                 </div>
                 <button
                   onClick={() => toggleNotif(key)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                    notifPrefs[key] 
+                  disabled={notificationLoading}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
+                    localNotifPrefs[key] 
                       ? 'bg-gradient-to-r from-blue-500 to-purple-500' 
                       : 'bg-gray-600'
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                      notifPrefs[key] ? 'translate-x-6' : 'translate-x-1'
+                      localNotifPrefs[key] ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>
@@ -222,10 +290,10 @@ export default function NotificationSettings() {
               {/* Status Badge */}
               <div className="flex justify-end">
                 <Badge
-                  variant={notifPrefs[key] ? "success" : "error"}
+                  variant={localNotifPrefs[key] ? "success" : "error"}
                   className="text-xs"
                 >
-                  {notifPrefs[key] ? (
+                  {localNotifPrefs[key] ? (
                     <><CheckCircle className="w-3 h-3 mr-1" /> Enabled</>
                   ) : (
                     <><XCircle className="w-3 h-3 mr-1" /> Disabled</>
@@ -248,9 +316,10 @@ export default function NotificationSettings() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">Email Frequency</label>
             <select
-              value={frequency.email}
-              onChange={(e) => setFrequency(prev => ({ ...prev, email: e.target.value }))}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={localFrequency.email}
+              onChange={(e) => updateFrequency('email', e.target.value)}
+              disabled={notificationLoading}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="immediate">Immediate</option>
               <option value="daily">Daily Digest</option>
@@ -261,9 +330,10 @@ export default function NotificationSettings() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">Push Notifications</label>
             <select
-              value={frequency.push}
-              onChange={(e) => setFrequency(prev => ({ ...prev, push: e.target.value }))}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={localFrequency.push}
+              onChange={(e) => updateFrequency('push', e.target.value)}
+              disabled={notificationLoading}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="immediate">Immediate</option>
               <option value="batched">Batched (Every 15 min)</option>
@@ -274,9 +344,10 @@ export default function NotificationSettings() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-300">Reminders</label>
             <select
-              value={frequency.reminders}
-              onChange={(e) => setFrequency(prev => ({ ...prev, reminders: e.target.value }))}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={localFrequency.reminders}
+              onChange={(e) => updateFrequency('reminders', e.target.value)}
+              disabled={notificationLoading}
+              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -289,7 +360,7 @@ export default function NotificationSettings() {
       {/* Quiet Hours */}
       <div className="bg-black/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          {quietHours.enabled ? (
+          {localQuietHours.enabled ? (
             <VolumeX className="w-5 h-5 text-red-400" />
           ) : (
             <Volume2 className="w-5 h-5 text-green-400" />
@@ -305,38 +376,41 @@ export default function NotificationSettings() {
             </div>
             <button
               onClick={toggleQuietHours}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                quietHours.enabled 
+              disabled={notificationLoading}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 ${
+                localQuietHours.enabled 
                   ? 'bg-gradient-to-r from-red-500 to-pink-500' 
                   : 'bg-gray-600'
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${
-                  quietHours.enabled ? 'translate-x-6' : 'translate-x-1'
+                  localQuietHours.enabled ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
             </button>
           </div>
           
-          {quietHours.enabled && (
+          {localQuietHours.enabled && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">Start Time</label>
                 <input
                   type="time"
-                  value={quietHours.start}
-                  onChange={(e) => setQuietHours(prev => ({ ...prev, start: e.target.value }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={localQuietHours.start}
+                  onChange={(e) => updateQuietHoursSetting('start', e.target.value)}
+                  disabled={notificationLoading}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-300">End Time</label>
                 <input
                   type="time"
-                  value={quietHours.end}
-                  onChange={(e) => setQuietHours(prev => ({ ...prev, end: e.target.value }))}
-                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={localQuietHours.end}
+                  onChange={(e) => updateQuietHoursSetting('end', e.target.value)}
+                  disabled={notificationLoading}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -344,22 +418,35 @@ export default function NotificationSettings() {
         </div>
       </div>
 
+      {/* Error Display */}
+      {notificationError && (
+        <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
+          <p className="text-red-300 text-sm">{notificationError}</p>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 justify-end">
         <Button
           variant="outline"
           onClick={handleResetToDefault}
-          className="flex items-center gap-2 hover:scale-105 transition-transform duration-300"
+          disabled={notificationLoading}
+          className="flex items-center gap-2 hover:scale-105 transition-transform duration-300 disabled:opacity-50"
         >
           <RotateCcw className="w-4 h-4" />
           Reset to Default
         </Button>
         <Button
           onClick={handleSaveNotifications}
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 flex items-center gap-2 hover:scale-105 transition-all duration-300"
+          disabled={notificationLoading}
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 flex items-center gap-2 hover:scale-105 transition-all duration-300 disabled:opacity-50"
         >
-          <Save className="w-4 h-4" />
-          Save Settings
+          {notificationLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          {notificationLoading ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
     </div>

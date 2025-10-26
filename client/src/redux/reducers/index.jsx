@@ -3,11 +3,13 @@ import localStorage from "redux-persist/lib/storage";
 import userReducer from "../../modules/authentication/slice/userSlice";
 import projectReducer from "../../modules/project/slice/projectSlice";
 import profileReducer from "../../modules/profile/slice/profileSlice";
+import settingsReducer from "../../modules/settings/slice/settingsSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
   project: projectReducer,
   profile: profileReducer,
+  settings: settingsReducer,
 });
 
 export const rootReducer = (state, action) => {

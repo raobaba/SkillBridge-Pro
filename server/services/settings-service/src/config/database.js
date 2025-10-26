@@ -106,12 +106,12 @@ const runMigrations = async () => {
     const path = require("path");
     const migrationPath = path.resolve(__dirname, "../../../../shared/migration");
     const { runMigrations } = require(migrationPath);
-
+    
     await runMigrations("settings-service", {
       migrationsFolder: "./src/db/migrations",
       backupFolder: "./src/db/backups"
     });
-
+    
     console.log("✅ Database migrations completed successfully for settings-service");
   } catch (error) {
     console.error("❌ Database migrations failed:", error);

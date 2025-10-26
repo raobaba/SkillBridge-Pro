@@ -9,7 +9,10 @@ const {
 } = require("../models");
 
 const resolveUserId = (req) => {
+  // Use authenticated user ID from JWT token
+  if (req.user?.userId) return Number(req.user.userId);
   if (req.user?.id) return Number(req.user.id);
+  // Fallback to headers/query for backward compatibility
   if (req.headers["x-user-id"]) return Number(req.headers["x-user-id"]);
   if (req.query.userId) return Number(req.query.userId);
   return null;
@@ -133,15 +136,17 @@ async function upsertIntegrations(req, res, next) {
     // Auto-populate connectedAt timestamps on boolean connect/disconnect changes
     const existing = await UserIntegrationsModel.getByUserId(userId);
     const computed = { ...payload };
-    if (payload.github !== undefined && (!existing || existing.github !== payload.github)) {
-      computed.githubConnectedAt = payload.github ? now : null;
-    }
-    if (payload.linkedin !== undefined && (!existing || existing.linkedin !== payload.linkedin)) {
-      computed.linkedinConnectedAt = payload.linkedin ? now : null;
-    }
-    if (payload.googleCalendar !== undefined && (!existing || existing.googleCalendar !== payload.googleCalendar)) {
-      computed.googleCalendarConnectedAt = payload.googleCalendar ? now : null;
-    }
+    
+    const integrationFields = [
+      'github', 'linkedin', 'googleCalendar', 'slack', 'discord', 'trello', 'asana'
+    ];
+    
+    integrationFields.forEach(field => {
+      if (payload[field] !== undefined && (!existing || existing[field] !== payload[field])) {
+        const connectedAtField = `${field}ConnectedAt`;
+        computed[connectedAtField] = payload[field] ? now : null;
+      }
+    });
 
     const row = await UserIntegrationsModel.upsertByUserId(userId, computed);
     res.json({ success: true, data: row });

@@ -1,4 +1,4 @@
-const { pgTable, serial, integer, text, timestamp } = require("drizzle-orm/pg-core");
+const { pgTable, serial, integer, text, timestamp, json } = require("drizzle-orm/pg-core");
 const { eq } = require("drizzle-orm");
 const { db } = require("../config/database");
 
