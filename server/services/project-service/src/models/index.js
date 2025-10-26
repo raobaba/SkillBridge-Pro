@@ -29,8 +29,8 @@ const ProjectModel = {
   softDeleteProject: ProjectsModel.softDeleteProject,
   
   // Skills & Tags
-  setSkills: ProjectSkillsModel.setSkills,
-  setTags: ProjectTagsModel.setTags,
+  setSkills: ProjectSkillsModel.setProjectSkills,
+  setTags: ProjectTagsModel.setProjectTags,
   
   // Applicants
   applyToProject: ProjectApplicantsModel.applyToProject,

@@ -31,13 +31,11 @@ const ChatBox = ({ onSend }) => {
   };
 
   const handleFileUpload = () => {
-    // File upload functionality would be implemented here
-    console.log("File upload clicked");
+
   };
 
   const handleEmojiClick = () => {
-    // Emoji picker functionality would be implemented here
-    console.log("Emoji picker clicked");
+
   };
 
   // Auto-focus input on mount

@@ -5,7 +5,8 @@ import {
   Share2, 
   Bookmark, 
   DollarSign, 
-  Clock 
+  Clock,
+  Code2
 } from 'lucide-react';
 import { Button } from '../../../components';
 
@@ -138,20 +139,55 @@ const ProjectCard = ({
         <div className='p-4 sm:p-5 flex-1 flex flex-col gap-3'>
           {/* Tags (up to 3) */}
           <div className='flex flex-wrap gap-1.5'>
-            {project.tags.slice(0, 3).map((tag, idx) => (
-              <span
-                key={idx}
-                className='px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500'
-              >
-                {tag}
-              </span>
-            ))}
-            {project.tags.length > 3 && (
-              <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
-                +{project.tags.length - 3}
-              </span>
-            )}
+            {project.tags && project.tags.length > 0 ? (
+              <>
+                {project.tags.slice(0, 3).map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className='px-2 py-0.5 rounded-full text-[10px] text-white bg-gradient-to-r from-blue-500 to-purple-500'
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {project.tags.length > 3 && (
+                  <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
+                    +{project.tags.length - 3}
+                  </span>
+                )}
+              </>
+            ) : null}
           </div>
+
+          {/* Skills */}
+          {project.skills && project.skills.length > 0 && (
+            <div className='flex flex-wrap gap-1.5 items-center'>
+              <Code2 className='w-3 h-3 text-gray-400 shrink-0' />
+              <div className='flex flex-wrap gap-1.5'>
+                {project.skills.slice(0, 2).map((skill, idx) => (
+                  <span
+                    key={idx}
+                    className='px-2 py-0.5 rounded-full text-[10px] text-emerald-300 bg-emerald-500/20 border border-emerald-400/30'
+                  >
+                    {skill}
+                  </span>
+                ))}
+                {project.skills.length > 2 && (
+                  <span className='px-2 py-0.5 rounded-full text-[10px] text-gray-300 bg-white/10'>
+                    +{project.skills.length - 2}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Description preview */}
+          {project.description && (
+            <p className='text-gray-300 text-xs leading-relaxed line-clamp-2'>
+              {(project.description || '').length > 120
+                ? `${project.description.slice(0, 120)}…`
+                : (project.description || '')}
+            </p>
+          )}
 
           {/* Meta Row (2 items only for compactness) */}
           <div className='flex items-center justify-between text-xs text-gray-400'>

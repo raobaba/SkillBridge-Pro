@@ -377,7 +377,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                       alt={user?.name || "Profile"}
                       className="w-8 h-8 rounded-full border-2 border-white/20"
                       onError={() => {
-                        console.log('Avatar image failed to load:', user?.avatarUrl);
+                      
                         setIsAvatarBroken(true);
                       }}
                     />

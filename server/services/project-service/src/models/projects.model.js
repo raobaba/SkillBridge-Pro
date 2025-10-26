@@ -15,8 +15,8 @@ const { eq, and, desc, or, ilike, gte, lte, asc, inArray, exists, sql } = requir
 const { db } = require("../config/database");
 
 // Import skills and tags tables for metadata fetching
-const { projectSkillsTable } = require("./project-skills.model");
-const { projectTagsTable } = require("./project-tags.model");
+const { projectSkillsTable, skillsTable } = require("./project-skills.model");
+const { projectTagsTable, tagsTable } = require("./project-tags.model");
 
 // Import related tables for statistics
 const { projectApplicantsTable } = require("./project-applicants.model");
@@ -122,7 +122,35 @@ class ProjectsModel {
       .select()
       .from(projectsTable)
       .where(and(eq(projectsTable.id, id), eq(projectsTable.isDeleted, false)));
-    return project;
+    
+    if (!project) return null;
+
+    // Get tags and skills for the project
+    const [projectSkills, projectTags] = await Promise.all([
+      // Join with skills table to get skill names
+      db.select({ 
+        name: skillsTable.name,
+        category: skillsTable.category 
+      })
+      .from(projectSkillsTable)
+      .innerJoin(skillsTable, eq(projectSkillsTable.skillId, skillsTable.id))
+      .where(eq(projectSkillsTable.projectId, project.id)),
+      
+      // Join with tags table to get tag names
+      db.select({ 
+        name: tagsTable.name,
+        category: tagsTable.category 
+      })
+      .from(projectTagsTable)
+      .innerJoin(tagsTable, eq(projectTagsTable.tagId, tagsTable.id))
+      .where(eq(projectTagsTable.projectId, project.id))
+    ]);
+
+    return {
+      ...project,
+      skills: projectSkills.map(s => s.name),
+      tags: projectTags.map(t => t.name)
+    };
   }
 
   static async getProjectByUUID(projectUuid) {
@@ -130,7 +158,35 @@ class ProjectsModel {
       .select()
       .from(projectsTable)
       .where(and(eq(projectsTable.uuid, projectUuid), eq(projectsTable.isDeleted, false)));
-    return project;
+    
+    if (!project) return null;
+
+    // Get tags and skills for the project
+    const [projectSkills, projectTags] = await Promise.all([
+      // Join with skills table to get skill names
+      db.select({ 
+        name: skillsTable.name,
+        category: skillsTable.category 
+      })
+      .from(projectSkillsTable)
+      .innerJoin(skillsTable, eq(projectSkillsTable.skillId, skillsTable.id))
+      .where(eq(projectSkillsTable.projectId, project.id)),
+      
+      // Join with tags table to get tag names
+      db.select({ 
+        name: tagsTable.name,
+        category: tagsTable.category 
+      })
+      .from(projectTagsTable)
+      .innerJoin(tagsTable, eq(projectTagsTable.tagId, tagsTable.id))
+      .where(eq(projectTagsTable.projectId, project.id))
+    ]);
+
+    return {
+      ...project,
+      skills: projectSkills.map(s => s.name),
+      tags: projectTags.map(t => t.name)
+    };
   }
 
   static async listProjects({ ownerId, status } = {}) {
@@ -433,8 +489,23 @@ class ProjectsModel {
     const projectsWithMetadata = await Promise.all(
       rows.map(async (project) => {
         const [projectSkills, projectTags] = await Promise.all([
-          db.select().from(projectSkillsTable).where(eq(projectSkillsTable.projectId, project.id)),
-          db.select().from(projectTagsTable).where(eq(projectTagsTable.projectId, project.id))
+          // Join with skills table to get skill names
+          db.select({ 
+            name: skillsTable.name,
+            category: skillsTable.category 
+          })
+          .from(projectSkillsTable)
+          .innerJoin(skillsTable, eq(projectSkillsTable.skillId, skillsTable.id))
+          .where(eq(projectSkillsTable.projectId, project.id)),
+          
+          // Join with tags table to get tag names
+          db.select({ 
+            name: tagsTable.name,
+            category: tagsTable.category 
+          })
+          .from(projectTagsTable)
+          .innerJoin(tagsTable, eq(projectTagsTable.tagId, tagsTable.id))
+          .where(eq(projectTagsTable.projectId, project.id))
         ]);
 
         return {
@@ -468,7 +539,38 @@ class ProjectsModel {
         ))
         .orderBy(desc(projectsTable.createdAt));
 
-      return projects;
+      // Get tags and skills for each project
+      const projectsWithMetadata = await Promise.all(
+        projects.map(async (project) => {
+          const [projectSkills, projectTags] = await Promise.all([
+            // Join with skills table to get skill names
+            db.select({ 
+              name: skillsTable.name,
+              category: skillsTable.category 
+            })
+            .from(projectSkillsTable)
+            .innerJoin(skillsTable, eq(projectSkillsTable.skillId, skillsTable.id))
+            .where(eq(projectSkillsTable.projectId, project.id)),
+            
+            // Join with tags table to get tag names
+            db.select({ 
+              name: tagsTable.name,
+              category: tagsTable.category 
+            })
+            .from(projectTagsTable)
+            .innerJoin(tagsTable, eq(projectTagsTable.tagId, tagsTable.id))
+            .where(eq(projectTagsTable.projectId, project.id))
+          ]);
+
+          return {
+            ...project,
+            skills: projectSkills.map(s => s.name),
+            tags: projectTags.map(t => t.name)
+          };
+        })
+      );
+
+      return projectsWithMetadata;
     } catch (error) {
       console.error('Error fetching projects by owner:', error);
       throw error;

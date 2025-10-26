@@ -15,6 +15,7 @@ import {
   Briefcase,
   LayoutGrid,
   List,
+  Code2,
 } from "lucide-react";
 import { Button, FilterSummary } from "../../../components";
 import Input from "../../../components/Input";
@@ -125,6 +126,7 @@ const DeveloperProjects = ({
     roleNeeded: project.roleNeeded,
     applicantsCount: project.applicantsCount || 0,
     tags: project.tags || [],
+    skills: project.skills || [],
     rating: parseFloat(project.ratingAvg) || 0,
     budget: project.budgetMin && project.budgetMax
       ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
@@ -223,6 +225,10 @@ const DeveloperProjects = ({
       .map((id) => ({ id, project: getProjectById(id) }))
       .filter((x) => !!x.project && isAppliedTo(x.id));
   }, [myApplications, appliedProjects, getProjectById, isAppliedTo]);
+
+console.log("appliedProjects",appliedProjects)
+console.log("applicationProjectItems",applicationProjectItems);
+console.log("myApplications",myApplications)
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -435,10 +441,29 @@ const DeveloperProjects = ({
           notes: "I am interested in this project",
         })
       ).unwrap();
+      
       setApplicationStatusByProjectId((prev) => ({
         ...prev,
         [projectId]: "Applied",
       }));
+      
+      // Immediately load project data for applications tab
+      const existingProject = (projects || []).find(p => p.id === projectId) 
+        || (publicProjects || []).find(p => p.id === projectId)
+        || appliedProjectsData[projectId];
+      
+      if (!existingProject) {
+        try {
+          const res = await dispatch(getProject(projectId)).unwrap();
+          const proj = res?.project || res?.data?.project || res;
+          if (proj && proj.id) {
+            setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
+          }
+        } catch (err) {
+          console.error('Failed to load project after applying:', err);
+        }
+      }
+      
       // Refresh projects so server-side applicantsCount reflects immediately
       try {
         if (isPublicOnly) {
@@ -453,7 +478,7 @@ const DeveloperProjects = ({
     } catch (error) {
       // Silent fail for better UX
     }
-  }, [dispatch, isPublicOnly]);
+  }, [dispatch, isPublicOnly, projects, publicProjects, appliedProjectsData]);
 
   const handleWithdrawApplication = useCallback(async (projectId) => {
     try {
@@ -510,17 +535,19 @@ const DeveloperProjects = ({
         if (!existingIds.has(id)) {
           try {
             const res = await dispatch(getProject(id)).unwrap();
-            const proj = res?.project;
-            if (proj?.id) {
+            const proj = res?.project || res?.data?.project || res;
+            if (proj && proj.id) {
               setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
             }
-          } catch {}
+          } catch (error) {
+            console.error('Failed to load project details for application:', id, error);
+          }
         }
       }
     };
     populateAppliedDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, appliedProjects, myApplications, dispatch, projects, publicProjects]);
+  }, [activeTab, appliedProjects, myApplications, dispatch, projects, publicProjects, appliedProjectsData]);
 
   const handleOpenDetails = useCallback((project) => {
     setSelectedProject(project);
@@ -682,7 +709,6 @@ const DeveloperProjects = ({
     matches: filteredProjects.length,
   }), [displayProjects.length, appliedProjects.length, saves, favoriteIdsSet.size, filteredProjects.length]);
 
-  console.log("appliedProjects",appliedProjects)
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
@@ -1253,20 +1279,46 @@ const DeveloperProjects = ({
                       </p>
 
                       <div className='flex flex-wrap gap-2 mb-3'>
-                        {project.tags.slice(0, 4).map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className='px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500'
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {project.tags.length > 4 && (
-                          <span className='px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10'>
-                            +{project.tags.length - 4}
-                          </span>
-                        )}
+                        {project.tags && project.tags.length > 0 ? (
+                          <>
+                            {project.tags.slice(0, 4).map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className='px-2 py-1 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500'
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                            {project.tags.length > 4 && (
+                              <span className='px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10'>
+                                +{project.tags.length - 4}
+                              </span>
+                            )}
+                          </>
+                        ) : null}
                       </div>
+
+                      {/* Skills */}
+                      {project.skills && project.skills.length > 0 && (
+                        <div className='flex flex-wrap gap-2 items-center mb-3'>
+                          <Code2 className='w-3 h-3 text-gray-400 shrink-0' />
+                          <div className='flex flex-wrap gap-2'>
+                            {project.skills.slice(0, 4).map((skill, idx) => (
+                              <span
+                                key={idx}
+                                className='px-2 py-1 rounded-full text-xs text-emerald-300 bg-emerald-500/20 border border-emerald-400/30'
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                            {project.skills.length > 4 && (
+                              <span className='px-2 py-1 rounded-full text-xs text-gray-400 bg-white/10'>
+                                +{project.skills.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <div className='flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400'>
                         <span className='flex items-center gap-1'>
@@ -1570,6 +1622,27 @@ const DeveloperProjects = ({
                     ))}
                   </div>
                 </div>
+
+                {/* Skills */}
+                {selectedProject.skills && selectedProject.skills.length > 0 && (
+                  <div>
+                    <h4 className='text-white font-semibold mb-2 flex items-center gap-2'>
+                      <Code2 className='w-4 h-4 text-gray-400' />
+                      Required Skills
+                    </h4>
+                    <div className='flex flex-wrap gap-2'>
+                      {selectedProject.skills.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className='px-3 py-1.5 rounded-full text-xs text-emerald-300 bg-emerald-500/20 border border-emerald-400/30'
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {selectedProject.benefits && (
                   <div>
                     <h4 className='text-white font-semibold mb-2'>

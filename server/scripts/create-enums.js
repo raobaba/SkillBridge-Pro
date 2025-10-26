@@ -26,7 +26,7 @@ async function createEnums() {
       },
       {
         name: 'project_status',
-        values: ['draft', 'active', 'paused', 'completed', 'cancelled']
+        values: ['draft', 'active', 'paused', 'completed', 'cancelled', 'upcoming']
       },
       {
         name: 'priority',

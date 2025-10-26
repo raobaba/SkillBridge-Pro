@@ -1,0 +1,171 @@
+openapi: 3.0.0
+info:
+  title: Settings Service API
+  description: API for user settings management including notifications, privacy, integrations, and subscriptions
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3003
+    description: Local Settings Server
+
+tags:
+  - name: "🟡 SETTINGS SERVICE - Notifications"
+    description: "Settings Service: Notification preferences and frequency settings"
+  - name: "🟡 SETTINGS SERVICE - Privacy"
+    description: "Settings Service: Privacy and security settings"
+  - name: "🟡 SETTINGS SERVICE - Integrations"
+    description: "Settings Service: Third-party integrations"
+  - name: "🟡 SETTINGS SERVICE - Subscriptions"
+    description: "Settings Service: Subscription and payment settings"
+
+paths:
+  /api/v1/settings/notifications:
+    get:
+      summary: Get notification settings
+      description: Retrieve user's notification preferences
+      tags:
+        - "🟡 SETTINGS SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+    
+    put:
+      summary: Update notification settings
+      description: Update user's notification preferences
+      tags:
+        - "🟡 SETTINGS SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Notification settings updated successfully
+
+  /api/v1/settings/notifications/frequency:
+    get:
+      summary: Get notification frequency settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification frequency settings retrieved
+    
+    put:
+      summary: Update notification frequency
+      tags:
+        - "🟡 SETTINGS SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification frequency updated
+
+  /api/v1/settings/quiet-hours:
+    get:
+      summary: Get quiet hours settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Privacy"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Quiet hours settings retrieved
+    
+    put:
+      summary: Update quiet hours
+      tags:
+        - "🟡 SETTINGS SERVICE - Privacy"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Quiet hours updated
+
+  /api/v1/settings/privacy:
+    get:
+      summary: Get privacy settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Privacy"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Privacy settings retrieved
+    
+    put:
+      summary: Update privacy settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Privacy"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Privacy settings updated
+
+  /api/v1/settings/integrations:
+    get:
+      summary: Get integration settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Integrations"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Integration settings retrieved
+    
+    put:
+      summary: Update integration settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Integrations"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Integration settings updated
+
+  /api/v1/settings/subscription:
+    get:
+      summary: Get subscription settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Subscriptions"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription settings retrieved
+    
+    put:
+      summary: Update subscription settings
+      tags:
+        - "🟡 SETTINGS SERVICE - Subscriptions"
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Subscription settings updated
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+

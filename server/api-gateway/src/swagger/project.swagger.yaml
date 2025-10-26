@@ -33,6 +33,8 @@ tags:
     description: "Project Service: Project comments and discussions"
   - name: "🟢 PROJECT SERVICE - Public Discovery"
     description: "Project Service: Public project discovery and metadata for developers"
+  - name: "🟢 PROJECT SERVICE - AI"
+    description: "Project Service: AI-powered project generation and suggestions"
 
 paths:
   /api/v1/projects:
@@ -368,102 +370,6 @@ paths:
                       - "Research"
                       - "Consulting"
                       - "Other"
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
-
-  /api/v1/projects/metadata:
-    get:
-      summary: Get project metadata
-      description: Get all available metadata for project filtering including experience levels, priorities, statuses, work arrangements, payment terms, and currencies. No authentication required.
-      tags:
-        - "🟢 PROJECT SERVICE - Public Discovery"
-      responses:
-        '200':
-          description: Successfully retrieved metadata
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  status:
-                    type: integer
-                    example: 200
-                  metadata:
-                    type: object
-                    properties:
-                      experienceLevels:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "entry"
-                            label:
-                              type: string
-                              example: "Entry Level"
-                      priorities:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "low"
-                            label:
-                              type: string
-                              example: "Low Priority"
-                      statuses:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "active"
-                            label:
-                              type: string
-                              example: "Active"
-                      workArrangements:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "remote"
-                            label:
-                              type: string
-                              example: "Remote"
-                      paymentTerms:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "fixed"
-                            label:
-                              type: string
-                              example: "Fixed Price"
-                      currencies:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            value:
-                              type: string
-                              example: "USD"
-                            label:
-                              type: string
-                              example: "US Dollar ($)"
         '500':
           description: Internal server error
           content:
@@ -1972,6 +1878,330 @@ paths:
           description: Forbidden - not comment author
         "404":
           description: Comment not found
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/owner/stats:
+    get:
+      summary: Get project owner statistics
+      description: Get comprehensive statistics for the project owner's projects
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Statistics retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/owner/projects:
+    get:
+      summary: Get project owner's projects
+      description: Retrieve all projects owned by the authenticated user
+      tags:
+        - "🟢 PROJECT SERVICE - Management"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Owner projects retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/owner/reviews:
+    get:
+      summary: Get project owner reviews
+      description: Get reviews received by the project owner
+      tags:
+        - "🟢 PROJECT SERVICE - Reviews"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Reviews retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/owner/developers:
+    get:
+      summary: Get project owner's developers
+      description: Get developers associated with the project owner's projects
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Developers retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/applications/my:
+    get:
+      summary: Get my applications
+      description: Get all applications submitted by the authenticated developer
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Applications retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/applications/my/count:
+    get:
+      summary: Get my applications count
+      description: Get the count of applications submitted by the authenticated developer
+      tags:
+        - "🟢 PROJECT SERVICE - Applications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Application count retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/global/skills-tags:
+    get:
+      summary: Get global skills and tags
+      description: Get all available skills and tags from the system
+      tags:
+        - "🟢 PROJECT SERVICE - Public Discovery"
+      responses:
+        "200":
+          description: Skills and tags retrieved successfully
+
+  /api/v1/projects/filter-options:
+    get:
+      summary: Get filter options
+      description: Get all available filter options for projects (statuses, categories, etc.)
+      tags:
+        - "🟢 PROJECT SERVICE - Public Discovery"
+      responses:
+        "200":
+          description: Filter options retrieved successfully
+
+  /api/v1/projects/analytics/download:
+    post:
+      summary: Download applicants report
+      description: Generate and download a PDF report of project applicants
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: integer
+      responses:
+        "200":
+          description: Report generated successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - project owner only
+        "500":
+          description: Internal server error
+
+  /api/v1/projects/export:
+    post:
+      summary: Export project data
+      description: Export project applicants data as PDF
+      tags:
+        - "🟢 PROJECT SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                projectId:
+                  type: integer
+      responses:
+        "200":
+          description: Data exported successfully
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - project owner only
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/description:
+    post:
+      summary: Generate AI project description
+      description: Use AI to generate a project description based on provided data
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI description generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/titles:
+    post:
+      summary: Generate AI project titles
+      description: Use AI to generate suggested project titles
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI titles generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/skills:
+    post:
+      summary: Generate AI skill suggestions
+      description: Use AI to suggest relevant skills for a project
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI skills generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/requirements:
+    post:
+      summary: Generate AI requirements
+      description: Use AI to generate project requirements
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI requirements generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/benefits:
+    post:
+      summary: Generate AI benefits
+      description: Use AI to generate project benefits and perks
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI benefits generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/budget:
+    post:
+      summary: Generate AI budget suggestions
+      description: Use AI to suggest appropriate budget ranges
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: AI budget suggestions generated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai/comprehensive:
+    post:
+      summary: Generate comprehensive AI suggestions
+      description: Use AI to generate comprehensive project suggestions (title, description, skills, requirements, benefits, budget)
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Comprehensive AI suggestions generated successfully
+        "401":
+          description: Unauthorized
         "500":
           description: Internal server error
 
