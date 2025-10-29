@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { 
   Lock, 
   Eye, 
@@ -40,12 +42,24 @@ import {
   X 
 } from "lucide-react";
 import { Button } from "../../../components";
+import {
+  changePassword,
+  resetPasswordSuccess,
+} from "../slice/settingsSlice";
 
 export default function AccountSettings({
   formData,
   handleInputChange,
   handleSaveProfile,
 }) {
+  const dispatch = useDispatch();
+  
+  // Redux state
+  const {
+    passwordLoading,
+    passwordError,
+    passwordSuccess,
+  } = useSelector((state) => state.settings);
   const [showPasswords, setShowPasswords] = useState({
     password: false,
     newPassword: false,
@@ -55,6 +69,21 @@ export default function AccountSettings({
   const [errors, setErrors] = useState({});
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Show success message
+  useEffect(() => {
+    if (passwordSuccess) {
+      toast.success("Password changed successfully!");
+      dispatch(resetPasswordSuccess());
+      // Clear form
+      setFormData(prev => ({
+        ...prev,
+        password: "",
+        newPassword: "",
+        confirmPassword: ""
+      }));
+    }
+  }, [passwordSuccess, dispatch]);
 
   const togglePasswordVisibility = (field) => {
     setShowPasswords(prev => ({
@@ -110,13 +139,15 @@ export default function AccountSettings({
       return;
     }
     
-    setIsChangingPassword(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      handleSaveProfile();
-      setIsChangingPassword(false);
-    }, 2000);
+    try {
+      await dispatch(changePassword({
+        currentPassword: formData.password,
+        newPassword: formData.newPassword
+      })).unwrap();
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      toast.error('Failed to change password. Please try again.');
+    }
   };
 
   const getPasswordStrengthColor = (strength) => {
@@ -158,6 +189,13 @@ export default function AccountSettings({
       </div>
 
       <form onSubmit={handlePasswordSubmit} className="space-y-4">
+        {/* Error Display */}
+        {passwordError && (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-4">
+            <p className="text-red-300 text-sm">{passwordError}</p>
+          </div>
+        )}
+        
         {/* Password Change Section */}
         <div className="space-y-4">
           <div>
@@ -268,10 +306,10 @@ export default function AccountSettings({
             type="submit" 
             variant="default" 
             size="lg"
-            disabled={isChangingPassword}
+            disabled={passwordLoading}
             className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 transition-all duration-300"
           >
-            {isChangingPassword ? (
+            {passwordLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Changing...

@@ -65,3 +65,24 @@ export const updateSubscriptionApi = async (data) => {
   const url = `api/v1/settings/subscription`;
   return await fetchFromApiServer("PUT", url, data);
 };
+
+// User Profile APIs
+export const getUserProfileApi = async () => {
+  const url = `api/v1/user/profile`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const updateUserProfileApi = async (data) => {
+  const url = `api/v1/user/profile`;
+  return await fetchFromApiServer("PUT", url, data);
+};
+
+export const changePasswordApi = async (data) => {
+  const url = `api/v1/user/change-password`;
+  return await fetchFromApiServer("PUT", url, data);
+};
+
+export const deleteUserApi = async () => {
+  const url = `api/v1/user/profile`;
+  return await fetchFromApiServer("DELETE", url);
+};

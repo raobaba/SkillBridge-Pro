@@ -85,6 +85,7 @@ const CareerRecommender = () => {
                       }}
                     ></div>
                   </div>
+
                 </div>
                 <div className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r ${getMatchColor(rec.match)} text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105`}>
                   {rec.match}
@@ -124,3 +125,4 @@ const CareerRecommender = () => {
 };
 
 export default CareerRecommender;
+

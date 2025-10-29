@@ -12,6 +12,10 @@ import {
   updateIntegrationsApi,
   getSubscriptionApi,
   updateSubscriptionApi,
+  getUserProfileApi,
+  updateUserProfileApi,
+  changePasswordApi,
+  deleteUserApi,
 } from "./settingsAction";
 
 // Initial state
@@ -67,12 +71,29 @@ const initialState = {
     currentPeriodEnd: null,
   },
   
+  // User Profile
+  userProfile: {
+    name: "",
+    email: "",
+    bio: "",
+    skills: {},
+    experience: "",
+    location: "",
+    availability: "",
+    githubUrl: "",
+    linkedinUrl: "",
+    portfolioUrl: "",
+    portfolioScore: 0,
+  },
+  
   // Loading states
   loading: false,
   notificationLoading: false,
   privacyLoading: false,
   integrationLoading: false,
   subscriptionLoading: false,
+  profileLoading: false,
+  passwordLoading: false,
   
   // Error states
   error: null,
@@ -80,12 +101,16 @@ const initialState = {
   privacyError: null,
   integrationError: null,
   subscriptionError: null,
+  profileError: null,
+  passwordError: null,
   
   // Success states
   notificationSuccess: false,
   privacySuccess: false,
   integrationSuccess: false,
   subscriptionSuccess: false,
+  profileSuccess: false,
+  passwordSuccess: false,
 };
 
 // Async thunks for notification settings
@@ -262,6 +287,63 @@ export const updateSubscription = createAsyncThunk(
   }
 );
 
+// Async thunks for user profile
+export const getUserProfile = createAsyncThunk(
+  "settings/getUserProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getUserProfileApi();
+      return response.user;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch user profile" }
+      );
+    }
+  }
+);
+
+export const updateUserProfile = createAsyncThunk(
+  "settings/updateUserProfile",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await updateUserProfileApi(data);
+      return response.user;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to update user profile" }
+      );
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  "settings/changePassword",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await changePasswordApi(data);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to change password" }
+      );
+    }
+  }
+);
+
+export const deleteUser = createAsyncThunk(
+  "settings/deleteUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await deleteUserApi();
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to delete user" }
+      );
+    }
+  }
+);
+
 // Settings slice
 const settingsSlice = createSlice({
   name: "settings",
@@ -293,6 +375,17 @@ const settingsSlice = createSlice({
       state.integrations[key] = value;
     },
     
+    // User profile reducers
+    updateUserProfileField: (state, action) => {
+      const { key, value } = action.payload;
+      state.userProfile[key] = value;
+    },
+    
+    updateUserSkills: (state, action) => {
+      const { skill, level } = action.payload;
+      state.userProfile.skills[skill] = level;
+    },
+    
     // Reset success states
     resetNotificationSuccess: (state) => {
       state.notificationSuccess = false;
@@ -310,6 +403,14 @@ const settingsSlice = createSlice({
       state.subscriptionSuccess = false;
     },
     
+    resetProfileSuccess: (state) => {
+      state.profileSuccess = false;
+    },
+    
+    resetPasswordSuccess: (state) => {
+      state.passwordSuccess = false;
+    },
+    
     // Clear errors
     clearErrors: (state) => {
       state.error = null;
@@ -317,6 +418,8 @@ const settingsSlice = createSlice({
       state.privacyError = null;
       state.integrationError = null;
       state.subscriptionError = null;
+      state.profileError = null;
+      state.passwordError = null;
     },
   },
   extraReducers: (builder) => {
@@ -499,6 +602,66 @@ const settingsSlice = createSlice({
       .addCase(updateSubscription.rejected, (state, action) => {
         state.subscriptionLoading = false;
         state.subscriptionError = action.payload.message;
+      })
+      
+      // User profile
+      .addCase(getUserProfile.pending, (state) => {
+        state.profileLoading = true;
+        state.profileError = null;
+      })
+      .addCase(getUserProfile.fulfilled, (state, action) => {
+        state.profileLoading = false;
+        state.userProfile = { ...state.userProfile, ...action.payload };
+        state.profileError = null;
+      })
+      .addCase(getUserProfile.rejected, (state, action) => {
+        state.profileLoading = false;
+        state.profileError = action.payload.message;
+      })
+      
+      .addCase(updateUserProfile.pending, (state) => {
+        state.profileLoading = true;
+        state.profileError = null;
+      })
+      .addCase(updateUserProfile.fulfilled, (state, action) => {
+        state.profileLoading = false;
+        state.userProfile = { ...state.userProfile, ...action.payload };
+        state.profileSuccess = true;
+        state.profileError = null;
+      })
+      .addCase(updateUserProfile.rejected, (state, action) => {
+        state.profileLoading = false;
+        state.profileError = action.payload.message;
+      })
+      
+      // Password change
+      .addCase(changePassword.pending, (state) => {
+        state.passwordLoading = true;
+        state.passwordError = null;
+      })
+      .addCase(changePassword.fulfilled, (state, action) => {
+        state.passwordLoading = false;
+        state.passwordSuccess = true;
+        state.passwordError = null;
+      })
+      .addCase(changePassword.rejected, (state, action) => {
+        state.passwordLoading = false;
+        state.passwordError = action.payload.message;
+      })
+      
+      // Delete user
+      .addCase(deleteUser.pending, (state) => {
+        state.profileLoading = true;
+        state.profileError = null;
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.profileLoading = false;
+        state.profileSuccess = true;
+        state.profileError = null;
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
+        state.profileLoading = false;
+        state.profileError = action.payload.message;
       });
   },
 });
@@ -509,10 +672,14 @@ export const {
   updateQuietHoursLocal,
   updatePrivacyPreference,
   updateIntegrationPreference,
+  updateUserProfileField,
+  updateUserSkills,
   resetNotificationSuccess,
   resetPrivacySuccess,
   resetIntegrationSuccess,
   resetSubscriptionSuccess,
+  resetProfileSuccess,
+  resetPasswordSuccess,
   clearErrors,
 } = settingsSlice.actions;
 

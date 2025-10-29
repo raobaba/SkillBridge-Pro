@@ -208,7 +208,7 @@ const ProjectOwnerNotifications = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
-      <div className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+      <div className="w-full px-6 py-8">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 mb-6">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">

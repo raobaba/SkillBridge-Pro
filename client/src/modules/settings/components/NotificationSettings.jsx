@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { Badge, Button } from "../../../components";
+import { Badge, Button, Input } from "../../../components";
 import { 
   Bell, 
   Mail, 
@@ -379,47 +379,44 @@ export default function NotificationSettings() {
         </h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Email Frequency</label>
-            <select
-              value={localFrequency.email}
-              onChange={(e) => updateFrequency('email', e.target.value)}
-              disabled={notificationLoading}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="immediate">Immediate</option>
-              <option value="daily">Daily Digest</option>
-              <option value="weekly">Weekly Summary</option>
-            </select>
-          </div>
+          <Input
+            type="select"
+            label="Email Frequency"
+            value={localFrequency.email}
+            onChange={(e) => updateFrequency('email', e.target.value)}
+            disabled={notificationLoading}
+            options={[
+              { value: "immediate", label: "Immediate" },
+              { value: "daily", label: "Daily Digest" },
+              { value: "weekly", label: "Weekly Summary" }
+            ]}
+          />
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Push Notifications</label>
-            <select
-              value={localFrequency.push}
-              onChange={(e) => updateFrequency('push', e.target.value)}
-              disabled={notificationLoading}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="immediate">Immediate</option>
-              <option value="batched">Batched (Every 15 min)</option>
-              <option value="hourly">Hourly</option>
-            </select>
-          </div>
+          <Input
+            type="select"
+            label="Push Notifications"
+            value={localFrequency.push}
+            onChange={(e) => updateFrequency('push', e.target.value)}
+            disabled={notificationLoading}
+            options={[
+              { value: "immediate", label: "Immediate" },
+              { value: "batched", label: "Batched (Every 15 min)" },
+              { value: "hourly", label: "Hourly" }
+            ]}
+          />
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Reminders</label>
-            <select
-              value={localFrequency.reminders}
-              onChange={(e) => updateFrequency('reminders', e.target.value)}
-              disabled={notificationLoading}
-              className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
-          </div>
+          <Input
+            type="select"
+            label="Reminders"
+            value={localFrequency.reminders}
+            onChange={(e) => updateFrequency('reminders', e.target.value)}
+            disabled={notificationLoading}
+            options={[
+              { value: "daily", label: "Daily" },
+              { value: "weekly", label: "Weekly" },
+              { value: "monthly", label: "Monthly" }
+            ]}
+          />
         </div>
       </div>
 

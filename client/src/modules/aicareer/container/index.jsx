@@ -24,7 +24,7 @@ const AiCareer = () => {
   }, []);
 
   const renderDeveloperTools = () => (
-    <div className='w-full p-6 space-y-8'>
+    <div className='w-full space-y-8'>
       <div className='text-center mb-8'>
         <h1 className='text-4xl font-bold text-white mb-2'>AI Career Tools</h1>
         <p className='text-gray-300'>
@@ -70,12 +70,10 @@ const AiCareer = () => {
   const renderRoleBasedContent = () => {
     if (!user?.role) {
       return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
-          <div className='text-center text-white'>
-            <h2 className='text-2xl font-bold mb-4'>Access Denied</h2>
-            <p className='text-gray-300'>
-              Please log in to access AI career features.
-            </p>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+          <div className="text-center text-white">
+            <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+            <p className="text-gray-300">Please log in to access AI career features.</p>
           </div>
         </div>
       );
@@ -90,12 +88,10 @@ const AiCareer = () => {
         return renderAdminTools();
       default:
         return (
-          <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
-            <div className='text-center text-white'>
-              <h2 className='text-2xl font-bold mb-4'>Invalid Role</h2>
-              <p className='text-gray-300'>
-                Your role doesn't have access to AI career features.
-              </p>
+          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+            <div className="text-center text-white">
+              <h2 className="text-2xl font-bold mb-4">Invalid Role</h2>
+              <p className="text-gray-300">Your role doesn't have access to AI career features.</p>
             </div>
           </div>
         );
@@ -104,10 +100,10 @@ const AiCareer = () => {
 
   if (loading) {
     return (
-      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
-        <div className='text-center text-white'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4'></div>
-          <p className='text-gray-300'>Loading AI career tools...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading AI career tools...</p>
         </div>
       </div>
     );
@@ -116,7 +112,11 @@ const AiCareer = () => {
   return (
     <>
       <Navbar />
-      {renderRoleBasedContent()}
+      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+          {renderRoleBasedContent()}
+        </div>
+      </div>
       <Footer />
     </>
   );

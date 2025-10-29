@@ -55,102 +55,6 @@ import {
   getDeveloperAppliedProjects,
 } from "../../project/slice/projectSlice";
 
-// Enhanced data for Developer portfolio features
-
-const PORTFOLIO_PROJECTS = [
-  {
-    id: 1,
-    title: "E-commerce Platform",
-    description: "Full-stack e-commerce solution with React, Node.js, and MongoDB",
-    tech: ["React", "Node.js", "MongoDB", "Stripe"],
-    status: "Completed",
-    duration: "3 months",
-    github: "https://github.com/user/ecommerce",
-    live: "https://ecommerce-demo.com",
-    stars: 45,
-    forks: 12,
-    image: "/api/placeholder/400/200"
-  },
-  {
-    id: 2,
-    title: "Task Management App",
-    description: "Collaborative task management with real-time updates",
-    tech: ["Vue.js", "Express", "Socket.io", "PostgreSQL"],
-    status: "Completed",
-    duration: "2 months",
-    github: "https://github.com/user/taskapp",
-    live: "https://taskapp-demo.com",
-    stars: 32,
-    forks: 8,
-    image: "/api/placeholder/400/200"
-  },
-  {
-    id: 3,
-    title: "Weather Dashboard",
-    description: "Real-time weather tracking with data visualization",
-    tech: ["React", "D3.js", "OpenWeather API"],
-    status: "In Progress",
-    duration: "1 month",
-    github: "https://github.com/user/weather",
-    live: null,
-    stars: 18,
-    forks: 5,
-    image: "/api/placeholder/400/200"
-  }
-];
-
-const ENDORSEMENTS = [
-  {
-    id: 1,
-    endorser: "Sarah Johnson",
-    endorserTitle: "Senior Developer at TechCorp",
-    endorserAvatar: "/api/placeholder/40/40",
-    skill: "React",
-    message: "Excellent React developer with deep understanding of hooks and state management.",
-    rating: 5,
-    date: "2025-01-15"
-  },
-  {
-    id: 2,
-    endorser: "Mike Chen",
-    endorserTitle: "Project Manager at StartupXYZ",
-    endorserAvatar: "/api/placeholder/40/40",
-    skill: "Node.js",
-    message: "Outstanding backend development skills. Delivered complex APIs on time.",
-    rating: 5,
-    date: "2025-01-10"
-  },
-  {
-    id: 3,
-    endorser: "Alex Rodriguez",
-    endorserTitle: "CTO at InnovateLab",
-    endorserAvatar: "/api/placeholder/40/40",
-    skill: "JavaScript",
-    message: "Strong problem-solving abilities and clean code practices.",
-    rating: 4,
-    date: "2025-01-05"
-  }
-];
-
-const AI_INSIGHTS = {
-  skillGaps: [
-    { skill: "Docker", priority: "high", reason: "High demand in DevOps roles", marketDemand: 85 },
-    { skill: "GraphQL", priority: "medium", reason: "Growing popularity in API development", marketDemand: 72 },
-    { skill: "Machine Learning", priority: "low", reason: "Future opportunity in AI roles", marketDemand: 68 }
-  ],
-  careerSuggestions: [
-    { role: "Senior Full-Stack Developer", match: 92, reason: "Strong React and Node.js skills" },
-    { role: "Frontend Architect", match: 88, reason: "Excellent UI/UX implementation skills" },
-    { role: "DevOps Engineer", match: 65, reason: "Good foundation, needs Docker/Kubernetes" }
-  ],
-  marketTrends: [
-    { skill: "React", trend: "up", change: "+15%", demand: 95 },
-    { skill: "TypeScript", trend: "up", change: "+22%", demand: 88 },
-    { skill: "Node.js", trend: "up", change: "+8%", demand: 82 },
-    { skill: "Vue.js", trend: "stable", change: "+3%", demand: 75 }
-  ]
-};
-
 // Reusable components to eliminate code repetition
 const SectionCard = memo(({ icon, title, children, className = "" }) => (
   <div className={`bg-white/5 border border-white/10 rounded-xl p-6 ${className}`}>
@@ -299,12 +203,6 @@ const ProgressBar = memo(({ progress, className = "" }) => (
   </div>
 ));
 
-// Static data for enhanced developer features
-const PORTFOLIO_LINKS = [
-  { platform: "GitHub", url: "https://github.com/developer", icon: <Github className="w-4 h-4" /> },
-  { platform: "LinkedIn", url: "https://linkedin.com/in/developer", icon: <Linkedin className="w-4 h-4" /> },
-  { platform: "Portfolio", url: "https://developer-portfolio.com", icon: <ExternalLink className="w-4 h-4" /> },
-];
 
 const ENDORSEMENTS_DATA = [
   { skill: "React", endorsements: 15, rating: 4.8 },
@@ -359,6 +257,10 @@ const Developer = memo(function Developer({
   const applicationsLoading = useSelector((state) => state.project?.loading);
   const applicationsError = useSelector((state) => state.project?.error);
 
+  // Fetch applied projects on component mount
+  useEffect(() => {
+    dispatch(getDeveloperAppliedProjects());
+  }, [dispatch]);
 
 
   // Transform applications data for display
@@ -471,27 +373,6 @@ const Developer = memo(function Developer({
             handleChange={handleChange}
             userData={userData}
           />
-
-          {/* Portfolio Links */}
-          <SectionCard
-            icon={<ExternalLink className='w-8 h-8 mr-2 text-blue-400' />}
-            title="Portfolio Links"
-          >
-            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              {PORTFOLIO_LINKS.map((link, index) => (
-                <a
-                  key={index}
-                  href={link.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='flex items-center p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-gray-700/50 transition-colors'
-                >
-                  {link.icon}
-                  <span className='ml-2 text-sm'>{link.platform}</span>
-                </a>
-              ))}
-            </div>
-          </SectionCard>
 
           {/* Endorsements & Ratings */}
           <SectionCard

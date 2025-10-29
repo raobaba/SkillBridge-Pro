@@ -75,8 +75,9 @@ const SubsBilling = () => {
         </Badge>
       </div>
       
-      {/* Save Button */}
-      <div className="flex justify-end pt-4">
+      {/* Action Buttons */}
+      <div className="flex justify-between items-center pt-4">
+        <Button variant="outline">Manage Subscription</Button>
         <Button
           onClick={handleSaveSubscription}
           disabled={subscriptionLoading}
@@ -90,8 +91,6 @@ const SubsBilling = () => {
           {subscriptionLoading ? 'Saving...' : 'Save Subscription Settings'}
         </Button>
       </div>
-      
-      <Button>Manage Subscription</Button>
     </section>
   );
 };
