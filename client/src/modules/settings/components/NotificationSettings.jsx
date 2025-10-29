@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { Badge, Button } from "../../../components";
 import { 
   Bell, 
@@ -50,6 +51,7 @@ export default function NotificationSettings() {
   const [localNotifPrefs, setLocalNotifPrefs] = useState(notificationSettings);
   const [localFrequency, setLocalFrequency] = useState(notificationFrequency);
   const [localQuietHours, setLocalQuietHours] = useState(quietHours);
+  const [isBulkSave, setIsBulkSave] = useState(false);
 
   // Load settings on component mount
   useEffect(() => {
@@ -71,28 +73,87 @@ export default function NotificationSettings() {
     setLocalQuietHours(quietHours);
   }, [quietHours]);
 
-  // Show success message
+  // Show success message only for bulk saves, not individual toggles
   useEffect(() => {
-    if (notificationSuccess) {
-      alert("Notification settings saved successfully!");
+    if (notificationSuccess && isBulkSave) {
+      toast.success("Notification settings saved successfully!");
+      dispatch(resetNotificationSuccess());
+      setIsBulkSave(false); // Reset the flag
+    } else if (notificationSuccess && !isBulkSave) {
+      // Just reset the success state without showing toast for individual toggles
       dispatch(resetNotificationSuccess());
     }
-  }, [notificationSuccess, dispatch]);
+  }, [notificationSuccess, dispatch, isBulkSave]);
 
-  const toggleNotif = (type) => {
+  const toggleNotif = async (type) => {
     const newValue = !localNotifPrefs[type];
+    const oldValue = localNotifPrefs[type];
+    
+    // Optimistically update UI
     setLocalNotifPrefs((prev) => ({ ...prev, [type]: newValue }));
     dispatch(updateNotificationPreference({ key: type, value: newValue }));
+    
+    // Show immediate toast
+    const action = newValue ? 'enabled' : 'disabled';
+    const notificationType = notificationTypes.find(n => n.key === type)?.label || type;
+    toast.success(`${notificationType} ${action} successfully!`);
+    
+    try {
+      // Make immediate API call for this specific notification
+      await dispatch(updateNotificationSettings({ [type]: newValue })).unwrap();
+    } catch (error) {
+      // Revert on error
+      setLocalNotifPrefs((prev) => ({ ...prev, [type]: oldValue }));
+      dispatch(updateNotificationPreference({ key: type, value: oldValue }));
+      toast.error(`Failed to ${action} ${notificationType}. Please try again.`);
+      console.error('Failed to update notification setting:', error);
+    }
   };
 
-  const updateFrequency = (type, value) => {
+  const updateFrequency = async (type, value) => {
+    const oldValue = localFrequency[type];
+    
+    // Optimistically update UI
     setLocalFrequency((prev) => ({ ...prev, [type]: value }));
     dispatch(updateNotificationFrequencyLocal({ key: type, value }));
+    
+    // Show immediate toast
+    toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} frequency updated to ${value}!`);
+    
+    try {
+      // Make immediate API call
+      await dispatch(updateNotificationFrequency({ [type]: value })).unwrap();
+    } catch (error) {
+      // Revert on error
+      setLocalFrequency((prev) => ({ ...prev, [type]: oldValue }));
+      dispatch(updateNotificationFrequencyLocal({ key: type, value: oldValue }));
+      toast.error(`Failed to update ${type} frequency. Please try again.`);
+      console.error('Failed to update notification frequency:', error);
+    }
   };
 
-  const updateQuietHoursSetting = (key, value) => {
+  const updateQuietHoursSetting = async (key, value) => {
+    const oldValue = localQuietHours[key];
+    
+    // Optimistically update UI
     setLocalQuietHours((prev) => ({ ...prev, [key]: value }));
     dispatch(updateQuietHoursLocal({ key, value }));
+    
+    // Show immediate toast
+    const settingName = key === 'enabled' ? 'Quiet hours' : `${key} time`;
+    const action = key === 'enabled' ? (value ? 'enabled' : 'disabled') : `set to ${value}`;
+    toast.success(`${settingName} ${action} successfully!`);
+    
+    try {
+      // Make immediate API call
+      await dispatch(updateQuietHours({ [key]: value })).unwrap();
+    } catch (error) {
+      // Revert on error
+      setLocalQuietHours((prev) => ({ ...prev, [key]: oldValue }));
+      dispatch(updateQuietHoursLocal({ key, value: oldValue }));
+      toast.error(`Failed to update ${settingName}. Please try again.`);
+      console.error('Failed to update quiet hours:', error);
+    }
   };
 
   const toggleQuietHours = () => {
@@ -101,15 +162,18 @@ export default function NotificationSettings() {
   };
 
   const handleSaveNotifications = async () => {
+    setIsBulkSave(true); // Set flag to indicate this is a bulk save
     try {
       await Promise.all([
         dispatch(updateNotificationSettings(localNotifPrefs)).unwrap(),
         dispatch(updateNotificationFrequency(localFrequency)).unwrap(),
         dispatch(updateQuietHours(localQuietHours)).unwrap(),
       ]);
+      // Toast will be shown by the useEffect when notificationSuccess becomes true
     } catch (error) {
       console.error('Failed to save notification settings:', error);
-      alert('Failed to save settings. Please try again.');
+      toast.error('Failed to save settings. Please try again.');
+      setIsBulkSave(false); // Reset flag on error
     }
   };
 
@@ -155,6 +219,8 @@ export default function NotificationSettings() {
     Object.entries(defaultQuietHours).forEach(([key, value]) => {
       dispatch(updateQuietHoursLocal({ key, value }));
     });
+    
+    toast.success("Notification settings reset to default values!");
   };
 
   const notificationTypes = [

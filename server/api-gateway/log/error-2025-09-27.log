@@ -1,2 +1,0 @@
-2025-09-27T00:28:19.651Z [ERROR] PUT /api/v1/projects/1 400 - Expected double-quoted property name in JSON at position 51 (line 3 column 1)
-2025-09-27T02:05:01.353Z [ERROR] POST /api/v1/projects/files 500 - Internal server error
