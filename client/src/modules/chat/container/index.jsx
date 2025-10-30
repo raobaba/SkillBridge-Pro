@@ -467,7 +467,7 @@ const ChatContainer = () => {
   return (
     <>
       {/* Role-based Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 p-4 border-b border-white/10">
+      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-4 py-1 border-b border-white/10">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">

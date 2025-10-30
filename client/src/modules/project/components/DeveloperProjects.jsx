@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   Search,
@@ -54,6 +55,7 @@ const DeveloperProjects = ({
   message,
 }) => {
   const [activeTab, setActiveTab] = useState("discover"); // discover | applications
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [selectedPriority, setSelectedPriority] = useState("all");
@@ -75,6 +77,21 @@ const DeveloperProjects = ({
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState({ skills: [], tags: [] });
   const [appliedProjectsData, setAppliedProjectsData] = useState({}); // { [id]: project }
+
+  // Initialize tab from URL (?tab=applications|discover)
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') || '').toLowerCase();
+    if (urlTab === 'applications' || urlTab === 'discover') {
+      setActiveTab(urlTab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('tab', tab);
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
 
   // Load applied projects from Redux (which loads from localStorage)
   useEffect(() => {
@@ -818,7 +835,7 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
               <div className='bg-white/10 rounded-xl p-1'>
                 <div className='grid grid-cols-2 gap-1'>
                   <Button
-                    onClick={() => setActiveTab("discover")}
+                    onClick={() => handleTabChange("discover")}
                     variant='ghost'
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                       activeTab === "discover"
@@ -829,7 +846,7 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
                     Discover
                   </Button>
                   <Button
-                    onClick={() => setActiveTab("applications")}
+                    onClick={() => handleTabChange("applications")}
                     variant='ghost'
                     className={`px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
                       activeTab === "applications"

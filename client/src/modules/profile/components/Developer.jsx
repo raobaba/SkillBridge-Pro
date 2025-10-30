@@ -38,7 +38,7 @@ import {
   ArrowUp,
   ArrowDown
 } from "lucide-react";
-import { ConfirmModal } from "../../../components";
+import { ConfirmModal, Modal } from "../../../components";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
 import Button from "../../../components/Button";
@@ -256,6 +256,20 @@ const Developer = memo(function Developer({
   const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount || 0);
   const applicationsLoading = useSelector((state) => state.project?.loading);
   const applicationsError = useSelector((state) => state.project?.error);
+
+  // Details modal state
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsItem, setDetailsItem] = useState(null);
+
+  const openDetails = (item) => {
+    setDetailsItem(item);
+    setIsDetailsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setIsDetailsOpen(false);
+    setDetailsItem(null);
+  };
 
   // Fetch applied projects on component mount
   useEffect(() => {
@@ -494,7 +508,7 @@ const Developer = memo(function Developer({
                         {project.isRemote && (
                           <span className='flex items-center'>
                             <Globe className='w-3 h-3 mr-1' />
-                            Remote
+                            {project.location}
                           </span>
                         )}
                         {project.duration && (
@@ -517,12 +531,14 @@ const Developer = memo(function Developer({
                           size="sm"
                           className="p-2 bg-white/10 hover:bg-gray-600/50"
                           leftIcon={Eye}
+                          onClick={() => openDetails(project)}
                         />
                         <Button
                           variant="ghost"
                           size="sm"
                           className="p-2 bg-white/10 hover:bg-gray-600/50"
                           leftIcon={ExternalLink}
+                          onClick={() => navigate('/project?tab=applications')}
                         />
                       </div>
                     </div>
@@ -691,8 +707,58 @@ const Developer = memo(function Developer({
           />
         </div>
       </div>
+      {/* Details Modal */}
+      <ApplicationDetailsModal isOpen={isDetailsOpen} onClose={closeDetails} item={detailsItem} />
     </div>
   );
 });
+
+// Details Modal Renderer
+const ApplicationDetailsModal = memo(({ isOpen, onClose, item }) => {
+  if (!item) return null;
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={item.title || 'Application Details'}
+      subtitle={item.company || ''}
+      size="large"
+    >
+      <div className='p-6 overflow-y-auto'>
+        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <InfoRow label='Status' value={item.status} />
+          <InfoRow label='Applied On' value={item.date} />
+          {item.category && <InfoRow label='Category' value={item.category} />}
+          {item.experienceLevel && <InfoRow label='Experience' value={item.experienceLevel} />}
+          {item.budget && <InfoRow label='Budget' value={item.budget} />}
+          {item.location && <InfoRow label='Location' value={item.location} />}
+          {item.isRemote !== undefined && (
+            <InfoRow label='Remote' value={item.isRemote ? 'Yes' : 'No'} />
+          )}
+          {item.duration && <InfoRow label='Duration' value={item.duration} />}
+          {item.projectId && <InfoRow label='Project ID' value={item.projectId} />}
+        </div>
+
+        {item.description && (
+          <div className='mt-6'>
+            <h4 className='text-white font-semibold mb-2'>Description</h4>
+            <p className='text-gray-300 text-sm leading-relaxed'>{item.description}</p>
+          </div>
+        )}
+
+        <div className='mt-6 flex justify-end'>
+          <Button onClick={onClose} className='bg-white/10 hover:bg-white/20'>Close</Button>
+        </div>
+      </div>
+    </Modal>
+  );
+});
+
+const InfoRow = ({ label, value }) => (
+  <div className='bg-white/5 border border-white/10 rounded-lg p-3'>
+    <div className='text-xs text-gray-400'>{label}</div>
+    <div className='text-sm text-white'>{value || '—'}</div>
+  </div>
+);
 
 export default Developer;
