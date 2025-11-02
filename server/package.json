@@ -3,25 +3,28 @@
   "version": "1.0.0",
   "description": "SkillBridge Pro backend microservices with API Gateway",
   "scripts": {
-    "start": "concurrently \"npm run start:gateway\" \"npm run start:user\" \"npm run start:settings\" \"npm run start:project\"",
+    "start": "concurrently \"npm run start:gateway\" \"npm run start:user\" \"npm run start:settings\" \"npm run start:project\" \"npm run start:chat\"",
     "start:gateway": "cd api-gateway && npm run dev",
     "start:user": "cd services/user-service && npm run dev",
     "start:settings": "cd services/settings-service && npm run dev",
     "start:project": "cd services/project-service && npm run dev",
+    "start:chat": "cd services/chat-service && npm run dev",
     
-    "install:all": "npm install && cd api-gateway && npm install && cd ../services/user-service && npm install && cd ../settings-service && npm install && cd ../project-service && npm install",
+    "install:all": "npm install && cd api-gateway && npm install && cd ../services/user-service && npm install && cd ../services/settings-service && npm install && cd ../project-service && npm install && cd ../chat-service && npm install",
 
-    "db:generate": "concurrently \"npm run db:generate:user\" \"npm run db:generate:settings\" \"npm run db:generate:project\"",
+    "db:generate": "concurrently \"npm run db:generate:user\" \"npm run db:generate:settings\" \"npm run db:generate:project\" \"npm run db:generate:chat\"",
     "db:generate:user": "cd services/user-service && npm run db:generate",
     "db:generate:settings": "cd services/settings-service && npm run db:generate",
     "db:generate:project": "cd services/project-service && npm run db:generate",
+    "db:generate:chat": "cd services/chat-service && npm run db:generate",
 
-    "db:migrate": "npm run db:reset-all && npm run db:create-enums && concurrently \"npm run db:migrate:user\" \"npm run db:migrate:settings\" \"npm run db:migrate:project\"",
+    "db:migrate": "npm run db:reset-all && npm run db:create-enums && concurrently \"npm run db:migrate:user\" \"npm run db:migrate:settings\" \"npm run db:migrate:project\" \"npm run db:migrate:chat\"",
     "db:reset-all": "node scripts/reset-database.js",
     "db:create-enums": "node scripts/create-enums.js",
     "db:migrate:user": "cd services/user-service && npm run db:migrate",
     "db:migrate:settings": "cd services/settings-service && npm run db:migrate",
     "db:migrate:project": "cd services/project-service && npm run db:migrate",
+    "db:migrate:chat": "cd services/chat-service && npm run db:migrate",
 
     "db:seed": "node scripts/seed-database.js",
     "db:seed:user": "echo 'Use db:seed for comprehensive seeding'",

@@ -32,6 +32,15 @@ try {
 } catch (e) {
   // settings swagger not present yet; proceed without it
 }
+// Optional: chat swagger (if present)
+let chatSwagger = { servers: [], tags: [], paths: {}, components: {} };
+try {
+  chatSwagger = YAML.load(
+    path.join(__dirname, "swagger", "chat.swagger.yaml")
+  );
+} catch (e) {
+  // chat swagger not present yet; proceed without it
+}
 
 // Combine Swagger docs
 const combinedSwagger = {
@@ -41,18 +50,20 @@ const combinedSwagger = {
     version: "1.0.0",
     description: "Unified API documentation for all microservices",
   },
-  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers, ...(settingsSwagger.servers || [])],
+  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers, ...(settingsSwagger.servers || []), ...(chatSwagger.servers || [])],
   tags: [
     ...(apiGatewaySwagger.tags || []),
     ...(userSwagger.tags || []),
     ...(projectSwagger.tags || []),
-    ...(settingsSwagger.tags || [])
+    ...(settingsSwagger.tags || []),
+    ...(chatSwagger.tags || [])
   ],
   paths: { 
     ...apiGatewaySwagger.paths, 
     ...userSwagger.paths, 
     ...projectSwagger.paths,
-    ...(settingsSwagger.paths || {})
+    ...(settingsSwagger.paths || {}),
+    ...(chatSwagger.paths || {})
   },
   components: {
     schemas: {
@@ -60,12 +71,14 @@ const combinedSwagger = {
       ...(userSwagger.components?.schemas || {}),
       ...(projectSwagger.components?.schemas || {}),
       ...(settingsSwagger.components?.schemas || {}),
+      ...(chatSwagger.components?.schemas || {}),
     },
     securitySchemes: {
       ...(apiGatewaySwagger.components?.securitySchemes || {}),
       ...(userSwagger.components?.securitySchemes || {}),
       ...(projectSwagger.components?.securitySchemes || {}),
       ...(settingsSwagger.components?.securitySchemes || {}),
+      ...(chatSwagger.components?.securitySchemes || {}),
     },
   },
   security: [{ bearerAuth: [] }],
@@ -88,6 +101,7 @@ const API_USER_URL = process.env.API_USER_URL || "http://localhost:3001";
 
 const API_PROJECT_URL = process.env.API_PROJECT_URL || "http://localhost:3002";
 const API_SETTINGS_URL = process.env.API_SETTINGS_URL || "http://localhost:3003";
+const API_CHAT_URL = process.env.API_CHAT_URL || "http://localhost:3004";
 
 // Mount proxy at root `/` and forward full original path to user-service
 app.use(
@@ -172,6 +186,26 @@ app.use(
 app.use(
   "/api/v1/settings",
   proxy(API_SETTINGS_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      // Forward all headers including Authorization
+      proxyReqOpts.headers = { ...proxyReqOpts.headers, ...srcReq.headers };
+      return proxyReqOpts;
+    },
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+app.use(
+  "/api/v1/chat",
+  proxy(API_CHAT_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",
     parseReqBody: true,
