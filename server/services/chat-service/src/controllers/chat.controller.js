@@ -4,7 +4,8 @@ const {
   ConversationParticipantsModel,
 } = require("../models");
 const ErrorHandler = require("shared/utils/errorHandler");
-
+// Apply controller logger middleware to track all requests, responses, and errors
+const { applyControllerLogger } = require("shared/middleware/controllerLogger.middleware");
 // Get all conversations for the authenticated user
 const getConversations = async (req, res) => {
   try {
@@ -856,7 +857,7 @@ const removeParticipantFromGroup = async (req, res) => {
   }
 };
 
-module.exports = {
+const controllers = {
   getConversations,
   getOrCreateDirectConversation,
   getMessages,
@@ -871,4 +872,7 @@ module.exports = {
   flagConversation,
   unflagConversation,
 };
+
+
+module.exports = applyControllerLogger(controllers);
 
