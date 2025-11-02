@@ -65,16 +65,6 @@ export const navigationConfig = {
       showInUserDropdown: true,
       showInMobileNav: true,
     },
-    matchmaking: {
-      label: "Matchmaking",
-      path: "/matchmaking",
-      icon: Target,
-      description: "Find matches",
-      roles: ["developer"],
-      showInSidebar: true,
-      showInUserDropdown: true,
-      showInMobileNav: true,
-    },
     chat: {
       label: "Communication",
       path: "/chat",
@@ -151,13 +141,6 @@ export const navigationConfig = {
   quickAccess: {
     developer: [
       {
-        label: "Find Projects",
-        path: "/matchmaking",
-        icon: Target,
-        color: "blue",
-        description: "Discover new opportunities",
-      },
-      {
         label: "AI Career Tools",
         path: "/ai-career",
         icon: Brain,
@@ -191,15 +174,8 @@ export const navigationConfig = {
         label: "View Applicants",
         path: "/project?tab=applicants",
         icon: Users,
-        color: "green",
-        description: "Review applications",
-      },
-      {
-        label: "Team Management",
-        path: "/project?tab=team",
-        icon: Users,
         color: "purple",
-        description: "Manage your team",
+        description: "Review applications",
       },
       {
         label: "Billing",
@@ -221,15 +197,8 @@ export const navigationConfig = {
         label: "User Management",
         path: "/users",
         icon: Users,
-        color: "green",
-        description: "Manage users",
-      },
-      {
-        label: "Project Oversight",
-        path: "/project",
-        icon: Briefcase,
         color: "purple",
-        description: "Monitor projects",
+        description: "Manage users",
       },
       {
         label: "System Settings",

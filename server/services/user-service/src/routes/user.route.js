@@ -17,6 +17,22 @@ userRouter.delete("/profile", authenticate, userController.deleteUser);
 // Developers
 userRouter.get("/developers", authenticate, userController.getDevelopers);
 
+// Developer Favorites
+userRouter.post("/developers/favorites", authenticate, userController.addDeveloperFavorite);
+userRouter.delete("/developers/favorites", authenticate, userController.removeDeveloperFavorite);
+userRouter.get("/developers/favorites/my", authenticate, userController.getDeveloperFavorites);
+
+// Developer Saves
+userRouter.post("/developers/saves", authenticate, userController.addDeveloperSave);
+userRouter.delete("/developers/saves", authenticate, userController.removeDeveloperSave);
+userRouter.get("/developers/saves/my", authenticate, userController.getDeveloperSaves);
+
+// Developer Applications (Project Owner Outreach)
+userRouter.post("/developers/apply", authenticate, userController.applyToDeveloper);
+userRouter.delete("/developers/apply", authenticate, userController.withdrawDeveloperApplication);
+userRouter.get("/developers/applications/my", authenticate, userController.getMyDeveloperApplications);
+userRouter.get("/developers/applications/my/count", authenticate, userController.getMyDeveloperApplicationsCount);
+userRouter.get("/developers/applied-developers", authenticate, userController.getAppliedDevelopers);
 
 // Email Verification
 userRouter.get("/verify-email", userController.verifyEmail);

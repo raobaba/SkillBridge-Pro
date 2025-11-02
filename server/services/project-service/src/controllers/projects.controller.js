@@ -1323,7 +1323,7 @@ const createInvite = async (req, res) => {
   }
 };
 
-// Get invites for the authenticated user
+// Get invites for the authenticated user (developer receives invites)
 const getMyInvites = async (req, res) => {
   try {
     const userEmail = req.user?.email;
@@ -1336,6 +1336,204 @@ const getMyInvites = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch invites", error: error.message });
+  }
+};
+
+// Get invites sent by project owner
+const getSentInvitations = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    const invites = await ProjectModel.getInvitesByProjectOwner(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      invites,
+      count: invites.length 
+    });
+  } catch (error) {
+    console.error("Get Sent Invitations Error:", error);
+    return res
+      .status(500)
+      .json({ success: false, status: 500, message: "Failed to fetch sent invitations", error: error.message });
+  }
+};
+
+// Cancel/Delete invite (project owner only)
+const cancelInvite = async (req, res) => {
+  try {
+    console.log("cancelInvite - Request body:", JSON.stringify(req.body, null, 2));
+    const { inviteId, projectId, developerId } = req.body;
+    console.log("cancelInvite - Extracted values:", { inviteId, projectId, developerId });
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    let invite;
+    
+    // If inviteId is provided, use it directly
+    if (inviteId) {
+      const inviteIdNum = Number(inviteId);
+      if (!inviteIdNum || isNaN(inviteIdNum)) {
+        return sendError(res, "Invalid inviteId", 400);
+      }
+      
+      invite = await ProjectModel.getInviteById(inviteIdNum);
+      if (!invite) return sendError(res, "Invite not found", 404);
+      
+      // Log the invite structure for debugging BEFORE any modifications
+      console.log("Invite from getInviteById (raw):", {
+        inviteId: inviteIdNum,
+        requestProjectId: projectId,
+        invite: {
+          id: invite.id,
+          projectId: invite.projectId,
+          project_id: invite.project_id,
+          allKeys: Object.keys(invite),
+          fullInvite: JSON.stringify(invite, null, 2)
+        }
+      });
+    } 
+    // Otherwise, find invite by projectId and developerId
+    else if (projectId && developerId) {
+      const invites = await ProjectModel.getInvitesByProjectIdAndUserId(
+        Number(projectId),
+        Number(developerId)
+      );
+      invite = invites.find(inv => inv.status === 'pending') || invites[0];
+      if (!invite) return sendError(res, "Invite not found", 404);
+    } else {
+      return sendError(res, "inviteId or (projectId and developerId) required", 400);
+    }
+    
+    // Check if project exists and user has permission
+    // Priority: 1. Request body projectId (most reliable), 2. Invite object projectId, 3. Invite object project_id
+    // Handle both camelCase (from Drizzle) and snake_case (from raw SQL) field names
+    let inviteProjectIdRaw = null;
+    let projectIdSource = 'unknown';
+    
+    console.log("Evaluating projectId sources:", {
+      requestProjectId: projectId,
+      requestProjectIdType: typeof projectId,
+      requestProjectIdNumber: Number(projectId),
+      inviteProjectId: invite.projectId,
+      inviteProjectIdType: typeof invite.projectId,
+      inviteProject_id: invite.project_id,
+      inviteProject_idType: typeof invite.project_id
+    });
+    
+    // Validate and use projectId from request body (most reliable when provided)
+    // Check request body projectId FIRST since user is explicitly sending it
+    if (projectId !== undefined && projectId !== null && projectId !== '') {
+      const requestProjectIdNum = Number(projectId);
+      if (!isNaN(requestProjectIdNum) && requestProjectIdNum > 0 && Number.isInteger(requestProjectIdNum)) {
+        inviteProjectIdRaw = requestProjectIdNum;
+        projectIdSource = 'request.body';
+        console.log("✅ Using projectId from request body:", requestProjectIdNum);
+      } else {
+        console.warn("⚠️ Request projectId is invalid:", { projectId, converted: requestProjectIdNum });
+      }
+    }
+    
+    // Fallback to invite.projectId only if request body didn't provide valid projectId
+    if (!inviteProjectIdRaw && invite.projectId !== undefined && invite.projectId !== null) {
+      const inviteProjectIdNum = Number(invite.projectId);
+      if (!isNaN(inviteProjectIdNum) && inviteProjectIdNum > 0 && Number.isInteger(inviteProjectIdNum)) {
+        inviteProjectIdRaw = inviteProjectIdNum;
+        projectIdSource = 'invite.projectId';
+        console.log("✅ Using projectId from invite.projectId:", inviteProjectIdNum);
+      }
+    }
+    
+    // Fallback to invite.project_id as last resort
+    if (!inviteProjectIdRaw && invite.project_id !== undefined && invite.project_id !== null) {
+      const inviteProjectIdNum = Number(invite.project_id);
+      if (!isNaN(inviteProjectIdNum) && inviteProjectIdNum > 0 && Number.isInteger(inviteProjectIdNum)) {
+        inviteProjectIdRaw = inviteProjectIdNum;
+        projectIdSource = 'invite.project_id';
+        console.log("✅ Using projectId from invite.project_id:", inviteProjectIdNum);
+      }
+    }
+    
+    // Final validation - ensure we have a valid projectId before proceeding
+    if (!inviteProjectIdRaw || inviteProjectIdRaw === null || inviteProjectIdRaw === undefined) {
+      console.error("No project ID found in any source:", {
+        inviteId: inviteId,
+        requestBody: req.body,
+        requestProjectId: projectId,
+        invite: {
+          id: invite?.id,
+          projectId: invite?.projectId,
+          project_id: invite?.project_id,
+          allFields: invite ? Object.keys(invite) : [],
+          fullInvite: invite ? JSON.stringify(invite, null, 2) : 'no invite'
+        }
+      });
+      return sendError(res, `No valid project ID found. Invite ID: ${invite?.id}, Request Project ID: ${projectId}`, 400);
+    }
+    
+    const inviteProjectId = Number(inviteProjectIdRaw);
+    
+    if (isNaN(inviteProjectId) || inviteProjectId <= 0 || !Number.isInteger(inviteProjectId)) {
+      console.error("Invalid project ID value (NaN or invalid):", {
+        inviteId: inviteId,
+        requestBody: req.body,
+        requestProjectId: projectId,
+        inviteProjectIdRaw: inviteProjectIdRaw,
+        inviteProjectId: inviteProjectId,
+        invite: {
+          id: invite?.id,
+          projectId: invite?.projectId,
+          project_id: invite?.project_id
+        }
+      });
+      return sendError(res, `Invalid project ID value: ${inviteProjectIdRaw}. Must be a positive integer.`, 400);
+    }
+    
+    console.log("Using project ID for invite cancellation:", {
+      inviteId: invite?.id,
+      inviteProjectId: inviteProjectId,
+      source: projectIdSource,
+      inviteProjectIdRaw: inviteProjectIdRaw
+    });
+    
+    // Double-check before calling getProjectById - should never be NaN at this point
+    if (isNaN(inviteProjectId) || inviteProjectId <= 0) {
+      console.error("CRITICAL: projectId is still invalid right before getProjectById call!");
+      return sendError(res, `Critical error: Invalid project ID ${inviteProjectId}`, 500);
+    }
+    
+    const project = await ProjectModel.getProjectById(inviteProjectId);
+    if (!project) return sendError(res, "Project not found", 404);
+    
+    // Only project owner or admin can cancel invites
+    if (userRole !== 'admin' && project.ownerId !== userId) {
+      return sendError(res, "You can only cancel invites for your own projects", 403);
+    }
+    
+    // Delete the invite
+    const deleted = await ProjectModel.deleteInvite(invite.id);
+    
+    if (!deleted) {
+      return sendError(res, "Failed to cancel invite", 500);
+    }
+    
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      message: "Invite canceled successfully",
+      invite: deleted 
+    });
+  } catch (error) {
+    console.error("Cancel Invite Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to cancel invite", 
+      error: error.message 
+    });
   }
 };
 
@@ -2625,7 +2823,9 @@ module.exports = {
   updateApplicantStatus,
   listApplicants,
   createInvite,
+  cancelInvite,
   getMyInvites,
+  getSentInvitations,
   respondInvite,
   addFile,
   getProjectFiles,

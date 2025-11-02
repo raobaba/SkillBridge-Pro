@@ -292,7 +292,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(combinedSwagger, {
           }
         }, 3000);
         
-        console.log('✅ Manual logout - Token cleared');
       }
       
       // Add custom auth status bar
@@ -337,9 +336,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(combinedSwagger, {
           const responseData = JSON.parse(res.body);
           if (responseData.token) {
             localStorage.setItem('swagger-token', responseData.token);
-            console.log('✅ Token automatically saved from login response');
-            
-            // Show success message
             setTimeout(() => {
               const successDiv = document.createElement('div');
               successDiv.style.cssText = `
@@ -376,8 +372,6 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(combinedSwagger, {
           const responseData = JSON.parse(res.body);
           if (responseData.success) {
             localStorage.removeItem('swagger-token');
-            console.log('✅ Token automatically cleared from logout response');
-            
             // Show logout message
             setTimeout(() => {
               const logoutDiv = document.createElement('div');

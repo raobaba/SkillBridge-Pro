@@ -54,3 +54,9 @@ export const logoutApi = async () => {
   const url = `api/v1/user/logout`;
   return await fetchFromApiServer("POST", url);
 };
+
+// Admin APIs
+export const getRoleStatsApi = async () => {
+  const url = `api/v1/user/roles/stats`;
+  return await fetchFromApiServer("GET", url);
+};

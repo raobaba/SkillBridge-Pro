@@ -93,12 +93,10 @@ const DeveloperProjects = ({
     setSearchParams(next);
   }, [searchParams, setSearchParams]);
 
-  // Load applied projects from Redux (which loads from localStorage)
   useEffect(() => {
     dispatch(loadAppliedProjects());
   }, [dispatch]);
 
-  // Fetch project data for all applied projects on mount
   useEffect(() => {
     const fetchAppliedProjectData = async () => {
       if (!appliedProjects || appliedProjects.length === 0) return;
@@ -112,7 +110,6 @@ const DeveloperProjects = ({
       const missingIds = appliedProjects.filter(id => !existingIds.has(id));
       
       if (missingIds.length > 0) {
-        console.log('Fetching data for applied projects:', missingIds);
         for (const id of missingIds) {
           try {
             const res = await dispatch(getProject(id)).unwrap();
@@ -233,8 +230,8 @@ const DeveloperProjects = ({
     });
     return statusMap;
   }, [myApplications]);
+  console.log("myApplications",myApplications)
 
-  // Normalize applied state for list rendering using proper application data
   const isAppliedTo = useCallback((projectId) => {
     return applicationStatusByProjectId[projectId] || applicationStatusMap[projectId] || false;
   }, [applicationStatusByProjectId, applicationStatusMap]);
@@ -271,31 +268,14 @@ const DeveloperProjects = ({
     const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
     const uniqueIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
     
-    console.log('Building applicationProjectItems:', {
-      idsFromServer,
-      idsFromLocal,
-      uniqueIds,
-      myApplicationsLength: myApplications?.length,
-      appliedProjectsLength: appliedProjects?.length
-    });
-    
     const items = uniqueIds.map((id) => {
       const project = getProjectById(id);
-      console.log(`Project data for ID ${id}:`, project ? 'Found' : 'Not found');
       return { id, project };
     });
     
     const validItems = items.filter((x) => !!x.project);
-    console.log('Valid application items:', validItems.length);
-    
     return validItems;
   }, [myApplications, appliedProjects, getProjectById]);
-
-console.log("appliedProjects",appliedProjects)
-console.log("applicationProjectItems",applicationProjectItems);
-console.log("myApplications",myApplications)
-console.log("appliedProjectsData", appliedProjectsData)
-console.log("projects", projects?.length, "publicProjects", publicProjects?.length)
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -319,7 +299,6 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
   // Enhanced filter function that uses public projects API for better performance
   const filterProjects = useCallback(async () => {
     try {
-      // Check if any filters are actually applied
       const hasFilters = 
         searchTerm.trim() !== "" ||
         selectedStatus !== "all" ||
@@ -331,7 +310,6 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
         budgetMax !== "" ||
         isRemoteOnly;
 
-      // If no filters are applied, show all projects from displayProjects
       if (!hasFilters) {
         setFilteredProjects(displayProjects);
         return;
@@ -590,14 +568,12 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
     }
   }, [activeTab, dispatch, isDeveloper, isPublicOnly]);
 
-  // Ensure Applications tab shows applied projects even if not in current lists
+
   useEffect(() => {
     const populateAppliedDetails = async () => {
       const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
       const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
       const allIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
-      
-      console.log('populateAppliedDetails - allIds:', allIds);
       
       if (allIds.length === 0) return;
 
@@ -607,18 +583,12 @@ console.log("projects", projects?.length, "publicProjects", publicProjects?.leng
         ...Object.keys(appliedProjectsData).map((k) => Number(k)),
       ]);
 
-      console.log('existingIds:', existingIds);
-      
       const missingIds = allIds.filter(id => !existingIds.has(id));
-      console.log('missingIds to fetch:', missingIds);
-
       for (const id of missingIds) {
         try {
-          console.log(`Fetching project data for ID: ${id}`);
           const res = await dispatch(getProject(id)).unwrap();
           const proj = res?.project || res?.data?.project || res;
           if (proj && proj.id) {
-            console.log(`Successfully fetched project data for ID: ${id}`);
             setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
           } else {
             console.warn(`No project data found for ID: ${id}`);

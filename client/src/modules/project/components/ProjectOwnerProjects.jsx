@@ -2392,8 +2392,6 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             selectedProject={selectedProject}
             onClose={() => setShowInviteDevelopersModal(false)}
             onInviteSent={(developer) => {
-              console.log("Invitation sent to:", developer.name);
-              // You can add additional logic here, like updating notifications
             }}
           />
         )}

@@ -280,7 +280,6 @@ const Developer = memo(function Developer({
   // Transform applications data for display
   const appliedProjectsData = useMemo(() => {
     if (!myApplications || myApplications.length === 0) {
-      console.log('No applications data to transform');
       return [];
     }
     

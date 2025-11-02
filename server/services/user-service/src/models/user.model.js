@@ -56,6 +56,38 @@ const userTable = pgTable("users", {
     .notNull(),
 });
 
+// Developer Favorites table
+const developerFavoritesTable = pgTable("developer_favorites", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // Project owner who is favoriting
+  developerId: integer("developer_id").notNull(), // Developer being favorited
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Developer Saves table
+const developerSavesTable = pgTable("developer_saves", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // Project owner who is saving
+  developerId: integer("developer_id").notNull(), // Developer being saved
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Developer Applications table (Project owner reaching out to developer)
+const developerApplicationsTable = pgTable("developer_applications", {
+  id: serial("id").primaryKey(),
+  projectOwnerId: integer("project_owner_id").notNull(), // Project owner who is reaching out
+  developerId: integer("developer_id").notNull(), // Developer being contacted
+  projectId: integer("project_id"), // Optional: associated project
+  message: text("message"), // Message from project owner
+  notes: text("notes"), // Internal notes
+  status: text("status").default("pending"), // pending, accepted, rejected
+  appliedAt: timestamp("applied_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 class UserModel {
   static async createUser(userObject) {
     const [user] = await db.insert(userTable).values(userObject).returning();
@@ -425,9 +457,245 @@ class UserModel {
   static async getUserByUUIDWithRoles(uuid) {
     return await this.getUserByUUID(uuid);
   }
+
+  // ============================================
+  // DEVELOPER FAVORITES
+  // ============================================
+  
+  static async addDeveloperFavorite(userId, developerId) {
+    const [favorite] = await db
+      .insert(developerFavoritesTable)
+      .values({ userId, developerId })
+      .returning();
+    return favorite;
+  }
+
+  static async removeDeveloperFavorite(userId, developerId) {
+    await db
+      .delete(developerFavoritesTable)
+      .where(
+        and(
+          eq(developerFavoritesTable.userId, userId),
+          eq(developerFavoritesTable.developerId, developerId)
+        )
+      );
+    return true;
+  }
+
+  static async getDeveloperFavorites(userId) {
+    const { sql } = require("drizzle-orm");
+    
+    const favorites = await db.execute(sql`
+      SELECT 
+        df.id,
+        df.user_id as "userId",
+        df.developer_id as "developerId",
+        df.created_at as "createdAt",
+        u.id as "developer_id",
+        u.name,
+        u.email,
+        u.bio,
+        u.avatar_url as "avatarUrl",
+        u.skills,
+        u.experience,
+        u.location,
+        u.availability,
+        u.github_url as "githubUrl",
+        u.linkedin_url as "linkedinUrl",
+        u.portfolio_url as "portfolioUrl",
+        u.xp,
+        u.level
+      FROM developer_favorites df
+      LEFT JOIN users u ON df.developer_id = u.id
+      WHERE df.user_id = ${userId} AND u.is_deleted = false
+      ORDER BY df.created_at DESC
+    `);
+    
+    return favorites.rows || [];
+  }
+
+  // ============================================
+  // DEVELOPER SAVES
+  // ============================================
+  
+  static async addDeveloperSave(userId, developerId) {
+    const [save] = await db
+      .insert(developerSavesTable)
+      .values({ userId, developerId })
+      .returning();
+    return save;
+  }
+
+  static async removeDeveloperSave(userId, developerId) {
+    await db
+      .delete(developerSavesTable)
+      .where(
+        and(
+          eq(developerSavesTable.userId, userId),
+          eq(developerSavesTable.developerId, developerId)
+        )
+      );
+    return true;
+  }
+
+  static async getDeveloperSaves(userId) {
+    const { sql } = require("drizzle-orm");
+    
+    const saves = await db.execute(sql`
+      SELECT 
+        ds.id,
+        ds.user_id as "userId",
+        ds.developer_id as "developerId",
+        ds.created_at as "createdAt",
+        u.id as "developer_id",
+        u.name,
+        u.email,
+        u.bio,
+        u.avatar_url as "avatarUrl",
+        u.skills,
+        u.experience,
+        u.location,
+        u.availability,
+        u.github_url as "githubUrl",
+        u.linkedin_url as "linkedinUrl",
+        u.portfolio_url as "portfolioUrl",
+        u.xp,
+        u.level
+      FROM developer_saves ds
+      LEFT JOIN users u ON ds.developer_id = u.id
+      WHERE ds.user_id = ${userId} AND u.is_deleted = false
+      ORDER BY ds.created_at DESC
+    `);
+    
+    return saves.rows || [];
+  }
+
+  // ============================================
+  // DEVELOPER APPLICATIONS (Project Owner Outreach)
+  // ============================================
+  
+  static async applyToDeveloper(applicationData) {
+    const { projectOwnerId, developerId, projectId, message, notes } = applicationData;
+    
+    const [application] = await db
+      .insert(developerApplicationsTable)
+      .values({
+        projectOwnerId,
+        developerId,
+        projectId,
+        message,
+        notes,
+        status: 'pending'
+      })
+      .returning();
+    
+    return application;
+  }
+
+  static async withdrawDeveloperApplication(projectOwnerId, developerId) {
+    const [result] = await db
+      .delete(developerApplicationsTable)
+      .where(
+        and(
+          eq(developerApplicationsTable.projectOwnerId, projectOwnerId),
+          eq(developerApplicationsTable.developerId, developerId)
+        )
+      )
+      .returning();
+    
+    return result;
+  }
+
+  static async getMyDeveloperApplications(projectOwnerId) {
+    const { sql } = require("drizzle-orm");
+    
+    const applications = await db.execute(sql`
+      SELECT 
+        da.id as "applicationId",
+        da.project_owner_id as "projectOwnerId",
+        da.developer_id as "developerId",
+        da.project_id as "projectId",
+        da.message,
+        da.notes,
+        da.status,
+        da.applied_at as "appliedAt",
+        da.updated_at as "updatedAt",
+        u.id as "developer_id",
+        u.name,
+        u.email,
+        u.bio,
+        u.avatar_url as "avatarUrl",
+        u.skills,
+        u.experience,
+        u.location,
+        u.availability,
+        u.github_url as "githubUrl",
+        u.linkedin_url as "linkedinUrl",
+        u.portfolio_url as "portfolioUrl",
+        u.xp,
+        u.level
+      FROM developer_applications da
+      LEFT JOIN users u ON da.developer_id = u.id
+      WHERE da.project_owner_id = ${projectOwnerId} AND u.is_deleted = false
+      ORDER BY da.applied_at DESC
+    `);
+    
+    return applications.rows || [];
+  }
+
+  static async getMyDeveloperApplicationsCount(projectOwnerId) {
+    const { sql } = require("drizzle-orm");
+    
+    const result = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM developer_applications da
+      LEFT JOIN users u ON da.developer_id = u.id
+      WHERE da.project_owner_id = ${projectOwnerId} AND u.is_deleted = false
+    `);
+    
+    return result.rows[0]?.count || 0;
+  }
+
+  static async getAppliedDevelopers(projectOwnerId) {
+    const { sql } = require("drizzle-orm");
+    
+    const appliedDevelopers = await db.execute(sql`
+      SELECT 
+        da.id as "applicationId",
+        da.developer_id as "developerId",
+        da.project_id as "projectId",
+        da.status,
+        da.applied_at as "appliedAt",
+        da.message,
+        da.notes,
+        u.id as "developer_id",
+        u.name,
+        u.email,
+        u.bio,
+        u.avatar_url as "avatarUrl",
+        u.skills,
+        u.experience,
+        u.location,
+        u.availability,
+        u.github_url as "githubUrl",
+        u.linkedin_url as "linkedinUrl",
+        u.portfolio_url as "portfolioUrl",
+        u.xp,
+        u.level
+      FROM developer_applications da
+      LEFT JOIN users u ON da.developer_id = u.id
+      WHERE da.project_owner_id = ${projectOwnerId} AND u.is_deleted = false
+      ORDER BY da.applied_at DESC
+    `);
+    
+    return appliedDevelopers.rows || [];
+  }
 }
 
 module.exports = {
   userTable,
+  developerFavoritesTable,
+  developerSavesTable,
+  developerApplicationsTable,
   UserModel,
 };

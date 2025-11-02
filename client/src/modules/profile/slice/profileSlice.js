@@ -19,10 +19,7 @@ export const fetchProjectOwnerStats = createAsyncThunk(
   'profile/fetchProjectOwnerStats',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching project owner stats...');
       const response = await getProjectOwnerStatsApi();
-      console.log('Project owner stats response:', response);
-      
       // Handle different response formats
       if (response.data && response.data.stats) {
         return response.data.stats;
@@ -42,10 +39,7 @@ export const fetchProjectOwnerProjects = createAsyncThunk(
   'profile/fetchProjectOwnerProjects',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('Fetching project owner projects...');
       const response = await getProjectOwnerProjectsApi();
-      console.log('Project owner projects response:', response);
-      
       // Handle different response formats
       if (response.data && response.data.projects) {
         return response.data.projects;

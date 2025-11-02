@@ -314,7 +314,6 @@ export const getDeveloperAppliedProjects = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getDeveloperAppliedProjectsApi();
-      console.log("response",response);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -1908,9 +1907,7 @@ const projectSlice = createSlice({
       })
       .addCase(getMyApplications.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('Redux: getMyApplications.fulfilled - action.payload:', action.payload);
         const apps = action.payload.applications || [];
-        console.log('Redux: extracted applications:', apps);
         state.myApplications = apps;
         const ids = apps.map(a => a.projectId).filter(id => typeof id === 'number');
         state.appliedProjects = Array.from(new Set([...(state.appliedProjects || []), ...ids]));
@@ -1949,9 +1946,7 @@ const projectSlice = createSlice({
       })
       .addCase(getDeveloperAppliedProjects.fulfilled, (state, action) => {
         state.loading = false;
-        console.log('Redux: getDeveloperAppliedProjects.fulfilled - action.payload:', action.payload);
         const appliedProjects = action.payload.appliedProjects || [];
-        console.log('Redux: extracted applied projects:', appliedProjects);
         state.myApplications = appliedProjects;
         state.myApplicationsCount = appliedProjects.length;
         state.error = null;

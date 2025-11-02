@@ -25,7 +25,6 @@ const Notifications = lazy(() => import("../modules/notifications/container"));
 const Settings = lazy(() => import("../modules/settings/container"));
 const PortfolioSync = lazy(() => import("../modules/portfolioSync/container"));
 const Project = lazy(() => import("../modules/project/container"));
-const Matchmaking = lazy(() => import("../modules/matchmaking/container"));
 const Gamification = lazy(() => import("../modules/gamification/container"));
 const Chat = lazy(() => import("../modules/chat/container"));
 const BillingSubscription = lazy(() =>
@@ -92,14 +91,6 @@ const Routing = () => {
             element={
               <PrivateRoute screen='PROJECT_ACCESS'>
                 <Project />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path='/matchmaking'
-            element={
-              <PrivateRoute screen='MATCHMAKING_ACCESS'>
-                <Matchmaking />
               </PrivateRoute>
             }
           />

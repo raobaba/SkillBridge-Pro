@@ -40,8 +40,10 @@ import {
 } from "lucide-react";
 import Navbar from "../../../components/header";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 export default function AnalyticsDashboard() {
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
@@ -252,12 +254,11 @@ export default function AnalyticsDashboard() {
   ];
 
   const quickAccessLinks = [
-    { name: "User Management", icon: Users, color: "blue", description: "Manage users & permissions" },
-    { name: "Content Moderation", icon: Shield, color: "red", description: "Review flagged content" },
-    { name: "System Monitoring", icon: Server, color: "green", description: "Monitor system health" },
-    { name: "Analytics & Reports", icon: BarChart3, color: "purple", description: "View detailed analytics" },
-    { name: "Security Center", icon: Lock, color: "yellow", description: "Security & access control" },
-    { name: "Platform Settings", icon: Settings, color: "orange", description: "Configure platform" },
+    { name: "User Management", icon: Users, color: "blue", description: "Manage users & permissions", path: "/user-management" },
+    { name: "Content Moderation", icon: Shield, color: "red", description: "Review flagged content", path: "/moderation" },
+    { name: "System Monitoring", icon: Server, color: "green", description: "Monitor system health", path: "/system-monitoring" },
+    { name: "Analytics & Reports", icon: BarChart3, color: "purple", description: "View detailed analytics", path: "/analytics" },
+    { name: "Platform Settings", icon: Settings, color: "orange", description: "Configure platform", path: "/settings" },
   ];
 
   return (
@@ -719,6 +720,7 @@ export default function AnalyticsDashboard() {
             {quickAccessLinks.map((link, index) => (
               <Button
                 key={index}
+                onClick={() => navigate(link.path)}
                 variant="ghost"
                 className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
                   link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
@@ -726,6 +728,7 @@ export default function AnalyticsDashboard() {
                   link.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
                   link.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :
                   link.color === 'yellow' ? 'bg-yellow-500/20 hover:bg-yellow-500/30' :
+                  link.color === 'pink' ? 'bg-pink-500/20 hover:bg-pink-500/30' :
                   'bg-orange-500/20 hover:bg-orange-500/30'
                 }`}
               >

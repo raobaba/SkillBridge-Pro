@@ -1,5 +1,0 @@
-2025-10-02T09:20:37.272Z [ERROR] PUT /api/v1/projects/applicants/status 403 - Access denied. Required roles: project-owner, admin. Your role: developer
-2025-10-02T09:21:05.687Z [ERROR] GET /api/v1/projects/1/applicants 403 - Access denied. Required roles: project-owner, admin. Your role: developer
-2025-10-02T09:45:13.320Z [ERROR] PUT /api/v1/projects/applicants/status 403 - Access denied. Required roles: project-owner, admin. Your role: developer
-2025-10-02T09:46:06.187Z [ERROR] PUT /api/v1/projects/applicants/status 403 - Access denied. Required roles: project-owner, admin. Your role: developer
-2025-10-02T09:46:19.993Z [ERROR] GET /api/v1/projects/2/applicants 403 - Access denied. Required roles: project-owner, admin. Your role: developer

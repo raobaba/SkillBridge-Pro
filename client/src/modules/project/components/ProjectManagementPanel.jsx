@@ -137,14 +137,12 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
 
   const handleInvite = () => {
     // Handle invite logic
-    console.log('Inviting developer:', inviteData)
     setShowInviteModal(false)
     setInviteData({ email: '', message: '', role: '', budget: '' })
   }
 
   const handleBoost = () => {
     // Handle boost logic
-    console.log('Boosting project visibility')
     setShowBoostModal(false)
   }
 
@@ -690,8 +688,6 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </Button>
               <Button
                 onClick={() => {
-                  // Handle delete logic
-                  console.log('Deleting project')
                   setShowDeleteConfirm(false)
                   onClose()
                 }}

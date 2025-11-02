@@ -118,10 +118,17 @@ class ProjectsModel {
   }
 
   static async getProjectById(id) {
+    // Validate id is a valid number before querying
+    const projectId = Number(id);
+    if (!id || isNaN(projectId) || projectId <= 0 || !Number.isInteger(projectId)) {
+      console.error("getProjectById called with invalid id:", { id, projectId, type: typeof id });
+      throw new Error(`Invalid project ID: ${id}`);
+    }
+    
     const [project] = await db
       .select()
       .from(projectsTable)
-      .where(and(eq(projectsTable.id, id), eq(projectsTable.isDeleted, false)));
+      .where(and(eq(projectsTable.id, projectId), eq(projectsTable.isDeleted, false)));
     
     if (!project) return null;
 

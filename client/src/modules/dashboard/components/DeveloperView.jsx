@@ -317,7 +317,6 @@ export default function DeveloperView() {
     { name: "AI Career Tools", icon: Brain, color: "blue", description: "AI-powered career guidance", path: "/ai-career" },
     { name: "Portfolio Sync", icon: Database, color: "purple", description: "Sync your profiles", path: "/portfolio-sync" },
     { name: "Communication", icon: MessageCircle, color: "green", description: "Chat with teams", path: "/chat" },
-    { name: "Matchmaking", icon: Target, color: "pink", description: "Find new opportunities", path: "/matchmaking" },
     { name: "Learning Paths", icon: BookOpen, color: "yellow", description: "Skill development", path: "/ai-career" },
     { name: "Gamification", icon: Trophy, color: "orange", description: "Track achievements", path: "/gamification" },
   ];

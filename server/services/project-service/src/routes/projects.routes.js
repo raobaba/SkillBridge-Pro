@@ -123,6 +123,13 @@ projectRouter.post(
   projectController.createInvite
 );
 projectRouter.get("/invites/my", authenticate, projectController.getMyInvites); // Developers can view their invites
+projectRouter.get("/invites/sent", authenticate, requireProjectManager, projectController.getSentInvitations); // Project owners can view invites they sent
+projectRouter.delete(
+  "/invite",
+  authenticate,
+  requireProjectManager,
+  projectController.cancelInvite
+); // Project owners can cancel their invites
 projectRouter.put(
   "/invite/respond",
   authenticate,

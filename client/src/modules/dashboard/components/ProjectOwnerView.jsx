@@ -280,7 +280,6 @@ export default function ProjectOwnerView() {
     { name: "View Applicants", icon: UserCheck, color: "purple", description: "Review applications", path: "/project?tab=applicants" },
     { name: "Billing & Subscriptions", icon: DollarSign, color: "yellow", description: "Payment management", path: "/billing-subscription" },
     { name: "Team Communication", icon: MessageCircle, color: "pink", description: "Chat with team", path: "/chat" },
-    { name: "Analytics", icon: BarChart3, color: "orange", description: "Project insights", path: "/analytics" },
   ];
 
   const recentNotifications = [

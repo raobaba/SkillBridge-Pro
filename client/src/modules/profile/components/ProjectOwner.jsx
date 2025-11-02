@@ -138,14 +138,6 @@ const ProjectOwner = memo(function ProjectOwner({
     }
   }, [projects, dispatch]);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Projects data:', projects);
-    console.log('Projects length:', projects.length);
-    console.log('Projects loading:', loadingStates.projects);
-    console.log('Projects error:', errors.projects);
-  }, [projects, loadingStates.projects, errors.projects]);
-
   // Memoized filtered data for projects
   const filteredProjects = useMemo(() => 
     filterValue === "All"
@@ -178,7 +170,6 @@ const ProjectOwner = memo(function ProjectOwner({
       developerReviews
     };
   }, [projects, projectApplicants]);
-  console.log("filteredProjects",filteredProjects)
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>

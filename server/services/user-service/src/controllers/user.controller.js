@@ -769,6 +769,349 @@ const getDevelopers = async (req, res) => {
   }
 };
 
+// ============================================
+// DEVELOPER FAVORITES
+// ============================================
+
+const addDeveloperFavorite = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { developerId } = req.body;
+    
+    if (!userId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    const favorite = await UserModel.addDeveloperFavorite(userId, developerId);
+    return res.status(201).json({ 
+      success: true, 
+      status: 201, 
+      message: "Developer added to favorites", 
+      favorite 
+    });
+  } catch (error) {
+    console.error("Add Developer Favorite Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to add favorite", 
+      error: error.message 
+    });
+  }
+};
+
+const removeDeveloperFavorite = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { developerId } = req.body;
+    
+    if (!userId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    await UserModel.removeDeveloperFavorite(userId, developerId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      message: "Developer removed from favorites" 
+    });
+  } catch (error) {
+    console.error("Remove Developer Favorite Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to remove favorite", 
+      error: error.message 
+    });
+  }
+};
+
+const getDeveloperFavorites = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required"
+      });
+    }
+    
+    const favorites = await UserModel.getDeveloperFavorites(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      favorites 
+    });
+  } catch (error) {
+    console.error("Get Developer Favorites Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to fetch favorites", 
+      error: error.message 
+    });
+  }
+};
+
+// ============================================
+// DEVELOPER SAVES
+// ============================================
+
+const addDeveloperSave = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { developerId } = req.body;
+    
+    if (!userId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    const save = await UserModel.addDeveloperSave(userId, developerId);
+    return res.status(201).json({ 
+      success: true, 
+      status: 201, 
+      message: "Developer saved", 
+      save 
+    });
+  } catch (error) {
+    console.error("Add Developer Save Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to save developer", 
+      error: error.message 
+    });
+  }
+};
+
+const removeDeveloperSave = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { developerId } = req.body;
+    
+    if (!userId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    await UserModel.removeDeveloperSave(userId, developerId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      message: "Developer unsaved" 
+    });
+  } catch (error) {
+    console.error("Remove Developer Save Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to unsave developer", 
+      error: error.message 
+    });
+  }
+};
+
+const getDeveloperSaves = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required"
+      });
+    }
+    
+    const saves = await UserModel.getDeveloperSaves(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      saves 
+    });
+  } catch (error) {
+    console.error("Get Developer Saves Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to fetch saves", 
+      error: error.message 
+    });
+  }
+};
+
+// ============================================
+// DEVELOPER APPLICATIONS (Project Owner Outreach)
+// ============================================
+
+const applyToDeveloper = async (req, res) => {
+  try {
+    const applicantId = req.user?.userId;
+    const { developerId, projectId, message, notes } = req.body;
+    
+    if (!applicantId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    const application = await UserModel.applyToDeveloper({
+      projectOwnerId: applicantId,
+      developerId,
+      projectId,
+      message,
+      notes
+    });
+    
+    return res.status(201).json({ 
+      success: true, 
+      status: 201, 
+      message: "Application submitted successfully", 
+      application 
+    });
+  } catch (error) {
+    console.error("Apply to Developer Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Application failed", 
+      error: error.message 
+    });
+  }
+};
+
+const withdrawDeveloperApplication = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const { developerId } = req.body;
+    
+    if (!userId || !developerId) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "userId and developerId are required"
+      });
+    }
+    
+    const result = await UserModel.withdrawDeveloperApplication(userId, developerId);
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: result ? "Application withdrawn" : "No existing application found",
+      application: result || null
+    });
+  } catch (error) {
+    console.error("Withdraw Developer Application Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Withdraw failed", 
+      error: error.message 
+    });
+  }
+};
+
+const getMyDeveloperApplications = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required"
+      });
+    }
+    
+    const applications = await UserModel.getMyDeveloperApplications(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      applications 
+    });
+  } catch (error) {
+    console.error("Get My Developer Applications Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to fetch my applications", 
+      error: error.message 
+    });
+  }
+};
+
+const getMyDeveloperApplicationsCount = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required"
+      });
+    }
+    
+    const count = await UserModel.getMyDeveloperApplicationsCount(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      count 
+    });
+  } catch (error) {
+    console.error("Get My Developer Applications Count Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to fetch applications count", 
+      error: error.message 
+    });
+  }
+};
+
+const getAppliedDevelopers = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required"
+      });
+    }
+    
+    const appliedDevelopers = await UserModel.getAppliedDevelopers(userId);
+    return res.status(200).json({ 
+      success: true, 
+      status: 200, 
+      appliedDevelopers 
+    });
+  } catch (error) {
+    console.error("Get Applied Developers Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      status: 500, 
+      message: "Failed to fetch applied developers", 
+      error: error.message 
+    });
+  }
+};
+
 // Role Management Functions
 
 // Assign role to user
@@ -963,6 +1306,20 @@ module.exports = {
   resetPassword,
   logoutUser,
   getDevelopers,
+  // Developer favorites
+  addDeveloperFavorite,
+  removeDeveloperFavorite,
+  getDeveloperFavorites,
+  // Developer saves
+  addDeveloperSave,
+  removeDeveloperSave,
+  getDeveloperSaves,
+  // Developer applications (outreach)
+  applyToDeveloper,
+  withdrawDeveloperApplication,
+  getMyDeveloperApplications,
+  getMyDeveloperApplicationsCount,
+  getAppliedDevelopers,
   // Role management functions
   assignRole,
   removeRole,

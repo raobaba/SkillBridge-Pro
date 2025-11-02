@@ -142,7 +142,6 @@ const ProjectOwnerDashboard = ({ user }) => {
 
   const handleSubmitEvaluation = () => {
     // Simulate API call
-    console.log("Submitting evaluation:", evaluationForm);
     
     // Add to history
     const newEvaluation = {
