@@ -101,6 +101,12 @@ projectRouter.get(
   projectController.listMyApplications
 );
 projectRouter.get(
+  "/applications/my/ids",
+  authenticate,
+  requireDeveloper,
+  projectController.getMyAppliedProjectIds
+);
+projectRouter.get(
   "/applications/my/count",
   authenticate,
   requireDeveloper,

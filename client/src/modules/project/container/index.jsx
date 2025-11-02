@@ -21,6 +21,7 @@ import {
   // Application tracking
   getMyApplications,
   getMyApplicationsCount,
+  getAppliedProjects,
 } from "../slice/projectSlice";
 
 export default function Project() {
@@ -77,7 +78,8 @@ export default function Project() {
             dispatch(getMyInvites()).unwrap(),
             dispatch(getProjectFavorites()).unwrap(),
             dispatch(getMyApplications()).unwrap(),
-            dispatch(getMyApplicationsCount()).unwrap()
+            dispatch(getMyApplicationsCount()).unwrap(),
+            dispatch(getAppliedProjects()).unwrap() // Load applied project IDs from project_applicants table
           ]);
         } else if (user.role === 'project-owner') {
           // Project owner only needs: public projects, categories, filters, and their own projects

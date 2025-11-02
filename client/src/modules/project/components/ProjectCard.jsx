@@ -15,7 +15,8 @@ import { Button } from '../../../components';
  * @param {Object} props
  * @param {Object} props.project - Project data object
  * @param {boolean} props.isPublicOnly - Whether in public-only mode
- * @param {Array} props.appliedProjects - Array of applied project IDs
+ * @param {Array} props.appliedProjects - Array of applied project IDs (DEPRECATED - use isApplied)
+ * @param {Function} props.isApplied - Function to check if project is applied (user-specific)
  * @param {Function} props.onApply - Apply button click handler
  * @param {Function} props.onViewDetails - View details click handler
  * @param {Function} props.onSave - Save button click handler
@@ -28,7 +29,8 @@ import { Button } from '../../../components';
 const ProjectCard = ({
   project,
   isPublicOnly,
-  appliedProjects,
+  appliedProjects, // Keep for backward compatibility but prefer isApplied
+  isApplied, // User-specific function to check applied status
   onApply,
   onViewDetails,
   onSave,
@@ -38,6 +40,12 @@ const ProjectCard = ({
   isProjectFavorited,
   savingProjectId
 }) => {
+  // Use isApplied function if provided (user-specific), otherwise fall back to appliedProjects prop
+  // Ensure number comparison for consistent checking
+  const projectId = Number(project.id);
+  const checkIsApplied = isApplied 
+    ? isApplied(projectId) 
+    : (Array.isArray(appliedProjects) && appliedProjects.map(id => Number(id)).includes(projectId));
   return (
     <div className='relative h-full'>
       {/* Urgent badge */}
@@ -216,10 +224,10 @@ const ProjectCard = ({
               <Button
                 onClick={() => onApply(project.id)}
                 variant="apply-grid"
-                isApplied={appliedProjects.includes(project.id)}
+                isApplied={checkIsApplied}
                 className='text-xs sm:text-sm'
               >
-                {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
+                {checkIsApplied ? "Applied" : "Apply"}
               </Button>
             )}
           </div>

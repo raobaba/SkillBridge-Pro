@@ -30,15 +30,46 @@ const projectApplicantsTable = pgTable("project_applicants", {
 
 // Project Applicants Model Class
 class ProjectApplicantsModel {
+  /**
+   * Apply to a project - stores userId and projectId in project_applicants table
+   * @param {Object} params - Application parameters
+   * @param {number} params.projectId - The project ID
+   * @param {number} params.userId - The user ID (from authenticated user, not from body)
+   * @param {string} params.matchScore - Optional match score
+   * @param {string} params.notes - Optional application notes
+   * @returns {Promise<Object>} - The inserted row with id, projectId, userId, status, etc.
+   */
   static async applyToProject({ projectId, userId, matchScore, notes }) {
+    console.log('ProjectApplicantsModel.applyToProject - Inserting into project_applicants table:', {
+      projectId,
+      userId,
+      status: 'applied',
+      matchScore: matchScore || null,
+      notes: notes || null
+    });
+    
+    // Insert into project_applicants table with user_id and project_id
+    // Database schema: { id, project_id, user_id, status, match_score, notes, applied_at, updated_at }
     const [row] = await db.insert(projectApplicantsTable).values({
-      projectId, userId, matchScore, notes,
+      projectId,      // Stored as project_id in database
+      userId,         // Stored as user_id in database (this is the authenticated developer's ID)
+      matchScore, 
+      notes,
       status: "applied",
     }).returning();
+    
+    console.log('ProjectApplicantsModel.applyToProject - Successfully inserted:', {
+      id: row?.id,
+      projectId: row?.projectId,
+      userId: row?.userId,
+      status: row?.status,
+      appliedAt: row?.appliedAt
+    });
     
     // bump counters (best effort) - lazy require to avoid circular dependency
     const { ProjectsModel } = require("./projects.model");
     await ProjectsModel.updateApplicantsCount(projectId, 1);
+    
     return row;
   }
 
@@ -176,6 +207,57 @@ class ProjectApplicantsModel {
       .where(eq(projectApplicantsTable.userId, userId));
     const countVal = Array.isArray(result) && result[0] && result[0].count != null ? Number(result[0].count) : 0;
     return countVal;
+  }
+
+  /**
+   * Get only project IDs and user ID from project_applicants table for a specific user
+   * Lightweight query - returns only IDs, no project details
+   * @param {number} userId - The user ID
+   * @returns {Promise<{userId: number, projectIds: number[]}>} - Object with userId and array of project IDs
+   */
+  static async getAppliedProjectIdsByUser(userId) {
+    try {
+      // Validate userId is provided and is a number
+      const validatedUserId = Number(userId);
+      if (!validatedUserId || isNaN(validatedUserId)) {
+        console.error('getAppliedProjectIdsByUser - Invalid userId:', userId);
+        return {
+          userId: null,
+          projectIds: [],
+        };
+      }
+
+      console.log('getAppliedProjectIdsByUser - Querying project_applicants table for userId:', validatedUserId);
+      
+      // Query project_applicants table with explicit WHERE clause filtering by user_id
+      const applications = await db
+        .select({
+          projectId: projectApplicantsTable.projectId,
+          userId: projectApplicantsTable.userId,
+        })
+        .from(projectApplicantsTable)
+        .where(eq(projectApplicantsTable.userId, validatedUserId));
+
+      console.log('getAppliedProjectIdsByUser - Raw results count:', applications?.length || 0);
+      console.log('getAppliedProjectIdsByUser - Raw results (first 5):', applications?.slice(0, 5));
+
+      const projectIds = applications
+        .map(app => app.projectId)
+        .filter(id => typeof id === 'number' && !isNaN(id));
+
+      console.log('getAppliedProjectIdsByUser - Filtered projectIds:', projectIds);
+
+      return {
+        userId: validatedUserId,
+        projectIds: projectIds,
+      };
+    } catch (error) {
+      console.error('Error in getAppliedProjectIdsByUser:', error);
+      return {
+        userId: Number(userId) || null,
+        projectIds: [],
+      };
+    }
   }
 }
 

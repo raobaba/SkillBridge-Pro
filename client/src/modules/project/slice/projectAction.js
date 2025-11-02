@@ -54,6 +54,11 @@ export const getMyApplicationsApi = async () => {
   return await fetchFromApiServer("GET", url);
 };
 
+export const getMyAppliedProjectIdsApi = async () => {
+  const url = `api/v1/projects/applications/my/ids`;
+  return await fetchFromApiServer("GET", url);
+};
+
 export const getMyApplicationsCountApi = async () => {
   const url = `api/v1/projects/applications/my/count`;
   return await fetchFromApiServer("GET", url);

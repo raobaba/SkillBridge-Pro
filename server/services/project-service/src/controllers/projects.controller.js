@@ -838,22 +838,58 @@ const deleteProject = async (req, res) => {
 };
 
 // Apply to a project
+// When a developer applies, userId is extracted from JWT token (req.user.userId)
+// and stored in project_applicants table with the projectId
 const applyToProject = async (req, res) => {
   try {
-    // Only use authenticated user's ID - no fallback to body for security
-    const applicantId = req.user?.userId;
+    // Extract userId from authenticated user (JWT token) - SECURITY: Never trust req.body for userId
+    const applicantId = req.user?.userId || req.user?.id;
     const { projectId, matchScore, notes } = req.body;
     
+    console.log('applyToProject - Request received');
+    console.log('applyToProject - req.user:', req.user);
+    console.log('applyToProject - Extracted userId from JWT:', applicantId);
+    console.log('applyToProject - projectId from body:', projectId);
     
     if (!applicantId || !projectId) {
+      console.error('applyToProject - Missing userId or projectId', { applicantId, projectId });
       return sendError(res, "userId and projectId are required", 400);
     }
     
+    const validatedUserId = Number(applicantId);
+    const validatedProjectId = Number(projectId);
+    
+    if (isNaN(validatedUserId) || validatedUserId <= 0) {
+      console.error('applyToProject - Invalid userId:', applicantId);
+      return sendError(res, "Invalid user ID", 400);
+    }
+    
+    if (isNaN(validatedProjectId) || validatedProjectId <= 0) {
+      console.error('applyToProject - Invalid projectId:', projectId);
+      return sendError(res, "Invalid project ID", 400);
+    }
+    
+    console.log('applyToProject - Storing in project_applicants table:', {
+      userId: validatedUserId,
+      projectId: validatedProjectId,
+      notes: notes || null
+    });
+    
+    // Store application in project_applicants table
+    // This inserts: { project_id, user_id, status: "applied", notes, match_score }
     const row = await ProjectModel.applyToProject({
-      projectId: Number(projectId),
-      userId: Number(applicantId),
+      projectId: validatedProjectId,
+      userId: validatedUserId,
       matchScore: matchScore ? String(matchScore) : null, // Convert to string for numeric field
       notes,
+    });
+    
+    console.log('applyToProject - Successfully stored in database:', {
+      applicationId: row?.id,
+      userId: row?.userId,
+      projectId: row?.projectId,
+      status: row?.status,
+      appliedAt: row?.appliedAt
     });
 
     // Send email notifications after successful application
@@ -1102,6 +1138,62 @@ const listMyApplications = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, status: 500, message: "Failed to fetch my applications", error: error.message });
+  }
+};
+
+// Get only project IDs from project_applicants table for authenticated developer
+// Lightweight API - returns only projectIds and userId, no project details
+// Filters project_applicants table by user_id from authenticated user
+const getMyAppliedProjectIds = async (req, res) => {
+  try {
+    // Extract userId from authenticated user (set by authenticate middleware)
+    const userId = req.user?.userId || req.user?.id;
+    
+    console.log('getMyAppliedProjectIds - Request received');
+    console.log('getMyAppliedProjectIds - req.user:', req.user);
+    console.log('getMyAppliedProjectIds - Extracted userId:', userId);
+    
+    if (!userId) {
+      console.error('getMyAppliedProjectIds - No userId found in req.user');
+      return sendError(res, "Authentication required - userId not found", 401);
+    }
+    
+    const validatedUserId = Number(userId);
+    if (isNaN(validatedUserId) || validatedUserId <= 0) {
+      console.error('getMyAppliedProjectIds - Invalid userId:', userId);
+      return sendError(res, "Invalid user ID", 400);
+    }
+    
+    console.log('getMyAppliedProjectIds - Calling ProjectModel.getAppliedProjectIdsByUser with userId:', validatedUserId);
+    
+    // Query project_applicants table filtered by user_id
+    const result = await ProjectModel.getAppliedProjectIdsByUser(validatedUserId);
+    
+    console.log('getMyAppliedProjectIds - Result from model:', {
+      userId: result.userId,
+      projectIdsCount: result.projectIds?.length || 0,
+      projectIds: result.projectIds
+    });
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Applied project IDs retrieved successfully",
+      data: {
+        userId: result.userId,
+        projectIds: result.projectIds || [],
+      },
+    });
+  } catch (error) {
+    console.error("Get My Applied Project IDs Error:", error);
+    return res
+      .status(500)
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch applied project IDs",
+        error: error.message,
+      });
   }
 };
 
@@ -2854,6 +2946,7 @@ module.exports = {
   getGlobalSkillsAndTags,
   getSearchSuggestions,
   listMyApplications,
+  getMyAppliedProjectIds,
   getMyApplicationsCount,
   getDeveloperAppliedProjects,
   generateApplicantsReport,

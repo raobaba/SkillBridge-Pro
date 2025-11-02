@@ -46,6 +46,7 @@ import {
   generateBudgetSuggestionsApi,
   generateComprehensiveSuggestionsApi,
   getMyApplicationsApi,
+  getMyAppliedProjectIdsApi,
   getMyApplicationsCountApi,
   getDeveloperAppliedProjectsApi,
   generateApplicantsReportApi,
@@ -221,17 +222,23 @@ export const withdrawApplication = createAsyncThunk(
   }
 );
 
-// Load applied projects from localStorage
-export const loadAppliedProjects = createAsyncThunk(
-  "project/loadAppliedProjects",
+// Load applied projects from database (project_applicants table via API)
+// Uses dedicated API that returns only projectIds and userId from project_applicants table
+export const getAppliedProjects = createAsyncThunk(
+  "project/getAppliedProjects",
   async (_, { rejectWithValue }) => {
     try {
-      const applied = localStorage.getItem("appliedProjects");
-      return applied ? JSON.parse(applied) : [];
+      // Use dedicated API that queries project_applicants table and returns only IDs
+      const response = await getMyAppliedProjectIdsApi();
+      // Extract project IDs from the response
+      const projectIds = response.data?.data?.projectIds || [];
+      const userId = response.data?.data?.userId;
+     
+      return projectIds;
     } catch (error) {
-      return rejectWithValue(
-        error?.message || { message: "Failed to load applied projects" }
-      );
+      // If API fails, return empty array - component will retry with getMyApplications
+      console.warn('getAppliedProjects - API call failed, returning empty array:', error);
+      return [];
     }
   }
 );
@@ -1738,11 +1745,14 @@ const projectSlice = createSlice({
         state.lastAction = 'getFilterOptions.rejected';
       })
       
-      // Load applied projects from localStorage
-      .addCase(loadAppliedProjects.fulfilled, (state, action) => {
-        state.appliedProjects = action.payload;
+      // Load applied projects from database (project_applicants table via API)
+      .addCase(getAppliedProjects.fulfilled, (state, action) => {
+        // Set appliedProjects from API response (project IDs from project_applicants table)
+        const projectIds = Array.isArray(action.payload) ? action.payload : [];
+        state.appliedProjects = Array.from(new Set(projectIds));
+        console.log('Redux: getAppliedProjects.fulfilled - Set appliedProjects from project_applicants table:', projectIds);
       })
-      .addCase(loadAppliedProjects.rejected, (state, action) => {
+      .addCase(getAppliedProjects.rejected, (state, action) => {
         state.error = action.payload.message || 'Failed to load applied projects';
       })
       
@@ -1909,8 +1919,16 @@ const projectSlice = createSlice({
         state.loading = false;
         const apps = action.payload.applications || [];
         state.myApplications = apps;
-        const ids = apps.map(a => a.projectId).filter(id => typeof id === 'number');
-        state.appliedProjects = Array.from(new Set([...(state.appliedProjects || []), ...ids]));
+        // Extract project IDs from applications (source: project_applicants table from database)
+        const ids = apps.map(a => a.projectId).filter(id => typeof id === 'number' && !isNaN(id));
+        // REPLACE appliedProjects (don't append) - data comes from database project_applicants table
+        state.appliedProjects = Array.from(new Set(ids));
+        console.log('Redux: getMyApplications.fulfilled - Data from project_applicants table:', {
+          userId: 'current user (from JWT)',
+          applicationsCount: apps.length,
+          projectIds: ids,
+          source: 'project_applicants table (database)'
+        });
         state.error = null;
         state.lastAction = 'getMyApplications.fulfilled';
       })
@@ -1949,6 +1967,16 @@ const projectSlice = createSlice({
         const appliedProjects = action.payload.appliedProjects || [];
         state.myApplications = appliedProjects;
         state.myApplicationsCount = appliedProjects.length;
+        // Extract project IDs from applications (source: project_applicants table from database)
+        const ids = appliedProjects.map(a => a.projectId || (a.project?.id)).filter(id => typeof id === 'number' && !isNaN(id));
+        // REPLACE appliedProjects (don't append) - data comes from database project_applicants table
+        state.appliedProjects = Array.from(new Set(ids));
+        console.log('Redux: getDeveloperAppliedProjects.fulfilled - Data from project_applicants table:', {
+          userId: 'current user (from JWT)',
+          applicationsCount: appliedProjects.length,
+          projectIds: ids,
+          source: 'project_applicants table (database)'
+        });
         state.error = null;
         state.lastAction = 'getDeveloperAppliedProjects.fulfilled';
       })
@@ -1991,25 +2019,15 @@ export const {
   clearMyInvites,
 } = projectSlice.actions;
 
-// Middleware to automatically save appliedProjects to localStorage
+// Middleware to automatically save appliedProjects to localStorage (DISABLED - Data comes from DB now)
+// REMOVED: No longer saving to localStorage since data comes from project_applicants table via API
+// The database is the single source of truth for applied projects
 export const appliedProjectsMiddleware = (store) => (next) => (action) => {
   const result = next(action);
   
-  // Check if appliedProjects changed
-  if (action.type === 'project/apply/fulfilled' || 
-      action.type === 'project/withdrawApplication/fulfilled' ||
-      action.type === 'project/loadAppliedProjects/fulfilled') {
-    
-    const state = store.getState();
-    const appliedProjects = state.project?.appliedProjects || [];
-    
-    // Save to localStorage (don't dispatch another action to avoid infinite loop)
-    try {
-      localStorage.setItem("appliedProjects", JSON.stringify(appliedProjects));
-    } catch (error) {
-      console.error('Failed to save applied projects to localStorage:', error);
-    }
-  }
+  // DISABLED: Don't save to localStorage anymore
+  // Data comes from project_applicants table in database via API calls
+  // The API queries: SELECT * FROM project_applicants WHERE user_id = $1
   
   return result;
 };

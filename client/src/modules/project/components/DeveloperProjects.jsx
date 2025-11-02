@@ -34,7 +34,7 @@ import {
   getProjectSaves,
   getPublicProjects,
   getSearchSuggestions,
-  loadAppliedProjects,
+  getAppliedProjects,
   getProject,
   getMyApplications,
   getMyApplicationsCount,
@@ -93,13 +93,32 @@ const DeveloperProjects = ({
     setSearchParams(next);
   }, [searchParams, setSearchParams]);
 
+  // Check if user is developer - must be declared before useEffects that use it
+  const isDeveloper = user?.role === "developer";
+
+  // Get appliedProjects from Redux state (populated by getAppliedProjects API)
+  const appliedProjectsFromRedux = useSelector((state) => state.project?.appliedProjects) || [];
+  
+  // Use Redux state if available, fallback to prop
+  // Ensure all IDs are numbers for consistent comparison
+  const finalAppliedProjects = useMemo(() => {
+    const source = appliedProjectsFromRedux.length > 0 ? appliedProjectsFromRedux : appliedProjects;
+    return source.map(id => Number(id)).filter(id => !isNaN(id));
+  }, [appliedProjectsFromRedux, appliedProjects]);
+
+  // Load applied projects from project_applicants table via API on mount
   useEffect(() => {
-    dispatch(loadAppliedProjects());
-  }, [dispatch]);
+    if (isDeveloper) {
+      dispatch(getAppliedProjects()).then((result) => {
+        // result.payload contains array of project IDs from API: [35, 33, 32]
+        console.log('getAppliedProjects response - Project IDs from project_applicants table:', result.payload);
+      });
+    }
+  }, [dispatch, isDeveloper]);
 
   useEffect(() => {
     const fetchAppliedProjectData = async () => {
-      if (!appliedProjects || appliedProjects.length === 0) return;
+      if (!finalAppliedProjects || finalAppliedProjects.length === 0) return;
       
       const existingIds = new Set([
         ...((projects || []).map((p) => p.id)),
@@ -107,7 +126,7 @@ const DeveloperProjects = ({
         ...Object.keys(appliedProjectsData).map((k) => Number(k)),
       ]);
 
-      const missingIds = appliedProjects.filter(id => !existingIds.has(id));
+      const missingIds = finalAppliedProjects.filter(id => !existingIds.has(id));
       
       if (missingIds.length > 0) {
         for (const id of missingIds) {
@@ -125,7 +144,7 @@ const DeveloperProjects = ({
     };
     
     fetchAppliedProjectData();
-  }, [appliedProjects, dispatch, projects, publicProjects, appliedProjectsData]);
+  }, [finalAppliedProjects, dispatch, projects, publicProjects, appliedProjectsData]);
 
   // Handle toast notifications
   useEffect(() => {
@@ -191,7 +210,6 @@ const DeveloperProjects = ({
   }), []);
 
   // Prefer authenticated projects; fallback to publicProjects (memoized)
-  const isDeveloper = user?.role === "developer";
   const baseProjects = useMemo(
     () => (projects && projects.length > 0 ? projects : publicProjects || []),
     [projects, publicProjects]
@@ -212,7 +230,8 @@ const DeveloperProjects = ({
     [baseProjects]
   );
   const [filteredProjects, setFilteredProjects] = useState([]);
-  const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount) ?? appliedProjects.length;
+  
+  const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount) ?? finalAppliedProjects.length;
   const myApplications = useSelector((state) => state.project?.myApplications) || [];
 
   // Create proper application status mapping from myApplications data
@@ -230,11 +249,24 @@ const DeveloperProjects = ({
     });
     return statusMap;
   }, [myApplications]);
-  console.log("myApplications",myApplications)
 
   const isAppliedTo = useCallback((projectId) => {
     return applicationStatusByProjectId[projectId] || applicationStatusMap[projectId] || false;
   }, [applicationStatusByProjectId, applicationStatusMap]);
+
+  // Console log all variables responsible for applied status
+  useEffect(() => {
+    console.log("=== APPLIED STATUS DEBUG ===");
+    console.log("Current User ID:", user?.id || user?.userId || "NO USER ID");
+    console.log("Current User Email:", user?.email || "NO EMAIL");
+    console.log("1. finalAppliedProjects - Source: Redux state.appliedProjects (populated from project_applicants table):", finalAppliedProjects);
+    console.log("2. myApplications (Redux) - Source: API /api/v1/projects/applications/my (queries project_applicants WHERE user_id = current_user):", myApplications);
+    console.log("3. applicationStatusMap (derived from myApplications):", applicationStatusMap);
+    console.log("4. applicationStatusByProjectId (optimistic local state):", applicationStatusByProjectId);
+    console.log("5. myApplicationsCount:", myApplicationsCount);
+    console.log("=== DATA SOURCE: project_applicants table (database) filtered by user_id ===");
+    console.log("===========================");
+  }, [finalAppliedProjects, myApplications, applicationStatusMap, applicationStatusByProjectId, myApplicationsCount, user]);
 
   // Get application status for a project
   const getApplicationStatus = useCallback((projectId) => {
@@ -265,7 +297,7 @@ const DeveloperProjects = ({
   // Build unified list of application project objects for Applications tab
   const applicationProjectItems = useMemo(() => {
     const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
-    const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
+    const idsFromLocal = Array.isArray(finalAppliedProjects) ? finalAppliedProjects : [];
     const uniqueIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
     
     const items = uniqueIds.map((id) => {
@@ -274,8 +306,8 @@ const DeveloperProjects = ({
     });
     
     const validItems = items.filter((x) => !!x.project);
-    return validItems;
-  }, [myApplications, appliedProjects, getProjectById]);
+      return validItems;
+  }, [myApplications, finalAppliedProjects, getProjectById, appliedProjectsData, projects, publicProjects]);
 
   const recommendedProjects = useMemo(() => {
     const mappedRecommendations = (recommendations || []).map(mapProjectData);
@@ -565,14 +597,16 @@ const DeveloperProjects = ({
     if (activeTab === "applications" && isDeveloper && !isPublicOnly) {
       dispatch(getMyApplications());
       dispatch(getMyApplicationsCount());
+      dispatch(getAppliedProjects()); // Reload applied project IDs when switching to Applications tab
     }
   }, [activeTab, dispatch, isDeveloper, isPublicOnly]);
 
-
+  // Fetch project details for applied projects that aren't loaded yet
+  // This runs when: tab changes to applications, applied projects change, or data sources change
   useEffect(() => {
     const populateAppliedDetails = async () => {
       const idsFromServer = (myApplications || []).map(a => a.projectId).filter(Boolean);
-      const idsFromLocal = Array.isArray(appliedProjects) ? appliedProjects : [];
+      const idsFromLocal = Array.isArray(finalAppliedProjects) ? finalAppliedProjects : [];
       const allIds = Array.from(new Set([ ...idsFromLocal, ...idsFromServer ]));
       
       if (allIds.length === 0) return;
@@ -584,23 +618,33 @@ const DeveloperProjects = ({
       ]);
 
       const missingIds = allIds.filter(id => !existingIds.has(id));
-      for (const id of missingIds) {
-        try {
-          const res = await dispatch(getProject(id)).unwrap();
-          const proj = res?.project || res?.data?.project || res;
-          if (proj && proj.id) {
-            setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
-          } else {
-            console.warn(`No project data found for ID: ${id}`);
+      
+      if (missingIds.length > 0) {
+        // Fetch all missing projects in parallel
+        const fetchPromises = missingIds.map(async (id) => {
+          try {
+            const res = await dispatch(getProject(id)).unwrap();
+            const proj = res?.project || res?.data?.project || res;
+            if (proj && proj.id) {
+              setAppliedProjectsData((prev) => ({ ...prev, [proj.id]: proj }));
+            } else {
+              console.warn(`No project data found for ID: ${id}`);
+            }
+          } catch (error) {
+            console.error('Failed to load project details for application:', id, error);
           }
-        } catch (error) {
-          console.error('Failed to load project details for application:', id, error);
-        }
+        });
+        
+        await Promise.all(fetchPromises);
       }
     };
-    populateAppliedDetails();
+    
+    // Only populate when on Applications tab or when we have applied projects
+    if (activeTab === "applications" || finalAppliedProjects.length > 0 || myApplications.length > 0) {
+      populateAppliedDetails();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedProjects, myApplications, dispatch, projects, publicProjects, appliedProjectsData]);
+  }, [activeTab, finalAppliedProjects, myApplications, dispatch, projects, publicProjects, appliedProjectsData]);
 
   const handleOpenDetails = useCallback((project) => {
     setSelectedProject(project);
@@ -756,11 +800,11 @@ const DeveloperProjects = ({
 
   const stats = useMemo(() => ({
     total: displayProjects.length,
-    applied: appliedProjects.length,
+    applied: finalAppliedProjects.length,
     saved: Array.isArray(saves) ? saves.length : 0,
     favorites: favoriteIdsSet.size,
     matches: filteredProjects.length,
-  }), [displayProjects.length, appliedProjects.length, saves, favoriteIdsSet.size, filteredProjects.length]);
+  }), [displayProjects.length, finalAppliedProjects.length, saves, favoriteIdsSet.size, filteredProjects.length]);
 
 
   return (
@@ -1277,7 +1321,7 @@ const DeveloperProjects = ({
                   key={project.id ?? idx}
                   project={project}
                   isPublicOnly={isPublicOnly}
-                  appliedProjects={appliedProjects}
+                  appliedProjects={finalAppliedProjects}
                   onApply={handleApplyToProject}
                   onViewDetails={handleOpenDetails}
                   onSave={handleSaveProject}
@@ -1411,10 +1455,10 @@ const DeveloperProjects = ({
                           <Button
                             onClick={() => handleApplyToProject(project.id)}
                             variant="apply-list"
-                            isApplied={appliedProjects.includes(project.id)}
+                            isApplied={finalAppliedProjects.includes(Number(project.id))}
                             className='flex-1 sm:flex-none text-sm'
                           >
-                            {appliedProjects.includes(project.id) ? "Applied" : "Apply"}
+                            {finalAppliedProjects.includes(Number(project.id)) ? "Applied" : "Apply"}
                           </Button>
                         )}
                       </div>
@@ -1585,18 +1629,18 @@ const DeveloperProjects = ({
                           <Briefcase className='w-12 h-12 text-gray-500' />
                           <div>
                             <p className='text-lg font-medium text-gray-300 mb-2'>
-                              {myApplications?.length > 0 || appliedProjects?.length > 0 
+                              {myApplications?.length > 0 || finalAppliedProjects?.length > 0 
                                 ? 'Loading your applications...' 
                                 : 'No applications yet'
                               }
                             </p>
                             <p className='text-sm text-gray-500'>
-                              {myApplications?.length > 0 || appliedProjects?.length > 0
+                              {myApplications?.length > 0 || finalAppliedProjects?.length > 0
                                 ? 'Fetching project details...'
                                 : 'Start applying to projects to see them here'
                               }
                             </p>
-                            {(myApplications?.length > 0 || appliedProjects?.length > 0) && (
+                            {(myApplications?.length > 0 || finalAppliedProjects?.length > 0) && (
                               <div className='mt-4'>
                                 <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto'></div>
                               </div>
@@ -1738,9 +1782,9 @@ const DeveloperProjects = ({
                     <Button
                       onClick={() => handleApplyToProject(selectedProject.id)}
                       variant="apply-modal"
-                      isApplied={appliedProjects.includes(selectedProject.id)}
+                      isApplied={finalAppliedProjects.includes(Number(selectedProject.id))}
                     >
-                      {appliedProjects.includes(selectedProject.id) ? "Applied" : "Apply Now"}
+                      {finalAppliedProjects.includes(Number(selectedProject.id)) ? "Applied" : "Apply Now"}
                     </Button>
                   )}
                 </div>

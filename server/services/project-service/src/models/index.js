@@ -39,6 +39,7 @@ const ProjectModel = {
   listApplicants: ProjectApplicantsModel.listApplicants,
   listApplicationsByUser: ProjectApplicantsModel.listApplicationsByUser,
   countApplicationsByUser: ProjectApplicantsModel.countApplicationsByUser,
+  getAppliedProjectIdsByUser: ProjectApplicantsModel.getAppliedProjectIdsByUser,
   
   // Invites
   createInvite: ProjectInvitesModel.createInvite,
