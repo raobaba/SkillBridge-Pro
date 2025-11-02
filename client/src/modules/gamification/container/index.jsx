@@ -20,6 +20,10 @@ const Gamification = () => {
     endorsementsLoading,
     leaderboardLoading,
     achievementsLoading,
+    projectOwnerStatsLoading,
+    pendingEvaluationsLoading,
+    evaluationHistoryLoading,
+    submittingEvaluation,
   } = useSelector((state) => state.gamification || {});
 
   // Combined loading flag - show CircularLoader for any in-flight request
@@ -30,6 +34,10 @@ const Gamification = () => {
     endorsementsLoading ||
     leaderboardLoading ||
     achievementsLoading ||
+    projectOwnerStatsLoading ||
+    pendingEvaluationsLoading ||
+    evaluationHistoryLoading ||
+    submittingEvaluation ||
     initialLoading
   );
 

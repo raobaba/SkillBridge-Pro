@@ -25,3 +25,24 @@ export const getDeveloperAchievementsApi = async () => {
   const url = `api/v1/user/developer/achievements`;
   return await fetchFromApiServer("GET", url);
 };
+
+// Project Owner Dashboard / Gamification APIs
+export const getProjectOwnerStatsApi = async () => {
+  const url = `api/v1/projects/owner/stats`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const getPendingEvaluationsApi = async () => {
+  const url = `api/v1/projects/owner/pending-evaluations`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const getEvaluationHistoryApi = async () => {
+  const url = `api/v1/projects/owner/evaluation-history`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const submitEvaluationApi = async (evaluationData) => {
+  const url = `api/v1/projects/reviews`;
+  return await fetchFromApiServer("POST", url, evaluationData);
+};

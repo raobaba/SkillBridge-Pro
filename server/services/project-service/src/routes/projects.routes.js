@@ -239,6 +239,19 @@ projectRouter.get(
   projectController.getProjectOwnerDevelopers
 );
 
+// Project Owner Dashboard / Gamification
+projectRouter.get(
+  "/owner/pending-evaluations",
+  authenticate,
+  projectController.getPendingEvaluations
+);
+
+projectRouter.get(
+  "/owner/evaluation-history",
+  authenticate,
+  projectController.getEvaluationHistory
+);
+
 // Generic project by ID route - MUST be last to avoid conflicts with specific routes
 projectRouter.get("/:id", projectController.getProject); // Public - anyone can view project details
 

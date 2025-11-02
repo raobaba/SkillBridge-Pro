@@ -2904,6 +2904,157 @@ const getProjectOwnerDevelopers = async (req, res) => {
   }
 };
 
+// Get pending evaluations (projects with accepted applicants that need review)
+const getPendingEvaluations = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) return sendError(res, "User ID is required", 400);
+
+    // Get all projects owned by the user
+    const ownedProjects = await ProjectModel.getProjectsByOwner(userId);
+    
+    // Get accepted applicants for each project that don't have reviews yet
+    const pendingEvaluations = [];
+    for (const project of ownedProjects) {
+      try {
+        // Get accepted applicants for this project
+        const acceptedApplicants = await ProjectModel.getApplicantsByStatus(project.id, 'accepted');
+        
+        // Get existing reviews for this project (reviews given by project owner about developers)
+        const existingReviews = await ProjectModel.getProjectReviews(project.id);
+        const reviewedUserIds = new Set(existingReviews.map(r => r.reviewerId));
+        
+        // For each accepted applicant, check if they've been reviewed
+        for (const applicant of acceptedApplicants) {
+          // Skip if this applicant (developer) has already been reviewed for this project
+          // Note: reviewerId in reviews is the developer who was reviewed
+          if (!reviewedUserIds.has(applicant.userId)) {
+            // Get developer details
+            const { UserModel } = require("../../user-service/src/models/user.model");
+            const developer = await UserModel.getUserById(applicant.userId);
+            
+            if (developer) {
+              // Calculate project duration
+              const startDate = project.startDate ? new Date(project.startDate) : new Date(project.createdAt);
+              const endDate = project.deadline ? new Date(project.deadline) : new Date();
+              const durationMs = endDate - startDate;
+              const durationWeeks = Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7));
+              
+              pendingEvaluations.push({
+                id: project.id,
+                projectId: project.id,
+                projectName: project.title,
+                developer: developer.name || developer.email,
+                developerId: developer.id,
+                developerEmail: developer.email,
+                completedDate: applicant.updatedAt || applicant.appliedAt,
+                projectDuration: `${durationWeeks} weeks`,
+                skills: Array.isArray(developer.skills) ? developer.skills : [],
+                status: "pending",
+                appliedAt: applicant.appliedAt,
+                acceptedAt: applicant.updatedAt
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.log(`Error fetching pending evaluations for project ${project.id}:`, e);
+      }
+    }
+
+    // Sort by completion date (most recent first)
+    const sorted = pendingEvaluations.sort((a, b) => 
+      new Date(b.completedDate || b.acceptedAt) - new Date(a.completedDate || a.acceptedAt)
+    );
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Pending evaluations retrieved successfully",
+      data: sorted
+    });
+  } catch (error) {
+    console.error("Get Pending Evaluations Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch pending evaluations",
+      error: error.message
+    });
+  }
+};
+
+// Get evaluation history (reviews given by project owner)
+const getEvaluationHistory = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) return sendError(res, "User ID is required", 400);
+
+    // Get all projects owned by the user
+    const ownedProjects = await ProjectModel.getProjectsByOwner(userId);
+    
+    // Get reviews for all owned projects
+    const allReviews = [];
+    for (const project of ownedProjects) {
+      try {
+        const reviews = await ProjectModel.getProjectReviews(project.id);
+        // Get developer info for each review
+        for (const review of reviews) {
+          try {
+            const { UserModel } = require("../../user-service/src/models/user.model");
+            const developer = await UserModel.getUserById(review.reviewerId);
+            const applicant = await ProjectModel.getApplicantByProjectAndUser(project.id, review.reviewerId);
+            
+            allReviews.push({
+              id: review.id,
+              projectId: project.id,
+              projectName: project.title,
+              developer: developer?.name || developer?.email || 'Unknown Developer',
+              developerId: review.reviewerId,
+              rating: review.rating,
+              review: review.comment || '',
+              date: review.createdAt || review.date,
+              categories: {
+                technical: review.rating || 0,
+                communication: review.rating || 0,
+                timeliness: review.rating || 0,
+                quality: review.rating || 0,
+                collaboration: review.rating || 0
+              },
+              appliedAt: applicant?.appliedAt,
+              acceptedAt: applicant?.updatedAt
+            });
+          } catch (e) {
+            console.log(`Error fetching developer info for review ${review.id}:`, e);
+          }
+        }
+      } catch (e) {
+        console.log(`Error fetching reviews for project ${project.id}:`, e);
+      }
+    }
+
+    // Sort by date (most recent first)
+    const sorted = allReviews.sort((a, b) => 
+      new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
+    );
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Evaluation history retrieved successfully",
+      data: sorted
+    });
+  } catch (error) {
+    console.error("Get Evaluation History Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch evaluation history",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -2954,6 +3105,8 @@ module.exports = {
   getProjectOwnerProjects,
   getProjectOwnerReviews,
   getProjectOwnerDevelopers,
+  getPendingEvaluations,
+  getEvaluationHistory,
 };
 
 

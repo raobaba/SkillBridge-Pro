@@ -5,6 +5,10 @@ import {
   getDeveloperEndorsementsApi,
   getLeaderboardApi,
   getDeveloperAchievementsApi,
+  getProjectOwnerStatsApi,
+  getPendingEvaluationsApi,
+  getEvaluationHistoryApi,
+  submitEvaluationApi,
 } from "./gamificationAction";
 
 // Initial state
@@ -16,6 +20,11 @@ const initialState = {
   leaderboard: [],
   achievements: [],
   
+  // Project Owner stats
+  projectOwnerStats: null,
+  pendingEvaluations: [],
+  evaluationHistory: [],
+  
   // Loading states
   loading: false,
   statsLoading: false,
@@ -23,6 +32,10 @@ const initialState = {
   endorsementsLoading: false,
   leaderboardLoading: false,
   achievementsLoading: false,
+  projectOwnerStatsLoading: false,
+  pendingEvaluationsLoading: false,
+  evaluationHistoryLoading: false,
+  submittingEvaluation: false,
   
   // Error states
   error: null,
@@ -94,6 +107,63 @@ export const getDeveloperAchievements = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to fetch developer achievements",
+      });
+    }
+  }
+);
+
+// Project Owner Dashboard thunks
+export const getProjectOwnerStats = createAsyncThunk(
+  "gamification/getProjectOwnerStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectOwnerStatsApi();
+      return response.data?.stats || response.data || response;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to fetch project owner stats",
+      });
+    }
+  }
+);
+
+export const getPendingEvaluations = createAsyncThunk(
+  "gamification/getPendingEvaluations",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getPendingEvaluationsApi();
+      return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to fetch pending evaluations",
+      });
+    }
+  }
+);
+
+export const getEvaluationHistory = createAsyncThunk(
+  "gamification/getEvaluationHistory",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getEvaluationHistoryApi();
+      return Array.isArray(response.data) ? response.data : (response.data?.data || []);
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to fetch evaluation history",
+      });
+    }
+  }
+);
+
+export const submitEvaluation = createAsyncThunk(
+  "gamification/submitEvaluation",
+  async (evaluationData, { rejectWithValue }) => {
+    try {
+      const response = await submitEvaluationApi(evaluationData);
+      return response.data || response;
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to submit evaluation",
       });
     }
   }
@@ -209,6 +279,79 @@ const gamificationSlice = createSlice({
         state.achievementsLoading = false;
         state.loading = false;
         state.error = action.payload?.message || "Failed to fetch developer achievements";
+      })
+      
+      // Get Project Owner Stats
+      .addCase(getProjectOwnerStats.pending, (state) => {
+        state.projectOwnerStatsLoading = true;
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getProjectOwnerStats.fulfilled, (state, action) => {
+        state.projectOwnerStatsLoading = false;
+        state.loading = false;
+        state.projectOwnerStats = action.payload;
+        state.error = null;
+      })
+      .addCase(getProjectOwnerStats.rejected, (state, action) => {
+        state.projectOwnerStatsLoading = false;
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to fetch project owner stats";
+      })
+      
+      // Get Pending Evaluations
+      .addCase(getPendingEvaluations.pending, (state) => {
+        state.pendingEvaluationsLoading = true;
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPendingEvaluations.fulfilled, (state, action) => {
+        state.pendingEvaluationsLoading = false;
+        state.loading = false;
+        state.pendingEvaluations = Array.isArray(action.payload) ? action.payload : [];
+        state.error = null;
+      })
+      .addCase(getPendingEvaluations.rejected, (state, action) => {
+        state.pendingEvaluationsLoading = false;
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to fetch pending evaluations";
+      })
+      
+      // Get Evaluation History
+      .addCase(getEvaluationHistory.pending, (state) => {
+        state.evaluationHistoryLoading = true;
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getEvaluationHistory.fulfilled, (state, action) => {
+        state.evaluationHistoryLoading = false;
+        state.loading = false;
+        state.evaluationHistory = Array.isArray(action.payload) ? action.payload : [];
+        state.error = null;
+      })
+      .addCase(getEvaluationHistory.rejected, (state, action) => {
+        state.evaluationHistoryLoading = false;
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to fetch evaluation history";
+      })
+      
+      // Submit Evaluation
+      .addCase(submitEvaluation.pending, (state) => {
+        state.submittingEvaluation = true;
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(submitEvaluation.fulfilled, (state, action) => {
+        state.submittingEvaluation = false;
+        state.loading = false;
+        state.error = null;
+        // Remove from pending and add to history optimistically
+        // The component will refresh the data
+      })
+      .addCase(submitEvaluation.rejected, (state, action) => {
+        state.submittingEvaluation = false;
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to submit evaluation";
       });
   },
 });

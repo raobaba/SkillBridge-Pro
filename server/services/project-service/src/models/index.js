@@ -91,6 +91,8 @@ const ProjectModel = {
   getProjectsByOwner: ProjectsModel.getProjectsByOwner,
   getProjectApplicants: ProjectApplicantsModel.listApplicants,
   getProjectReviews: ProjectReviewsModel.getReviewsByProjectId,
+  getApplicantsByStatus: ProjectApplicantsModel.getApplicantsByStatus,
+  getApplicantByProjectAndUser: ProjectApplicantsModel.getApplicantByProjectAndUser,
 };
 
 module.exports = {

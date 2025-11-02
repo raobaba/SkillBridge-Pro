@@ -101,6 +101,13 @@ class ProjectApplicantsModel {
   }
 
   static async listApplicants(projectId) {
+    // Validate projectId
+    const validatedProjectId = Number(projectId);
+    if (!validatedProjectId || isNaN(validatedProjectId)) {
+      console.error('listApplicants - Invalid projectId:', projectId);
+      return [];
+    }
+
     const { sql } = require("drizzle-orm");
     
     // Get applicants with user profile information
@@ -130,7 +137,7 @@ class ProjectApplicantsModel {
         u.xp
       FROM project_applicants pa
       LEFT JOIN users u ON pa.user_id = u.id
-      WHERE pa.project_id = ${projectId} AND u.is_deleted = false
+      WHERE pa.project_id = ${validatedProjectId} AND u.is_deleted = false
       ORDER BY pa.applied_at DESC
     `);
     
