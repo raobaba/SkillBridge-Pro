@@ -11,7 +11,7 @@ const {
   pgEnum,
 } = require("drizzle-orm/pg-core");
 
-const { eq, and, or, ilike, desc } = require("drizzle-orm");
+const { eq, and, or, ne, ilike, desc } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 
@@ -235,6 +235,50 @@ class UserModel {
 
     const developers = await query;
     return developers;
+  }
+
+  /**
+   * Get users by roles (for chat purposes - developers and project-owners)
+   */
+  static async getUsersByRoles(roles = ['developer', 'project-owner'], filters = {}) {
+    const { 
+      search,
+      limit = 200,
+      excludeUserId = null
+    } = filters;
+
+    // Build base conditions
+    const baseConditions = [
+      eq(userTable.isDeleted, false),
+      or(...roles.map(role => eq(userTable.role, role)))
+    ];
+
+    // Add exclude user condition if provided
+    if (excludeUserId) {
+      baseConditions.push(ne(userTable.id, parseInt(excludeUserId)));
+    }
+
+    // Add search conditions if provided
+    if (search) {
+      baseConditions.push(
+        or(
+          ilike(userTable.name, `%${search}%`),
+          ilike(userTable.email, `%${search}%`),
+          ilike(userTable.bio, `%${search}%`)
+        )
+      );
+    }
+
+    // Build query with all conditions
+    let query = db
+      .select()
+      .from(userTable)
+      .where(and(...baseConditions))
+      .limit(parseInt(limit))
+      .orderBy(desc(userTable.createdAt));
+
+    const users = await query;
+    return users;
   }
 
   static async verifyEmail(id) {

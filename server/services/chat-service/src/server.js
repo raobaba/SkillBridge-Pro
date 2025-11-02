@@ -1,5 +1,7 @@
 require("dotenv").config();
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const cors = require("cors");
 const helmet = require("helmet");
 const session = require("express-session");
@@ -8,9 +10,37 @@ const errorMiddleware = require("shared/middleware/error.middleware");
 const logger = require("shared/utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
 const chatRouter = require("./routes/chat.routes");
+const socketAuth = require("./socket/socket.auth");
+const SocketHandlers = require("./socket/socket.handlers");
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 3004;
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  transports: ["websocket", "polling"],
+});
+
+// Initialize Socket handlers
+const socketHandlers = new SocketHandlers(io);
+
+// Socket.io authentication middleware
+io.use(socketAuth);
+
+// Socket.io connection handler
+io.on("connection", (socket) => {
+  socketHandlers.handleConnection(socket);
+});
+
+// Make io and socketHandlers available globally (for use in controllers)
+global.io = io;
+global.socketHandlers = socketHandlers;
 
 // 🔐 Core Middlewares
 app.use(helmet());
@@ -53,9 +83,10 @@ app.use(errorMiddleware);
 const startServer = async () => {
   try {
     await initializeDatabase();
-    app.listen(PORT, () =>
-      console.log(`🚀 Chat Service running on http://localhost:${PORT}`)
-    );
+    server.listen(PORT, () => {
+      console.log(`🚀 Chat Service running on http://localhost:${PORT}`);
+      console.log(`📡 Socket.io server initialized`);
+    });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
     process.exit(1);

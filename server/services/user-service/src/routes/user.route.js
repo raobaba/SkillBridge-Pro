@@ -17,6 +17,9 @@ userRouter.delete("/profile", authenticate, userController.deleteUser);
 // Developers
 userRouter.get("/developers", authenticate, userController.getDevelopers);
 
+// Chat Users (Developers and Project Owners)
+userRouter.get("/chat/users", authenticate, userController.getChatUsers);
+
 // Developer Favorites
 userRouter.post("/developers/favorites", authenticate, userController.addDeveloperFavorite);
 userRouter.delete("/developers/favorites", authenticate, userController.removeDeveloperFavorite);

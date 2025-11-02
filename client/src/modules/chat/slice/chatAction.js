@@ -1,5 +1,17 @@
 import fetchFromApiServer from "../../../services/api";
 
+// Get chat users (developers and project owners)
+export const getChatUsersApi = async (params = {}) => {
+  const { search, limit } = params;
+  const queryParams = new URLSearchParams();
+
+  if (search) queryParams.append("search", search);
+  if (limit) queryParams.append("limit", limit);
+
+  const url = `api/v1/user/chat/users${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+  return await fetchFromApiServer("GET", url);
+};
+
 // Get all conversations for the authenticated user
 export const getConversationsApi = async (filters = {}) => {
   const { type, archived, favorites, flagged, search } = filters;

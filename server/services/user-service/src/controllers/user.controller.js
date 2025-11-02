@@ -769,6 +769,61 @@ const getDevelopers = async (req, res) => {
   }
 };
 
+// Get users for chat (developers and project-owners)
+const getChatUsers = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const { 
+      search,
+      limit = 200
+    } = req.query;
+
+    const filters = {
+      search,
+      limit: parseInt(limit),
+      excludeUserId: userId ? parseInt(userId) : null
+    };
+
+    // Fetch users with roles developer and project-owner
+    const users = await UserModel.getUsersByRoles(['developer', 'project-owner'], filters);
+
+    // Generate signed URLs for avatars
+    const usersWithSignedUrls = await Promise.all(
+      users.map(async (user) => {
+        if (user.avatarUrl) {
+          try {
+            const { data, error } = await supabase.storage
+              .from("upload")
+              .createSignedUrl(user.avatarUrl, 60 * 60); // 1 hour
+            if (!error && data) {
+              user.avatarUrl = data.signedUrl;
+            }
+          } catch (error) {
+            console.error("Error generating signed URL for avatar:", error);
+          }
+        }
+        return user;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Users retrieved successfully",
+      data: usersWithSignedUrls,
+      count: usersWithSignedUrls.length
+    });
+  } catch (error) {
+    console.error("Get chat users error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch users",
+      error: error.message,
+    });
+  }
+};
+
 // ============================================
 // DEVELOPER FAVORITES
 // ============================================
@@ -1465,6 +1520,7 @@ module.exports = {
   resetPassword,
   logoutUser,
   getDevelopers,
+  getChatUsers,
   // Developer favorites
   addDeveloperFavorite,
   removeDeveloperFavorite,

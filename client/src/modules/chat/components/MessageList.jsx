@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import MessageItem from "./MessageItem";
 import { ArrowDown, Loader2 } from "lucide-react";
 
-const MessageList = ({ messages, isLoading = false }) => {
+const MessageList = ({ messages, isLoading = false, typingUsers = new Set() }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -137,6 +137,18 @@ const MessageList = ({ messages, isLoading = false }) => {
               <p className="text-sm text-gray-400 max-w-sm">
                 Send a message to begin chatting. Your messages will appear here.
               </p>
+            </div>
+          )}
+
+          {/* Typing indicator */}
+          {typingUsers && typingUsers.size > 0 && (
+            <div className="flex items-center gap-2 px-4 py-2 text-gray-400">
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-xs italic">Someone is typing...</span>
             </div>
           )}
 

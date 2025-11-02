@@ -52,11 +52,33 @@ class ConversationsModel {
     // Add creator as participant
     if (conversation && createdBy) {
       const { conversationParticipantsTable } = require("./conversation-participants.model");
-      await db.insert(conversationParticipantsTable).values({
-        conversationId: conversation.id,
-        userId: createdBy,
-        role: type === "group" ? "admin" : "member",
-      });
+      try {
+        // Ensure createdBy is a number
+        const creatorUserId = Number(createdBy);
+        const creatorRole = type === "group" ? "admin" : "member";
+        
+        const [participant] = await db.insert(conversationParticipantsTable).values({
+          conversationId: conversation.id,
+          userId: creatorUserId,
+          role: creatorRole,
+        }).returning();
+        
+        console.log(`[Create Conversation] ✅ Added creator ${creatorUserId} as participant with role ${creatorRole}:`, {
+          participantId: participant?.id,
+          userId: participant?.userId,
+          userIdType: typeof participant?.userId,
+          role: participant?.role,
+          conversationId: participant?.conversationId
+        });
+        
+        // Verify it was saved correctly
+        if (!participant || Number(participant.userId) !== creatorUserId) {
+          throw new Error(`Failed to create participant - userId mismatch. Expected: ${creatorUserId}, Got: ${participant?.userId}`);
+        }
+      } catch (error) {
+        console.error(`[Create Conversation] ❌ Error adding creator as participant:`, error);
+        throw error;
+      }
     }
 
     return conversation;

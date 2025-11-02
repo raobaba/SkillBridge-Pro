@@ -27,15 +27,29 @@ class ConversationParticipantsModel {
    * Add participant to conversation
    */
   static async addParticipant(conversationId, userId, role = "member") {
-    const [participant] = await db
-      .insert(conversationParticipantsTable)
-      .values({
-        conversationId: Number(conversationId),
-        userId: Number(userId),
-        role,
-      })
-      .returning();
-    return participant;
+    try {
+      // Check if participant already exists
+      const existing = await this.getParticipantByConversationAndUser(conversationId, userId);
+      if (existing) {
+        console.log(`[Add Participant] User ${userId} already exists in conversation ${conversationId}, skipping insert`);
+        return existing;
+      }
+      
+      const [participant] = await db
+        .insert(conversationParticipantsTable)
+        .values({
+          conversationId: Number(conversationId),
+          userId: Number(userId),
+          role,
+        })
+        .returning();
+      
+      console.log(`[Add Participant] Successfully added user ${userId} to conversation ${conversationId} with role ${role}`);
+      return participant;
+    } catch (error) {
+      console.error(`[Add Participant] Error adding participant:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -62,56 +76,98 @@ class ConversationParticipantsModel {
    * Update participant settings
    */
   static async updateParticipant(conversationId, userId, updates) {
-    const [participant] = await db
-      .update(conversationParticipantsTable)
-      .set({
-        ...updates,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(conversationParticipantsTable.conversationId, Number(conversationId)),
-          eq(conversationParticipantsTable.userId, Number(userId))
+    try {
+      const [participant] = await db
+        .update(conversationParticipantsTable)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(conversationParticipantsTable.conversationId, Number(conversationId)),
+            eq(conversationParticipantsTable.userId, Number(userId)),
+            eq(conversationParticipantsTable.leftAt, null) // Only update active participants
+          )
         )
-      )
-      .returning();
-    return participant;
+        .returning();
+      
+      return participant || null;
+    } catch (error) {
+      console.error("Error updating participant:", error);
+      return null;
+    }
   }
 
   /**
    * Get participants of a conversation
    */
   static async getParticipantsByConversationId(conversationId, excludeUserId = null) {
-    const conditions = [
-      eq(conversationParticipantsTable.conversationId, Number(conversationId)),
-      eq(conversationParticipantsTable.leftAt, null),
-    ];
+    try {
+      const conditions = [
+        eq(conversationParticipantsTable.conversationId, Number(conversationId)),
+        eq(conversationParticipantsTable.leftAt, null),
+      ];
 
-    if (excludeUserId) {
-      conditions.push(ne(conversationParticipantsTable.userId, Number(excludeUserId)));
+      if (excludeUserId) {
+        conditions.push(ne(conversationParticipantsTable.userId, Number(excludeUserId)));
+      }
+
+      const participants = await db
+        .select()
+        .from(conversationParticipantsTable)
+        .where(and(...conditions));
+      
+      // Ensure all userIds are numbers for consistent comparison
+      return participants.map(p => ({
+        ...p,
+        userId: Number(p.userId),
+        conversationId: Number(p.conversationId)
+      }));
+    } catch (error) {
+      console.error(`[Get Participants] Error getting participants for conversation ${conversationId}:`, error);
+      return [];
     }
-
-    return await db
-      .select()
-      .from(conversationParticipantsTable)
-      .where(and(...conditions));
   }
 
   /**
    * Get participant by conversation and user ID
    */
   static async getParticipantByConversationAndUser(conversationId, userId) {
-    const [participant] = await db
-      .select()
-      .from(conversationParticipantsTable)
-      .where(
-        and(
-          eq(conversationParticipantsTable.conversationId, Number(conversationId)),
-          eq(conversationParticipantsTable.userId, Number(userId)),
-          eq(conversationParticipantsTable.leftAt, null)
-        )
-      );
-    return participant;
+    try {
+      // Ensure both IDs are numbers - handle both string and number inputs
+      const convId = typeof conversationId === 'string' ? parseInt(conversationId, 10) : Number(conversationId);
+      const usrId = typeof userId === 'string' ? parseInt(userId, 10) : Number(userId);
+      
+      // Validate IDs are valid numbers
+      if (isNaN(convId) || isNaN(usrId) || convId <= 0 || usrId <= 0) {
+        console.error(`[Get Participant] Invalid IDs - conversationId: ${conversationId} (${typeof conversationId}), userId: ${userId} (${typeof userId})`);
+        return null;
+      }
+      
+      const [participant] = await db
+        .select()
+        .from(conversationParticipantsTable)
+        .where(
+          and(
+            eq(conversationParticipantsTable.conversationId, convId),
+            eq(conversationParticipantsTable.userId, usrId),
+            eq(conversationParticipantsTable.leftAt, null)
+          )
+        );
+      
+      if (participant) {
+        // Ensure returned userId is also a number for comparison
+        participant.userId = Number(participant.userId);
+        participant.conversationId = Number(participant.conversationId);
+        return participant;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`[Get Participant] Error getting participant for conversation ${conversationId}, user ${userId}:`, error);
+      return null;
+    }
   }
 
   /**

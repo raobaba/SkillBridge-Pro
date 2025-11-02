@@ -31,7 +31,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
   };
 
   return (
-    <div className="w-72 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm h-full border-r border-white/10 flex flex-col relative overflow-hidden">
+    <div className="w-92 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm h-full border-r border-white/10 flex flex-col relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 blur-3xl"></div>
@@ -39,32 +39,30 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
       <div className="relative z-10 flex flex-col h-full">
         {/* Enhanced Header */}
         <div className="p-4 border-b border-white/10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-white font-bold text-xl flex items-center gap-2">
-              <MessageCircle className="w-6 h-6 text-blue-400" />
-              Chats
-            </h2>
+          {/* Enhanced Search Bar */}
+          <div className="relative flex items-center gap-2">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
+              <Input
+                type="text"
+                placeholder="Search chats..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/20 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 border border-white/10 transition-all duration-300 hover:border-blue-500/30"
+              />
+            </div>
+            
+            {/* Plus Icon Button */}
             <Button
               onClick={handleNewChat}
               variant="ghost"
               size="sm"
-              className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+              className="h-[42px] p-2 rounded-xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group flex-shrink-0 flex items-center justify-center"
               title="New Chat"
             >
               <Plus className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
             </Button>
-          </div>
-
-          {/* Enhanced Search Bar */}
-          <div className="relative">
-            <Input
-              type="text"
-              placeholder="Search chats..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              leftIcon={Search}
-              className="w-full pl-10 pr-4 py-3 rounded-xl bg-black/20 backdrop-blur-sm text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 border border-white/10 transition-all duration-300 hover:border-blue-500/30"
-            />
           </div>
         </div>
 

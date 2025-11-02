@@ -418,6 +418,112 @@ paths:
         "500":
           description: Internal server error
 
+  /api/v1/user/chat/users:
+    get:
+      summary: Get chat users (developers and project owners)
+      description: Retrieve a list of all developers and project owners for chat purposes. The authenticated user is automatically excluded from the results.
+      tags:
+        - "🔵 USER SERVICE - Developers"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Search users by name, email, or bio
+          schema:
+            type: string
+          example: "john"
+        - name: limit
+          in: query
+          description: Maximum number of users to return
+          schema:
+            type: integer
+            default: 200
+            minimum: 1
+            maximum: 500
+          example: 200
+      responses:
+        "200":
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Users retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/User"
+                    description: Array of users (developers and project owners) with signed avatar URLs
+                  count:
+                    type: integer
+                    description: Total number of users returned
+                    example: 25
+              example:
+                success: true
+                status: 200
+                message: "Users retrieved successfully"
+                data:
+                  - id: 1
+                    name: "John Doe"
+                    email: "john@example.com"
+                    role: "developer"
+                    avatarUrl: "https://supabase.co/storage/v1/object/sign/upload/avatar.jpg?token=..."
+                    bio: "Full-stack developer"
+                    location: "New York, USA"
+                  - id: 2
+                    name: "Jane Smith"
+                    email: "jane@example.com"
+                    role: "project-owner"
+                    avatarUrl: "https://supabase.co/storage/v1/object/sign/upload/avatar2.jpg?token=..."
+                    bio: "Project manager"
+                    location: "San Francisco, USA"
+                count: 2
+        "401":
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  status:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  status:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Failed to fetch users"
+                  error:
+                    type: string
+                    example: "Error message"
+
   /api/v1/user/{userId}/roles:
     post:
       summary: Assign role to user

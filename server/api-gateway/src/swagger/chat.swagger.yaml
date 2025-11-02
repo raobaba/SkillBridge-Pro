@@ -14,7 +14,7 @@ tags:
   - name: "💬 CHAT SERVICE - Messages"
     description: "Chat Service: Message operations (send, edit, delete, read receipts)"
   - name: "💬 CHAT SERVICE - Participants"
-    description: "Chat Service: Participant settings (archive, favorite, mute)"
+    description: "Chat Service: Participant management (add, remove, archive, favorite, mute). Group participant management is restricted to project-owners only."
   - name: "💬 CHAT SERVICE - Moderation"
     description: "Chat Service: Conversation flagging and moderation (Admin only)"
 
@@ -130,7 +130,7 @@ paths:
   /api/v1/chat/conversations/group:
     post:
       summary: Create group conversation
-      description: Create a new group conversation (Project Owners and Admins only)
+      description: Create a new group conversation (Project Owners only). Only developers can be added as participants.
       tags:
         - "💬 CHAT SERVICE - Conversations"
       security:
@@ -153,7 +153,7 @@ paths:
                   example: 42
                 participantIds:
                   type: array
-                  description: Array of user IDs to add as participants (creator is added automatically)
+                  description: Array of developer user IDs to add as participants (should only contain developers). Creator (project-owner) is added automatically as admin.
                   items:
                     type: integer
                   example: [123, 456, 789]
@@ -181,7 +181,130 @@ paths:
         "401":
           description: Unauthorized
         "403":
-          description: Forbidden (not project-owner or admin)
+          description: Forbidden (not project-owner)
+        "500":
+          description: Internal server error
+
+  /api/v1/chat/conversations/{conversationId}/participants:
+    post:
+      summary: Add participants to group
+      description: Add developers to an existing group conversation (Project Owners only). Only group admins (project-owners who created the group) can add participants. Only developers can be added.
+      tags:
+        - "💬 CHAT SERVICE - Participants"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Conversation ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [participantIds]
+              properties:
+                participantIds:
+                  type: array
+                  description: Array of developer user IDs to add as participants (should only contain developers)
+                  items:
+                    type: integer
+                  minItems: 1
+                  example: [123, 456]
+      responses:
+        "200":
+          description: Participants added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Added 2 participant(s) to group"
+                  data:
+                    type: object
+                    properties:
+                      added:
+                        type: array
+                        description: Successfully added participants
+                        items:
+                          $ref: "#/components/schemas/Participant"
+                      errors:
+                        type: array
+                        description: Errors encountered (if any)
+                        items:
+                          type: string
+                        example: ["User 123 is already a participant"]
+        "400":
+          description: Bad request (invalid conversation type, missing participant IDs, etc.)
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not project-owner or not group admin)
+        "404":
+          description: Conversation not found
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Remove participant from group
+      description: Remove a developer from a group conversation (Project Owners only). Only group admins (project-owners who created the group) can remove participants. Cannot remove yourself.
+      tags:
+        - "💬 CHAT SERVICE - Participants"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Conversation ID
+          example: 1
+        - name: participantId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID of participant to remove
+          example: 123
+      responses:
+        "200":
+          description: Participant removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Participant removed from group successfully"
+        "400":
+          description: Bad request (invalid conversation type, cannot remove yourself, etc.)
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (not project-owner or not group admin)
+        "404":
+          description: Conversation not found
         "500":
           description: Internal server error
 

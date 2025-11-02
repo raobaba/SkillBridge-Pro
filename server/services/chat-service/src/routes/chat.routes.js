@@ -14,11 +14,25 @@ chatRouter.get("/conversations", chatController.getConversations);
 // Get or create direct conversation between two users
 chatRouter.get("/conversations/direct/:otherUserId", chatController.getOrCreateDirectConversation);
 
-// Create group conversation (project owners and admins only)
+// Create group conversation (project owners only)
 chatRouter.post(
   "/conversations/group",
-  requireRole(["project-owner", "admin"]),
+  requireRole(["project-owner"]),
   chatController.createGroupConversation
+);
+
+// Add participants to group (project owners only)
+chatRouter.post(
+  "/conversations/:conversationId/participants",
+  requireRole(["project-owner"]),
+  chatController.addParticipantsToGroup
+);
+
+// Remove participant from group (project owners only)
+chatRouter.delete(
+  "/conversations/:conversationId/participants/:participantId",
+  requireRole(["project-owner"]),
+  chatController.removeParticipantFromGroup
 );
 
 // Get messages for a conversation

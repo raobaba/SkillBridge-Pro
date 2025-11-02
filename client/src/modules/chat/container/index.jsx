@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSelector } from "react-redux";
 import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
@@ -6,119 +6,19 @@ import ChatBox from "../components/ChatBox";
 import ChatSidebar from "../components/ChatSidebar";
 import { useNavigate } from "react-router-dom";
 import { Menu, X, Shield, Users, MessageCircle, AlertTriangle } from "lucide-react";
+import { 
+  getConversationsApi, 
+  getMessagesApi, 
+  sendMessageApi,
+  markAsReadApi,
+  getChatUsersApi
+} from "../slice/chatAction";
+import { connectSocket, disconnectSocket, getSocket } from "../../../services/socket";
 
-const staticUsers = [
+// System notifications and flagged chats (UI elements, not real conversations)
+const systemNotifications = [
   { 
-    id: 1, 
-    name: "Alice Johnson", 
-    role: "project-owner",
-    lastMessage: "Thanks for the help with the design!",
-    lastSeen: "2 min ago",
-    isFavorite: true,
-    isArchived: false,
-    unreadCount: 0,
-    status: "online",
-    avatar: "AJ",
-    chatType: "direct",
-    projectId: "proj-001"
-  },
-  { 
-    id: 2, 
-    name: "Bob Smith", 
-    role: "developer",
-    lastMessage: "Can you review the PR when you get a chance?",
-    lastSeen: "5 min ago",
-    isFavorite: false,
-    isArchived: false,
-    unreadCount: 2,
-    status: "online",
-    avatar: "BS",
-    chatType: "direct"
-  },
-  { 
-    id: 3, 
-    name: "Charlie Brown", 
-    role: "project-owner",
-    lastMessage: "Good morning! Ready for the meeting?",
-    lastSeen: "1 hour ago",
-    isFavorite: true,
-    isArchived: false,
-    unreadCount: 0,
-    status: "away",
-    avatar: "CB",
-    chatType: "group",
-    projectId: "proj-002"
-  },
-  { 
-    id: 4, 
-    name: "Diana Prince", 
-    role: "developer",
-    lastMessage: "The new features look amazing!",
-    lastSeen: "3 hours ago",
-    isFavorite: false,
-    isArchived: false,
-    unreadCount: 1,
-    status: "offline",
-    avatar: "DP",
-    chatType: "direct"
-  },
-  { 
-    id: 5, 
-    name: "E-commerce Platform Team", 
-    role: "group",
-    lastMessage: "Ethan Hunt: Mission accomplished! 🎯",
-    lastSeen: "yesterday",
-    isFavorite: false,
-    isArchived: true,
-    unreadCount: 0,
-    status: "offline",
-    avatar: "EP",
-    chatType: "group",
-    projectId: "proj-001",
-    isGroup: true
-  },
-  { 
-    id: 6, 
-    name: "Fiona Green", 
-    role: "project-owner",
-    lastMessage: "Let's schedule a call for next week",
-    lastSeen: "2 days ago",
-    isFavorite: true,
-    isArchived: false,
-    unreadCount: 0,
-    status: "offline",
-    avatar: "FG",
-    chatType: "direct",
-    projectId: "proj-003"
-  },
-  { 
-    id: 7, 
-    name: "George Wilson", 
-    role: "developer",
-    lastMessage: "The database migration is complete",
-    lastSeen: "1 week ago",
-    isFavorite: false,
-    isArchived: true,
-    unreadCount: 0,
-    status: "offline",
-    avatar: "GW",
-    chatType: "direct"
-  },
-  { 
-    id: 8, 
-    name: "Hannah Davis", 
-    role: "developer",
-    lastMessage: "Thanks for the great presentation!",
-    lastSeen: "now",
-    isFavorite: false,
-    isArchived: false,
-    unreadCount: 3,
-    status: "online",
-    avatar: "HD",
-    chatType: "direct"
-  },
-  { 
-    id: 9, 
+    id: 999, 
     name: "System Notifications", 
     role: "system",
     lastMessage: "New match found for your skills!",
@@ -132,7 +32,7 @@ const staticUsers = [
     isSystem: true
   },
   { 
-    id: 10, 
+    id: 998, 
     name: "Flagged Chat #123", 
     role: "admin",
     lastMessage: "User reported inappropriate content",
@@ -147,222 +47,369 @@ const staticUsers = [
   }
 ];
 
-const staticMessages = {
-  1: [
-    { 
-      id: 1, 
-      sender: "Alice", 
-      text: "Hey! How's the project going?", 
-      time: "10:30 AM",
-      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Hi Alice! It's going really well 🚀 The new features are looking great!", 
-      time: "10:32 AM",
-      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 3, 
-      sender: "Alice", 
-      text: "That's awesome! I can't wait to see the final result. When do you think it'll be ready?", 
-      time: "10:35 AM",
-      timestamp: new Date(Date.now() - 30 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 4, 
-      sender: "me", 
-      text: "Probably by the end of this week. I'll keep you updated!", 
-      time: "10:36 AM",
-      timestamp: new Date(Date.now() - 20 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 5, 
-      sender: "Alice", 
-      text: "Perfect! Thanks for the help with the design system. It really made a difference 💯", 
-      time: "10:38 AM",
-      timestamp: new Date(Date.now() - 10 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  2: [
-    { 
-      id: 1, 
-      sender: "Bob", 
-      text: "Yo! Did you check my PR?", 
-      time: "9:00 AM",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Not yet, I'll take a look in a bit", 
-      time: "9:05 AM",
-      timestamp: new Date(Date.now() - 115 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 3, 
-      sender: "Bob", 
-      text: "Cool, it's the authentication fix. Should be straightforward", 
-      time: "9:10 AM",
-      timestamp: new Date(Date.now() - 110 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 4, 
-      sender: "Bob", 
-      text: "Can you review the PR when you get a chance? It's blocking the next release", 
-      time: "9:15 AM",
-      timestamp: new Date(Date.now() - 105 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  3: [
-    { 
-      id: 1, 
-      sender: "Charlie", 
-      text: "Good morning! Ready for the meeting? 🌞", 
-      time: "8:15 AM",
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Morning Charlie! Yes, I'm all set. See you in 15 minutes", 
-      time: "8:20 AM",
-      timestamp: new Date(Date.now() - 175 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 3, 
-      sender: "Charlie", 
-      text: "Great! I've prepared the quarterly reports. Should be an interesting discussion", 
-      time: "8:25 AM",
-      timestamp: new Date(Date.now() - 170 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  4: [
-    { 
-      id: 1, 
-      sender: "Diana", 
-      text: "The new features look amazing! Great work on the UI improvements", 
-      time: "7:30 AM",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Thank you! I'm really happy with how it turned out", 
-      time: "7:35 AM",
-      timestamp: new Date(Date.now() - 235 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  5: [
-    { 
-      id: 1, 
-      sender: "Ethan", 
-      text: "Mission accomplished! 🎯 The security audit is complete", 
-      time: "Yesterday",
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Excellent work! Thanks for handling that", 
-      time: "Yesterday",
-      timestamp: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  6: [
-    { 
-      id: 1, 
-      sender: "Fiona", 
-      text: "Let's schedule a call for next week to discuss the new project", 
-      time: "2 days ago",
-      timestamp: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "me", 
-      text: "Sounds good! What day works best for you?", 
-      time: "2 days ago",
-      timestamp: new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  7: [
-    { 
-      id: 1, 
-      sender: "George", 
-      text: "The database migration is complete. All systems are running smoothly", 
-      time: "1 week ago",
-      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      status: "delivered"
-    }
-  ],
-  8: [
-    { 
-      id: 1, 
-      sender: "Hannah", 
-      text: "Thanks for the great presentation today! Really insightful", 
-      time: "2 min ago",
-      timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 2, 
-      sender: "Hannah", 
-      text: "Do you have the slides you can share?", 
-      time: "1 min ago",
-      timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-      status: "delivered"
-    },
-    { 
-      id: 3, 
-      sender: "Hannah", 
-      text: "Also, can we schedule a follow-up meeting?", 
-      time: "now",
-      timestamp: new Date().toISOString(),
-      status: "sent"
-    }
-  ]
+// Helper function to format time
+const formatTime = (timestamp) => {
+  if (!timestamp) return "now";
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+};
+
+// Helper function to get initials from name
+const getInitials = (name) => {
+  if (!name) return "U";
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 };
 
 const ChatContainer = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state?.user || {});
-  const [activeUser, setActiveUser] = useState(staticUsers?.[0] || null);
-  const [messages, setMessages] = useState(staticMessages || {});
+  const [conversations, setConversations] = useState([]);
+  const [usersMap, setUsersMap] = useState({}); // Map of userId -> user object
+  const [activeUser, setActiveUser] = useState(null);
+  const [messages, setMessages] = useState({}); // conversationId -> messages array
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filterType, setFilterType] = useState("all"); // all, direct, groups, system, flagged
+  const [loadingConversations, setLoadingConversations] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState({});
+  const [typingUsers, setTypingUsers] = useState({}); // conversationId -> Set of userIds
+  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of online user IDs
+  const socketRef = useRef(null);
+  const typingTimeoutRef = useRef({}); // conversationId -> timeout
+
+  const currentUserId = user?.id || user?.userId;
+
+  // Initialize Socket.io connection
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const socket = connectSocket();
+    if (!socket) return;
+
+    socketRef.current = socket;
+
+    // Handle successful connection
+    socket.on("connect", () => {
+      console.log("✅ Socket.io connected");
+    });
+
+    // Handle disconnection
+    socket.on("disconnect", (reason) => {
+      console.log("❌ Socket.io disconnected:", reason);
+    });
+
+    // Handle connection errors
+    socket.on("connect_error", (error) => {
+      console.error("Socket.io connection error:", error.message);
+    });
+
+    // Join conversation room when active user changes
+    if (activeUser?.conversationId) {
+      socket.emit("join_conversation", { conversationId: activeUser.conversationId });
+    }
+
+    // Handle new message event
+    socket.on("new_message", (data) => {
+      const { conversationId, message } = data;
+      
+      if (!conversationId || !message) return;
+
+      // Transform message to frontend format
+      const isCurrentUser = message.senderId === currentUserId;
+      const senderName = isCurrentUser 
+        ? "me" 
+        : (usersMap[message.senderId]?.name || "Unknown");
+      
+      const timestamp = message.createdAt || message.timestamp;
+      const date = timestamp ? new Date(timestamp) : new Date();
+      
+      const transformedMessage = {
+        id: message.id,
+        sender: senderName,
+        text: message.content || "",
+        time: date.toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        timestamp: timestamp || date.toISOString(),
+        status: "delivered"
+      };
+
+      // Add message to state
+      setMessages(prev => {
+        const existingMessages = prev[conversationId] || [];
+        // Check if message already exists (avoid duplicates)
+        if (existingMessages.some(m => m.id === transformedMessage.id)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          [conversationId]: [...existingMessages, transformedMessage],
+        };
+      });
+
+      // Update conversation list with new last message
+      setConversations(prev => {
+        return prev.map(conv => {
+          if (conv.id === conversationId) {
+            return {
+              ...conv,
+              lastMessage: {
+                id: message.id,
+                content: message.content,
+                senderId: message.senderId,
+                timestamp: timestamp,
+              },
+              updatedAt: timestamp,
+            };
+          }
+          return conv;
+        });
+      });
+
+      // Auto-mark as read if this is the active conversation
+      if (activeUser?.conversationId === conversationId && !isCurrentUser) {
+        socket.emit("mark_read", { conversationId, messageIds: [message.id] });
+      }
+    });
+
+    // Handle typing indicators
+    socket.on("user_typing", (data) => {
+      const { conversationId, userId, isTyping } = data;
+      
+      if (!conversationId || userId === currentUserId) return;
+
+      setTypingUsers(prev => {
+        const current = prev[conversationId] || new Set();
+        const updated = new Set(current);
+        
+        if (isTyping) {
+          updated.add(userId);
+        } else {
+          updated.delete(userId);
+        }
+        
+        return {
+          ...prev,
+          [conversationId]: updated,
+        };
+      });
+    });
+
+    // Handle read receipts
+    socket.on("messages_read", (data) => {
+      const { conversationId, userId, messageIds } = data;
+      
+      // Update message status if needed
+      if (activeUser?.conversationId === conversationId) {
+        setMessages(prev => {
+          const conversationMessages = prev[conversationId] || [];
+          return {
+            ...prev,
+            [conversationId]: conversationMessages.map(msg => {
+              if (messageIds.includes(msg.id)) {
+                return { ...msg, status: "read" };
+              }
+              return msg;
+            }),
+          };
+        });
+      }
+    });
+
+    // Handle user status changes (online/offline)
+    socket.on("user_status_change", (data) => {
+      const { userId, status } = data;
+      
+      setOnlineUsers(prev => {
+        const updated = new Set(prev);
+        if (status === "online") {
+          updated.add(userId);
+        } else {
+          updated.delete(userId);
+        }
+        return updated;
+      });
+    });
+
+    // Handle joining conversation confirmation
+    socket.on("joined_conversation", ({ conversationId }) => {
+      console.log(`✅ Joined conversation ${conversationId}`);
+    });
+
+    // Handle errors from server
+    socket.on("error", (error) => {
+      console.error("Socket.io error:", error);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit("leave_conversation", { 
+          conversationId: activeUser?.conversationId 
+        });
+      }
+      disconnectSocket();
+    };
+  }, [currentUserId, activeUser?.conversationId, usersMap]);
+
+  // Join/leave conversation rooms when active user changes
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) return;
+
+    // Leave previous conversation
+    // (This is handled by the cleanup above)
+
+    // Join new conversation
+    if (activeUser?.conversationId && !activeUser?.isSystem && !activeUser?.isFlagged) {
+      socket.emit("join_conversation", { conversationId: activeUser.conversationId });
+    }
+  }, [activeUser?.conversationId]);
+
+  // Fetch conversations and user details
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!currentUserId) return;
+
+      try {
+        setLoadingConversations(true);
+
+        // Fetch conversations
+        const conversationsResponse = await getConversationsApi({});
+        const conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
+
+        // Collect all participant IDs
+        const participantIds = new Set();
+        conversationsData.forEach(conv => {
+          if (conv.otherParticipantIds?.length) {
+            conv.otherParticipantIds.forEach(id => participantIds.add(id));
+          }
+          if (conv.participantIds?.length) {
+            conv.participantIds.forEach(id => participantIds.add(id));
+          }
+        });
+
+        // Fetch user details for all participants
+        let usersData = [];
+        if (participantIds.size > 0) {
+          try {
+            const usersResponse = await getChatUsersApi({ limit: 200 });
+            usersData = usersResponse?.data?.data || usersResponse?.data || [];
+            
+            // Create users map
+            const usersMapData = {};
+            usersData.forEach(u => {
+              usersMapData[u.id || u.userId] = u;
+            });
+            setUsersMap(usersMapData);
+          } catch (error) {
+            console.error("Error fetching user details:", error);
+          }
+        }
+
+        setConversations(conversationsData);
+      } catch (error) {
+        console.error("Error fetching conversations:", error);
+      } finally {
+        setLoadingConversations(false);
+      }
+    };
+
+    fetchData();
+  }, [currentUserId]);
+
+  // Transform conversations to chat user format
+  const transformedConversations = useMemo(() => {
+    return conversations.map(conv => {
+      // For direct messages, get the other participant
+      let displayName = conv.name || "Unknown";
+      let displayRole = "developer";
+      let otherParticipantUser = null;
+      
+      if (conv.type === "direct" && conv.otherParticipantIds?.length > 0) {
+        const otherParticipantId = conv.otherParticipantIds[0];
+        otherParticipantUser = usersMap[otherParticipantId];
+        
+        if (otherParticipantUser) {
+          displayName = otherParticipantUser.name || otherParticipantUser.email || "Unknown User";
+          displayRole = otherParticipantUser.role || "developer";
+        }
+      } else if (conv.type === "group") {
+        displayRole = "group";
+      }
+
+      // Get last message text
+      const lastMessageText = conv.lastMessage?.content || "";
+
+      // Calculate last seen from lastReadAt or updatedAt
+      const lastSeen = conv.participant?.lastReadAt 
+        ? formatTime(conv.participant.lastReadAt)
+        : formatTime(conv.updatedAt);
+
+      // Get avatar
+      const avatarUrl = otherParticipantUser?.avatarUrl || null;
+      const avatar = avatarUrl ? null : getInitials(displayName);
+
+      return {
+        id: conv.id,
+        conversationId: conv.id, // Keep reference to conversation ID
+        name: displayName,
+        role: displayRole,
+        lastMessage: lastMessageText,
+        lastSeen,
+        isFavorite: conv.participant?.isFavorite || false,
+        isArchived: conv.participant?.isArchived || false,
+        unreadCount: conv.participant?.unreadCount || 0,
+        status: onlineUsers.has(conv.otherParticipantIds?.[0] || conv.participantIds?.[0]) ? "online" : "offline",
+        avatar,
+        avatarUrl,
+        chatType: conv.type,
+        projectId: conv.projectId,
+        isFlagged: conv.isFlagged || false,
+        isGroup: conv.type === "group",
+        otherParticipant: otherParticipantUser,
+      };
+    });
+  }, [conversations, usersMap]);
+
+  // Combine conversations with system notifications
+  const allChatUsers = useMemo(() => {
+    const chatUsers = [...transformedConversations];
+    
+    // Add system notifications for all roles
+    chatUsers.push(...systemNotifications.filter(n => n.isSystem));
+
+    // Add flagged chats only for admins
+    if (user?.role === 'admin') {
+      chatUsers.push(...systemNotifications.filter(n => n.isFlagged));
+    }
+
+    return chatUsers;
+  }, [transformedConversations, user?.role]);
 
   // Role-based user filtering
   const getFilteredUsers = () => {
-    if (!user?.role) return staticUsers || [];
+    if (!user?.role) return allChatUsers || [];
 
     const currentUserRole = user.role;
     
-    return (staticUsers || []).filter(chatUser => {
+    return (allChatUsers || []).filter(chatUser => {
       // System notifications are visible to all roles
       if (chatUser?.isSystem) return true;
       
       // Flagged chats are only visible to admins
       if (chatUser?.isFlagged && currentUserRole !== 'admin') return false;
-      
+
       // Role-based filtering
       switch (currentUserRole) {
         case 'developer':
@@ -370,18 +417,18 @@ const ChatContainer = () => {
           // Can join group chats when accepted
           return ['project-owner', 'developer', 'group'].includes(chatUser?.role) || 
                  chatUser?.chatType === 'group';
-        
+
         case 'project-owner':
           // Can chat with developers and other project owners
           // Can create/manage project group chats
           return ['developer', 'project-owner', 'group'].includes(chatUser?.role) || 
                  chatUser?.chatType === 'group';
-        
+
         case 'admin':
           // Can see flagged chats for moderation
           // Read-only access to flagged chats
           return chatUser?.isFlagged || chatUser?.role === 'admin';
-        
+
         default:
           return true;
       }
@@ -390,12 +437,72 @@ const ChatContainer = () => {
 
   const filteredUsers = getFilteredUsers() || [];
 
+  // Fetch messages when a conversation is selected
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!activeUser?.conversationId || activeUser?.isSystem || activeUser?.isFlagged) {
+        return; // Don't fetch for system notifications or flagged chats
+      }
+
+      const conversationId = activeUser.conversationId;
+
+      // If messages already loaded, don't reload
+      if (messages[conversationId]?.length > 0) {
+        return;
+      }
+
+      try {
+        setLoadingMessages(prev => ({ ...prev, [conversationId]: true }));
+
+        const messagesResponse = await getMessagesApi(conversationId, 50, 0);
+        const messagesData = messagesResponse?.data?.data || messagesResponse?.data || [];
+
+        // Transform messages to frontend format
+        const transformedMessages = messagesData.map(msg => {
+          const isCurrentUser = msg.senderId === currentUserId;
+          const senderName = isCurrentUser 
+            ? "me" 
+            : (usersMap[msg.senderId]?.name || "Unknown");
+          
+          const timestamp = msg.createdAt || msg.timestamp;
+          const date = timestamp ? new Date(timestamp) : new Date();
+          
+          return {
+            id: msg.id,
+            sender: senderName,
+            text: msg.content || "",
+            time: date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            timestamp: timestamp || date.toISOString(),
+            status: msg.status || "delivered"
+          };
+        });
+
+        setMessages(prev => ({
+          ...prev,
+          [conversationId]: transformedMessages,
+        }));
+
+        // Mark as read
+        await markAsReadApi(conversationId);
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+      } finally {
+        setLoadingMessages(prev => ({ ...prev, [conversationId]: false }));
+      }
+    };
+
+    fetchMessages();
+  }, [activeUser?.conversationId, currentUserId, usersMap]);
+
   // Set default active user if none selected and users are available
   useEffect(() => {
-    if (!activeUser && filteredUsers?.length > 0) {
+    if (!activeUser && filteredUsers?.length > 0 && !loadingConversations) {
       setActiveUser(filteredUsers[0]);
     }
-  }, [activeUser, filteredUsers]);
+  }, [activeUser, filteredUsers, loadingConversations]);
 
   // Role-based permissions
   const getRolePermissions = () => {
@@ -430,7 +537,7 @@ const ChatContainer = () => {
 
   const permissions = getRolePermissions();
 
-  const handleSend = (text) => {
+  const handleSend = async (text) => {
     // Check if user can send messages based on role and chat type
     if (!permissions?.canSendMessages) {
       console.log("You don't have permission to send messages in this chat");
@@ -443,25 +550,130 @@ const ChatContainer = () => {
       return;
     }
 
-    if (!text?.trim()) return;
+    if (!text?.trim() || !activeUser?.conversationId) return;
 
-    const currentMessages = messages?.[activeUser?.id] || [];
-    const newMessage = {
-      id: (currentMessages?.length || 0) + 1,
-      sender: "me",
-      text: text.trim(),
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      timestamp: new Date().toISOString(),
-      status: "sent"
-    };
-    
-    setMessages(prev => ({
-      ...prev,
-      [activeUser?.id]: [...currentMessages, newMessage],
-    }));
+    const conversationId = activeUser.conversationId;
+    const socket = socketRef.current;
+
+    try {
+      // Try sending via Socket.io first (real-time)
+      if (socket && socket.connected) {
+        socket.emit("send_message", {
+          conversationId,
+          content: text.trim(),
+          messageType: "text",
+        });
+        
+        // Optimistically add message to UI
+        const currentMessages = messages?.[conversationId] || [];
+        const newMessage = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          sender: "me",
+          text: text.trim(),
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          timestamp: new Date().toISOString(),
+          status: "sending"
+        };
+        
+        setMessages(prev => ({
+          ...prev,
+          [conversationId]: [...currentMessages, newMessage],
+        }));
+      } else {
+        // Fallback to REST API if Socket.io is not available
+        await sendMessageApi({
+          conversationId,
+          content: text.trim(),
+          messageType: "text",
+        });
+
+        // Optimistically add message to UI
+        const currentMessages = messages?.[conversationId] || [];
+        const newMessage = {
+          id: Date.now(), // Temporary ID
+          sender: "me",
+          text: text.trim(),
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          timestamp: new Date().toISOString(),
+          status: "sent"
+        };
+        
+        setMessages(prev => ({
+          ...prev,
+          [conversationId]: [...currentMessages, newMessage],
+        }));
+
+        // Refresh messages to get the actual message from server
+        const messagesResponse = await getMessagesApi(conversationId, 50, 0);
+        const messagesData = messagesResponse?.data?.data || messagesResponse?.data || [];
+        
+        const transformedMessages = messagesData.map(msg => {
+          const isCurrentUser = msg.senderId === currentUserId;
+          const senderName = isCurrentUser 
+            ? "me" 
+            : (usersMap[msg.senderId]?.name || "Unknown");
+          
+          const timestamp = msg.createdAt || msg.timestamp;
+          const date = timestamp ? new Date(timestamp) : new Date();
+          
+          return {
+            id: msg.id,
+            sender: senderName,
+            text: msg.content || "",
+            time: date.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+            timestamp: timestamp || date.toISOString(),
+            status: msg.status || "delivered"
+          };
+        });
+
+        setMessages(prev => ({
+          ...prev,
+          [conversationId]: transformedMessages,
+        }));
+
+        // Refresh conversations to update last message
+        const conversationsResponse = await getConversationsApi({});
+        const conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
+        setConversations(conversationsData);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  // Handle typing indicator
+  const handleTyping = (isTyping) => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected || !activeUser?.conversationId) return;
+
+    socket.emit("typing", {
+      conversationId: activeUser.conversationId,
+      isTyping,
+    });
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current[activeUser.conversationId]) {
+      clearTimeout(typingTimeoutRef.current[activeUser.conversationId]);
+    }
+
+    // Auto-stop typing after 3 seconds of inactivity
+    if (isTyping) {
+      typingTimeoutRef.current[activeUser.conversationId] = setTimeout(() => {
+        socket.emit("typing", {
+          conversationId: activeUser.conversationId,
+          isTyping: false,
+        });
+      }, 3000);
+    }
   };
 
   return (
@@ -538,9 +750,23 @@ const ChatContainer = () => {
         {/* Chat Area */}
         <div className="flex flex-col flex-1 bg-gradient-to-b from-slate-900 to-indigo-900">
           {activeUser && <ChatHeader user={activeUser} permissions={permissions} />}
-          <MessageList messages={activeUser ? (messages?.[activeUser?.id] || []) : []} />
+          <MessageList 
+            messages={activeUser?.conversationId 
+              ? (messages?.[activeUser.conversationId] || []) 
+              : []}
+            typingUsers={typingUsers[activeUser?.conversationId] || new Set()}
+          />
+          {loadingMessages[activeUser?.conversationId] && (
+            <div className="p-4 text-center text-gray-400">
+              Loading messages...
+            </div>
+          )}
           {permissions?.canSendMessages && !activeUser?.isFlagged && (
-            <ChatBox onSend={handleSend} />
+            <ChatBox 
+              onSend={handleSend} 
+              onTyping={handleTyping}
+              typingUsers={typingUsers[activeUser?.conversationId] || new Set()}
+            />
           )}
           {!permissions?.canSendMessages && (
             <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm p-4 border-t border-white/10">

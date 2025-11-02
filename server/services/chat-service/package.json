@@ -22,6 +22,7 @@
     "cors": "^2.8.5",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
+    "socket.io": "^4.7.5",
     "shared": "file:../../shared"
   },
   "devDependencies": {

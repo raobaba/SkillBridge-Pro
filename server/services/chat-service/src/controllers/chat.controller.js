@@ -33,21 +33,14 @@ const getConversations = async (req, res) => {
         // For now, return participant IDs and let frontend handle user display
         const participants = await ConversationParticipantsModel.getParticipantsByConversationId(conv.id);
         
-        // Get other participant info for direct messages
-        let otherParticipant = null;
+        // Get other participant IDs for direct messages (frontend will fetch user details)
+        let otherParticipantIds = [];
         if (conv.type === "direct" && conv.otherParticipants?.length > 0) {
-          const otherParticipantId = conv.otherParticipants[0].userId;
-          try {
-            // Try to get user info from user service
-            // This is a placeholder - you might need to implement a cross-service call
-            otherParticipant = {
-              id: otherParticipantId,
-              // User details would be fetched from user-service
-            };
-          } catch (e) {
-            console.log("Could not fetch user details:", e.message);
-          }
+          otherParticipantIds = conv.otherParticipants.map(p => p.userId);
         }
+
+        // For group conversations, get all participant IDs
+        const allParticipantIds = participants.map(p => p.userId);
 
         return {
           id: conv.id,
@@ -71,8 +64,9 @@ const getConversations = async (req, res) => {
             isMuted: conv.participant?.isMuted || false,
             lastReadAt: conv.participant?.lastReadAt,
           },
-          otherParticipant,
-          participants,
+          otherParticipantIds, // Array of user IDs for direct messages
+          participantIds: allParticipantIds, // All participant IDs
+          participants, // Full participant objects with settings
           updatedAt: conv.updatedAt,
           createdAt: conv.createdAt,
         };
@@ -140,18 +134,31 @@ const getOrCreateDirectConversation = async (req, res) => {
 // Get messages for a conversation
 const getMessages = async (req, res) => {
   try {
-    const userId = req.user?.userId || req.user?.id;
+    // Normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
     const { conversationId } = req.params;
     const { limit = 50, offset = 0 } = req.query;
 
     if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
     if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
 
-    // Verify user is a participant
-    const participants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
-    const isParticipant = participants.some((p) => p.userId === Number(userId));
+    // Verify user is a participant - use direct lookup for better reliability
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
 
-    if (!isParticipant) {
+    if (!userParticipant) {
+      // Fallback: check all participants for debugging
+      const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
+      console.error(`[Get Messages] User ${userId} not found as participant in conversation ${conversationId}`);
+      console.error(`[Get Messages] Conversation ${conversationId} has ${allParticipants.length} participants:`, 
+        allParticipants.map(p => ({ userId: p.userId, role: p.role })));
       return new ErrorHandler("You are not a participant in this conversation", 403).sendError(res);
     }
 
@@ -192,7 +199,13 @@ const getMessages = async (req, res) => {
 // Send a message
 const sendMessage = async (req, res) => {
   try {
-    const userId = req.user?.userId || req.user?.id;
+    // Normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
     const {
       conversationId,
       content,
@@ -203,15 +216,25 @@ const sendMessage = async (req, res) => {
       replyToId,
     } = req.body;
 
-    if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
+    if (!userId || isNaN(userId) || userId <= 0) {
+      console.error(`[Send Message] Invalid userId: ${req.user?.userId || req.user?.id}`);
+      return new ErrorHandler("User ID is required", 400).sendError(res);
+    }
     if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
     if (!content) return new ErrorHandler("Message content is required", 400).sendError(res);
 
-    // Verify user is a participant
-    const participants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
-    const isParticipant = participants.some((p) => p.userId === Number(userId));
+    // Verify user is a participant - use direct lookup for better reliability
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
 
-    if (!isParticipant) {
+    if (!userParticipant) {
+      // Fallback: check all participants for debugging
+      const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
+      console.error(`[Send Message] User ${userId} not found as participant in conversation ${conversationId}`);
+      console.error(`[Send Message] Conversation ${conversationId} has ${allParticipants.length} participants:`, 
+        allParticipants.map(p => ({ userId: p.userId, role: p.role })));
       return new ErrorHandler("You are not a participant in this conversation", 403).sendError(res);
     }
 
@@ -231,6 +254,18 @@ const sendMessage = async (req, res) => {
       fileSize,
       replyToId: replyToId ? Number(replyToId) : null,
     });
+
+    // Emit Socket.io event for real-time message delivery
+    if (global.io && global.socketHandlers) {
+      await global.socketHandlers.emitToConversation(
+        Number(conversationId),
+        "new_message",
+        {
+          conversationId: Number(conversationId),
+          message,
+        }
+      );
+    }
 
     return res.status(201).json({
       success: true,
@@ -254,12 +289,25 @@ const markAsRead = async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;
     const { conversationId } = req.params;
-    const { messageIds } = req.body;
+    const { messageIds } = req.body || {};
 
     if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
     if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
 
     await MessagesModel.markAsRead(Number(conversationId), Number(userId), messageIds);
+
+    // Emit Socket.io event for real-time read receipts
+    if (global.io && global.socketHandlers) {
+      await global.socketHandlers.emitToConversation(
+        Number(conversationId),
+        "messages_read",
+        {
+          conversationId: Number(conversationId),
+          userId: Number(userId),
+          messageIds: messageIds || [],
+        }
+      );
+    }
 
     return res.status(200).json({
       success: true,
@@ -347,33 +395,120 @@ const editMessage = async (req, res) => {
   }
 };
 
-// Create group conversation
+// Create group conversation (only project-owners can create, and only developers can be added)
 const createGroupConversation = async (req, res) => {
   try {
-    const userId = req.user?.userId || req.user?.id;
+    // Extract and normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
+    
+    const userRole = req.user?.role || req.user?.roles?.[0];
     const { name, projectId, participantIds } = req.body;
 
-    if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
+    if (!userId || isNaN(userId) || userId <= 0) {
+      console.error(`[Create Group] Invalid userId: ${req.user?.userId || req.user?.id}`);
+      return new ErrorHandler("User ID is required", 400).sendError(res);
+    }
+    
     if (!name) return new ErrorHandler("Group name is required", 400).sendError(res);
+
+    // Verify user is project-owner (route middleware should handle this, but double-check)
+    if (userRole !== "project-owner") {
+      return new ErrorHandler("Only project owners can create group conversations", 403).sendError(res);
+    }
+
+    console.log(`[Create Group] Creating group for user ${userId} (type: ${typeof userId}), role: ${userRole}`);
+
+    // Note: participantIds should only contain developer IDs
+    // In a microservices architecture, you would verify each participantId is a developer
+    // by calling the user-service. For now, we'll trust the frontend sends only developer IDs.
 
     const conversation = await ConversationsModel.createConversation({
       type: "group",
       name,
       projectId: projectId ? Number(projectId) : null,
-      createdBy: Number(userId),
+      createdBy: userId, // Already normalized to number
     });
 
-    // Add all participants
+    // Add all participants (should be developers only)
     if (participantIds && Array.isArray(participantIds)) {
       for (const participantId of participantIds) {
-        await ConversationParticipantsModel.addParticipant(conversation.id, Number(participantId));
+        // Add as member (developers are members, creator is admin)
+        await ConversationParticipantsModel.addParticipant(
+          conversation.id, 
+          Number(participantId),
+          "member"
+        );
       }
     }
 
-    // Creator is already added in createConversation, but ensure they're admin
-    await ConversationParticipantsModel.updateParticipant(conversation.id, Number(userId), {
-      role: "admin",
-    });
+    // Creator (project-owner) is already added in createConversation with admin role
+    // Use a retry mechanism to ensure participant is queryable (handles transaction commit timing)
+    let creatorParticipant = null;
+    let retries = 5;
+    let retryDelay = 200; // Start with 200ms
+    
+    while (!creatorParticipant && retries > 0) {
+      creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+        conversation.id,
+        userId
+      );
+      
+      if (!creatorParticipant) {
+        retries--;
+        if (retries > 0) {
+          console.log(`[Create Group] Participant not found, retrying in ${retryDelay}ms... (${retries} retries left)`);
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          retryDelay *= 1.5; // Exponential backoff
+        }
+      }
+    }
+    
+    if (!creatorParticipant) {
+      // If still not found after retries, add them explicitly
+      console.warn(`[Create Group] Creator ${userId} not found after retries, adding explicitly...`);
+      try {
+        const added = await ConversationParticipantsModel.addParticipant(conversation.id, userId, "admin");
+        if (added) {
+          creatorParticipant = added;
+          console.log(`[Create Group] ✅ Explicitly added creator as participant`);
+        }
+      } catch (error) {
+        console.error(`[Create Group] Error adding creator explicitly:`, error);
+        // Check one more time - might have been added by another process
+        creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+          conversation.id,
+          userId
+        );
+      }
+    }
+    
+    // Ensure role is admin
+    if (creatorParticipant && creatorParticipant.role !== "admin") {
+      console.log(`[Create Group] Updating creator role to admin...`);
+      await ConversationParticipantsModel.updateParticipant(conversation.id, userId, {
+        role: "admin",
+      });
+      creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+        conversation.id,
+        userId
+      );
+    }
+    
+    // Final verification
+    if (creatorParticipant && creatorParticipant.role === "admin") {
+      console.log(`[Create Group] ✅ Group ${conversation.id} created by user ${userId} (verified as admin)`);
+    } else {
+      console.error(`[Create Group] ❌ Failed to verify creator ${userId} as admin for group ${conversation.id}`);
+      // Get all participants for debugging
+      const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(conversation.id);
+      console.error(`[Create Group] All participants in group ${conversation.id}:`, 
+        allParticipants.map(p => ({ userId: p.userId, role: p.role })));
+    }
 
     return res.status(201).json({
       success: true,
@@ -495,6 +630,232 @@ const unflagConversation = async (req, res) => {
   }
 };
 
+// Add participants to a group conversation (only project-owners can add, only developers can be added)
+const addParticipantsToGroup = async (req, res) => {
+  try {
+    // Normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
+    
+    const userRole = req.user?.role || req.user?.roles?.[0];
+    const { conversationId } = req.params;
+    const { participantIds } = req.body;
+
+    if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
+    if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
+    if (!participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
+      return new ErrorHandler("Participant IDs array is required", 400).sendError(res);
+    }
+
+    // Verify user is project-owner
+    if (userRole !== "project-owner") {
+      return new ErrorHandler("Only project owners can add participants to groups", 403).sendError(res);
+    }
+
+    // Verify conversation exists and is a group
+    const conversation = await ConversationsModel.getConversationById(Number(conversationId));
+    if (!conversation) {
+      return new ErrorHandler("Conversation not found", 404).sendError(res);
+    }
+    if (conversation.type !== "group") {
+      return new ErrorHandler("Participants can only be added to group conversations", 400).sendError(res);
+    }
+
+    // Verify user is an admin/creator of this group
+    // First, get all participants to debug
+    const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
+    console.log(`[Add Participants] Conversation ${conversationId} has ${allParticipants.length} participants:`, 
+      allParticipants.map(p => ({ userId: p.userId, role: p.role })));
+    console.log(`[Add Participants] Looking for user ${userId} in conversation ${conversationId}`);
+    
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
+    
+    console.log(`[Add Participants] User ${userId} participant check:`, {
+      found: !!userParticipant,
+      role: userParticipant?.role,
+      participantUserId: userParticipant?.userId,
+      requestedUserId: Number(userId),
+      conversationId: Number(conversationId)
+    });
+    
+    if (!userParticipant) {
+      console.error(`[Add Participants] ❌ User ${userId} not found in conversation ${conversationId}`);
+      return new ErrorHandler("You are not a participant in this group", 403).sendError(res);
+    }
+    
+    if (userParticipant.role !== "admin") {
+      console.error(`[Add Participants] ❌ User ${userId} is not admin (role: ${userParticipant.role})`);
+      return new ErrorHandler("Only group admins can add participants", 403).sendError(res);
+    }
+    
+    console.log(`[Add Participants] ✅ User ${userId} verified as admin`);
+
+    // Add all participants (should be developers only)
+    const addedParticipants = [];
+    const errors = [];
+    
+    for (const participantId of participantIds) {
+      try {
+        // Check if participant already exists
+        const existingParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+          Number(conversationId),
+          Number(participantId)
+        );
+        
+        if (existingParticipant && !existingParticipant.leftAt) {
+          errors.push(`User ${participantId} is already a participant`);
+          continue;
+        }
+
+        // Add participant as member (developers are members)
+        const participant = await ConversationParticipantsModel.addParticipant(
+          Number(conversationId),
+          Number(participantId),
+          "member"
+        );
+        addedParticipants.push(participant);
+      } catch (error) {
+        console.error(`Error adding participant ${participantId}:`, error);
+        errors.push(`Failed to add user ${participantId}: ${error.message}`);
+      }
+    }
+
+    // Emit Socket.io event to notify new participants
+    if (global.io && global.socketHandlers && addedParticipants.length > 0) {
+      await global.socketHandlers.emitToConversation(
+        Number(conversationId),
+        "participants_added",
+        {
+          conversationId: Number(conversationId),
+          participantIds: addedParticipants.map(p => p.userId),
+          addedBy: Number(userId),
+        }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: `Added ${addedParticipants.length} participant(s) to group`,
+      data: {
+        added: addedParticipants,
+        errors: errors.length > 0 ? errors : undefined,
+      },
+    });
+  } catch (error) {
+    console.error("Add Participants Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to add participants",
+      error: error.message,
+    });
+  }
+};
+
+// Remove participant from group (only project-owners can remove)
+const removeParticipantFromGroup = async (req, res) => {
+  try {
+    // Normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
+    
+    const userRole = req.user?.role || req.user?.roles?.[0];
+    const { conversationId, participantId } = req.params;
+
+    if (!userId || isNaN(userId) || userId <= 0) {
+      console.error(`[Remove Participant] Invalid userId: ${req.user?.userId || req.user?.id}`);
+      return new ErrorHandler("User ID is required", 400).sendError(res);
+    }
+    if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
+    if (!participantId) return new ErrorHandler("Participant ID is required", 400).sendError(res);
+
+    // Verify user is project-owner
+    if (userRole !== "project-owner") {
+      return new ErrorHandler("Only project owners can remove participants from groups", 403).sendError(res);
+    }
+
+    // Verify conversation exists and is a group
+    const conversation = await ConversationsModel.getConversationById(Number(conversationId));
+    if (!conversation) {
+      return new ErrorHandler("Conversation not found", 404).sendError(res);
+    }
+    if (conversation.type !== "group") {
+      return new ErrorHandler("Participants can only be removed from group conversations", 400).sendError(res);
+    }
+
+    // Verify user is an admin/creator of this group
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
+    
+    if (!userParticipant) {
+      const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
+      console.error(`[Remove Participant] User ${userId} not found in conversation ${conversationId}`);
+      console.error(`[Remove Participant] Conversation ${conversationId} has ${allParticipants.length} participants:`, 
+        allParticipants.map(p => ({ userId: p.userId, role: p.role })));
+      return new ErrorHandler("You are not a participant in this group", 403).sendError(res);
+    }
+    
+    if (userParticipant.role !== "admin") {
+      console.error(`[Remove Participant] User ${userId} is not admin (role: ${userParticipant.role})`);
+      return new ErrorHandler("Only group admins can remove participants", 403).sendError(res);
+    }
+    
+    console.log(`[Remove Participant] ✅ User ${userId} verified as admin`);
+
+    // Cannot remove yourself (admin)
+    if (Number(participantId) === Number(userId)) {
+      return new ErrorHandler("Cannot remove yourself from the group", 400).sendError(res);
+    }
+
+    // Remove participant
+    await ConversationParticipantsModel.removeParticipant(
+      Number(conversationId),
+      Number(participantId)
+    );
+
+    // Emit Socket.io event
+    if (global.io && global.socketHandlers) {
+      await global.socketHandlers.emitToConversation(
+        Number(conversationId),
+        "participant_removed",
+        {
+          conversationId: Number(conversationId),
+          participantId: Number(participantId),
+          removedBy: Number(userId),
+        }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Participant removed from group successfully",
+    });
+  } catch (error) {
+    console.error("Remove Participant Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to remove participant",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getConversations,
   getOrCreateDirectConversation,
@@ -504,6 +865,8 @@ module.exports = {
   deleteMessage,
   editMessage,
   createGroupConversation,
+  addParticipantsToGroup,
+  removeParticipantFromGroup,
   updateParticipantSettings,
   flagConversation,
   unflagConversation,
