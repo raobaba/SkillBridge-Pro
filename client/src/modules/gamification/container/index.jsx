@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Navbar from "../../../components/header";
-import { Footer } from "../../../components";
+import { Footer, CircularLoader } from "../../../components";
 
 // Role-specific components
 import DeveloperDashboard from "../components/DeveloperDashboard";
@@ -10,11 +10,32 @@ import AdminDashboard from "../components/AdminDashboard";
 
 const Gamification = () => {
   const { user } = useSelector((state) => state.user);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+
+  // Get all loading states from gamification slice
+  const {
+    loading,
+    statsLoading,
+    reviewsLoading,
+    endorsementsLoading,
+    leaderboardLoading,
+    achievementsLoading,
+  } = useSelector((state) => state.gamification || {});
+
+  // Combined loading flag - show CircularLoader for any in-flight request
+  const isBusy = Boolean(
+    loading ||
+    statsLoading ||
+    reviewsLoading ||
+    endorsementsLoading ||
+    leaderboardLoading ||
+    achievementsLoading ||
+    initialLoading
+  );
 
   useEffect(() => {
-    // Simulate loading user data
-    const timer = setTimeout(() => setLoading(false), 1000);
+    // Simulate initial loading user data
+    const timer = setTimeout(() => setInitialLoading(false), 500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -49,22 +70,16 @@ const Gamification = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading gamification dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <Navbar />
       {renderRoleBasedContent()}
       <Footer />
+      {isBusy && (
+        <div className="fixed inset-0 z-[9999]">
+          <CircularLoader />
+        </div>
+      )}
     </>
   );
 };

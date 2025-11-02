@@ -1,66 +1,89 @@
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { 
   Zap, Trophy, Star, Target, Flame, Shield, Award, Crown, 
   TrendingUp, Calendar, Clock, CheckCircle, Users, Eye,
   MessageSquare, ThumbsUp, Award as AwardIcon, BarChart3
 } from "lucide-react";
+import {
+  getDeveloperStats,
+  getDeveloperReviews,
+  getDeveloperEndorsements,
+  getLeaderboard,
+  getDeveloperAchievements,
+} from "../slice/gamificationSlice";
+
+// Icon mapping for achievements
+const iconMap = {
+  Star,
+  Flame,
+  Target,
+  Zap,
+  Award,
+  ThumbsUp,
+};
 
 const DeveloperDashboard = ({ user }) => {
+  const dispatch = useDispatch();
   const [selectedTab, setSelectedTab] = useState("overview");
-  const [userStats, setUserStats] = useState({
-    xp: 2800,
-    level: 12,
-    totalXP: 15600,
-    weeklyXP: 450,
-    dailyXP: 85,
-    streak: 7,
-    reputation: 85,
-    badges: 8,
-    achievements: 15,
-    endorsements: 12,
-    completedProjects: 8,
-    averageRating: 4.6,
-    totalRatings: 24
-  });
 
-  const [recentReviews] = useState([
-    {
-      id: 1,
-      projectName: "E-commerce Platform",
-      rating: 5,
-      review: "Excellent work! Clean code and great communication.",
-      reviewer: "Sarah Wilson",
-      date: "2024-01-15",
-      categories: { technical: 5, communication: 5, timeliness: 4, quality: 5, collaboration: 5 }
-    },
-    {
-      id: 2,
-      projectName: "Mobile App Development",
-      rating: 4,
-      review: "Good technical skills, delivered on time.",
-      reviewer: "Mike Johnson",
-      date: "2024-01-10",
-      categories: { technical: 4, communication: 4, timeliness: 5, quality: 4, collaboration: 4 }
-    }
-  ]);
+  // Redux state
+  const gamificationState = useSelector((state) => state.gamification) || {};
+  const { 
+    stats: userStats = null, 
+    reviews: recentReviews = [], 
+    endorsements: recentEndorsements = [],
+    leaderboard = [],
+    achievements: achievementsData = [],
+    statsLoading,
+    reviewsLoading,
+    endorsementsLoading,
+    leaderboardLoading,
+    achievementsLoading,
+  } = gamificationState;
+  
+  // Ensure all data is always an array to prevent map errors
+  const safeAchievementsData = Array.isArray(achievementsData) ? achievementsData : [];
+  const safeRecentReviews = Array.isArray(recentReviews) ? recentReviews : [];
+  const safeRecentEndorsements = Array.isArray(recentEndorsements) ? recentEndorsements : [];
+  const safeLeaderboard = Array.isArray(leaderboard) ? leaderboard : [];
 
-  const [recentEndorsements] = useState([
-    {
-      id: 1,
-      skill: "React.js",
-      message: "Excellent React developer with deep understanding of hooks and state management.",
-      endorser: "Alice Johnson",
-      date: "2024-01-12"
-    },
-    {
-      id: 2,
-      skill: "Node.js",
-      message: "Great backend developer, very reliable and knowledgeable.",
-      endorser: "David Chen",
-      date: "2024-01-08"
+  // Default stats if not loaded
+  const defaultStats = {
+    xp: 0,
+    level: 1,
+    totalXP: 0,
+    weeklyXP: 0,
+    dailyXP: 0,
+    streak: 0,
+    reputation: 0,
+    badges: 0,
+    achievements: 0,
+    endorsements: 0,
+    completedProjects: 0,
+    averageRating: 0,
+    totalRatings: 0,
+  };
+
+  const stats = userStats || defaultStats;
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (user?.id || user?.userId) {
+      dispatch(getDeveloperStats());
+      dispatch(getDeveloperReviews(10));
+      dispatch(getDeveloperEndorsements(10));
+      dispatch(getDeveloperAchievements());
     }
-  ]);
+  }, [dispatch, user?.id, user?.userId]);
+
+  // Fetch leaderboard when leaderboard tab is selected
+  useEffect(() => {
+    if (selectedTab === "leaderboard") {
+      dispatch(getLeaderboard(10));
+    }
+  }, [selectedTab, dispatch]);
 
   const tabs = [
     { id: "overview", label: "Overview", icon: BarChart3 },
@@ -86,20 +109,22 @@ const DeveloperDashboard = ({ user }) => {
     return "Beginner";
   };
 
-  const progress = Math.min((userStats.xp / (userStats.level * 1000)) * 100, 100);
-  const xpToNext = (userStats.level * 1000) - userStats.xp;
+  const progress = stats.xp && stats.level 
+    ? Math.min((stats.xp / (stats.level * 1000)) * 100, 100) 
+    : 0;
+  const xpToNext = stats.level && stats.xp 
+    ? (stats.level * 1000) - stats.xp 
+    : 0;
 
-  const achievements = [
-    { id: 1, name: "First Project", description: "Complete your first project", icon: Star, unlocked: true, xp: 100 },
-    { id: 2, name: "Streak Master", description: "Maintain a 7-day streak", icon: Flame, unlocked: userStats.streak >= 7, xp: 200 },
-    { id: 3, name: "Level Up", description: "Reach level 10", icon: Target, unlocked: userStats.level >= 10, xp: 500 },
-    { id: 4, name: "XP Collector", description: "Earn 10,000 total XP", icon: Zap, unlocked: userStats.totalXP >= 10000, xp: 1000 },
-    { id: 5, name: "Quality Expert", description: "Maintain 4.5+ average rating", icon: Award, unlocked: userStats.averageRating >= 4.5, xp: 800 },
-    { id: 6, name: "Endorsement Magnet", description: "Receive 10+ endorsements", icon: ThumbsUp, unlocked: userStats.endorsements >= 10, xp: 600 }
-  ];
+  // Map achievements from API to include icon components
+  const achievements = safeAchievementsData.map((achievement) => ({
+    ...achievement,
+    icon: iconMap[achievement.icon] || Star,
+  }));
 
-  const renderOverview = () => (
-    <div className="space-y-6">
+  const renderOverview = () => {
+    return (
+      <div className="space-y-6">
       {/* XP Progress */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -109,19 +134,19 @@ const DeveloperDashboard = ({ user }) => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">XP Progress</h3>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">{userStats.xp.toLocaleString()} XP</div>
-            <div className="text-sm text-gray-300">Level {userStats.level}</div>
+            <div className="text-2xl font-bold text-white">{(stats.xp || 0).toLocaleString()} XP</div>
+            <div className="text-sm text-gray-300">Level {stats.level || 1}</div>
           </div>
         </div>
         
         <div className="mb-4">
           <div className="flex justify-between text-sm text-gray-300 mb-2">
-            <span>{getLevelTitle(userStats.level)}</span>
-            <span>{xpToNext.toLocaleString()} XP to next level</span>
+            <span>{getLevelTitle(stats.level || 1)}</span>
+            <span>{(xpToNext || 0).toLocaleString()} XP to next level</span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-3">
             <div 
-              className={`h-3 rounded-full bg-gradient-to-r ${getLevelColor(userStats.level)}`}
+              className={`h-3 rounded-full bg-gradient-to-r ${getLevelColor(stats.level || 1)}`}
               style={{ width: `${progress}%` }}
             ></div>
           </div>
@@ -129,15 +154,15 @@ const DeveloperDashboard = ({ user }) => {
 
         <div className="grid grid-cols-3 gap-4 text-center">
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-lg font-bold text-white">{userStats.dailyXP}</div>
+            <div className="text-lg font-bold text-white">{stats.dailyXP || 0}</div>
             <div className="text-xs text-gray-300">Daily XP</div>
           </div>
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-lg font-bold text-white">{userStats.weeklyXP}</div>
+            <div className="text-lg font-bold text-white">{stats.weeklyXP || 0}</div>
             <div className="text-xs text-gray-300">Weekly XP</div>
           </div>
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-lg font-bold text-white">{userStats.streak}</div>
+            <div className="text-lg font-bold text-white">{stats.streak || 0}</div>
             <div className="text-xs text-gray-300">Day Streak</div>
           </div>
         </div>
@@ -151,7 +176,7 @@ const DeveloperDashboard = ({ user }) => {
           transition={{ delay: 0.1 }}
           className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-center"
         >
-          <div className="text-2xl font-bold text-white">{userStats.reputation}</div>
+          <div className="text-2xl font-bold text-white">{stats.reputation || 0}</div>
           <div className="text-sm text-gray-300">Reputation</div>
         </motion.div>
         
@@ -161,7 +186,7 @@ const DeveloperDashboard = ({ user }) => {
           transition={{ delay: 0.2 }}
           className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-center"
         >
-          <div className="text-2xl font-bold text-white">{userStats.badges}</div>
+          <div className="text-2xl font-bold text-white">{stats.badges || 0}</div>
           <div className="text-sm text-gray-300">Badges</div>
         </motion.div>
         
@@ -171,7 +196,7 @@ const DeveloperDashboard = ({ user }) => {
           transition={{ delay: 0.3 }}
           className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-center"
         >
-          <div className="text-2xl font-bold text-white">{userStats.completedProjects}</div>
+          <div className="text-2xl font-bold text-white">{stats.completedProjects || 0}</div>
           <div className="text-sm text-gray-300">Projects</div>
         </motion.div>
         
@@ -181,7 +206,7 @@ const DeveloperDashboard = ({ user }) => {
           transition={{ delay: 0.4 }}
           className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 text-center"
         >
-          <div className="text-2xl font-bold text-white">{userStats.averageRating}</div>
+          <div className="text-2xl font-bold text-white">{stats.averageRating || 0}</div>
           <div className="text-sm text-gray-300">Avg Rating</div>
         </motion.div>
       </div>
@@ -209,11 +234,13 @@ const DeveloperDashboard = ({ user }) => {
           </div>
         </div>
       </motion.div>
-    </div>
-  );
+      </div>
+    );
+  };
 
-  const renderAchievements = () => (
-    <div className="space-y-6">
+  const renderAchievements = () => {
+    return (
+      <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {achievements.map((achievement, index) => (
           <motion.div
@@ -238,13 +265,25 @@ const DeveloperDashboard = ({ user }) => {
             </div>
           </motion.div>
         ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderReviews = () => (
-    <div className="space-y-6">
-      {recentReviews.map((review, index) => (
+  const renderReviews = () => {
+    if (safeRecentReviews.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <MessageSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-300 text-lg">No reviews yet</p>
+          <p className="text-gray-500 text-sm mt-2">Complete projects to receive reviews</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {safeRecentReviews.map((review, index) => (
         <motion.div
           key={review.id}
           initial={{ opacity: 0, y: 20 }}
@@ -278,15 +317,40 @@ const DeveloperDashboard = ({ user }) => {
             ))}
           </div>
           
-          <div className="text-xs text-gray-400 mt-3">{review.date}</div>
+          <div className="text-xs text-gray-400 mt-3">
+            {review.date ? new Date(review.date).toLocaleDateString() : 'Recently'}
+          </div>
+          {/* Categories rating - if available from API */}
+          {review.categories && (
+            <div className="grid grid-cols-5 gap-2 text-xs mt-3">
+              {Object.entries(review.categories).map(([category, rating]) => (
+                <div key={category} className="text-center">
+                  <div className="text-gray-400 capitalize">{category}</div>
+                  <div className="font-bold text-white">{rating}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       ))}
-    </div>
-  );
+      </div>
+    );
+  };
 
-  const renderEndorsements = () => (
-    <div className="space-y-6">
-      {recentEndorsements.map((endorsement, index) => (
+  const renderEndorsements = () => {
+    if (safeRecentEndorsements.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <ThumbsUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-300 text-lg">No endorsements yet</p>
+          <p className="text-gray-500 text-sm mt-2">Build your reputation to receive endorsements</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {safeRecentEndorsements.map((endorsement, index) => (
         <motion.div
           key={endorsement.id}
           initial={{ opacity: 0, y: 20 }}
@@ -304,26 +368,41 @@ const DeveloperDashboard = ({ user }) => {
           
           <p className="text-gray-300 mb-4">{endorsement.message}</p>
           
-          <div className="text-xs text-gray-400">{endorsement.date}</div>
+          <div className="text-xs text-gray-400">
+            {endorsement.date ? new Date(endorsement.date).toLocaleDateString() : 'Recently'}
+          </div>
         </motion.div>
       ))}
-    </div>
-  );
+      </div>
+    );
+  };
 
-  const renderLeaderboard = () => (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-      >
-        <h3 className="text-xl font-bold text-white mb-4">Developer Leaderboard</h3>
-        <div className="space-y-3">
-          {[
-            { rank: 1, name: "Alice Johnson", xp: 4200, level: 15, isCurrentUser: false },
-            { rank: 2, name: user?.name || "You", xp: userStats.xp, level: userStats.level, isCurrentUser: true },
-            { rank: 3, name: "John Smith", xp: 3500, level: 13, isCurrentUser: false }
-          ].map((developer, index) => (
+  const renderLeaderboard = () => {
+    const currentUserId = user?.id || user?.userId;
+    const leaderboardData = safeLeaderboard.map((developer, index) => ({
+      rank: index + 1,
+      name: developer.name,
+      xp: developer.xp || 0,
+      level: developer.level || 1,
+      isCurrentUser: developer.id === currentUserId,
+    }));
+
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+        >
+          <h3 className="text-xl font-bold text-white mb-4">Developer Leaderboard</h3>
+          <div className="space-y-3">
+            {leaderboardData.length === 0 ? (
+              <div className="text-center py-8">
+                <Crown className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300">No leaderboard data available</p>
+              </div>
+            ) : (
+              leaderboardData.map((developer, index) => (
             <div
               key={developer.rank}
               className={`flex items-center justify-between p-3 rounded-lg ${
@@ -342,11 +421,13 @@ const DeveloperDashboard = ({ user }) => {
                 <div className="text-sm text-gray-300">Reputation</div>
               </div>
             </div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
+              ))
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
   const renderTabContent = () => {
     switch (selectedTab) {

@@ -690,6 +690,198 @@ class UserModel {
     
     return appliedDevelopers.rows || [];
   }
+
+  // ============================================
+  // DEVELOPER DASHBOARD / GAMIFICATION
+  // ============================================
+
+  /**
+   * Get comprehensive developer stats for dashboard
+   * Includes: XP, level, reputation, streak, badges, achievements, endorsements, completed projects, ratings
+   */
+  static async getDeveloperStats(userId) {
+    const { sql } = require("drizzle-orm");
+    
+    // Get user basic info
+    const user = await this.getUserById(userId);
+    if (!user) {
+      return null;
+    }
+
+    // Get completed projects count (projects where user was accepted)
+    const completedProjectsResult = await db.execute(sql`
+      SELECT COUNT(DISTINCT pa.project_id) as count
+      FROM project_applicants pa
+      WHERE pa.user_id = ${userId} AND pa.status = 'accepted'
+    `);
+    const completedProjects = Number(completedProjectsResult.rows[0]?.count || 0);
+
+    // Get average rating and total ratings from project reviews
+    // Note: This assumes reviews are about projects, not developers directly
+    // If you have developer reviews, adjust this query
+    const ratingsResult = await db.execute(sql`
+      SELECT 
+        COALESCE(AVG(pr.rating), 0) as average_rating,
+        COUNT(pr.id) as total_ratings
+      FROM project_reviews pr
+      INNER JOIN project_applicants pa ON pr.project_id = pa.project_id
+      WHERE pa.user_id = ${userId} AND pa.status = 'accepted'
+    `);
+    const averageRating = Number(ratingsResult.rows[0]?.average_rating || 0);
+    const totalRatings = Number(ratingsResult.rows[0]?.total_ratings || 0);
+
+    // Calculate weekly XP (XP earned in last 7 days)
+    // For now, we'll use a simple calculation - you might want to track XP history
+    const weeklyXP = 0; // TODO: Implement XP history tracking
+
+    // Calculate daily XP (XP earned today)
+    const dailyXP = 0; // TODO: Implement XP history tracking
+
+    // Calculate streak (consecutive days with activity)
+    // For now, we'll use a simple calculation based on recent activity
+    const streak = 0; // TODO: Implement activity streak tracking
+
+    // Get badges count
+    const badgesCount = Array.isArray(user.badges) ? user.badges.length : 0;
+
+    // Get achievements count (based on badges)
+    const achievementsCount = badgesCount;
+
+    // Get endorsements count
+    // Assuming endorsements are stored somewhere - for now using a placeholder
+    const endorsementsCount = 0; // TODO: Implement endorsements table/query
+
+    // Calculate reputation (based on XP, ratings, completed projects)
+    const reputation = Math.round(
+      (user.xp / 100) * 0.4 +
+      (averageRating * 10) * 0.4 +
+      (completedProjects * 5) * 0.2
+    );
+
+    // Calculate total XP (cumulative XP earned)
+    const totalXP = user.xp || 0;
+
+    return {
+      xp: user.xp || 0,
+      level: user.level || 1,
+      totalXP,
+      weeklyXP,
+      dailyXP,
+      streak,
+      reputation: Math.max(0, Math.min(100, reputation)), // Clamp between 0-100
+      badges: badgesCount,
+      achievements: achievementsCount,
+      endorsements: endorsementsCount,
+      completedProjects,
+      averageRating: Number(averageRating.toFixed(1)),
+      totalRatings,
+    };
+  }
+
+  /**
+   * Get reviews received by a developer
+   * Currently returns reviews for projects where developer was accepted
+   * Note: This requires access to project-service tables, which may need to be accessed via a different approach
+   */
+  static async getDeveloperReviews(userId, limit = 10) {
+    // TODO: This requires cross-service database access
+    // For now, return empty array - this should be implemented via an API call to project-service
+    // or via a shared database connection
+    return [];
+  }
+
+  /**
+   * Get endorsements for a developer
+   * TODO: Create endorsements table if it doesn't exist
+   */
+  static async getDeveloperEndorsements(userId, limit = 10) {
+    // TODO: Implement endorsements table and query
+    // For now, return empty array
+    return [];
+  }
+
+  /**
+   * Get leaderboard (top developers by XP)
+   */
+  static async getLeaderboard(limit = 10) {
+    const developers = await db
+      .select({
+        id: userTable.id,
+        name: userTable.name,
+        email: userTable.email,
+        avatarUrl: userTable.avatarUrl,
+        xp: userTable.xp,
+        level: userTable.level,
+      })
+      .from(userTable)
+      .where(and(eq(userTable.isDeleted, false), eq(userTable.role, 'developer')))
+      .orderBy(desc(userTable.xp))
+      .limit(limit);
+    
+    return developers;
+  }
+
+  /**
+   * Get developer achievements
+   * Based on stats, calculates which achievements are unlocked
+   */
+  static async getDeveloperAchievements(userId) {
+    const stats = await this.getDeveloperStats(userId);
+    if (!stats) return [];
+
+    const achievements = [
+      {
+        id: 1,
+        name: "First Project",
+        description: "Complete your first project",
+        icon: "Star",
+        unlocked: stats.completedProjects >= 1,
+        xp: 100,
+      },
+      {
+        id: 2,
+        name: "Streak Master",
+        description: "Maintain a 7-day streak",
+        icon: "Flame",
+        unlocked: stats.streak >= 7,
+        xp: 200,
+      },
+      {
+        id: 3,
+        name: "Level Up",
+        description: "Reach level 10",
+        icon: "Target",
+        unlocked: stats.level >= 10,
+        xp: 500,
+      },
+      {
+        id: 4,
+        name: "XP Collector",
+        description: "Earn 10,000 total XP",
+        icon: "Zap",
+        unlocked: stats.totalXP >= 10000,
+        xp: 1000,
+      },
+      {
+        id: 5,
+        name: "Quality Expert",
+        description: "Maintain 4.5+ average rating",
+        icon: "Award",
+        unlocked: stats.averageRating >= 4.5,
+        xp: 800,
+      },
+      {
+        id: 6,
+        name: "Endorsement Magnet",
+        description: "Receive 10+ endorsements",
+        icon: "ThumbsUp",
+        unlocked: stats.endorsements >= 10,
+        xp: 600,
+      },
+    ];
+
+    return achievements;
+  }
 }
 
 module.exports = {

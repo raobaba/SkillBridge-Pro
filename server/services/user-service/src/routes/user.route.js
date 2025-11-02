@@ -53,4 +53,11 @@ userRouter.get("/:userId/roles", authenticate, requireRole(['admin']), userContr
 userRouter.get("/:userId/with-roles", authenticate, requireRole(['admin']), userController.getUserWithRoles);
 userRouter.get("/roles/stats", authenticate, requireRole(['admin']), userController.getRoleStats);
 
+// Developer Dashboard / Gamification
+userRouter.get("/developer/stats", authenticate, userController.getDeveloperStats);
+userRouter.get("/developer/reviews", authenticate, userController.getDeveloperReviews);
+userRouter.get("/developer/endorsements", authenticate, userController.getDeveloperEndorsements);
+userRouter.get("/developer/achievements", authenticate, userController.getDeveloperAchievements);
+userRouter.get("/leaderboard", authenticate, userController.getLeaderboard);
+
 module.exports = userRouter;

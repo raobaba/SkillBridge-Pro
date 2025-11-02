@@ -1292,6 +1292,165 @@ const getRoleStats = async (req, res) => {
   }
 };
 
+// ============================================
+// DEVELOPER DASHBOARD / GAMIFICATION
+// ============================================
+
+// Get developer stats
+const getDeveloperStats = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required",
+      });
+    }
+
+    const stats = await UserModel.getDeveloperStats(userId);
+    if (!stats) {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Developer stats retrieved successfully",
+      data: stats,
+    });
+  } catch (error) {
+    console.error("Get developer stats error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developer stats",
+      error: error.message,
+    });
+  }
+};
+
+// Get developer reviews
+const getDeveloperReviews = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required",
+      });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    const reviews = await UserModel.getDeveloperReviews(userId, limit);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Developer reviews retrieved successfully",
+      data: reviews,
+    });
+  } catch (error) {
+    console.error("Get developer reviews error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developer reviews",
+      error: error.message,
+    });
+  }
+};
+
+// Get developer endorsements
+const getDeveloperEndorsements = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required",
+      });
+    }
+
+    const limit = parseInt(req.query.limit) || 10;
+    const endorsements = await UserModel.getDeveloperEndorsements(userId, limit);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Developer endorsements retrieved successfully",
+      data: endorsements,
+    });
+  } catch (error) {
+    console.error("Get developer endorsements error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developer endorsements",
+      error: error.message,
+    });
+  }
+};
+
+// Get leaderboard
+const getLeaderboard = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const leaderboard = await UserModel.getLeaderboard(limit);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Leaderboard retrieved successfully",
+      data: leaderboard,
+    });
+  } catch (error) {
+    console.error("Get leaderboard error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch leaderboard",
+      error: error.message,
+    });
+  }
+};
+
+// Get developer achievements
+const getDeveloperAchievements = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        status: 401,
+        message: "Authentication required",
+      });
+    }
+
+    const achievements = await UserModel.getDeveloperAchievements(userId);
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Developer achievements retrieved successfully",
+      data: achievements,
+    });
+  } catch (error) {
+    console.error("Get developer achievements error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developer achievements",
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   registerUser,
@@ -1326,4 +1485,10 @@ module.exports = {
   getUserRoles,
   getUserWithRoles,
   getRoleStats,
+  // Developer Dashboard / Gamification
+  getDeveloperStats,
+  getDeveloperReviews,
+  getDeveloperEndorsements,
+  getLeaderboard,
+  getDeveloperAchievements,
 };

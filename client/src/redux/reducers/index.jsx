@@ -4,12 +4,14 @@ import userReducer from "../../modules/authentication/slice/userSlice";
 import projectReducer from "../../modules/project/slice/projectSlice";
 import profileReducer from "../../modules/profile/slice/profileSlice";
 import settingsReducer from "../../modules/settings/slice/settingsSlice";
+import gamificationReducer from "../../modules/gamification/slice/gamificationSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
   project: projectReducer,
   profile: profileReducer,
   settings: settingsReducer,
+  gamification: gamificationReducer,
 });
 
 export const rootReducer = (state, action) => {
