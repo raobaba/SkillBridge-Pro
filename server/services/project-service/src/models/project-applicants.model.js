@@ -217,10 +217,10 @@ class ProjectApplicantsModel {
   }
 
   /**
-   * Get only project IDs and user ID from project_applicants table for a specific user
-   * Lightweight query - returns only IDs, no project details
+   * Get project IDs with status from project_applicants table for a specific user
+   * Lightweight query - returns project IDs with their application status
    * @param {number} userId - The user ID
-   * @returns {Promise<{userId: number, projectIds: number[]}>} - Object with userId and array of project IDs
+   * @returns {Promise<{userId: number, projectIds: Array<{projectId: number, status: string}>}>} - Object with userId and array of project IDs with status
    */
   static async getAppliedProjectIdsByUser(userId) {
     try {
@@ -237,10 +237,12 @@ class ProjectApplicantsModel {
       console.log('getAppliedProjectIdsByUser - Querying project_applicants table for userId:', validatedUserId);
       
       // Query project_applicants table with explicit WHERE clause filtering by user_id
+      // Now also selecting status along with projectId
       const applications = await db
         .select({
           projectId: projectApplicantsTable.projectId,
           userId: projectApplicantsTable.userId,
+          status: projectApplicantsTable.status, // ✅ Added status
         })
         .from(projectApplicantsTable)
         .where(eq(projectApplicantsTable.userId, validatedUserId));
@@ -248,15 +250,21 @@ class ProjectApplicantsModel {
       console.log('getAppliedProjectIdsByUser - Raw results count:', applications?.length || 0);
       console.log('getAppliedProjectIdsByUser - Raw results (first 5):', applications?.slice(0, 5));
 
-      const projectIds = applications
-        .map(app => app.projectId)
-        .filter(id => typeof id === 'number' && !isNaN(id));
+      // Map to include both projectId and status
+      // Return array of objects with projectId and status for ALL applications
+      // Always include status regardless of whether it's "applied" or changed
+      const projectIdsWithStatus = applications
+        .map(app => ({
+          projectId: app.projectId,
+          status: app.status || 'applied', // ✅ Always include status for all applications
+        }))
+        .filter(item => typeof item.projectId === 'number' && !isNaN(item.projectId));
 
-      console.log('getAppliedProjectIdsByUser - Filtered projectIds:', projectIds);
+      console.log('getAppliedProjectIdsByUser - Filtered projectIds with status (all applications):', projectIdsWithStatus);
 
       return {
         userId: validatedUserId,
-        projectIds: projectIds,
+        projectIds: projectIdsWithStatus, // ✅ Returns array of {projectId, status} objects for all applications
       };
     } catch (error) {
       console.error('Error in getAppliedProjectIdsByUser:', error);

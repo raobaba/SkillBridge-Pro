@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
@@ -110,8 +110,12 @@ const DeveloperProjects = ({
   useEffect(() => {
     if (isDeveloper) {
       dispatch(getAppliedProjects()).then((result) => {
-        // result.payload contains array of project IDs from API: [35, 33, 32]
-        console.log('getAppliedProjects response - Project IDs from project_applicants table:', result.payload);
+        // result.payload contains {projectIds: [35, 33, 32], statusMap: {35: 'applied', 33: 'shortlisted'}, userId: 1}
+        console.log('getAppliedProjects response - Project IDs with status from project_applicants table:', {
+          projectIds: result.payload?.projectIds || result.payload || [],
+          statusMap: result.payload?.statusMap || {},
+          total: Array.isArray(result.payload?.projectIds) ? result.payload.projectIds.length : (Array.isArray(result.payload) ? result.payload.length : 0)
+        });
       });
     }
   }, [dispatch, isDeveloper]);
@@ -233,52 +237,85 @@ const DeveloperProjects = ({
   
   const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount) ?? finalAppliedProjects.length;
   const myApplications = useSelector((state) => state.project?.myApplications) || [];
+  const appliedProjectsStatusMap = useSelector((state) => state.project?.appliedProjectsStatusMap) || {}; // ✅ Status from IDs API
 
   // Create proper application status mapping from myApplications data
+  // This data comes from /api/v1/projects/applications/my which queries project_applicants table
   const applicationStatusMap = useMemo(() => {
     const statusMap = {};
     (myApplications || []).forEach(app => {
       if (app.projectId) {
-        statusMap[app.projectId] = {
-          status: app.status || 'applied',
+        // Store with both numeric and original key for compatibility
+        const numericId = Number(app.projectId);
+        const statusData = {
+          status: app.status || 'applied', // Status from project_applicants.status column in database
           appliedAt: app.appliedAt || app.createdAt,
           notes: app.notes || '',
-          id: app.id
+          id: app.id,
+          // Include all application data for debugging
+          fullData: app
         };
+        // Store with numeric key (primary)
+        statusMap[numericId] = statusData;
+        // Also store with original key if different (for backward compatibility)
+        if (numericId !== app.projectId) {
+          statusMap[app.projectId] = statusData;
+        }
       }
     });
+    
+    // Merge status from IDs API (appliedProjectsStatusMap) for projects not in myApplications
+    // This ensures we have status for all applied projects even if myApplications hasn't loaded yet
+    Object.keys(appliedProjectsStatusMap).forEach(projectIdKey => {
+      const numericId = Number(projectIdKey);
+      const statusFromIdsApi = appliedProjectsStatusMap[projectIdKey];
+      
+      // Only add if not already in statusMap (myApplications takes priority)
+      if (!statusMap[numericId] && !statusMap[projectIdKey] && statusFromIdsApi) {
+        statusMap[numericId] = {
+          status: statusFromIdsApi,
+          appliedAt: null,
+          notes: '',
+          id: null,
+          source: 'ids-api' // Mark that this came from IDs API
+        };
+        if (numericId !== projectIdKey) {
+          statusMap[projectIdKey] = statusMap[numericId];
+        }
+      }
+    });
+    
+    // Debug log to verify status data is being mapped correctly
+    if (Object.keys(statusMap).length > 0) {
+      console.log('applicationStatusMap created from myApplications + IDs API (database):', {
+        totalApplications: Object.keys(statusMap).length,
+        fromMyApplications: myApplications.length,
+        fromIdsApi: Object.keys(appliedProjectsStatusMap).length,
+        sampleStatus: Object.values(statusMap)[0]?.status,
+        statuses: Object.values(statusMap).map(s => ({ projectId: s.fullData?.projectId || 'ids-api', status: s.status }))
+      });
+    }
+    
     return statusMap;
-  }, [myApplications]);
-
-  const isAppliedTo = useCallback((projectId) => {
-    return applicationStatusByProjectId[projectId] || applicationStatusMap[projectId] || false;
-  }, [applicationStatusByProjectId, applicationStatusMap]);
-
-  // Console log all variables responsible for applied status
-  useEffect(() => {
-    console.log("=== APPLIED STATUS DEBUG ===");
-    console.log("Current User ID:", user?.id || user?.userId || "NO USER ID");
-    console.log("Current User Email:", user?.email || "NO EMAIL");
-    console.log("1. finalAppliedProjects - Source: Redux state.appliedProjects (populated from project_applicants table):", finalAppliedProjects);
-    console.log("2. myApplications (Redux) - Source: API /api/v1/projects/applications/my (queries project_applicants WHERE user_id = current_user):", myApplications);
-    console.log("3. applicationStatusMap (derived from myApplications):", applicationStatusMap);
-    console.log("4. applicationStatusByProjectId (optimistic local state):", applicationStatusByProjectId);
-    console.log("5. myApplicationsCount:", myApplicationsCount);
-    console.log("=== DATA SOURCE: project_applicants table (database) filtered by user_id ===");
-    console.log("===========================");
-  }, [finalAppliedProjects, myApplications, applicationStatusMap, applicationStatusByProjectId, myApplicationsCount, user]);
+  }, [myApplications, appliedProjectsStatusMap]);
 
   // Get application status for a project
+  // PRIORITY: Database status (from project_applicants table) > Optimistic local state
   const getApplicationStatus = useCallback((projectId) => {
-    // Check optimistic updates first
-    if (applicationStatusByProjectId[projectId]) {
-      return applicationStatusByProjectId[projectId];
+    const numericId = Number(projectId);
+    
+    // PRIORITY 1: Check database status from myApplications (source of truth)
+    const appData = applicationStatusMap[numericId] || applicationStatusMap[projectId];
+    if (appData && appData.status) {
+      return appData.status; // Database status from project_applicants table
     }
-    // Then check actual application data
-    const appData = applicationStatusMap[projectId];
-    if (appData) {
-      return appData.status;
+    
+    // PRIORITY 2: Fallback to optimistic local state (for immediate UI updates)
+    const optimisticStatus = applicationStatusByProjectId[numericId] || applicationStatusByProjectId[projectId];
+    if (optimisticStatus) {
+      return optimisticStatus;
     }
+    
     return null;
   }, [applicationStatusByProjectId, applicationStatusMap]);
 
@@ -585,21 +622,48 @@ const DeveloperProjects = ({
     }
   }, [dispatch, isPublicOnly]);
 
-  // Load my applications and count on component mount and when switching to Applications tab
+  // Load my applications and count on component mount (only once)
   useEffect(() => {
     if (isDeveloper && !isPublicOnly) {
       dispatch(getMyApplications());
       dispatch(getMyApplicationsCount());
+      dispatch(getAppliedProjects()); // Load applied project IDs with status
     }
   }, [dispatch, isDeveloper, isPublicOnly]);
 
+  // Track previous tab to detect when we actually SWITCH to applications tab
+  const prevActiveTabRef = useRef(activeTab);
+  
+  // Refresh applications data ONLY when SWITCHING TO Applications tab (not on every render)
+  // This ensures we always have the latest status from the database when user navigates to the tab
   useEffect(() => {
-    if (activeTab === "applications" && isDeveloper && !isPublicOnly) {
-      dispatch(getMyApplications());
+    // Only fetch if:
+    // 1. We're on applications tab
+    // 2. We WEREN'T on applications tab before (actual tab switch)
+    // 3. User is developer
+    const isSwitchingToApplications = activeTab === "applications" && 
+                                      prevActiveTabRef.current !== "applications" &&
+                                      isDeveloper && 
+                                      !isPublicOnly;
+    
+    if (isSwitchingToApplications) {
+      console.log('Switching to Applications tab - fetching fresh data');
+      // Fetch latest applications with status from database (project_applicants table)
+      dispatch(getMyApplications()).then((result) => {
+        console.log('Applications tab: Fetched applications with status from database:', result.payload?.applications?.length || 0);
+      });
       dispatch(getMyApplicationsCount());
       dispatch(getAppliedProjects()); // Reload applied project IDs when switching to Applications tab
     }
+    
+    // Update ref for next render
+    prevActiveTabRef.current = activeTab;
   }, [activeTab, dispatch, isDeveloper, isPublicOnly]);
+
+  // ✅ REMOVED: Auto-refresh interval - API will only be called:
+  // 1. On component mount
+  // 2. When switching to Applications tab
+  // This prevents unnecessary API calls and 304 Not Modified responses
 
   // Fetch project details for applied projects that aren't loaded yet
   // This runs when: tab changes to applications, applied projects change, or data sources change
@@ -656,10 +720,17 @@ const DeveloperProjects = ({
     setSelectedProject(null);
   }, []);
 
-  const canJoinGroupChat = useCallback((projectId) =>
-    applicationStatusByProjectId[projectId] === "Accepted",
-    [applicationStatusByProjectId]
-  );
+  const canJoinGroupChat = useCallback((projectId) => {
+    const numericProjectId = Number(projectId);
+    // Check if status is "accepted" (case-insensitive) from any source
+    const status = getApplicationStatus(numericProjectId) || 
+                  applicationStatusByProjectId[numericProjectId] || 
+                  applicationStatusByProjectId[projectId] ||
+                  (applicationStatusMap[numericProjectId]?.status) ||
+                  (applicationStatusMap[projectId]?.status);
+    
+    return status && status.toLowerCase() === "accepted";
+  }, [applicationStatusByProjectId, applicationStatusMap, getApplicationStatus]);
   const isProjectSaved = useCallback((projectId) => {
     if (!Array.isArray(saves)) return false;
     
@@ -1527,9 +1598,36 @@ const DeveloperProjects = ({
                 <tbody className='divide-y divide-white/10'>
                   {applicationProjectItems.map(({ id: projectId, project }) => {
                     if (!project) return null;
-                    const applicationData = applicationStatusMap[projectId];
-                    const status = applicationData ? applicationData.status : null;
-                    const appliedAt = applicationData ? applicationData.appliedAt : null;
+                    // Ensure projectId is a number for consistent lookup
+                    const numericProjectId = Number(projectId);
+                    
+                    // PRIORITY 1: Get application data from database (myApplications) - this is the source of truth
+                    const applicationData = applicationStatusMap[numericProjectId] || 
+                                          applicationStatusMap[projectId] || null;
+                    
+                    // PRIORITY 2: Get status - prioritize database status from myApplications
+                    // The database status from project_applicants table is the authoritative source
+                    let status = null;
+                    if (applicationData && applicationData.status) {
+                      // Use database status (from project_applicants table)
+                      status = applicationData.status.toLowerCase(); // Normalize to lowercase
+                    } else {
+                      // Fallback to optimistic/local state if database status not available yet
+                      status = getApplicationStatus(numericProjectId);
+                      if (status) {
+                        status = typeof status === 'string' ? status.toLowerCase() : status;
+                      } else {
+                        // Last fallback to local optimistic state
+                        const localStatus = applicationStatusByProjectId[numericProjectId] || applicationStatusByProjectId[projectId];
+                        status = localStatus ? (typeof localStatus === 'string' ? localStatus.toLowerCase() : localStatus) : 'applied';
+                      }
+                    }
+                    
+                    // Get appliedAt date from database (preferred) or fallback
+                    const appliedAt = applicationData?.appliedAt || 
+                                    applicationData?.createdAt || 
+                                    null;
+                    
                     const statusColors = {
                       applied:
                         "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -1568,14 +1666,16 @@ const DeveloperProjects = ({
                           {appliedAt ? new Date(appliedAt).toLocaleDateString() : 'Recently'}
                         </td>
                         <td className='px-6 py-4'>
-                          {status ? (
+                          {status && status !== 'applied' ? (
                             <span
-                              className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status]}`}
+                              className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors[status] || statusColors.applied}`}
                             >
-                              {status ? status.charAt(0).toUpperCase() + status.slice(1) : '—'}
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
                             </span>
                           ) : (
-                            <span className='text-gray-400 text-xs'>—</span>
+                            <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full border ${statusColors.applied}`}>
+                              Applied
+                            </span>
                           )}
                         </td>
                         <td className='px-6 py-4'>
@@ -1586,12 +1686,12 @@ const DeveloperProjects = ({
                             >
                               View
                             </Button>
-                            {canJoinGroupChat(projectId) ? (
+                            {canJoinGroupChat(numericProjectId) ? (
                               <Button
                                 onClick={() =>
                                   console.log(
                                     "Joining group chat for",
-                                    projectId
+                                    numericProjectId
                                   )
                                 }
                                 className='px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 text-sm font-medium'

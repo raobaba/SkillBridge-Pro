@@ -36,6 +36,7 @@ import {
   UserX,
   CheckCircle,
   Code2,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -48,6 +49,7 @@ import {
   listProjects,
   updateApplicantStatus,
 } from "../slice/projectSlice";
+import { createGroupConversation } from "../../chat/slice/chatSlice";
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const navigate = useNavigate();
@@ -78,6 +80,10 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareContent, setShareContent] = useState('');
+  const [showGroupChatModal, setShowGroupChatModal] = useState(false);
+  const [selectedProjectForGroupChat, setSelectedProjectForGroupChat] = useState(null);
+  const [selectedDevelopers, setSelectedDevelopers] = useState([]);
+  const [groupChatName, setGroupChatName] = useState('');
 
   // Handle tab changes and update URL
   const handleTabChange = (tab) => {
@@ -143,6 +149,61 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       setProjectApplicants(applicantsMap);
     } catch (error) {
       console.error("Error loading project data:", error);
+    }
+  };
+
+  // Handle creating group chat for a project
+  const handleCreateGroupChat = (project) => {
+    setSelectedProjectForGroupChat(project);
+    setGroupChatName(project.title || 'Project Team Chat');
+    // Pre-select shortlisted and accepted developers
+    const applicants = projectApplicants[project.id] || [];
+    const eligibleDevelopers = applicants.filter(
+      (a) => a.status === 'shortlisted' || a.status === 'accepted'
+    );
+    setSelectedDevelopers(eligibleDevelopers.map((a) => a.userId));
+    setShowGroupChatModal(true);
+  };
+
+  // Handle group chat creation
+  const handleConfirmGroupChat = async () => {
+    if (!selectedProjectForGroupChat || selectedDevelopers.length === 0) {
+      toast.error('Please select at least one developer');
+      return;
+    }
+
+    if (!groupChatName.trim()) {
+      toast.error('Please enter a group name');
+      return;
+    }
+
+    try {
+      const groupData = {
+        name: groupChatName.trim(),
+        projectId: selectedProjectForGroupChat.id,
+        participantIds: selectedDevelopers,
+      };
+
+      const result = await dispatch(createGroupConversation(groupData)).unwrap();
+      
+      // The result is the axios response, so result.data is the API response
+      // API response structure: {success: true, status: 201, message: "...", data: {...}}
+      const apiResponse = result?.data || result;
+      
+      if (apiResponse?.success === true || apiResponse?.status === 201) {
+        toast.success(apiResponse?.message || `Group chat "${groupChatName}" created successfully!`);
+        setShowGroupChatModal(false);
+        setSelectedProjectForGroupChat(null);
+        setSelectedDevelopers([]);
+        setGroupChatName('');
+        // Navigate to chat page
+        navigate('/chat');
+      } else {
+        toast.error(apiResponse?.message || 'Failed to create group chat');
+      }
+    } catch (error) {
+      console.error('Error creating group chat:', error);
+      toast.error(error?.message || 'Failed to create group chat');
     }
   };
 
@@ -1550,13 +1611,48 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
         {activeTab === "applicants" && (
           <div className='space-y-6'>
             {/* Developer Management Style Header */}
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-                <Users className="w-8 h-8 text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">Developer Management</h2>
+                  <p className="text-gray-300 text-sm">Manage and review all project applicants</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-3xl font-bold text-white">Developer Management</h2>
-                <p className="text-gray-300 text-sm">Manage and review all project applicants</p>
+              
+              {/* Projects dropdown for quick group chat creation */}
+              <div className="flex items-center gap-3">
+                {projects.length > 0 && (
+                  <select
+                    className="px-4 py-2 bg-gray-700/50 text-white rounded-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => {
+                      const projectId = e.target.value;
+                      if (projectId) {
+                        const project = projects.find((p) => p.id === Number(projectId));
+                        if (project) {
+                          handleCreateGroupChat(project);
+                        }
+                      }
+                      e.target.value = ''; // Reset dropdown
+                    }}
+                    defaultValue=""
+                  >
+                    <option value="">Create Group Chat...</option>
+                    {projects.map((project) => {
+                      const applicants = projectApplicants[project.id] || [];
+                      const shortlistedCount = applicants.filter(
+                        (a) => a.status === 'shortlisted' || a.status === 'accepted'
+                      ).length;
+                      return (
+                        <option key={project.id} value={project.id}>
+                          {project.title} ({shortlistedCount} developers)
+                        </option>
+                      );
+                    })}
+                  </select>
+                )}
               </div>
             </div>
 
@@ -2533,6 +2629,123 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 className="bg-white/10 hover:bg-white/20 text-white"
               >
                 Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Group Chat Creation Modal */}
+      {showGroupChatModal && selectedProjectForGroupChat && (
+        <Modal
+          isOpen={showGroupChatModal}
+          onClose={() => {
+            setShowGroupChatModal(false);
+            setSelectedProjectForGroupChat(null);
+            setSelectedDevelopers([]);
+            setGroupChatName('');
+          }}
+          title="Create Group Chat"
+        >
+          <div className="space-y-6">
+            {/* Project Info */}
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-4 border border-white/10">
+              <p className="text-sm text-gray-300">Project</p>
+              <p className="text-white font-semibold text-lg">{selectedProjectForGroupChat.title}</p>
+            </div>
+
+            {/* Group Name Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Group Chat Name
+              </label>
+              <input
+                type="text"
+                value={groupChatName}
+                onChange={(e) => setGroupChatName(e.target.value)}
+                placeholder="Enter group chat name"
+                className="w-full px-4 py-2 bg-gray-700/50 text-white rounded-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* Developer Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Select Developers ({selectedDevelopers.length} selected)
+              </label>
+              <div className="max-h-64 overflow-y-auto space-y-2 border border-white/10 rounded-lg p-4 bg-gray-800/50">
+                {(projectApplicants[selectedProjectForGroupChat.id] || []).map((applicant) => {
+                  const isSelected = selectedDevelopers.includes(applicant.userId);
+                  const isEligible = applicant.status === 'shortlisted' || applicant.status === 'accepted';
+                  
+                  return (
+                    <div
+                      key={applicant.userId}
+                      className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
+                        isSelected
+                          ? 'bg-blue-500/20 border-blue-500/50'
+                          : isEligible
+                          ? 'bg-gray-700/50 border-white/10 hover:bg-gray-700/70'
+                          : 'bg-gray-800/30 border-white/5 opacity-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                          {applicant.userId?.toString().charAt(0) || "D"}
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">
+                            {applicant.name || applicant.fullName || applicant.username || `Developer ${applicant.userId}`}
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            {applicant.status || 'applied'}
+                          </p>
+                        </div>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedDevelopers([...selectedDevelopers, applicant.userId]);
+                          } else {
+                            setSelectedDevelopers(selectedDevelopers.filter((id) => id !== applicant.userId));
+                          }
+                        }}
+                        disabled={!isEligible}
+                        className="w-5 h-5 rounded border-white/20 bg-gray-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              {selectedDevelopers.length === 0 && (
+                <p className="text-yellow-400 text-sm mt-2">
+                  ⚠️ Please select at least one developer to create the group chat
+                </p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
+              <Button
+                onClick={() => {
+                  setShowGroupChatModal(false);
+                  setSelectedProjectForGroupChat(null);
+                  setSelectedDevelopers([]);
+                  setGroupChatName('');
+                }}
+                className="bg-gray-700/50 hover:bg-gray-600/50 text-white border border-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmGroupChat}
+                disabled={selectedDevelopers.length === 0 || !groupChatName.trim()}
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <MessageCircle className="w-4 h-4 mr-2 inline" />
+                Create Group Chat
               </Button>
             </div>
           </div>

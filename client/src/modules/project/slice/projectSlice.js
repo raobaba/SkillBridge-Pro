@@ -77,6 +77,7 @@ const initialState = {
   
   // Applied projects tracking
   appliedProjects: [],
+  appliedProjectsStatusMap: {}, // Map of projectId -> status from /api/v1/projects/applications/my/ids
   myApplications: [],
   myApplicationsCount: 0,
   
@@ -228,17 +229,40 @@ export const getAppliedProjects = createAsyncThunk(
   "project/getAppliedProjects",
   async (_, { rejectWithValue }) => {
     try {
-      // Use dedicated API that queries project_applicants table and returns only IDs
+      // Use dedicated API that queries project_applicants table and returns IDs with status
       const response = await getMyAppliedProjectIdsApi();
-      // Extract project IDs from the response
-      const projectIds = response.data?.data?.projectIds || [];
+      // Extract project IDs and status from the new response structure
+      // Response structure: { data: { projectIds: [{projectId, status}, ...] } }
+      const projectIdsWithStatus = response.data?.data?.projectIds || [];
       const userId = response.data?.data?.userId;
+      
+      // Extract just the IDs for backward compatibility
+      const projectIds = projectIdsWithStatus.map(item => 
+        typeof item === 'object' && item.projectId ? item.projectId : item
+      ).filter(id => typeof id === 'number' && !isNaN(id));
+      
+      // Build status map from the response
+      const statusMap = {};
+      projectIdsWithStatus.forEach(item => {
+        if (typeof item === 'object' && item.projectId && item.status) {
+          const numericId = Number(item.projectId);
+          statusMap[numericId] = item.status;
+          // Also store with original key if different
+          if (numericId !== item.projectId) {
+            statusMap[item.projectId] = item.status;
+          }
+        }
+      });
      
-      return projectIds;
+      return {
+        projectIds,
+        statusMap,
+        userId
+      };
     } catch (error) {
       // If API fails, return empty array - component will retry with getMyApplications
       console.warn('getAppliedProjects - API call failed, returning empty array:', error);
-      return [];
+      return { projectIds: [], statusMap: {}, userId: null };
     }
   }
 );
@@ -1748,9 +1772,21 @@ const projectSlice = createSlice({
       // Load applied projects from database (project_applicants table via API)
       .addCase(getAppliedProjects.fulfilled, (state, action) => {
         // Set appliedProjects from API response (project IDs from project_applicants table)
-        const projectIds = Array.isArray(action.payload) ? action.payload : [];
+        // New response structure includes both IDs and status
+        const payload = action.payload;
+        const projectIds = Array.isArray(payload) 
+          ? payload // Backward compatibility: if payload is array, use it directly
+          : (Array.isArray(payload?.projectIds) ? payload.projectIds : []);
+        const statusMap = payload?.statusMap || {};
+        
         state.appliedProjects = Array.from(new Set(projectIds));
-        console.log('Redux: getAppliedProjects.fulfilled - Set appliedProjects from project_applicants table:', projectIds);
+        state.appliedProjectsStatusMap = statusMap; // ✅ Store status map from IDs API
+        
+        console.log('Redux: getAppliedProjects.fulfilled - Set appliedProjects from project_applicants table:', {
+          projectIds,
+          statusMap,
+          totalWithStatus: Object.keys(statusMap).length
+        });
       })
       .addCase(getAppliedProjects.rejected, (state, action) => {
         state.error = action.payload.message || 'Failed to load applied projects';
@@ -1927,7 +1963,14 @@ const projectSlice = createSlice({
           userId: 'current user (from JWT)',
           applicationsCount: apps.length,
           projectIds: ids,
-          source: 'project_applicants table (database)'
+          source: 'project_applicants table (database)',
+          // Show sample application with status for debugging
+          sampleApplication: apps.length > 0 ? {
+            projectId: apps[0].projectId,
+            status: apps[0].status, // ✅ STATUS IS INCLUDED
+            appliedAt: apps[0].appliedAt,
+            updatedAt: apps[0].updatedAt
+          } : 'No applications found'
         });
         state.error = null;
         state.lastAction = 'getMyApplications.fulfilled';

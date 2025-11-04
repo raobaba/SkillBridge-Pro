@@ -1861,15 +1861,46 @@ paths:
 
   /api/v1/projects/applications/my:
     get:
-      summary: Get my applications
-      description: Get all applications submitted by the authenticated developer
+      summary: Get my applications with status
+      description: |
+        Get all applications submitted by the authenticated developer with their current status from the database.
+        
+        **Data Source**: This endpoint queries the `project_applicants` table filtered by the authenticated developer's user ID. It returns the real-time status of each application as stored in the database.
+        
+        **Status Values** (from `project_applicants.status` column):
+        - `applied` - Initial application status (default when developer applies)
+        - `shortlisted` - Developer has been shortlisted by project owner (triggers automatic chat creation)
+        - `interviewing` - Developer is in interview process
+        - `accepted` - Developer has been accepted to the project (triggers automatic chat creation)
+        - `rejected` - Application has been rejected
+        
+        **Response Includes**:
+        - Application details (projectId, status, appliedAt, matchScore, notes)
+        - Full project information (title, description, company, budget, etc.)
+        - Real-time status from database (not cached or optimistic)
       tags:
         - "🟢 PROJECT SERVICE - Applications"
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Applications retrieved successfully
+          description: Applications retrieved successfully with current status from database
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  applications:
+                    type: array
+                    description: Array of applications with status from project_applicants table
+                    items:
+                      $ref: "#/components/schemas/DeveloperApplication"
         "401":
           description: Unauthorized
         "500":
@@ -1878,14 +1909,32 @@ paths:
   /api/v1/projects/applications/my/count:
     get:
       summary: Get my applications count
-      description: Get the count of applications submitted by the authenticated developer
+      description: |
+        Get the count of applications submitted by the authenticated developer.
+        
+        **Data Source**: Counts applications from the `project_applicants` table filtered by the authenticated developer's user ID. Returns the total number of applications regardless of status.
       tags:
         - "🟢 PROJECT SERVICE - Applications"
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Application count retrieved successfully
+          description: Application count retrieved successfully from database
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  count:
+                    type: integer
+                    description: Total number of applications from project_applicants table
+                    example: 5
         "401":
           description: Unauthorized
         "500":
@@ -1894,14 +1943,19 @@ paths:
   /api/v1/projects/developer/applied-projects:
     get:
       summary: Get developer applied projects list
-      description: Get a comprehensive list of all projects that the authenticated developer has applied to, including project details and application status
+      description: |
+        Get a comprehensive list of all projects that the authenticated developer has applied to, including project details and application status from the database.
+        
+        **Data Source**: This endpoint queries the `project_applicants` table joined with the `projects` table to return full project details along with the current application status. The status comes directly from the `project_applicants.status` column in the database.
+        
+        **Status Values**: Same as `/api/v1/projects/applications/my` - `applied`, `shortlisted`, `interviewing`, `accepted`, `rejected`
       tags:
         - "🟢 PROJECT SERVICE - Applications"
       security:
         - bearerAuth: []
       responses:
         "200":
-          description: Applied projects retrieved successfully
+          description: Applied projects retrieved successfully with status from database
           content:
             application/json:
               schema:
@@ -1918,34 +1972,45 @@ paths:
                     example: "Applied projects retrieved successfully"
                   count:
                     type: integer
+                    description: Total number of applied projects
                     example: 3
                   appliedProjects:
                     type: array
+                    description: Array of applied projects with status from project_applicants table
                     items:
                       type: object
                       properties:
                         applicationId:
                           type: integer
+                          description: Application ID from project_applicants table
                           example: 1
                         projectId:
                           type: integer
+                          description: Project ID
                           example: 123
                         status:
                           type: string
                           enum: [applied, shortlisted, interviewing, accepted, rejected]
-                          example: "applied"
+                          description: Current application status from project_applicants.status column (database source of truth)
+                          example: "shortlisted"
                         appliedAt:
                           type: string
                           format: date-time
+                          description: When the application was submitted
                           example: "2024-01-15T10:30:00Z"
                         matchScore:
                           type: number
+                          nullable: true
+                          description: Match score
                           example: 85
                         notes:
                           type: string
+                          nullable: true
+                          description: Application notes
                           example: "I'm interested in this project"
                         project:
                           type: object
+                          description: Full project details from projects table
                           properties:
                             id:
                               type: integer
@@ -2627,20 +2692,130 @@ components:
       properties:
         id:
           type: integer
+          description: Application ID from project_applicants table
         projectId:
           type: integer
+          description: Project ID that was applied to
         userId:
           type: integer
+          description: Developer user ID who applied
         matchScore:
           type: number
+          description: Match score calculated during application
         notes:
           type: string
+          description: Application notes from developer
         status:
           type: string
-          enum: [pending, accepted, rejected]
+          enum: [applied, shortlisted, interviewing, accepted, rejected]
+          description: Current application status from project_applicants.status column in database
+          example: "shortlisted"
         appliedAt:
           type: string
           format: date-time
+          description: Timestamp when application was submitted
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when application status was last updated
+
+    DeveloperApplication:
+      type: object
+      description: Application data returned by /api/v1/projects/applications/my with project details and status from database
+      properties:
+        id:
+          type: integer
+          description: Application ID from project_applicants table
+        projectId:
+          type: integer
+          description: Project ID
+        userId:
+          type: integer
+          description: Developer user ID
+        status:
+          type: string
+          enum: [applied, shortlisted, interviewing, accepted, rejected]
+          description: Current application status from project_applicants.status column (database source of truth)
+          example: "shortlisted"
+        matchScore:
+          type: number
+          nullable: true
+          description: Match score
+          example: 85.5
+        rating:
+          type: integer
+          nullable: true
+          description: Rating given to the application
+        notes:
+          type: string
+          nullable: true
+          description: Application notes
+        appliedAt:
+          type: string
+          format: date-time
+          description: When the application was submitted
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the application status was last updated
+        # Project details (joined from projects table)
+        projectTitle:
+          type: string
+          description: Project title
+          example: "E-commerce Platform Development"
+        projectDescription:
+          type: string
+          description: Project description
+        projectCompany:
+          type: string
+          description: Company name
+          example: "TechCorp Inc."
+        projectStatus:
+          type: string
+          enum: [draft, upcoming, active, paused, completed, cancelled]
+          description: Project status
+        projectCategory:
+          type: string
+          description: Project category
+          example: "Web Development"
+        projectExperienceLevel:
+          type: string
+          enum: [entry, mid, senior, lead]
+          description: Required experience level
+        projectBudgetMin:
+          type: number
+          description: Minimum budget
+        projectBudgetMax:
+          type: number
+          description: Maximum budget
+        projectCurrency:
+          type: string
+          description: Currency code
+          example: "USD"
+        projectLocation:
+          type: string
+          description: Project location
+          example: "Remote"
+        projectIsRemote:
+          type: boolean
+          description: Whether project is remote
+        projectDuration:
+          type: string
+          description: Project duration
+          example: "3 months"
+        projectStartDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Project start date
+        projectDeadline:
+          type: string
+          format: date-time
+          nullable: true
+          description: Project deadline
+        projectOwnerId:
+          type: integer
+          description: Project owner user ID
 
     ApplicantStatusUpdate:
       type: object
@@ -2648,36 +2823,56 @@ components:
       properties:
         projectId:
           type: integer
+          description: Project ID
           example: 1
         userId:
           type: integer
+          description: Developer user ID whose status is being updated
           example: 123
         status:
           type: string
-          enum: [pending, accepted, rejected]
-          example: accepted
+          enum: [applied, shortlisted, interviewing, accepted, rejected]
+          description: |
+            New status to set for the application. Stored in project_applicants.status column.
+            
+            **Special Behavior**:
+            - `shortlisted` or `accepted` - Automatically creates a direct chat conversation between project owner and developer
+            - Status changes trigger email notifications to the developer
+          example: "accepted"
 
     Applicant:
       type: object
+      description: Applicant data from project_applicants table (used when listing applicants for a project)
       properties:
         id:
           type: integer
+          description: Application ID from project_applicants table
         userId:
           type: integer
+          description: Developer user ID
         name:
           type: string
+          description: Developer name (from users table)
         email:
           type: string
+          description: Developer email (from users table)
         matchScore:
           type: number
+          nullable: true
+          description: Match score
         notes:
           type: string
+          nullable: true
+          description: Application notes
         status:
           type: string
-          enum: [pending, accepted, rejected]
+          enum: [applied, shortlisted, interviewing, accepted, rejected]
+          description: Current application status from project_applicants.status column in database
+          example: "shortlisted"
         appliedAt:
           type: string
           format: date-time
+          description: When the application was submitted
 
     InviteRequest:
       type: object

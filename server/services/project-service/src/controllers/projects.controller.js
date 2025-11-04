@@ -5,9 +5,9 @@ const { supabase } = require("shared/utils/supabase.utils");
 const { db } = require("../config/database");
 const { ilike, asc, sql } = require("drizzle-orm");
 const { sendMail } = require("shared/utils/sendEmail");
-const { 
-  createOrGetDirectConversation, 
-  extractAuthToken 
+const {
+  createOrGetDirectConversation,
+  extractAuthToken,
 } = require("../utils/chatServiceClient");
 
 // Basic error helper to keep responses consistent
@@ -36,13 +36,18 @@ const getUserInfo = async (userId) => {
     
     return null;
   } catch (error) {
-    console.error('Error fetching user info:', error.message);
+    console.error("Error fetching user info:", error.message);
     return null;
   }
 };
 
 // Helper function to send application confirmation email to developer
-const sendApplicationConfirmationEmail = async (developerEmail, developerName, projectTitle, projectOwnerName) => {
+const sendApplicationConfirmationEmail = async (
+  developerEmail,
+  developerName,
+  projectTitle,
+  projectOwnerName
+) => {
   try {
     const emailBody = {
       from: process.env.EMAIL_USER,
@@ -71,7 +76,9 @@ const sendApplicationConfirmationEmail = async (developerEmail, developerName, p
               We wish you the best of luck with your application!
             </p>
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+              <a href="${
+                process.env.FRONTEND_URL || "http://localhost:5173"
+              }/project" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
                 View My Applications
               </a>
@@ -81,19 +88,25 @@ const sendApplicationConfirmationEmail = async (developerEmail, developerName, p
             <p>This email was sent from SkillBridge Pro</p>
           </div>
         </div>
-      `
+      `,
     };
 
     await sendMail(emailBody);
     console.log(`✅ Application confirmation email sent to ${developerEmail}`);
   } catch (error) {
-    console.error('❌ Error sending application confirmation email:', error);
+    console.error("❌ Error sending application confirmation email:", error);
     // Don't throw error to avoid breaking the main flow
   }
 };
 
 // Helper function to send new application notification to project owner
-const sendNewApplicationNotificationEmail = async (ownerEmail, ownerName, projectTitle, developerName, developerEmail) => {
+const sendNewApplicationNotificationEmail = async (
+  ownerEmail,
+  ownerName,
+  projectTitle,
+  developerName,
+  developerEmail
+) => {
   try {
     const emailBody = {
       from: process.env.EMAIL_USER,
@@ -129,7 +142,9 @@ const sendNewApplicationNotificationEmail = async (ownerEmail, ownerName, projec
               Don't keep applicants waiting - timely responses help you find the best talent!
             </p>
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+              <a href="${
+                process.env.FRONTEND_URL || "http://localhost:5173"
+              }/project" 
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
                 Review Applications
               </a>
@@ -139,21 +154,34 @@ const sendNewApplicationNotificationEmail = async (ownerEmail, ownerName, projec
             <p>This email was sent from SkillBridge Pro</p>
           </div>
         </div>
-      `
+      `,
     };
 
     await sendMail(emailBody);
     console.log(`✅ New application notification email sent to ${ownerEmail}`);
   } catch (error) {
-    console.error('❌ Error sending new application notification email:', error);
+    console.error(
+      "❌ Error sending new application notification email:",
+      error
+    );
     // Don't throw error to avoid breaking the main flow
   }
 };
 
 // Helper function to send developer invite email
-const sendDeveloperInviteEmail = async (invitedEmail, invitedName, projectTitle, projectOwnerName, role, message, inviteId) => {
+const sendDeveloperInviteEmail = async (
+  invitedEmail,
+  invitedName,
+  projectTitle,
+  projectOwnerName,
+  role,
+  message,
+  inviteId
+) => {
   try {
-    const inviteUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/invites/${inviteId}`;
+    const inviteUrl = `${
+      process.env.FRONTEND_URL || "http://localhost:5173"
+    }/invites/${inviteId}`;
     
     const emailBody = {
       from: process.env.EMAIL_USER,
@@ -165,7 +193,9 @@ const sendDeveloperInviteEmail = async (invitedEmail, invitedName, projectTitle,
             <h1 style="color: white; margin: 0; font-size: 28px;">🎯 Project Invitation</h1>
           </div>
           <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
-            <h2 style="color: #333; margin-top: 0;">Hello ${invitedName || 'Developer'},</h2>
+            <h2 style="color: #333; margin-top: 0;">Hello ${
+              invitedName || "Developer"
+            },</h2>
             <p style="color: #666; font-size: 16px; line-height: 1.6;">
               <strong>${projectOwnerName}</strong> has invited you to join their project <strong>"${projectTitle}"</strong>!
             </p>
@@ -174,19 +204,23 @@ const sendDeveloperInviteEmail = async (invitedEmail, invitedName, projectTitle,
               <h3 style="color: #007bff; margin-top: 0;">Project Details</h3>
               <p style="color: #666; line-height: 1.6; margin: 0;">
                 <strong>Project:</strong> ${projectTitle}<br>
-                <strong>Role:</strong> ${role || 'Developer'}<br>
+                <strong>Role:</strong> ${role || "Developer"}<br>
                 <strong>Invited by:</strong> ${projectOwnerName}
               </p>
             </div>
             
-            ${message ? `
+            ${
+              message
+                ? `
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
               <h3 style="color: #28a745; margin-top: 0;">Personal Message</h3>
               <p style="color: #666; line-height: 1.6; margin: 0; font-style: italic;">
                 "${message}"
               </p>
             </div>
-            ` : ''}
+            `
+                : ""
+            }
             
             <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107;">
               <h3 style="color: #ffc107; margin-top: 0;">What's Next?</h3>
@@ -219,19 +253,28 @@ const sendDeveloperInviteEmail = async (invitedEmail, invitedName, projectTitle,
             <p>This invitation was sent from SkillBridge Pro</p>
           </div>
         </div>
-      `
+      `,
     };
 
     await sendMail(emailBody);
-    console.log(`✅ Developer invite email sent to ${invitedEmail} for project: ${projectTitle}`);
+    console.log(
+      `✅ Developer invite email sent to ${invitedEmail} for project: ${projectTitle}`
+    );
   } catch (error) {
-    console.error('❌ Error sending developer invite email:', error);
+    console.error("❌ Error sending developer invite email:", error);
     // Don't throw error to avoid breaking the main flow
   }
 };
 
 // Helper function to send invite response notification email to project owner
-const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projectTitle, responderName, responderEmail, status) => {
+const sendInviteResponseNotificationEmail = async (
+  ownerEmail,
+  ownerName,
+  projectTitle,
+  responderName,
+  responderEmail,
+  status
+) => {
   try {
     const statusMessages = {
       accepted: {
@@ -270,7 +313,9 @@ const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projec
               </p>
               
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project/${projectTitle.replace(/\s+/g, '-').toLowerCase()}" 
+                <a href="${
+                  process.env.FRONTEND_URL || "http://localhost:5173"
+                }/project/${projectTitle.replace(/\s+/g, "-").toLowerCase()}" 
                    style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
                   View Project
                 </a>
@@ -280,7 +325,7 @@ const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projec
               <p>This notification was sent from SkillBridge Pro</p>
             </div>
           </div>
-        `
+        `,
       },
       declined: {
         subject: `📝 Invitation Declined for "${projectTitle}"`,
@@ -318,7 +363,9 @@ const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projec
               </p>
               
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                <a href="${
+                  process.env.FRONTEND_URL || "http://localhost:5173"
+                }/project" 
                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
                   Find More Developers
                 </a>
@@ -328,13 +375,15 @@ const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projec
               <p>This notification was sent from SkillBridge Pro</p>
             </div>
           </div>
-        `
-      }
+        `,
+      },
     };
 
     const emailTemplate = statusMessages[status];
     if (!emailTemplate) {
-      console.log(`No email template found for invite response status: ${status}`);
+      console.log(
+        `No email template found for invite response status: ${status}`
+      );
       return;
     }
 
@@ -342,19 +391,30 @@ const sendInviteResponseNotificationEmail = async (ownerEmail, ownerName, projec
       from: process.env.EMAIL_USER,
       to: ownerEmail,
       subject: emailTemplate.subject,
-      html: emailTemplate.html
+      html: emailTemplate.html,
     };
 
     await sendMail(emailBody);
-    console.log(`✅ Invite response notification email sent to ${ownerEmail} for status: ${status}`);
+    console.log(
+      `✅ Invite response notification email sent to ${ownerEmail} for status: ${status}`
+    );
   } catch (error) {
-    console.error('❌ Error sending invite response notification email:', error);
+    console.error(
+      "❌ Error sending invite response notification email:",
+      error
+    );
     // Don't throw error to avoid breaking the main flow
   }
 };
 
 // Helper function to send application status email
-const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, status, projectOwnerName) => {
+const sendApplicationStatusEmail = async (
+  userEmail,
+  userName,
+  projectTitle,
+  status,
+  projectOwnerName
+) => {
   try {
     const statusMessages = {
       shortlisted: {
@@ -384,7 +444,9 @@ const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, sta
                 Thank you for your interest in this project. We wish you the best of luck!
               </p>
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                <a href="${
+                  process.env.FRONTEND_URL || "http://localhost:5173"
+                }/project" 
                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
                   View Project Details
                 </a>
@@ -394,7 +456,7 @@ const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, sta
               <p>This email was sent from SkillBridge Pro</p>
             </div>
           </div>
-        `
+        `,
       },
       rejected: {
         subject: `Application Update: "${projectTitle}"`,
@@ -421,7 +483,9 @@ const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, sta
                 We encourage you to continue exploring other opportunities on our platform. Your next great project is just around the corner!
               </p>
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/project" 
+                <a href="${
+                  process.env.FRONTEND_URL || "http://localhost:5173"
+                }/project" 
                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
                   Explore More Projects
                 </a>
@@ -431,8 +495,8 @@ const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, sta
               <p>This email was sent from SkillBridge Pro</p>
             </div>
           </div>
-        `
-      }
+        `,
+      },
     };
 
     const emailTemplate = statusMessages[status];
@@ -445,13 +509,15 @@ const sendApplicationStatusEmail = async (userEmail, userName, projectTitle, sta
       from: process.env.EMAIL_USER,
       to: userEmail,
       subject: emailTemplate.subject,
-      html: emailTemplate.html
+      html: emailTemplate.html,
     };
 
     await sendMail(emailBody);
-    console.log(`✅ Application status email sent to ${userEmail} for status: ${status}`);
+    console.log(
+      `✅ Application status email sent to ${userEmail} for status: ${status}`
+    );
   } catch (error) {
-    console.error('❌ Error sending application status email:', error);
+    console.error("❌ Error sending application status email:", error);
     // Don't throw error to avoid breaking the main flow
   }
 };
@@ -539,7 +605,12 @@ const createProject = async (req, res) => {
     console.error("Create Project Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Creation failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Creation failed",
+        error: error.message,
+      });
   }
 };
 
@@ -547,7 +618,7 @@ const createProject = async (req, res) => {
 const getProject = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!id || id === 'null' || id === 'undefined') {
+    if (!id || id === "null" || id === "undefined") {
       return sendError(res, "Project id is required", 400);
     }
     
@@ -563,7 +634,12 @@ const getProject = async (req, res) => {
     console.error("Get Project Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project",
+        error: error.message,
+      });
   }
 };
 
@@ -581,10 +657,10 @@ const listProjects = async (req, res) => {
       location,
       budgetMin,
       budgetMax,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      sortBy = "createdAt",
+      sortOrder = "desc",
       limit = 20, 
-      page = 1 
+      page = 1,
     } = req.query;
     
     // Include ownerId in filters for authenticated requests
@@ -595,18 +671,18 @@ const listProjects = async (req, res) => {
       priority,
       category,
       experienceLevel,
-      isRemote: isRemote !== undefined ? isRemote === 'true' : undefined,
+      isRemote: isRemote !== undefined ? isRemote === "true" : undefined,
       location,
       budgetMin: budgetMin ? Number(budgetMin) : undefined,
       budgetMax: budgetMax ? Number(budgetMax) : undefined,
       sortBy,
       sortOrder,
       limit: Number(limit),
-      page: Number(page)
+      page: Number(page),
     };
     
     // Remove undefined values
-    Object.keys(filters).forEach(key => {
+    Object.keys(filters).forEach((key) => {
       if (filters[key] === undefined) {
         delete filters[key];
       }
@@ -617,13 +693,18 @@ const listProjects = async (req, res) => {
       success: true, 
       status: 200, 
       projects: result.projects,
-      pagination: result.pagination
+      pagination: result.pagination,
     });
   } catch (error) {
     console.error("List Projects Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch projects", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch projects",
+        error: error.message,
+      });
   }
 };
 
@@ -640,10 +721,10 @@ const getPublicProjects = async (req, res) => {
       budgetMax,
       status, // Don't default to 'active' - let frontend control this
       priority,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      sortBy = "createdAt",
+      sortOrder = "desc",
       limit = 20, 
-      page = 1 
+      page = 1,
     } = req.query;
 
     // Build filters for public access
@@ -653,37 +734,37 @@ const getPublicProjects = async (req, res) => {
       priority,
       category,
       experienceLevel,
-      isRemote: isRemote !== undefined ? isRemote === 'true' : undefined,
+      isRemote: isRemote !== undefined ? isRemote === "true" : undefined,
       location,
       budgetMin: budgetMin ? Number(budgetMin) : undefined,
       budgetMax: budgetMax ? Number(budgetMax) : undefined,
       sortBy,
       sortOrder,
       limit: Number(limit),
-      page: Number(page)
+      page: Number(page),
     };
 
     // Remove undefined values
-    Object.keys(filters).forEach(key => {
+    Object.keys(filters).forEach((key) => {
       if (filters[key] === undefined) {
         delete filters[key];
       }
     });
 
     // Debug logging
-    console.log('🔍 Public Projects Filter Debug:', {
+    console.log("🔍 Public Projects Filter Debug:", {
       originalQuery: req.query,
       processedFilters: filters,
       timestamp: new Date().toISOString(),
-      rawQueryString: JSON.stringify(req.query, null, 2)
+      rawQueryString: JSON.stringify(req.query, null, 2),
     });
 
     const result = await ProjectModel.searchProjects(filters);
     
-    console.log('📊 Filter Results:', {
+    console.log("📊 Filter Results:", {
       projectsFound: result.projects.length,
       totalCount: result.pagination.total,
-      filters: filters
+      filters: filters,
     });
     
     return res.status(200).json({ 
@@ -702,14 +783,19 @@ const getPublicProjects = async (req, res) => {
         status,
         priority,
         skills: filters.skills,
-        tags: filters.tags
-      }
+        tags: filters.tags,
+      },
     });
   } catch (error) {
     console.error("Get Public Projects Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch public projects", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch public projects",
+        error: error.message,
+      });
   }
 };
 
@@ -717,41 +803,46 @@ const getPublicProjects = async (req, res) => {
 const getProjectCategories = async (req, res) => {
   try {
     const categories = [
-      'Web Development',
-      'Mobile Development', 
-      'Desktop Application',
-      'Backend Development',
-      'Frontend Development',
-      'Full Stack Development',
-      'DevOps',
-      'Data Science',
-      'Machine Learning',
-      'AI Development',
-      'Blockchain',
-      'Game Development',
-      'UI/UX Design',
-      'Graphic Design',
-      'Content Writing',
-      'Digital Marketing',
-      'SEO',
-      'Video Editing',
-      'Audio Production',
-      'Translation',
-      'Research',
-      'Consulting',
-      'Other'
+      "Web Development",
+      "Mobile Development",
+      "Desktop Application",
+      "Backend Development",
+      "Frontend Development",
+      "Full Stack Development",
+      "DevOps",
+      "Data Science",
+      "Machine Learning",
+      "AI Development",
+      "Blockchain",
+      "Game Development",
+      "UI/UX Design",
+      "Graphic Design",
+      "Content Writing",
+      "Digital Marketing",
+      "SEO",
+      "Video Editing",
+      "Audio Production",
+      "Translation",
+      "Research",
+      "Consulting",
+      "Other",
     ];
 
     return res.status(200).json({ 
       success: true, 
       status: 200, 
-      categories 
+      categories,
     });
   } catch (error) {
     console.error("Get Project Categories Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch categories", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch categories",
+        error: error.message,
+      });
   }
 };
 
@@ -766,13 +857,18 @@ const getFilterOptions = async (req, res) => {
     return res.status(200).json({ 
       success: true, 
       status: 200, 
-      filterOptions 
+      filterOptions,
     });
   } catch (error) {
     console.error("Get Filter Options Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch filter options", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch filter options",
+        error: error.message,
+      });
   }
 };
 
@@ -790,7 +886,7 @@ const updateProject = async (req, res) => {
     if (!existingProject) return sendError(res, "Project not found", 404);
     
     // Only project owner or admin can update (admin can update any project)
-    if (userRole !== 'admin' && existingProject.ownerId !== userId) {
+    if (userRole !== "admin" && existingProject.ownerId !== userId) {
       return sendError(res, "You can only update your own projects", 403);
     }
     
@@ -801,15 +897,29 @@ const updateProject = async (req, res) => {
     const project = await ProjectModel.updateProject(Number(id), payload);
     if (!project) return sendError(res, "Project update failed", 500);
 
-    if (Array.isArray(payload.skills)) await ProjectModel.setSkills(project.id, payload.skills);
-    if (Array.isArray(payload.tags)) await ProjectModel.setTags(project.id, payload.tags);
+    if (Array.isArray(payload.skills))
+      await ProjectModel.setSkills(project.id, payload.skills);
+    if (Array.isArray(payload.tags))
+      await ProjectModel.setTags(project.id, payload.tags);
 
-    return res.status(200).json({ success: true, status: 200, message: "Project updated", project });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: 200,
+        message: "Project updated",
+        project,
+      });
   } catch (error) {
     console.error("Update Project Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Update failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Update failed",
+        error: error.message,
+      });
   }
 };
 
@@ -827,17 +937,24 @@ const deleteProject = async (req, res) => {
     if (!existingProject) return sendError(res, "Project not found", 404);
     
     // Only project owner or admin can delete (admin can delete any project)
-    if (userRole !== 'admin' && existingProject.ownerId !== userId) {
+    if (userRole !== "admin" && existingProject.ownerId !== userId) {
       return sendError(res, "You can only delete your own projects", 403);
     }
     
     await ProjectModel.softDeleteProject(Number(id));
-    return res.status(200).json({ success: true, status: 200, message: "Project deleted" });
+    return res
+      .status(200)
+      .json({ success: true, status: 200, message: "Project deleted" });
   } catch (error) {
     console.error("Delete Project Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Delete failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Delete failed",
+        error: error.message,
+      });
   }
 };
 
@@ -850,13 +967,16 @@ const applyToProject = async (req, res) => {
     const applicantId = req.user?.userId || req.user?.id;
     const { projectId, matchScore, notes } = req.body;
     
-    console.log('applyToProject - Request received');
-    console.log('applyToProject - req.user:', req.user);
-    console.log('applyToProject - Extracted userId from JWT:', applicantId);
-    console.log('applyToProject - projectId from body:', projectId);
+    console.log("applyToProject - Request received");
+    console.log("applyToProject - req.user:", req.user);
+    console.log("applyToProject - Extracted userId from JWT:", applicantId);
+    console.log("applyToProject - projectId from body:", projectId);
     
     if (!applicantId || !projectId) {
-      console.error('applyToProject - Missing userId or projectId', { applicantId, projectId });
+      console.error("applyToProject - Missing userId or projectId", {
+        applicantId,
+        projectId,
+      });
       return sendError(res, "userId and projectId are required", 400);
     }
     
@@ -864,19 +984,19 @@ const applyToProject = async (req, res) => {
     const validatedProjectId = Number(projectId);
     
     if (isNaN(validatedUserId) || validatedUserId <= 0) {
-      console.error('applyToProject - Invalid userId:', applicantId);
+      console.error("applyToProject - Invalid userId:", applicantId);
       return sendError(res, "Invalid user ID", 400);
     }
     
     if (isNaN(validatedProjectId) || validatedProjectId <= 0) {
-      console.error('applyToProject - Invalid projectId:', projectId);
+      console.error("applyToProject - Invalid projectId:", projectId);
       return sendError(res, "Invalid project ID", 400);
     }
     
-    console.log('applyToProject - Storing in project_applicants table:', {
+    console.log("applyToProject - Storing in project_applicants table:", {
       userId: validatedUserId,
       projectId: validatedProjectId,
-      notes: notes || null
+      notes: notes || null,
     });
     
     // Store application in project_applicants table
@@ -888,12 +1008,12 @@ const applyToProject = async (req, res) => {
       notes,
     });
     
-    console.log('applyToProject - Successfully stored in database:', {
+    console.log("applyToProject - Successfully stored in database:", {
       applicationId: row?.id,
       userId: row?.userId,
       projectId: row?.projectId,
       status: row?.status,
-      appliedAt: row?.appliedAt
+      appliedAt: row?.appliedAt,
     });
 
     // Send email notifications after successful application
@@ -907,7 +1027,13 @@ const applyToProject = async (req, res) => {
       // Get project owner information
       const projectOwner = await getUserInfo(project?.ownerId);
       
-      if (project?.title && developer?.email && developer?.name && projectOwner?.email && projectOwner?.name) {
+      if (
+        project?.title &&
+        developer?.email &&
+        developer?.name &&
+        projectOwner?.email &&
+        projectOwner?.name
+      ) {
         // Send confirmation email to developer
         await sendApplicationConfirmationEmail(
           developer.email,
@@ -925,31 +1051,49 @@ const applyToProject = async (req, res) => {
           developer.email
         );
       } else {
-        console.log('Missing information for application emails:', {
+        console.log("Missing information for application emails:", {
           projectTitle: project?.title,
           developerEmail: developer?.email,
           developerName: developer?.name,
           ownerEmail: projectOwner?.email,
-          ownerName: projectOwner?.name
+          ownerName: projectOwner?.name,
         });
       }
     } catch (emailError) {
-      console.error('Application email notifications failed:', emailError);
+      console.error("Application email notifications failed:", emailError);
       // Don't fail the main request if emails fail
     }
 
-    return res.status(201).json({ success: true, status: 201, message: "Applied successfully", application: row });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        status: 201,
+        message: "Applied successfully",
+        application: row,
+      });
   } catch (error) {
     console.error("Apply Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Apply failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Apply failed",
+        error: error.message,
+      });
   }
 };
 
 // Withdraw application
 // Helper function to send application withdrawal notification email to project owner
-const sendApplicationWithdrawalEmail = async (ownerEmail, ownerName, projectTitle, developerName, developerEmail) => {
+const sendApplicationWithdrawalEmail = async (
+  ownerEmail,
+  ownerName,
+  projectTitle,
+  developerName,
+  developerEmail
+) => {
   try {
     const emailBody = {
       from: process.env.EMAIL_USER,
@@ -987,7 +1131,9 @@ const sendApplicationWithdrawalEmail = async (ownerEmail, ownerName, projectTitl
               Don't worry - there are many talented developers looking for great projects like yours!
             </p>
             <div style="text-align: center; margin-top: 30px;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/projects"
+              <a href="${
+                process.env.FRONTEND_URL || "http://localhost:5173"
+              }/projects"
                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold;">
                 View Other Applications
               </a>
@@ -997,12 +1143,14 @@ const sendApplicationWithdrawalEmail = async (ownerEmail, ownerName, projectTitl
             <p>This email was sent from SkillBridge Pro</p>
           </div>
         </div>
-      `
+      `,
     };
     await sendMail(emailBody);
-    console.log(`✅ Application withdrawal notification email sent to ${ownerEmail}`);
+    console.log(
+      `✅ Application withdrawal notification email sent to ${ownerEmail}`
+    );
   } catch (error) {
-    console.error('❌ Error sending application withdrawal email:', error);
+    console.error("❌ Error sending application withdrawal email:", error);
   }
 };
 
@@ -1010,9 +1158,13 @@ const withdrawApplication = async (req, res) => {
   try {
     const userId = req.user?.userId;
     const { projectId } = req.body;
-    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
+    if (!userId || !projectId)
+      return sendError(res, "userId and projectId are required", 400);
 
-    const row = await ProjectModel.withdrawApplication(Number(projectId), Number(userId));
+    const row = await ProjectModel.withdrawApplication(
+      Number(projectId),
+      Number(userId)
+    );
     
     // Send email notification if application was actually withdrawn
     if (row) {
@@ -1021,7 +1173,13 @@ const withdrawApplication = async (req, res) => {
         const developer = await getUserInfo(Number(userId));
         const projectOwner = await getUserInfo(project?.ownerId);
 
-        if (project?.title && developer?.email && developer?.name && projectOwner?.email && projectOwner?.name) {
+        if (
+          project?.title &&
+          developer?.email &&
+          developer?.name &&
+          projectOwner?.email &&
+          projectOwner?.name
+        ) {
           await sendApplicationWithdrawalEmail(
             projectOwner.email,
             projectOwner.name,
@@ -1030,16 +1188,19 @@ const withdrawApplication = async (req, res) => {
             developer.email
           );
         } else {
-          console.log('Missing information for withdrawal email:', {
+          console.log("Missing information for withdrawal email:", {
             projectTitle: project?.title,
             developerEmail: developer?.email,
             developerName: developer?.name,
             ownerEmail: projectOwner?.email,
-            ownerName: projectOwner?.name
+            ownerName: projectOwner?.name,
           });
         }
       } catch (emailError) {
-        console.error('Application withdrawal email notification failed:', emailError);
+        console.error(
+          "Application withdrawal email notification failed:",
+          emailError
+        );
       }
     }
     
@@ -1047,14 +1208,21 @@ const withdrawApplication = async (req, res) => {
     return res.status(200).json({
       success: true,
       status: 200,
-      message: row ? "Application withdrawn" : "No existing application found; nothing to withdraw",
+      message: row
+        ? "Application withdrawn"
+        : "No existing application found; nothing to withdraw",
       application: row || null,
     });
   } catch (error) {
     console.error("Withdraw Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Withdraw failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Withdraw failed",
+        error: error.message,
+      });
   }
 };
 
@@ -1062,8 +1230,9 @@ const withdrawApplication = async (req, res) => {
 const updateApplicantStatus = async (req, res) => {
   try {
     const { projectId, userId, status } = req.body;
-    if (!projectId || !userId || !status) return sendError(res, "projectId, userId and status are required", 400);
-    
+    if (!projectId || !userId || !status)
+      return sendError(res, "projectId, userId and status are required", 400);
+
     // Get project owner ID from authenticated user
     const projectOwnerId = req.user?.userId || req.user?.id;
     if (!projectOwnerId) {
@@ -1082,50 +1251,52 @@ const updateApplicantStatus = async (req, res) => {
     try {
       project = await ProjectModel.getProjectById(Number(projectId));
     } catch (projectError) {
-      console.error('Error fetching project:', projectError);
+      console.error("Error fetching project:", projectError);
     }
 
     // Send email notification for shortlisted or rejected status
-    if (status === 'shortlisted' || status === 'rejected') {
+    if (status === "shortlisted" || status === "rejected") {
       try {
         // Get user information
         const user = await getUserInfo(Number(userId));
         
         // Get project owner information
-        const projectOwner = await getUserInfo(project?.ownerId || projectOwnerId);
+        const projectOwner = await getUserInfo(
+          project?.ownerId || projectOwnerId
+        );
         
         if (user?.email && project?.title && projectOwner?.name) {
           await sendApplicationStatusEmail(
             user.email,
-            user.name || 'Developer',
+            user.name || "Developer",
             project.title,
             status,
             projectOwner.name
           );
         } else {
-          console.log('Missing information for email notification:', {
+          console.log("Missing information for email notification:", {
             userEmail: user?.email,
             projectTitle: project?.title,
-            projectOwnerName: projectOwner?.name
+            projectOwnerName: projectOwner?.name,
           });
         }
       } catch (emailError) {
-        console.error('Email notification failed:', emailError);
+        console.error("Email notification failed:", emailError);
         // Don't fail the main request if email fails
       }
     }
 
     // Automatically create direct chat conversation when developer is shortlisted or accepted
     // This is non-blocking - if chat creation fails, the status update still succeeds
-    if (status === 'shortlisted' || status === 'accepted') {
+    if (status === "shortlisted" || status === "accepted") {
       try {
         const developerId = Number(userId);
         const ownerId = Number(projectOwnerId);
         const projId = Number(projectId);
-        
+
         // Extract auth token from request to pass to chat service
         const authToken = extractAuthToken(req);
-        
+
         // Create or get direct conversation between project owner and developer
         // This is idempotent - if conversation already exists, it returns the existing one
         const conversation = await createOrGetDirectConversation(
@@ -1134,29 +1305,48 @@ const updateApplicantStatus = async (req, res) => {
           projId, // Associate conversation with project
           authToken
         );
-        
+
         if (conversation) {
-          console.log(`[Update Applicant Status] ✅ Chat conversation created/retrieved for project ${projId} between owner ${ownerId} and developer ${developerId}`);
+          console.log(
+            `[Update Applicant Status] ✅ Chat conversation created/retrieved for project ${projId} between owner ${ownerId} and developer ${developerId}`
+          );
         } else {
-          console.warn(`[Update Applicant Status] ⚠️ Failed to create chat conversation for project ${projId} between owner ${ownerId} and developer ${developerId}. This is non-blocking.`);
+          console.warn(
+            `[Update Applicant Status] ⚠️ Failed to create chat conversation for project ${projId} between owner ${ownerId} and developer ${developerId}. This is non-blocking.`
+          );
         }
       } catch (chatError) {
         // Log error but don't fail the request - chat creation is optional
-        console.error('[Update Applicant Status] Error creating chat conversation (non-blocking):', {
-          error: chatError.message,
-          projectId: Number(projectId),
-          userId: Number(userId),
-          status,
-        });
+        console.error(
+          "[Update Applicant Status] Error creating chat conversation (non-blocking):",
+          {
+            error: chatError.message,
+            projectId: Number(projectId),
+            userId: Number(userId),
+            status,
+          }
+        );
       }
     }
 
-    return res.status(200).json({ success: true, status: 200, message: "Applicant status updated", application: row });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: 200,
+        message: "Applicant status updated",
+        application: row,
+      });
   } catch (error) {
     console.error("Update Applicant Status Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Update failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Update failed",
+        error: error.message,
+      });
   }
 };
 
@@ -1166,12 +1356,19 @@ const listApplicants = async (req, res) => {
     const { projectId } = req.params;
     if (!projectId) return sendError(res, "projectId is required", 400);
     const rows = await ProjectModel.listApplicants(Number(projectId));
-    return res.status(200).json({ success: true, status: 200, applicants: rows });
+    return res
+      .status(200)
+      .json({ success: true, status: 200, applicants: rows });
   } catch (error) {
     console.error("List Applicants Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch applicants", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch applicants",
+        error: error.message,
+      });
   }
 };
 
@@ -1179,67 +1376,61 @@ const listApplicants = async (req, res) => {
 const listMyApplications = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    console.log('listMyApplications - userId:', userId);
+    console.log("listMyApplications - userId:", userId);
     if (!userId) return sendError(res, "Authentication required", 401);
     const rows = await ProjectModel.listApplicationsByUser(Number(userId));
-    console.log('listMyApplications - rows returned:', rows?.length, rows);
-    return res.status(200).json({ success: true, status: 200, applications: rows });
+    console.log("listMyApplications - rows returned:", rows?.length, rows);
+    return res
+      .status(200)
+      .json({ success: true, status: 200, applications: rows });
   } catch (error) {
     console.error("List My Applications Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch my applications", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch my applications",
+        error: error.message,
+      });
   }
 };
 
-// Get only project IDs from project_applicants table for authenticated developer
-// Lightweight API - returns only projectIds and userId, no project details
+// Get project IDs with status from project_applicants table for authenticated developer
+// Lightweight API - returns projectIds with their application status
 // Filters project_applicants table by user_id from authenticated user
 const getMyAppliedProjectIds = async (req, res) => {
   try {
     // Extract userId from authenticated user (set by authenticate middleware)
     const userId = req.user?.userId || req.user?.id;
     
-    console.log('getMyAppliedProjectIds - Request received');
-    console.log('getMyAppliedProjectIds - req.user:', req.user);
-    console.log('getMyAppliedProjectIds - Extracted userId:', userId);
-    
     if (!userId) {
-      console.error('getMyAppliedProjectIds - No userId found in req.user');
       return sendError(res, "Authentication required - userId not found", 401);
     }
     
     const validatedUserId = Number(userId);
     if (isNaN(validatedUserId) || validatedUserId <= 0) {
-      console.error('getMyAppliedProjectIds - Invalid userId:', userId);
       return sendError(res, "Invalid user ID", 400);
     }
     
-    console.log('getMyAppliedProjectIds - Calling ProjectModel.getAppliedProjectIdsByUser with userId:', validatedUserId);
-    
     // Query project_applicants table filtered by user_id
-    const result = await ProjectModel.getAppliedProjectIdsByUser(validatedUserId);
-    
-    console.log('getMyAppliedProjectIds - Result from model:', {
-      userId: result.userId,
-      projectIdsCount: result.projectIds?.length || 0,
-      projectIds: result.projectIds
-    });
+    // Returns array of {projectId, status} objects
+    const result = await ProjectModel.getAppliedProjectIdsByUser(
+      validatedUserId
+    );
     
     return res.status(200).json({
       success: true,
       status: 200,
-      message: "Applied project IDs retrieved successfully",
+      message: "Applied project IDs with status retrieved successfully",
       data: {
         userId: result.userId,
-        projectIds: result.projectIds || [],
+        projectIds: result.projectIds || [], // ✅ Array of {projectId, status} objects
       },
     });
   } catch (error) {
     console.error("Get My Applied Project IDs Error:", error);
-    return res
-      .status(500)
-      .json({
+    return res.status(500).json({
         success: false,
         status: 500,
         message: "Failed to fetch applied project IDs",
@@ -1259,7 +1450,12 @@ const getMyApplicationsCount = async (req, res) => {
     console.error("Get My Applications Count Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch applications count", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch applications count",
+        error: error.message,
+      });
   }
 };
 
@@ -1267,28 +1463,30 @@ const getMyApplicationsCount = async (req, res) => {
 const getDeveloperAppliedProjects = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    console.log('getDeveloperAppliedProjects - req.user:', req.user);
-    console.log('getDeveloperAppliedProjects - userId:', userId);
+    console.log("getDeveloperAppliedProjects - req.user:", req.user);
+    console.log("getDeveloperAppliedProjects - userId:", userId);
     if (!userId) return sendError(res, "Authentication required", 401);
     
     // Direct database query instead of using the model
-    const { Pool } = require('pg');
-    require('dotenv').config({ path: './.env' });
+    const { Pool } = require("pg");
+    require("dotenv").config({ path: "./.env" });
     
     const pool = new Pool({
-      host: process.env.DB_HOST || '127.0.0.1',
+      host: process.env.DB_HOST || "127.0.0.1",
       port: Number(process.env.DB_PORT) || 5432,
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'password',
-      database: process.env.DB_NAME || 'skillbridge_db',
-      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
+      user: process.env.DB_USER || "postgres",
+      password: process.env.DB_PASSWORD || "password",
+      database: process.env.DB_NAME || "skillbridge_db",
+      ssl:
+        process.env.DB_SSL === "true" ? { rejectUnauthorized: false } : false,
     });
     
     const client = await pool.connect();
     
     try {
       // Direct SQL query to get applied projects
-      const result = await client.query(`
+      const result = await client.query(
+        `
         SELECT 
           pa.id as "applicationId",
           pa.project_id as "projectId",
@@ -1318,12 +1516,17 @@ const getDeveloperAppliedProjects = async (req, res) => {
         LEFT JOIN projects p ON pa.project_id = p.id
         WHERE pa.user_id = $1 AND p.title IS NOT NULL
         ORDER BY pa.applied_at DESC
-      `, [userId]);
+      `,
+        [userId]
+      );
       
-      console.log('getDeveloperAppliedProjects - direct query result:', result.rows.length);
+      console.log(
+        "getDeveloperAppliedProjects - direct query result:",
+        result.rows.length
+      );
       
       // Transform the data
-      const appliedProjects = result.rows.map(app => ({
+      const appliedProjects = result.rows.map((app) => ({
         applicationId: app.applicationId,
         projectId: app.projectId,
         status: app.status,
@@ -1346,11 +1549,14 @@ const getDeveloperAppliedProjects = async (req, res) => {
           status: app.projectStatus,
           ownerId: app.projectOwnerId,
           startDate: app.projectStartDate,
-          deadline: app.projectDeadline
-        }
+          deadline: app.projectDeadline,
+        },
       }));
       
-      console.log('getDeveloperAppliedProjects - transformed projects:', appliedProjects.length);
+      console.log(
+        "getDeveloperAppliedProjects - transformed projects:",
+        appliedProjects.length
+      );
       
       await client.release();
       await pool.end();
@@ -1360,25 +1566,21 @@ const getDeveloperAppliedProjects = async (req, res) => {
         status: 200, 
         message: "Applied projects retrieved successfully",
         count: appliedProjects.length,
-        appliedProjects 
+        appliedProjects,
       });
-      
     } catch (dbError) {
-      console.error('Database error:', dbError);
+      console.error("Database error:", dbError);
       await client.release();
       await pool.end();
       throw dbError;
     }
-    
   } catch (error) {
     console.error("Get Developer Applied Projects Error:", error);
-    return res
-      .status(500)
-      .json({ 
+    return res.status(500).json({
         success: false, 
         status: 500, 
         message: "Failed to fetch applied projects", 
-        error: error.message 
+      error: error.message,
       });
   }
 };
@@ -1390,7 +1592,8 @@ const createInvite = async (req, res) => {
     const inviterUserId = req.user?.userId;
     const inviterRole = req.user?.role;
     
-    if (!projectId || !invitedEmail) return sendError(res, "projectId and invitedEmail are required", 400);
+    if (!projectId || !invitedEmail)
+      return sendError(res, "projectId and invitedEmail are required", 400);
     if (!inviterUserId) return sendError(res, "Authentication required", 401);
     
     // Check if project exists and user has permission to invite
@@ -1398,19 +1601,30 @@ const createInvite = async (req, res) => {
     if (!project) return sendError(res, "Project not found", 404);
     
     // Only project owner or admin can send invites
-    if (inviterRole !== 'admin' && project.ownerId !== inviterUserId) {
-      return sendError(res, "You can only invite people to your own projects", 403);
+    if (inviterRole !== "admin" && project.ownerId !== inviterUserId) {
+      return sendError(
+        res,
+        "You can only invite people to your own projects",
+        403
+      );
     }
     
     // Check if invite already exists for this email and project
-    const existingInvites = await ProjectModel.getInvitesByProjectId(Number(projectId));
-    const existingInvite = existingInvites.find(invite => 
+    const existingInvites = await ProjectModel.getInvitesByProjectId(
+      Number(projectId)
+    );
+    const existingInvite = existingInvites.find(
+      (invite) =>
       invite.invitedEmail.toLowerCase() === invitedEmail.toLowerCase() && 
-      invite.status === 'pending'
+        invite.status === "pending"
     );
     
     if (existingInvite) {
-      return sendError(res, "An active invite already exists for this email", 400);
+      return sendError(
+        res,
+        "An active invite already exists for this email",
+        400
+      );
     }
     
     const row = await ProjectModel.createInvite({
@@ -1444,25 +1658,39 @@ const createInvite = async (req, res) => {
           row.id // Pass the invite ID for the link
         );
         
-        console.log(`✅ Invite email sent to ${invitedEmail} for project: ${project.title}`);
+        console.log(
+          `✅ Invite email sent to ${invitedEmail} for project: ${project.title}`
+        );
       } else {
-        console.log('Missing information for invite email:', {
+        console.log("Missing information for invite email:", {
           projectTitle: project?.title,
           ownerName: projectOwner?.name,
-          invitedEmail
+          invitedEmail,
         });
       }
     } catch (emailError) {
-      console.error('❌ Error sending invite email:', emailError);
+      console.error("❌ Error sending invite email:", emailError);
       // Don't fail the invite creation if email fails
     }
 
-    return res.status(201).json({ success: true, status: 201, message: "Invite created", invite: row });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        status: 201,
+        message: "Invite created",
+        invite: row,
+      });
   } catch (error) {
     console.error("Create Invite Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Invite failed", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Invite failed",
+        error: error.message,
+      });
   }
 };
 
@@ -1478,7 +1706,12 @@ const getMyInvites = async (req, res) => {
     console.error("Get My Invites Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch invites", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch invites",
+        error: error.message,
+      });
   }
 };
 
@@ -1493,22 +1726,34 @@ const getSentInvitations = async (req, res) => {
       success: true, 
       status: 200, 
       invites,
-      count: invites.length 
+      count: invites.length,
     });
   } catch (error) {
     console.error("Get Sent Invitations Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch sent invitations", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch sent invitations",
+        error: error.message,
+      });
   }
 };
 
 // Cancel/Delete invite (project owner only)
 const cancelInvite = async (req, res) => {
   try {
-    console.log("cancelInvite - Request body:", JSON.stringify(req.body, null, 2));
+    console.log(
+      "cancelInvite - Request body:",
+      JSON.stringify(req.body, null, 2)
+    );
     const { inviteId, projectId, developerId } = req.body;
-    console.log("cancelInvite - Extracted values:", { inviteId, projectId, developerId });
+    console.log("cancelInvite - Extracted values:", {
+      inviteId,
+      projectId,
+      developerId,
+    });
     const userId = req.user?.userId;
     const userRole = req.user?.role;
     
@@ -1535,8 +1780,8 @@ const cancelInvite = async (req, res) => {
           projectId: invite.projectId,
           project_id: invite.project_id,
           allKeys: Object.keys(invite),
-          fullInvite: JSON.stringify(invite, null, 2)
-        }
+          fullInvite: JSON.stringify(invite, null, 2),
+        },
       });
     } 
     // Otherwise, find invite by projectId and developerId
@@ -1545,17 +1790,21 @@ const cancelInvite = async (req, res) => {
         Number(projectId),
         Number(developerId)
       );
-      invite = invites.find(inv => inv.status === 'pending') || invites[0];
+      invite = invites.find((inv) => inv.status === "pending") || invites[0];
       if (!invite) return sendError(res, "Invite not found", 404);
     } else {
-      return sendError(res, "inviteId or (projectId and developerId) required", 400);
+      return sendError(
+        res,
+        "inviteId or (projectId and developerId) required",
+        400
+      );
     }
     
     // Check if project exists and user has permission
     // Priority: 1. Request body projectId (most reliable), 2. Invite object projectId, 3. Invite object project_id
     // Handle both camelCase (from Drizzle) and snake_case (from raw SQL) field names
     let inviteProjectIdRaw = null;
-    let projectIdSource = 'unknown';
+    let projectIdSource = "unknown";
     
     console.log("Evaluating projectId sources:", {
       requestProjectId: projectId,
@@ -1564,44 +1813,80 @@ const cancelInvite = async (req, res) => {
       inviteProjectId: invite.projectId,
       inviteProjectIdType: typeof invite.projectId,
       inviteProject_id: invite.project_id,
-      inviteProject_idType: typeof invite.project_id
+      inviteProject_idType: typeof invite.project_id,
     });
     
     // Validate and use projectId from request body (most reliable when provided)
     // Check request body projectId FIRST since user is explicitly sending it
-    if (projectId !== undefined && projectId !== null && projectId !== '') {
+    if (projectId !== undefined && projectId !== null && projectId !== "") {
       const requestProjectIdNum = Number(projectId);
-      if (!isNaN(requestProjectIdNum) && requestProjectIdNum > 0 && Number.isInteger(requestProjectIdNum)) {
+      if (
+        !isNaN(requestProjectIdNum) &&
+        requestProjectIdNum > 0 &&
+        Number.isInteger(requestProjectIdNum)
+      ) {
         inviteProjectIdRaw = requestProjectIdNum;
-        projectIdSource = 'request.body';
-        console.log("✅ Using projectId from request body:", requestProjectIdNum);
+        projectIdSource = "request.body";
+        console.log(
+          "✅ Using projectId from request body:",
+          requestProjectIdNum
+        );
       } else {
-        console.warn("⚠️ Request projectId is invalid:", { projectId, converted: requestProjectIdNum });
+        console.warn("⚠️ Request projectId is invalid:", {
+          projectId,
+          converted: requestProjectIdNum,
+        });
       }
     }
     
     // Fallback to invite.projectId only if request body didn't provide valid projectId
-    if (!inviteProjectIdRaw && invite.projectId !== undefined && invite.projectId !== null) {
+    if (
+      !inviteProjectIdRaw &&
+      invite.projectId !== undefined &&
+      invite.projectId !== null
+    ) {
       const inviteProjectIdNum = Number(invite.projectId);
-      if (!isNaN(inviteProjectIdNum) && inviteProjectIdNum > 0 && Number.isInteger(inviteProjectIdNum)) {
+      if (
+        !isNaN(inviteProjectIdNum) &&
+        inviteProjectIdNum > 0 &&
+        Number.isInteger(inviteProjectIdNum)
+      ) {
         inviteProjectIdRaw = inviteProjectIdNum;
-        projectIdSource = 'invite.projectId';
-        console.log("✅ Using projectId from invite.projectId:", inviteProjectIdNum);
+        projectIdSource = "invite.projectId";
+        console.log(
+          "✅ Using projectId from invite.projectId:",
+          inviteProjectIdNum
+        );
       }
     }
     
     // Fallback to invite.project_id as last resort
-    if (!inviteProjectIdRaw && invite.project_id !== undefined && invite.project_id !== null) {
+    if (
+      !inviteProjectIdRaw &&
+      invite.project_id !== undefined &&
+      invite.project_id !== null
+    ) {
       const inviteProjectIdNum = Number(invite.project_id);
-      if (!isNaN(inviteProjectIdNum) && inviteProjectIdNum > 0 && Number.isInteger(inviteProjectIdNum)) {
+      if (
+        !isNaN(inviteProjectIdNum) &&
+        inviteProjectIdNum > 0 &&
+        Number.isInteger(inviteProjectIdNum)
+      ) {
         inviteProjectIdRaw = inviteProjectIdNum;
-        projectIdSource = 'invite.project_id';
-        console.log("✅ Using projectId from invite.project_id:", inviteProjectIdNum);
+        projectIdSource = "invite.project_id";
+        console.log(
+          "✅ Using projectId from invite.project_id:",
+          inviteProjectIdNum
+        );
       }
     }
     
     // Final validation - ensure we have a valid projectId before proceeding
-    if (!inviteProjectIdRaw || inviteProjectIdRaw === null || inviteProjectIdRaw === undefined) {
+    if (
+      !inviteProjectIdRaw ||
+      inviteProjectIdRaw === null ||
+      inviteProjectIdRaw === undefined
+    ) {
       console.error("No project ID found in any source:", {
         inviteId: inviteId,
         requestBody: req.body,
@@ -1611,15 +1896,23 @@ const cancelInvite = async (req, res) => {
           projectId: invite?.projectId,
           project_id: invite?.project_id,
           allFields: invite ? Object.keys(invite) : [],
-          fullInvite: invite ? JSON.stringify(invite, null, 2) : 'no invite'
-        }
+          fullInvite: invite ? JSON.stringify(invite, null, 2) : "no invite",
+        },
       });
-      return sendError(res, `No valid project ID found. Invite ID: ${invite?.id}, Request Project ID: ${projectId}`, 400);
+      return sendError(
+        res,
+        `No valid project ID found. Invite ID: ${invite?.id}, Request Project ID: ${projectId}`,
+        400
+      );
     }
     
     const inviteProjectId = Number(inviteProjectIdRaw);
     
-    if (isNaN(inviteProjectId) || inviteProjectId <= 0 || !Number.isInteger(inviteProjectId)) {
+    if (
+      isNaN(inviteProjectId) ||
+      inviteProjectId <= 0 ||
+      !Number.isInteger(inviteProjectId)
+    ) {
       console.error("Invalid project ID value (NaN or invalid):", {
         inviteId: inviteId,
         requestBody: req.body,
@@ -1629,31 +1922,45 @@ const cancelInvite = async (req, res) => {
         invite: {
           id: invite?.id,
           projectId: invite?.projectId,
-          project_id: invite?.project_id
-        }
+          project_id: invite?.project_id,
+        },
       });
-      return sendError(res, `Invalid project ID value: ${inviteProjectIdRaw}. Must be a positive integer.`, 400);
+      return sendError(
+        res,
+        `Invalid project ID value: ${inviteProjectIdRaw}. Must be a positive integer.`,
+        400
+      );
     }
     
     console.log("Using project ID for invite cancellation:", {
       inviteId: invite?.id,
       inviteProjectId: inviteProjectId,
       source: projectIdSource,
-      inviteProjectIdRaw: inviteProjectIdRaw
+      inviteProjectIdRaw: inviteProjectIdRaw,
     });
     
     // Double-check before calling getProjectById - should never be NaN at this point
     if (isNaN(inviteProjectId) || inviteProjectId <= 0) {
-      console.error("CRITICAL: projectId is still invalid right before getProjectById call!");
-      return sendError(res, `Critical error: Invalid project ID ${inviteProjectId}`, 500);
+      console.error(
+        "CRITICAL: projectId is still invalid right before getProjectById call!"
+      );
+      return sendError(
+        res,
+        `Critical error: Invalid project ID ${inviteProjectId}`,
+        500
+      );
     }
     
     const project = await ProjectModel.getProjectById(inviteProjectId);
     if (!project) return sendError(res, "Project not found", 404);
     
     // Only project owner or admin can cancel invites
-    if (userRole !== 'admin' && project.ownerId !== userId) {
-      return sendError(res, "You can only cancel invites for your own projects", 403);
+    if (userRole !== "admin" && project.ownerId !== userId) {
+      return sendError(
+        res,
+        "You can only cancel invites for your own projects",
+        403
+      );
     }
     
     // Delete the invite
@@ -1667,7 +1974,7 @@ const cancelInvite = async (req, res) => {
       success: true, 
       status: 200, 
       message: "Invite canceled successfully",
-      invite: deleted 
+      invite: deleted,
     });
   } catch (error) {
     console.error("Cancel Invite Error:", error);
@@ -1675,7 +1982,7 @@ const cancelInvite = async (req, res) => {
       success: false, 
       status: 500, 
       message: "Failed to cancel invite", 
-      error: error.message 
+      error: error.message,
     });
   }
 };
@@ -1687,15 +1994,18 @@ const respondInvite = async (req, res) => {
     const responderUserId = req.user?.userId;
     const responderEmail = req.user?.email;
     
-    if (!inviteId || !status) return sendError(res, "inviteId and status are required", 400);
-    if (!responderUserId || !responderEmail) return sendError(res, "Authentication required", 401);
+    if (!inviteId || !status)
+      return sendError(res, "inviteId and status are required", 400);
+    if (!responderUserId || !responderEmail)
+      return sendError(res, "Authentication required", 401);
     
     // Get the invite to validate the responder
     const invite = await ProjectModel.getInviteById(Number(inviteId));
     if (!invite) return sendError(res, "Invite not found", 404);
     
     // Check if the person responding is actually the invited person
-    const isInvitedUser = invite.invitedUserId === responderUserId || 
+    const isInvitedUser =
+      invite.invitedUserId === responderUserId ||
                           invite.invitedEmail.toLowerCase() === responderEmail.toLowerCase();
     
     if (!isInvitedUser) {
@@ -1703,16 +2013,25 @@ const respondInvite = async (req, res) => {
     }
     
     // Check if invite is still pending
-    if (invite.status !== 'pending') {
-      return sendError(res, `This invite has already been ${invite.status}`, 400);
+    if (invite.status !== "pending") {
+      return sendError(
+        res,
+        `This invite has already been ${invite.status}`,
+        400
+      );
     }
     
-    const row = await ProjectModel.respondInvite({ inviteId: Number(inviteId), status });
+    const row = await ProjectModel.respondInvite({
+      inviteId: Number(inviteId),
+      status,
+    });
     
     // Send email notification to project owner about invite response
     try {
       // Get project information
-      const project = await ProjectModel.getProjectById(Number(invite.projectId));
+      const project = await ProjectModel.getProjectById(
+        Number(invite.projectId)
+      );
       
       // Get project owner information
       const projectOwner = await getUserInfo(Number(project?.ownerId));
@@ -1720,7 +2039,12 @@ const respondInvite = async (req, res) => {
       // Get responder information
       const responder = await getUserInfo(Number(responderUserId));
       
-      if (project?.title && projectOwner?.email && projectOwner?.name && responder?.name) {
+      if (
+        project?.title &&
+        projectOwner?.email &&
+        projectOwner?.name &&
+        responder?.name
+      ) {
         // Send notification email to project owner about the response
         await sendInviteResponseNotificationEmail(
           projectOwner.email,
@@ -1731,27 +2055,44 @@ const respondInvite = async (req, res) => {
           status
         );
         
-        console.log(`✅ Invite response notification sent to ${projectOwner.email} for project: ${project.title}`);
+        console.log(
+          `✅ Invite response notification sent to ${projectOwner.email} for project: ${project.title}`
+        );
       } else {
-        console.log('Missing information for invite response email:', {
+        console.log("Missing information for invite response email:", {
           projectTitle: project?.title,
           ownerEmail: projectOwner?.email,
           ownerName: projectOwner?.name,
           responderName: responder?.name,
-          responderEmail: responder?.email
+          responderEmail: responder?.email,
         });
       }
     } catch (emailError) {
-      console.error('❌ Error sending invite response notification email:', emailError);
+      console.error(
+        "❌ Error sending invite response notification email:",
+        emailError
+      );
       // Don't fail the response if email fails
     }
     
-    return res.status(200).json({ success: true, status: 200, message: "Invite updated", invite: row });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: 200,
+        message: "Invite updated",
+        invite: row,
+      });
   } catch (error) {
     console.error("Respond Invite Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to update invite", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to update invite",
+        error: error.message,
+      });
   }
 };
 
@@ -1789,20 +2130,25 @@ const addFile = async (req, res) => {
       mimeType,
       sizeKb: Math.round(fileSize / 1024),
       description: description || null,
-      category: category || 'other'
+      category: category || "other",
     });
     
     return res.status(201).json({ 
       success: true, 
       status: 201, 
       message: "File uploaded successfully", 
-      file: row
+      file: row,
     });
   } catch (error) {
     console.error("Add File Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to upload file to Supabase", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to upload file to Supabase",
+        error: error.message,
+      });
   }
 };
 
@@ -1815,11 +2161,12 @@ const getProjectFiles = async (req, res) => {
     const files = await ProjectModel.getFilesByProjectId(Number(projectId));
     
     // Generate signed URLs for each file (mirror user service logic)
-    const filesWithUrls = await Promise.all(files.map(async (file) => {
+    const filesWithUrls = await Promise.all(
+      files.map(async (file) => {
       let signedUrl = null;
       
       // Generate signed URL if file.url is a path (not already a full URL)
-      if (file.url && !file.url.startsWith('http')) {
+        if (file.url && !file.url.startsWith("http")) {
         const { data, error } = await supabase.storage
           .from("upload")
           .createSignedUrl(file.url, 60 * 60); // 1 hour expiry (like user service)
@@ -1827,27 +2174,33 @@ const getProjectFiles = async (req, res) => {
         if (!error) {
           signedUrl = data.signedUrl;
         }
-      } else if (file.url && file.url.startsWith('http')) {
+        } else if (file.url && file.url.startsWith("http")) {
         // If it's already a full URL, use it as is
         signedUrl = file.url;
       }
       
       return {
         ...file,
-        signedUrl: signedUrl
+          signedUrl: signedUrl,
       };
-    }));
+      })
+    );
     
     return res.status(200).json({ 
       success: true, 
       status: 200, 
-      files: filesWithUrls 
+      files: filesWithUrls,
     });
   } catch (error) {
     console.error("Get Project Files Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project files", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project files",
+        error: error.message,
+      });
   }
 };
 
@@ -1856,14 +2209,36 @@ const addUpdate = async (req, res) => {
   try {
     const authorId = req.user?.userId;
     const { projectId, type, message } = req.body;
-    if (!authorId || !projectId || !message) return sendError(res, "authorId, projectId and message are required", 400);
-    const row = await ProjectModel.addUpdate({ projectId: Number(projectId), authorId: Number(authorId), type, message });
-    return res.status(201).json({ success: true, status: 201, message: "Update added", update: row });
+    if (!authorId || !projectId || !message)
+      return sendError(
+        res,
+        "authorId, projectId and message are required",
+        400
+      );
+    const row = await ProjectModel.addUpdate({
+      projectId: Number(projectId),
+      authorId: Number(authorId),
+      type,
+      message,
+    });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        status: 201,
+        message: "Update added",
+        update: row,
+      });
   } catch (error) {
     console.error("Add Update Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add update", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to add update",
+        error: error.message,
+      });
   }
 };
 
@@ -1872,14 +2247,36 @@ const addReview = async (req, res) => {
   try {
     const reviewerId = req.user?.userId;
     const { projectId, rating, comment } = req.body;
-    if (!reviewerId || !projectId || !rating) return sendError(res, "reviewerId, projectId and rating are required", 400);
-    const row = await ProjectModel.addReview({ projectId: Number(projectId), reviewerId: Number(reviewerId), rating: Number(rating), comment });
-    return res.status(201).json({ success: true, status: 201, message: "Review added", review: row });
+    if (!reviewerId || !projectId || !rating)
+      return sendError(
+        res,
+        "reviewerId, projectId and rating are required",
+        400
+      );
+    const row = await ProjectModel.addReview({
+      projectId: Number(projectId),
+      reviewerId: Number(reviewerId),
+      rating: Number(rating),
+      comment,
+    });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        status: 201,
+        message: "Review added",
+        review: row,
+      });
   } catch (error) {
     console.error("Add Review Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add review", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to add review",
+        error: error.message,
+      });
   }
 };
 
@@ -1888,8 +2285,19 @@ const addBoost = async (req, res) => {
   try {
     const purchaserId = req.user?.userId;
     const { projectId, plan, amountCents, currency, startAt, endAt } = req.body;
-    if (!purchaserId || !projectId || !plan || !amountCents || !startAt || !endAt) {
-      return sendError(res, "purchasedBy, projectId, plan, amountCents, startAt, endAt are required", 400);
+    if (
+      !purchaserId ||
+      !projectId ||
+      !plan ||
+      !amountCents ||
+      !startAt ||
+      !endAt
+    ) {
+      return sendError(
+        res,
+        "purchasedBy, projectId, plan, amountCents, startAt, endAt are required",
+        400
+      );
     }
     const row = await ProjectModel.addBoost({
       projectId: Number(projectId),
@@ -1900,12 +2308,19 @@ const addBoost = async (req, res) => {
       startAt: new Date(startAt),
       endAt: new Date(endAt),
     });
-    return res.status(201).json({ success: true, status: 201, message: "Boost added", boost: row });
+    return res
+      .status(201)
+      .json({ success: true, status: 201, message: "Boost added", boost: row });
   } catch (error) {
     console.error("Add Boost Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add boost", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to add boost",
+        error: error.message,
+      });
   }
 };
 
@@ -1921,7 +2336,12 @@ const getProjectUpdates = async (req, res) => {
     console.error("Get Project Updates Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project updates", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project updates",
+        error: error.message,
+      });
   }
 };
 
@@ -1937,7 +2357,12 @@ const getProjectReviews = async (req, res) => {
     console.error("Get Project Reviews Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project reviews", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project reviews",
+        error: error.message,
+      });
   }
 };
 
@@ -1953,7 +2378,12 @@ const getProjectBoosts = async (req, res) => {
     console.error("Get Project Boosts Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project boosts", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project boosts",
+        error: error.message,
+      });
   }
 };
 
@@ -1969,7 +2399,12 @@ const getProjectStats = async (req, res) => {
     console.error("Get Project Stats Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch project stats", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch project stats",
+        error: error.message,
+      });
   }
 };
 
@@ -1989,7 +2424,7 @@ const searchProjects = async (req, res) => {
       sortBy,
       sortOrder,
       page = 1,
-      limit = 20
+      limit = 20,
     } = req.query;
     
     const filters = {
@@ -2000,12 +2435,12 @@ const searchProjects = async (req, res) => {
       experienceLevel,
       budgetMin: budgetMin ? Number(budgetMin) : undefined,
       budgetMax: budgetMax ? Number(budgetMax) : undefined,
-      isRemote: isRemote === 'true',
+      isRemote: isRemote === "true",
       location,
-      sortBy: sortBy || 'createdAt',
-      sortOrder: sortOrder || 'desc',
+      sortBy: sortBy || "createdAt",
+      sortOrder: sortOrder || "desc",
       page: Number(page),
-      limit: Number(limit)
+      limit: Number(limit),
     };
     
     const results = await ProjectModel.searchProjects(filters);
@@ -2014,7 +2449,12 @@ const searchProjects = async (req, res) => {
     console.error("Search Projects Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to search projects", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to search projects",
+        error: error.message,
+      });
   }
 };
 
@@ -2025,13 +2465,23 @@ const getProjectRecommendations = async (req, res) => {
     if (!userId) return sendError(res, "Authentication required", 401);
     
     const { limit = 10 } = req.query;
-    const recommendations = await ProjectModel.getProjectRecommendations(Number(userId), Number(limit));
-    return res.status(200).json({ success: true, status: 200, recommendations });
+    const recommendations = await ProjectModel.getProjectRecommendations(
+      Number(userId),
+      Number(limit)
+    );
+    return res
+      .status(200)
+      .json({ success: true, status: 200, recommendations });
   } catch (error) {
     console.error("Get Project Recommendations Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch recommendations", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch recommendations",
+        error: error.message,
+      });
   }
 };
 
@@ -2050,13 +2500,28 @@ const addProjectFavorite = async (req, res) => {
       return sendError(res, "Invalid project id", 400);
     }
     
-    const favorite = await ProjectModel.addProjectFavorite(Number(userId), projectIdNum);
-    return res.status(201).json({ success: true, status: 201, message: "Project added to favorites", favorite });
+    const favorite = await ProjectModel.addProjectFavorite(
+      Number(userId),
+      projectIdNum
+    );
+    return res
+      .status(201)
+      .json({
+        success: true,
+        status: 201,
+        message: "Project added to favorites",
+        favorite,
+      });
   } catch (error) {
     console.error("Add Project Favorite Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add favorite", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to add favorite",
+        error: error.message,
+      });
   }
 };
 
@@ -2076,12 +2541,23 @@ const removeProjectFavorite = async (req, res) => {
     }
     
     await ProjectModel.removeProjectFavorite(Number(userId), projectIdNum);
-    return res.status(200).json({ success: true, status: 200, message: "Project removed from favorites" });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: 200,
+        message: "Project removed from favorites",
+      });
   } catch (error) {
     console.error("Remove Project Favorite Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to remove favorite", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to remove favorite",
+        error: error.message,
+      });
   }
 };
 
@@ -2097,7 +2573,12 @@ const getProjectFavorites = async (req, res) => {
     console.error("Get Project Favorites Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch favorites", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch favorites",
+        error: error.message,
+      });
   }
 };
 
@@ -2106,12 +2587,25 @@ const addProjectSave = async (req, res) => {
   try {
     const userId = req.user?.userId;
     const { projectId } = req.body;
-    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
-    const save = await ProjectModel.addProjectSave(Number(userId), Number(projectId));
-    return res.status(201).json({ success: true, status: 201, message: "Project saved", save });
+    if (!userId || !projectId)
+      return sendError(res, "userId and projectId are required", 400);
+    const save = await ProjectModel.addProjectSave(
+      Number(userId),
+      Number(projectId)
+    );
+    return res
+      .status(201)
+      .json({ success: true, status: 201, message: "Project saved", save });
   } catch (error) {
     console.error("Add Project Save Error:", error);
-    return res.status(500).json({ success: false, status: 500, message: "Failed to save project", error: error.message });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to save project",
+        error: error.message,
+      });
   }
 };
 
@@ -2119,12 +2613,22 @@ const removeProjectSave = async (req, res) => {
   try {
     const userId = req.user?.userId;
     const { projectId } = req.body;
-    if (!userId || !projectId) return sendError(res, "userId and projectId are required", 400);
+    if (!userId || !projectId)
+      return sendError(res, "userId and projectId are required", 400);
     await ProjectModel.removeProjectSave(Number(userId), Number(projectId));
-    return res.status(200).json({ success: true, status: 200, message: "Project unsaved" });
+    return res
+      .status(200)
+      .json({ success: true, status: 200, message: "Project unsaved" });
   } catch (error) {
     console.error("Remove Project Save Error:", error);
-    return res.status(500).json({ success: false, status: 500, message: "Failed to unsave project", error: error.message });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to unsave project",
+        error: error.message,
+      });
   }
 };
 
@@ -2136,7 +2640,14 @@ const getProjectSaves = async (req, res) => {
     return res.status(200).json({ success: true, status: 200, saves });
   } catch (error) {
     console.error("Get Project Saves Error:", error);
-    return res.status(500).json({ success: false, status: 500, message: "Failed to fetch saves", error: error.message });
+    return res
+      .status(500)
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch saves",
+        error: error.message,
+      });
   }
 };
 
@@ -2147,22 +2658,33 @@ const addProjectComment = async (req, res) => {
     const { projectId, content, parentCommentId } = req.body;
     
     if (!authorId || !projectId || !content) {
-      return sendError(res, "authorId, projectId and content are required", 400);
+      return sendError(
+        res,
+        "authorId, projectId and content are required",
+        400
+      );
     }
     
     const comment = await ProjectModel.addProjectComment({
       projectId: Number(projectId),
       authorId: Number(authorId),
       content,
-      parentCommentId: parentCommentId ? Number(parentCommentId) : null
+      parentCommentId: parentCommentId ? Number(parentCommentId) : null,
     });
     
-    return res.status(201).json({ success: true, status: 201, message: "Comment added", comment });
+    return res
+      .status(201)
+      .json({ success: true, status: 201, message: "Comment added", comment });
   } catch (error) {
     console.error("Add Project Comment Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to add comment", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to add comment",
+        error: error.message,
+      });
   }
 };
 
@@ -2178,7 +2700,12 @@ const getProjectComments = async (req, res) => {
     console.error("Get Project Comments Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to fetch comments", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to fetch comments",
+        error: error.message,
+      });
   }
 };
 
@@ -2193,15 +2720,36 @@ const updateProjectComment = async (req, res) => {
       return sendError(res, "userId, commentId and content are required", 400);
     }
     
-    const comment = await ProjectModel.updateProjectComment(Number(commentId), Number(userId), content);
-    if (!comment) return sendError(res, "Comment not found or you don't have permission to edit it", 404);
+    const comment = await ProjectModel.updateProjectComment(
+      Number(commentId),
+      Number(userId),
+      content
+    );
+    if (!comment)
+      return sendError(
+        res,
+        "Comment not found or you don't have permission to edit it",
+        404
+      );
     
-    return res.status(200).json({ success: true, status: 200, message: "Comment updated", comment });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        status: 200,
+        message: "Comment updated",
+        comment,
+      });
   } catch (error) {
     console.error("Update Project Comment Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to update comment", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to update comment",
+        error: error.message,
+      });
   }
 };
 
@@ -2215,23 +2763,38 @@ const deleteProjectComment = async (req, res) => {
       return sendError(res, "userId and commentId are required", 400);
     }
     
-    const deleted = await ProjectModel.deleteProjectComment(Number(commentId), Number(userId));
-    if (!deleted) return sendError(res, "Comment not found or you don't have permission to delete it", 404);
+    const deleted = await ProjectModel.deleteProjectComment(
+      Number(commentId),
+      Number(userId)
+    );
+    if (!deleted)
+      return sendError(
+        res,
+        "Comment not found or you don't have permission to delete it",
+        404
+      );
     
-    return res.status(200).json({ success: true, status: 200, message: "Comment deleted" });
+    return res
+      .status(200)
+      .json({ success: true, status: 200, message: "Comment deleted" });
   } catch (error) {
     console.error("Delete Project Comment Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to delete comment", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to delete comment",
+        error: error.message,
+      });
   }
 };
 
 // Get all skills and tags (for dropdowns, filters, etc.)
 const getGlobalSkillsAndTags = async (req, res) => {
   try {
-    const { ProjectSkillsModel } = require('../models/project-skills.model');
-    const { ProjectTagsModel } = require('../models/project-tags.model');
+    const { ProjectSkillsModel } = require("../models/project-skills.model");
+    const { ProjectTagsModel } = require("../models/project-tags.model");
 
     // Get all skills from reference table
     const skills = await ProjectSkillsModel.getAllSkills();
@@ -2243,36 +2806,41 @@ const getGlobalSkillsAndTags = async (req, res) => {
       success: true,
       status: 200,
       data: {
-        skills: skills.map(skill => ({
+        skills: skills.map((skill) => ({
           id: skill.id,
           name: skill.name,
-          category: skill.category
+          category: skill.category,
         })),
-        tags: tags.map(tag => ({
+        tags: tags.map((tag) => ({
           id: tag.id,
           name: tag.name,
-          category: tag.category
-        }))
-      }
+          category: tag.category,
+        })),
+      },
     });
   } catch (error) {
     console.error("Get Skills and Tags Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to get skills and tags", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to get skills and tags",
+        error: error.message,
+      });
   }
 };
 
 // Get search suggestions for skills and tags
 const getSearchSuggestions = async (req, res) => {
   try {
-    const { query, type = 'all' } = req.query; // type can be 'skills', 'tags', or 'all'
+    const { query, type = "all" } = req.query; // type can be 'skills', 'tags', or 'all'
     
     if (!query || query.trim().length < 2) {
       return res.status(200).json({ 
         success: true, 
         status: 200, 
-        suggestions: { skills: [], tags: [] }
+        suggestions: { skills: [], tags: [] },
       });
     }
 
@@ -2280,29 +2848,34 @@ const getSearchSuggestions = async (req, res) => {
     const suggestions = { skills: [], tags: [] };
 
     // Get skills suggestions from reference table
-    if (type === 'all' || type === 'skills') {
-      const { ProjectSkillsModel } = require('../models/project-skills.model');
+    if (type === "all" || type === "skills") {
+      const { ProjectSkillsModel } = require("../models/project-skills.model");
       const skillsResult = await ProjectSkillsModel.searchSkills(searchTerm);
-      suggestions.skills = skillsResult.map(row => row.name);
+      suggestions.skills = skillsResult.map((row) => row.name);
     }
 
     // Get tags suggestions from reference table
-    if (type === 'all' || type === 'tags') {
-      const { ProjectTagsModel } = require('../models/project-tags.model');
+    if (type === "all" || type === "tags") {
+      const { ProjectTagsModel } = require("../models/project-tags.model");
       const tagsResult = await ProjectTagsModel.searchTags(searchTerm);
-      suggestions.tags = tagsResult.map(row => row.name);
+      suggestions.tags = tagsResult.map((row) => row.name);
     }
 
     return res.status(200).json({ 
       success: true, 
       status: 200, 
-      suggestions 
+      suggestions,
     });
   } catch (error) {
     console.error("Get Search Suggestions Error:", error);
     return res
       .status(500)
-      .json({ success: false, status: 500, message: "Failed to get search suggestions", error: error.message });
+      .json({
+        success: false,
+        status: 500,
+        message: "Failed to get search suggestions",
+        error: error.message,
+      });
   }
 };
 
@@ -2312,20 +2885,20 @@ const generateApplicantsReport = async (req, res) => {
     const userId = req.user?.userId;
     const { 
       projectId, 
-      exportType = 'complete-data',
-      format = 'pdf',
+      exportType = "complete-data",
+      format = "pdf",
       includeApplicants = true,
       includeInvites = true,
       includeTeamMembers = true,
       includeFiles = false,
-      includeUpdates = false
+      includeUpdates = false,
     } = req.body;
     
     if (!userId) {
       return res.status(401).json({ 
         success: false, 
         status: 401, 
-        message: "User not authenticated" 
+        message: "User not authenticated",
       });
     }
 
@@ -2337,7 +2910,7 @@ const generateApplicantsReport = async (req, res) => {
         return res.status(404).json({
           success: false,
           status: 404,
-          message: "Project not found or access denied"
+          message: "Project not found or access denied",
         });
       }
       projects = [project];
@@ -2349,7 +2922,7 @@ const generateApplicantsReport = async (req, res) => {
       return res.status(404).json({
         success: false,
         status: 404,
-        message: "No projects found for this user"
+        message: "No projects found for this user",
       });
     }
 
@@ -2359,10 +2932,10 @@ const generateApplicantsReport = async (req, res) => {
         exportedAt: new Date().toISOString(),
         exportedBy: req.user.email,
         exportType,
-        projectId: projectId || 'all',
-        format
+        projectId: projectId || "all",
+        format,
       },
-      projectDetails: projects.map(project => ({
+      projectDetails: projects.map((project) => ({
         id: project.id,
         title: project.title,
         description: project.description,
@@ -2370,8 +2943,8 @@ const generateApplicantsReport = async (req, res) => {
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         budget: project.budget,
-        timeline: project.timeline
-      }))
+        timeline: project.timeline,
+      })),
     };
 
     // Include applicants data if requested
@@ -2379,11 +2952,13 @@ const generateApplicantsReport = async (req, res) => {
       exportData.allApplicants = [];
       for (const project of projects) {
         const applicants = await ProjectModel.listApplicants(project.id);
-        exportData.allApplicants.push(...applicants.map(app => ({
+        exportData.allApplicants.push(
+          ...applicants.map((app) => ({
           ...app,
           projectTitle: project.title,
-          projectId: project.id
-        })));
+            projectId: project.id,
+          }))
+        );
       }
     }
 
@@ -2425,37 +3000,48 @@ const generateApplicantsReport = async (req, res) => {
     exportData.statistics = {
       totalProjects: projects.length,
       totalApplicants: exportData.allApplicants?.length || 0,
-      appliedCount: exportData.allApplicants?.filter(app => app.status === 'applied').length || 0,
-      shortlistedCount: exportData.allApplicants?.filter(app => app.status === 'shortlisted').length || 0,
-      rejectedCount: exportData.allApplicants?.filter(app => app.status === 'rejected').length || 0,
-      acceptedCount: exportData.allApplicants?.filter(app => app.status === 'accepted').length || 0
+      appliedCount:
+        exportData.allApplicants?.filter((app) => app.status === "applied")
+          .length || 0,
+      shortlistedCount:
+        exportData.allApplicants?.filter((app) => app.status === "shortlisted")
+          .length || 0,
+      rejectedCount:
+        exportData.allApplicants?.filter((app) => app.status === "rejected")
+          .length || 0,
+      acceptedCount:
+        exportData.allApplicants?.filter((app) => app.status === "accepted")
+          .length || 0,
     };
 
-    if (format === 'json') {
+    if (format === "json") {
       return res.status(200).json({
         success: true,
         status: 200,
         data: JSON.stringify(exportData, null, 2),
-        message: "JSON export generated successfully"
+        message: "JSON export generated successfully",
       });
     }
 
     // For PDF format, generate HTML report
-    const htmlReport = generateHTMLReport(projects, {}, exportData.allApplicants || []);
+    const htmlReport = generateHTMLReport(
+      projects,
+      {},
+      exportData.allApplicants || []
+    );
     return res.status(200).json({
       success: true,
       status: 200,
       data: htmlReport,
-      message: "HTML report generated for PDF conversion"
+      message: "HTML report generated for PDF conversion",
     });
-
   } catch (error) {
     console.error("Generate Report Error:", error);
     return res.status(500).json({
       success: false,
       status: 500,
       message: "Failed to generate report",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2468,10 +3054,15 @@ const generateHTMLReport = (projects, projectApplicantsMap, allApplicants) => {
   const stats = {
     totalProjects: projects.length,
     totalApplicants: allApplicants.length,
-    appliedCount: allApplicants.filter(app => app.status === 'applied').length,
-    shortlistedCount: allApplicants.filter(app => app.status === 'shortlisted').length,
-    rejectedCount: allApplicants.filter(app => app.status === 'rejected').length,
-    acceptedCount: allApplicants.filter(app => app.status === 'accepted').length
+    appliedCount: allApplicants.filter((app) => app.status === "applied")
+      .length,
+    shortlistedCount: allApplicants.filter(
+      (app) => app.status === "shortlisted"
+    ).length,
+    rejectedCount: allApplicants.filter((app) => app.status === "rejected")
+      .length,
+    acceptedCount: allApplicants.filter((app) => app.status === "accepted")
+      .length,
   };
 
   let html = `
@@ -2647,16 +3238,20 @@ const generateHTMLReport = (projects, projectApplicantsMap, allApplicants) => {
   `;
 
   // Add project-wise applicants
-  projects.forEach(project => {
+  projects.forEach((project) => {
     const applicants = projectApplicantsMap[project.id] || [];
     
     html += `
       <div class="project-card">
         <div class="project-title">${project.title}</div>
-        <p><strong>Description:</strong> ${project.description || 'No description'}</p>
+        <p><strong>Description:</strong> ${
+          project.description || "No description"
+        }</p>
         <p><strong>Total Applicants:</strong> ${applicants.length}</p>
         
-        ${applicants.length > 0 ? `
+        ${
+          applicants.length > 0
+            ? `
           <table class="applicant-table">
             <thead>
               <tr>
@@ -2670,30 +3265,44 @@ const generateHTMLReport = (projects, projectApplicantsMap, allApplicants) => {
               </tr>
             </thead>
             <tbody>
-              ${applicants.map(applicant => `
+              ${applicants
+                .map(
+                  (applicant) => `
                 <tr>
-                  <td><strong>${applicant.name || 'N/A'}</strong></td>
-                  <td>${applicant.email || 'N/A'}</td>
+                  <td><strong>${applicant.name || "N/A"}</strong></td>
+                  <td>${applicant.email || "N/A"}</td>
                   <td>
                     <span class="status-badge status-${applicant.status}">
-                      ${applicant.status || 'applied'}
+                      ${applicant.status || "applied"}
                     </span>
                   </td>
-                  <td>${applicant.experience || 'N/A'}</td>
-                  <td>${applicant.location || 'N/A'}</td>
+                  <td>${applicant.experience || "N/A"}</td>
+                  <td>${applicant.location || "N/A"}</td>
                   <td>
                     <div class="skills">
-                      ${applicant.skills ? JSON.parse(applicant.skills).slice(0, 3).map(skill => 
+                      ${
+                        applicant.skills
+                          ? JSON.parse(applicant.skills)
+                              .slice(0, 3)
+                              .map(
+                                (skill) =>
                         `<span class="skill-tag">${skill}</span>`
-                      ).join('') : 'N/A'}
+                              )
+                              .join("")
+                          : "N/A"
+                      }
                     </div>
                   </td>
                   <td>${new Date(applicant.appliedAt).toLocaleDateString()}</td>
                 </tr>
-              `).join('')}
+              `
+                )
+                .join("")}
             </tbody>
           </table>
-        ` : '<p><em>No applicants for this project yet.</em></p>'}
+        `
+            : "<p><em>No applicants for this project yet.</em></p>"
+        }
       </div>
     `;
   });
@@ -2719,8 +3328,8 @@ const getProjectOwnerStats = async (req, res) => {
     const userId = req.user?.userId;
     const userRole = req.user?.role;
     
-    console.log('Project Owner Stats - User ID:', userId);
-    console.log('Project Owner Stats - User Role:', userRole);
+    console.log("Project Owner Stats - User ID:", userId);
+    console.log("Project Owner Stats - User Role:", userRole);
     
     if (!userId) return sendError(res, "User ID is required", 400);
 
@@ -2732,7 +3341,13 @@ const getProjectOwnerStats = async (req, res) => {
     for (const project of ownedProjects) {
       try {
         const applicants = await ProjectModel.getProjectApplicants(project.id);
-        allApplicants.push(...applicants.map(app => ({ ...app, projectId: project.id, projectTitle: project.title })));
+        allApplicants.push(
+          ...applicants.map((app) => ({
+            ...app,
+            projectId: project.id,
+            projectTitle: project.title,
+          }))
+        );
       } catch (e) {
         console.log(`Error fetching applicants for project ${project.id}:`, e);
       }
@@ -2740,24 +3355,39 @@ const getProjectOwnerStats = async (req, res) => {
 
     // Calculate statistics
     const totalProjects = ownedProjects.length;
-    const activeProjects = ownedProjects.filter(p => p.status === 'active').length;
-    const completedProjects = ownedProjects.filter(p => p.status === 'completed').length;
+    const activeProjects = ownedProjects.filter(
+      (p) => p.status === "active"
+    ).length;
+    const completedProjects = ownedProjects.filter(
+      (p) => p.status === "completed"
+    ).length;
     const totalApplicants = allApplicants.length;
-    const newApplicantsThisWeek = allApplicants.filter(app => {
+    const newApplicantsThisWeek = allApplicants.filter((app) => {
       const appliedDate = new Date(app.appliedAt || app.createdAt);
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       return appliedDate >= weekAgo;
     }).length;
 
     // Calculate average rating from project reviews
-    const avgRating = ownedProjects.length > 0 ? 
-      (ownedProjects.reduce((sum, p) => sum + (p.averageRating || 0), 0) / ownedProjects.length).toFixed(1) : 0;
+    const avgRating =
+      ownedProjects.length > 0
+        ? (
+            ownedProjects.reduce((sum, p) => sum + (p.averageRating || 0), 0) /
+            ownedProjects.length
+          ).toFixed(1)
+        : 0;
 
     // Calculate completion rate
-    const completionRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
+    const completionRate =
+      totalProjects > 0
+        ? Math.round((completedProjects / totalProjects) * 100)
+        : 0;
 
     // Calculate developer reviews count
-    const developerReviews = ownedProjects.reduce((sum, p) => sum + (p.reviewCount || 0), 0);
+    const developerReviews = ownedProjects.reduce(
+      (sum, p) => sum + (p.reviewCount || 0),
+      0
+    );
 
     return res.status(200).json({
       success: true,
@@ -2770,8 +3400,8 @@ const getProjectOwnerStats = async (req, res) => {
         newApplicantsThisWeek,
         avgRating: parseFloat(avgRating),
         completionRate,
-        developerReviews
-      }
+        developerReviews,
+      },
     });
   } catch (error) {
     console.error("Get Project Owner Stats Error:", error);
@@ -2779,7 +3409,7 @@ const getProjectOwnerStats = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch project owner statistics",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2788,37 +3418,45 @@ const getProjectOwnerStats = async (req, res) => {
 const getProjectOwnerProjects = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    console.log('Project Owner Projects - User ID:', userId);
+    console.log("Project Owner Projects - User ID:", userId);
     
     if (!userId) return sendError(res, "User ID is required", 400);
 
     const projects = await ProjectModel.getProjectsByOwner(userId);
-    console.log('Found projects for user:', projects.length, projects);
+    console.log("Found projects for user:", projects.length, projects);
     
     // Enhance projects with additional data
-    const enhancedProjects = await Promise.all(projects.map(async (project) => {
+    const enhancedProjects = await Promise.all(
+      projects.map(async (project) => {
       try {
-        const applicants = await ProjectModel.getProjectApplicants(project.id);
+          const applicants = await ProjectModel.getProjectApplicants(
+            project.id
+          );
         const applicantCount = applicants.length;
         
         // Calculate match success rate (simplified)
-        const matchSuccess = applicantCount > 0 ? Math.min(95, 70 + Math.random() * 25) : 0;
+          const matchSuccess =
+            applicantCount > 0 ? Math.min(95, 70 + Math.random() * 25) : 0;
         
         return {
           id: project.id,
           title: project.title,
           status: project.status,
           applicants: applicantCount,
-          budget: project.budgetMin && project.budgetMax ? 
-            `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}` : 
-            'Not specified',
-          duration: project.deadline ? 
-            `${Math.ceil((new Date(project.deadline) - new Date(project.createdAt)) / (1000 * 60 * 60 * 24 * 30))} months` : 
-            'Not specified',
-          postedDate: new Date(project.createdAt).toISOString().split('T')[0],
+            budget:
+              project.budgetMin && project.budgetMax
+                ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
+                : "Not specified",
+            duration: project.deadline
+              ? `${Math.ceil(
+                  (new Date(project.deadline) - new Date(project.createdAt)) /
+                    (1000 * 60 * 60 * 24 * 30)
+                )} months`
+              : "Not specified",
+            postedDate: new Date(project.createdAt).toISOString().split("T")[0],
           skills: project.skills || [],
           matchSuccess: Math.round(matchSuccess),
-          averageRating: project.averageRating || 4.5
+            averageRating: project.averageRating || 4.5,
         };
       } catch (e) {
         console.log(`Error enhancing project ${project.id}:`, e);
@@ -2827,22 +3465,27 @@ const getProjectOwnerProjects = async (req, res) => {
           title: project.title,
           status: project.status,
           applicants: 0,
-          budget: 'Not specified',
-          duration: 'Not specified',
-          postedDate: new Date(project.createdAt).toISOString().split('T')[0],
+            budget: "Not specified",
+            duration: "Not specified",
+            postedDate: new Date(project.createdAt).toISOString().split("T")[0],
           skills: project.skills || [],
           matchSuccess: 0,
-          averageRating: 0
+            averageRating: 0,
         };
       }
-    }));
+      })
+    );
 
-    console.log('Enhanced projects:', enhancedProjects.length, enhancedProjects);
+    console.log(
+      "Enhanced projects:",
+      enhancedProjects.length,
+      enhancedProjects
+    );
     
     return res.status(200).json({
       success: true,
       status: 200,
-      projects: enhancedProjects
+      projects: enhancedProjects,
     });
   } catch (error) {
     console.error("Get Project Owner Projects Error:", error);
@@ -2850,7 +3493,7 @@ const getProjectOwnerProjects = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch project owner projects",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2869,10 +3512,12 @@ const getProjectOwnerReviews = async (req, res) => {
     for (const project of ownedProjects) {
       try {
         const reviews = await ProjectModel.getProjectReviews(project.id);
-        allReviews.push(...reviews.map(review => ({
+        allReviews.push(
+          ...reviews.map((review) => ({
           ...review,
-          projectTitle: project.title
-        })));
+            projectTitle: project.title,
+          }))
+        );
       } catch (e) {
         console.log(`Error fetching reviews for project ${project.id}:`, e);
       }
@@ -2886,7 +3531,7 @@ const getProjectOwnerReviews = async (req, res) => {
     return res.status(200).json({
       success: true,
       status: 200,
-      reviews: sortedReviews
+      reviews: sortedReviews,
     });
   } catch (error) {
     console.error("Get Project Owner Reviews Error:", error);
@@ -2894,7 +3539,7 @@ const getProjectOwnerReviews = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch project owner reviews",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2913,13 +3558,17 @@ const getProjectOwnerDevelopers = async (req, res) => {
     for (const project of ownedProjects) {
       try {
         const applicants = await ProjectModel.getProjectApplicants(project.id);
-        allApplicants.push(...applicants.map(app => ({
+        allApplicants.push(
+          ...applicants.map((app) => ({
           ...app,
           projectId: project.id,
           projectTitle: project.title,
-          projectCompany: project.company || 'Company',
-          joined: new Date(app.appliedAt || app.createdAt).toISOString().split('T')[0]
-        })));
+            projectCompany: project.company || "Company",
+            joined: new Date(app.appliedAt || app.createdAt)
+              .toISOString()
+              .split("T")[0],
+          }))
+        );
       } catch (e) {
         console.log(`Error fetching applicants for project ${project.id}:`, e);
       }
@@ -2928,21 +3577,30 @@ const getProjectOwnerDevelopers = async (req, res) => {
     // Transform applicants to developer management format
     const developers = allApplicants.map((applicant, index) => ({
       id: index + 1,
-      name: applicant.name || applicant.fullName || applicant.username || `Developer ${applicant.userId}`,
-      skills: applicant.skills || ['React', 'JavaScript', 'Node.js'],
-      status: applicant.status === 'shortlisted' ? 'Active' : 
-              applicant.status === 'applied' ? 'Onboarding' : 
-              applicant.status === 'rejected' ? 'Suspended' : 'Active',
+      name:
+        applicant.name ||
+        applicant.fullName ||
+        applicant.username ||
+        `Developer ${applicant.userId}`,
+      skills: applicant.skills || ["React", "JavaScript", "Node.js"],
+      status:
+        applicant.status === "shortlisted"
+          ? "Active"
+          : applicant.status === "applied"
+          ? "Onboarding"
+          : applicant.status === "rejected"
+          ? "Suspended"
+          : "Active",
       project: applicant.projectTitle,
       joined: applicant.joined,
       userId: applicant.userId,
-      email: applicant.email
+      email: applicant.email,
     }));
 
     return res.status(200).json({
       success: true,
       status: 200,
-      developers
+      developers,
     });
   } catch (error) {
     console.error("Get Project Owner Developers Error:", error);
@@ -2950,7 +3608,7 @@ const getProjectOwnerDevelopers = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch project owner developers",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -2969,11 +3627,18 @@ const getPendingEvaluations = async (req, res) => {
     for (const project of ownedProjects) {
       try {
         // Get accepted applicants for this project
-        const acceptedApplicants = await ProjectModel.getApplicantsByStatus(project.id, 'accepted');
+        const acceptedApplicants = await ProjectModel.getApplicantsByStatus(
+          project.id,
+          "accepted"
+        );
         
         // Get existing reviews for this project (reviews given by project owner about developers)
-        const existingReviews = await ProjectModel.getProjectReviews(project.id);
-        const reviewedUserIds = new Set(existingReviews.map(r => r.reviewerId));
+        const existingReviews = await ProjectModel.getProjectReviews(
+          project.id
+        );
+        const reviewedUserIds = new Set(
+          existingReviews.map((r) => r.reviewerId)
+        );
         
         // For each accepted applicant, check if they've been reviewed
         for (const applicant of acceptedApplicants) {
@@ -2981,15 +3646,23 @@ const getPendingEvaluations = async (req, res) => {
           // Note: reviewerId in reviews is the developer who was reviewed
           if (!reviewedUserIds.has(applicant.userId)) {
             // Get developer details
-            const { UserModel } = require("../../user-service/src/models/user.model");
+            const {
+              UserModel,
+            } = require("../../user-service/src/models/user.model");
             const developer = await UserModel.getUserById(applicant.userId);
             
             if (developer) {
               // Calculate project duration
-              const startDate = project.startDate ? new Date(project.startDate) : new Date(project.createdAt);
-              const endDate = project.deadline ? new Date(project.deadline) : new Date();
+              const startDate = project.startDate
+                ? new Date(project.startDate)
+                : new Date(project.createdAt);
+              const endDate = project.deadline
+                ? new Date(project.deadline)
+                : new Date();
               const durationMs = endDate - startDate;
-              const durationWeeks = Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7));
+              const durationWeeks = Math.ceil(
+                durationMs / (1000 * 60 * 60 * 24 * 7)
+              );
               
               pendingEvaluations.push({
                 id: project.id,
@@ -3003,26 +3676,31 @@ const getPendingEvaluations = async (req, res) => {
                 skills: Array.isArray(developer.skills) ? developer.skills : [],
                 status: "pending",
                 appliedAt: applicant.appliedAt,
-                acceptedAt: applicant.updatedAt
+                acceptedAt: applicant.updatedAt,
               });
             }
           }
         }
       } catch (e) {
-        console.log(`Error fetching pending evaluations for project ${project.id}:`, e);
+        console.log(
+          `Error fetching pending evaluations for project ${project.id}:`,
+          e
+        );
       }
     }
 
     // Sort by completion date (most recent first)
-    const sorted = pendingEvaluations.sort((a, b) => 
-      new Date(b.completedDate || b.acceptedAt) - new Date(a.completedDate || a.acceptedAt)
+    const sorted = pendingEvaluations.sort(
+      (a, b) =>
+        new Date(b.completedDate || b.acceptedAt) -
+        new Date(a.completedDate || a.acceptedAt)
     );
 
     return res.status(200).json({
       success: true,
       status: 200,
       message: "Pending evaluations retrieved successfully",
-      data: sorted
+      data: sorted,
     });
   } catch (error) {
     console.error("Get Pending Evaluations Error:", error);
@@ -3030,7 +3708,7 @@ const getPendingEvaluations = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch pending evaluations",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -3052,31 +3730,40 @@ const getEvaluationHistory = async (req, res) => {
         // Get developer info for each review
         for (const review of reviews) {
           try {
-            const { UserModel } = require("../../user-service/src/models/user.model");
+            const {
+              UserModel,
+            } = require("../../user-service/src/models/user.model");
             const developer = await UserModel.getUserById(review.reviewerId);
-            const applicant = await ProjectModel.getApplicantByProjectAndUser(project.id, review.reviewerId);
+            const applicant = await ProjectModel.getApplicantByProjectAndUser(
+              project.id,
+              review.reviewerId
+            );
             
             allReviews.push({
               id: review.id,
               projectId: project.id,
               projectName: project.title,
-              developer: developer?.name || developer?.email || 'Unknown Developer',
+              developer:
+                developer?.name || developer?.email || "Unknown Developer",
               developerId: review.reviewerId,
               rating: review.rating,
-              review: review.comment || '',
+              review: review.comment || "",
               date: review.createdAt || review.date,
               categories: {
                 technical: review.rating || 0,
                 communication: review.rating || 0,
                 timeliness: review.rating || 0,
                 quality: review.rating || 0,
-                collaboration: review.rating || 0
+                collaboration: review.rating || 0,
               },
               appliedAt: applicant?.appliedAt,
-              acceptedAt: applicant?.updatedAt
+              acceptedAt: applicant?.updatedAt,
             });
           } catch (e) {
-            console.log(`Error fetching developer info for review ${review.id}:`, e);
+            console.log(
+              `Error fetching developer info for review ${review.id}:`,
+              e
+            );
           }
         }
       } catch (e) {
@@ -3085,7 +3772,8 @@ const getEvaluationHistory = async (req, res) => {
     }
 
     // Sort by date (most recent first)
-    const sorted = allReviews.sort((a, b) => 
+    const sorted = allReviews.sort(
+      (a, b) =>
       new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt)
     );
 
@@ -3093,7 +3781,7 @@ const getEvaluationHistory = async (req, res) => {
       success: true,
       status: 200,
       message: "Evaluation history retrieved successfully",
-      data: sorted
+      data: sorted,
     });
   } catch (error) {
     console.error("Get Evaluation History Error:", error);
@@ -3101,7 +3789,7 @@ const getEvaluationHistory = async (req, res) => {
       success: false,
       status: 500,
       message: "Failed to fetch evaluation history",
-      error: error.message
+      error: error.message,
     });
   }
 };
@@ -3159,6 +3847,3 @@ module.exports = {
   getPendingEvaluations,
   getEvaluationHistory,
 };
-
-
-
