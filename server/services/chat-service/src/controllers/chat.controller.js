@@ -96,6 +96,8 @@ const getOrCreateDirectConversation = async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;
     const { otherUserId } = req.params;
+    // Optional projectId from query parameter (for automatic chat creation from project service)
+    const { projectId } = req.query;
 
     if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
     if (!otherUserId) return new ErrorHandler("Other user ID is required", 400).sendError(res);
@@ -106,7 +108,8 @@ const getOrCreateDirectConversation = async (req, res) => {
 
     const conversation = await ConversationsModel.getOrCreateDirectConversation(
       Number(userId),
-      Number(otherUserId)
+      Number(otherUserId),
+      projectId ? Number(projectId) : null
     );
 
     // Get participants

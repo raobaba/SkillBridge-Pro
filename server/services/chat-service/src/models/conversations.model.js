@@ -97,8 +97,12 @@ class ConversationsModel {
 
   /**
    * Get or create direct conversation between two users
+   * @param {number} userId1 - First user ID
+   * @param {number} userId2 - Second user ID
+   * @param {number|null} projectId - Optional project ID to associate with conversation
+   * @returns {Promise<Object>} - Conversation object
    */
-  static async getOrCreateDirectConversation(userId1, userId2) {
+  static async getOrCreateDirectConversation(userId1, userId2, projectId = null) {
     const { conversationParticipantsTable } = require("./conversation-participants.model");
     
     // Check if conversation already exists
@@ -138,13 +142,23 @@ class ConversationsModel {
 
       const participantIds = participants.map((p) => Number(p.userId));
       if (participantIds.includes(Number(userId1)) && participantIds.includes(Number(userId2)) && participants.length === 2) {
+        // If conversation exists but doesn't have projectId and one is provided, update it
+        if (projectId && !conv.conversations.projectId) {
+          const [updated] = await db
+            .update(conversationsTable)
+            .set({ projectId: Number(projectId), updatedAt: new Date() })
+            .where(eq(conversationsTable.id, conv.conversations.id))
+            .returning();
+          return updated || conv.conversations;
+        }
         return conv.conversations;
       }
     }
 
-    // Create new conversation
+    // Create new conversation with optional projectId
     const conversation = await this.createConversation({
       type: "direct",
+      projectId: projectId ? Number(projectId) : null,
       createdBy: userId1,
     });
 

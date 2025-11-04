@@ -544,7 +544,21 @@ paths:
   /api/v1/projects/applicants/status:
     put:
       summary: Update applicant status
-      description: Update the status of a project applicant
+      description: |
+        Update the status of a project applicant (e.g., shortlisted, accepted, rejected).
+        
+        **Automatic Chat Creation**: When a developer is shortlisted or accepted (status = 'shortlisted' or 'accepted'), a direct conversation is automatically created between the project owner and the developer. The conversation is associated with the project for better organization and context.
+        
+        **Status Values**:
+        - `applied` - Initial application status
+        - `shortlisted` - Developer has been shortlisted (triggers automatic chat creation)
+        - `interviewing` - Developer is in interview process
+        - `accepted` - Developer has been accepted (triggers automatic chat creation)
+        - `rejected` - Application has been rejected
+        
+        **Email Notifications**: Email notifications are sent when status changes to 'shortlisted' or 'rejected'.
+        
+        **Note**: Chat creation is non-blocking - if chat creation fails, the status update still succeeds.
       tags:
         - "🟢 PROJECT SERVICE - Applications"
       security:
@@ -561,13 +575,13 @@ paths:
               status: "accepted"
       responses:
         "200":
-          description: Applicant status updated successfully
+          description: Applicant status updated successfully. If status is 'shortlisted' or 'accepted', a direct chat conversation has been automatically created between the project owner and developer.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApplicationResponse"
         "400":
-          description: Bad request
+          description: Bad request (missing required fields or invalid status)
         "401":
           description: Unauthorized
         "500":

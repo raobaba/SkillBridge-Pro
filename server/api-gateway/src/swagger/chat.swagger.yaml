@@ -1,7 +1,12 @@
 openapi: 3.0.0
 info:
   title: Chat Service API
-  description: API for real-time messaging, conversations, group chats, message management, and moderation
+  description: |
+    API for real-time messaging, conversations, group chats, message management, and moderation.
+    
+    **Automatic Chat Creation**: When project owners shortlist or accept developers (via Project Service), direct conversations are automatically created between them and associated with the project. This enables immediate communication without manual setup.
+    
+    **Group Chats**: Project owners can create group conversations with project names after shortlisting developers to facilitate team communication.
   version: 1.0.0
 
 servers:
@@ -88,7 +93,12 @@ paths:
   /api/v1/chat/conversations/direct/{otherUserId}:
     get:
       summary: Get or create direct conversation
-      description: Retrieve existing direct conversation between current user and another user, or create a new one if it doesn't exist
+      description: |
+        Retrieve existing direct conversation between current user and another user, or create a new one if it doesn't exist.
+        
+        **Automatic Chat Creation**: When a project owner shortlists or accepts a developer, a direct conversation is automatically created between them and associated with the project. This endpoint can also be used manually to initiate conversations.
+        
+        **Note**: This operation is idempotent - if a conversation already exists between the two users, it returns the existing conversation instead of creating a duplicate.
       tags:
         - "💬 CHAT SERVICE - Conversations"
       security:
@@ -101,6 +111,13 @@ paths:
             type: integer
           description: ID of the other user
           example: 123
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Optional project ID to associate with the conversation. If provided and the conversation doesn't have a projectId, it will be updated. Used automatically when conversations are created via project service (shortlisting/accepting developers).
+          example: 42
       responses:
         "200":
           description: Conversation retrieved/created successfully
@@ -130,7 +147,15 @@ paths:
   /api/v1/chat/conversations/group:
     post:
       summary: Create group conversation
-      description: Create a new group conversation (Project Owners only). Only developers can be added as participants.
+      description: |
+        Create a new group conversation (Project Owners only). Only developers can be added as participants.
+        
+        **Use Case**: After shortlisting developers for a project, project owners can create a group chat with the project name to facilitate team communication. The group can be associated with the project for better organization.
+        
+        **Permissions**: 
+        - Only project owners can create groups
+        - Only developers can be added as participants
+        - Creator (project owner) is automatically set as admin
       tags:
         - "💬 CHAT SERVICE - Conversations"
       security:
@@ -145,15 +170,15 @@ paths:
               properties:
                 name:
                   type: string
-                  description: Group conversation name
-                  example: "Project Team Discussion"
+                  description: Group conversation name (e.g., project name or "Project Name - Team Chat")
+                  example: "E-commerce Platform - Team Chat"
                 projectId:
                   type: integer
-                  description: Optional project ID to associate with the group
+                  description: Optional project ID to associate with the group. Useful for linking group chats to specific projects after shortlisting developers.
                   example: 42
                 participantIds:
                   type: array
-                  description: Array of developer user IDs to add as participants (should only contain developers). Creator (project-owner) is added automatically as admin.
+                  description: Array of developer user IDs to add as participants (should only contain developers). Typically includes shortlisted or accepted developers. Creator (project-owner) is added automatically as admin.
                   items:
                     type: integer
                   example: [123, 456, 789]

@@ -5,6 +5,10 @@ const { supabase } = require("shared/utils/supabase.utils");
 const { db } = require("../config/database");
 const { ilike, asc, sql } = require("drizzle-orm");
 const { sendMail } = require("shared/utils/sendEmail");
+const { 
+  createOrGetDirectConversation, 
+  extractAuthToken 
+} = require("../utils/chatServiceClient");
 
 // Basic error helper to keep responses consistent
 const sendError = (res, message, status = 400) =>
@@ -1060,6 +1064,12 @@ const updateApplicantStatus = async (req, res) => {
     const { projectId, userId, status } = req.body;
     if (!projectId || !userId || !status) return sendError(res, "projectId, userId and status are required", 400);
     
+    // Get project owner ID from authenticated user
+    const projectOwnerId = req.user?.userId || req.user?.id;
+    if (!projectOwnerId) {
+      return sendError(res, "Project owner ID is required", 400);
+    }
+    
     // Update the applicant status
     const row = await ProjectModel.updateApplicantStatus({
       projectId: Number(projectId),
@@ -1067,17 +1077,22 @@ const updateApplicantStatus = async (req, res) => {
       status,
     });
 
+    // Get project information for email and chat creation
+    let project = null;
+    try {
+      project = await ProjectModel.getProjectById(Number(projectId));
+    } catch (projectError) {
+      console.error('Error fetching project:', projectError);
+    }
+
     // Send email notification for shortlisted or rejected status
     if (status === 'shortlisted' || status === 'rejected') {
       try {
-        // Get project information
-        const project = await ProjectModel.getProjectById(Number(projectId));
-        
         // Get user information
         const user = await getUserInfo(Number(userId));
         
         // Get project owner information
-        const projectOwner = await getUserInfo(project?.ownerId);
+        const projectOwner = await getUserInfo(project?.ownerId || projectOwnerId);
         
         if (user?.email && project?.title && projectOwner?.name) {
           await sendApplicationStatusEmail(
@@ -1097,6 +1112,42 @@ const updateApplicantStatus = async (req, res) => {
       } catch (emailError) {
         console.error('Email notification failed:', emailError);
         // Don't fail the main request if email fails
+      }
+    }
+
+    // Automatically create direct chat conversation when developer is shortlisted or accepted
+    // This is non-blocking - if chat creation fails, the status update still succeeds
+    if (status === 'shortlisted' || status === 'accepted') {
+      try {
+        const developerId = Number(userId);
+        const ownerId = Number(projectOwnerId);
+        const projId = Number(projectId);
+        
+        // Extract auth token from request to pass to chat service
+        const authToken = extractAuthToken(req);
+        
+        // Create or get direct conversation between project owner and developer
+        // This is idempotent - if conversation already exists, it returns the existing one
+        const conversation = await createOrGetDirectConversation(
+          ownerId,
+          developerId,
+          projId, // Associate conversation with project
+          authToken
+        );
+        
+        if (conversation) {
+          console.log(`[Update Applicant Status] ✅ Chat conversation created/retrieved for project ${projId} between owner ${ownerId} and developer ${developerId}`);
+        } else {
+          console.warn(`[Update Applicant Status] ⚠️ Failed to create chat conversation for project ${projId} between owner ${ownerId} and developer ${developerId}. This is non-blocking.`);
+        }
+      } catch (chatError) {
+        // Log error but don't fail the request - chat creation is optional
+        console.error('[Update Applicant Status] Error creating chat conversation (non-blocking):', {
+          error: chatError.message,
+          projectId: Number(projectId),
+          userId: Number(userId),
+          status,
+        });
       }
     }
 
