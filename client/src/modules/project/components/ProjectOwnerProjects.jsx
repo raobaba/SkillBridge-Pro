@@ -84,6 +84,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
   const [selectedProjectForGroupChat, setSelectedProjectForGroupChat] = useState(null);
   const [selectedDevelopers, setSelectedDevelopers] = useState([]);
   const [groupChatName, setGroupChatName] = useState('');
+  const [isCreatingGroupChat, setIsCreatingGroupChat] = useState(false);
 
   // Handle tab changes and update URL
   const handleTabChange = (tab) => {
@@ -167,6 +168,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
   // Handle group chat creation
   const handleConfirmGroupChat = async () => {
+    // Prevent duplicate calls
+    if (isCreatingGroupChat) {
+      console.log('[Create Group Chat] Already creating, ignoring duplicate call');
+      return;
+    }
+
     if (!selectedProjectForGroupChat || selectedDevelopers.length === 0) {
       toast.error('Please select at least one developer');
       return;
@@ -177,11 +184,18 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
       return;
     }
 
+    setIsCreatingGroupChat(true);
     try {
+      // Ensure project owner's ID is not in participantIds (backend adds creator automatically)
+      const currentUserId = user?.id || user?.userId;
+      const filteredParticipantIds = selectedDevelopers.filter(
+        (id) => Number(id) !== Number(currentUserId)
+      );
+
       const groupData = {
         name: groupChatName.trim(),
         projectId: selectedProjectForGroupChat.id,
-        participantIds: selectedDevelopers,
+        participantIds: filteredParticipantIds,
       };
 
       const result = await dispatch(createGroupConversation(groupData)).unwrap();
@@ -196,14 +210,31 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
         setSelectedProjectForGroupChat(null);
         setSelectedDevelopers([]);
         setGroupChatName('');
-        // Navigate to chat page
-        navigate('/chat');
+        
+        // Get the created conversation data
+        const createdConversation = apiResponse?.data || {};
+        
+        // Navigate to chat page with conversation data to add immediately
+        navigate('/chat?refresh=true&created=' + Date.now() + '&conversationId=' + (createdConversation.id || ''));
+        
+        // Dispatch event with full conversation data so it can be added immediately
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('refreshConversations', { 
+            detail: { 
+              conversationId: createdConversation.id,
+              conversation: createdConversation,
+              action: 'created'
+            } 
+          }));
+        }, 300);
       } else {
         toast.error(apiResponse?.message || 'Failed to create group chat');
       }
     } catch (error) {
       console.error('Error creating group chat:', error);
       toast.error(error?.message || 'Failed to create group chat');
+    } finally {
+      setIsCreatingGroupChat(false);
     }
   };
 
@@ -2644,10 +2675,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
             setSelectedProjectForGroupChat(null);
             setSelectedDevelopers([]);
             setGroupChatName('');
+            setIsCreatingGroupChat(false);
           }}
           title="Create Group Chat"
         >
-          <div className="space-y-6">
+          <div className="flex flex-col h-full max-h-[calc(90vh-120px)]">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
             {/* Project Info */}
             <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-4 border border-white/10">
               <p className="text-sm text-gray-300">Project</p>
@@ -2689,12 +2722,12 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                           : 'bg-gray-800/30 border-white/5 opacity-50'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
                           {applicant.userId?.toString().charAt(0) || "D"}
                         </div>
-                        <div>
-                          <p className="text-white font-medium">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">
                             {applicant.name || applicant.fullName || applicant.username || `Developer ${applicant.userId}`}
                           </p>
                           <p className="text-gray-400 text-xs">
@@ -2713,7 +2746,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                           }
                         }}
                         disabled={!isEligible}
-                        className="w-5 h-5 rounded border-white/20 bg-gray-700 text-blue-500 focus:ring-2 focus:ring-blue-500"
+                          className="w-5 h-5 rounded border-white/20 bg-gray-700 text-blue-500 focus:ring-2 focus:ring-blue-500 flex-shrink-0 ml-2"
                       />
                     </div>
                   );
@@ -2724,29 +2757,42 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   ⚠️ Please select at least one developer to create the group chat
                 </p>
               )}
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-white/10">
+            {/* Action Buttons - Sticky at bottom */}
+            <div className="flex-shrink-0 p-6 pt-4 border-t border-white/10 bg-slate-900">
+              <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
               <Button
                 onClick={() => {
                   setShowGroupChatModal(false);
                   setSelectedProjectForGroupChat(null);
                   setSelectedDevelopers([]);
                   setGroupChatName('');
+                  setIsCreatingGroupChat(false);
                 }}
-                className="bg-gray-700/50 hover:bg-gray-600/50 text-white border border-white/10"
+                  className="w-full sm:w-auto bg-gray-700/50 hover:bg-gray-600/50 text-white border border-white/10"
               >
                 Cancel
               </Button>
-              <Button
+                            <Button
                 onClick={handleConfirmGroupChat}
-                disabled={selectedDevelopers.length === 0 || !groupChatName.trim()}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={selectedDevelopers.length === 0 || !groupChatName.trim() || isCreatingGroupChat}                                                                             
+                  className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"                 
               >
-                <MessageCircle className="w-4 h-4 mr-2 inline" />
-                Create Group Chat
+                {isCreatingGroupChat ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="w-4 h-4" />
+                    Create Group Chat
+                  </>
+                )}
               </Button>
+              </div>
             </div>
           </div>
         </Modal>

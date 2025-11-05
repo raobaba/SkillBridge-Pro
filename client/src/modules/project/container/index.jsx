@@ -45,14 +45,12 @@ export default function Project() {
   } = useSelector((state) => state.project);
  
   const {
-
     loading,
     projectsLoading,
     projectLoading,
     invitesLoading,
     favoritesLoading,
     savesLoading,
-
   } = useSelector((state) => state.project);
   
   const [searchQuery, setSearchQuery] = useState("");

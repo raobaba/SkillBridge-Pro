@@ -14,7 +14,7 @@ export const getChatUsersApi = async (params = {}) => {
 
 // Get all conversations for the authenticated user
 export const getConversationsApi = async (filters = {}) => {
-  const { type, archived, favorites, flagged, search } = filters;
+  const { type, archived, favorites, flagged, search, role } = filters;
   const queryParams = new URLSearchParams();
   
   if (type) queryParams.append("type", type);
@@ -22,8 +22,12 @@ export const getConversationsApi = async (filters = {}) => {
   if (favorites !== undefined) queryParams.append("favorites", favorites);
   if (flagged !== undefined) queryParams.append("flagged", flagged);
   if (search) queryParams.append("search", search);
+  if (role) queryParams.append("role", role); // Filter by participant role (e.g., 'admin' for project owners)
   
-  const url = `api/v1/chat/conversations${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
+  // Add cache-busting parameter to prevent 304 Not Modified responses
+  queryParams.append("_t", Date.now().toString());
+  
+  const url = `api/v1/chat/conversations?${queryParams.toString()}`;
   return await fetchFromApiServer("GET", url);
 };
 

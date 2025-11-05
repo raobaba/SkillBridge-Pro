@@ -20,6 +20,12 @@ function getHeaderConfig(requestType, options, Authorization) {
         ? { Authorization: "Bearer " + token }
         : {}),
       Accept: "*/*",
+      // Prevent caching for GET requests to ensure fresh data
+      ...(requestType === "GET" ? {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
+      } : {}),
     },
     params: { ...options },
     timeout: 60 * 10 * 1000,

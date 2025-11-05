@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import ChatHeader from "../components/ChatHeader";
 import MessageList from "../components/MessageList";
@@ -85,6 +85,8 @@ const ChatContainer = () => {
   const [onlineUsers, setOnlineUsers] = useState(new Set()); // Set of online user IDs
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef({}); // conversationId -> timeout
+  const refreshTimeoutRef = useRef(null); // Ref to track refresh timeout
+  const isRefreshingRef = useRef(false); // Flag to prevent multiple simultaneous refreshes
 
   const currentUserId = user?.id || user?.userId;
 
@@ -277,16 +279,45 @@ const ChatContainer = () => {
   }, [activeUser?.conversationId]);
 
   // Fetch conversations and user details
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchConversations = useCallback(async () => {
       if (!currentUserId) return;
 
       try {
         setLoadingConversations(true);
+      console.log('[ChatContainer] Fetching conversations for user:', currentUserId, 'role:', user?.role);
 
-        // Fetch conversations
-        const conversationsResponse = await getConversationsApi({});
-        const conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
+        // For project owners: Fetch groups they created (role=admin) + all direct messages
+        // For developers: Fetch all conversations (groups + direct messages)
+        let conversationsData = [];
+        
+                 if (user?.role === 'project-owner') {
+           // Project owner: Fetch groups where they have participant role='project-owner' (created by them)
+           // Backend will automatically filter by role='project-owner' when type='group' for project owners
+           const groupsResponse = await getConversationsApi({ type: 'group' });
+           const groupsData = groupsResponse?.data?.data || groupsResponse?.data || [];
+           
+           // Fetch all direct messages (no role filter for direct messages)
+           const directResponse = await getConversationsApi({ type: 'direct' });
+           const directData = directResponse?.data?.data || directResponse?.data || [];
+           
+           // Combine groups (they created with role='project-owner') + direct messages
+           conversationsData = [...groupsData, ...directData];
+           
+           console.log('[ChatContainer] Project owner conversations:', {
+             groupsCreated: groupsData.length,
+             directMessages: directData.length,
+             total: conversationsData.length
+           });
+        } else {
+          // Developer: Fetch all conversations (groups they're in + direct messages)
+          const conversationsResponse = await getConversationsApi({});
+          conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
+          
+          console.log('[ChatContainer] Developer conversations:', {
+            total: conversationsData.length,
+            conversations: conversationsData.map(c => ({ id: c.id, name: c.name, type: c.type }))
+          });
+        }
 
         // Collect all participant IDs
         const participantIds = new Set();
@@ -317,16 +348,242 @@ const ChatContainer = () => {
           }
         }
 
-        setConversations(conversationsData);
+        // No need for client-side filtering - backend handles it based on role
+        // For project owners: Backend returns only groups where role='admin' + all direct messages
+        // For developers: Backend returns all conversations they're in
+        
+        // Merge server data with existing state to preserve manually added conversations
+        setConversations(prev => {
+          // Get IDs from server response
+          const serverIds = new Set(conversationsData.map(c => c.id));
+          
+          // Keep manually added conversations that aren't in server response yet
+          // (They should appear within a few seconds once backend commits)
+          const manuallyAdded = prev.filter(conv => {
+            // Keep conversations that:
+            // 1. Are not in server response (manually added, not yet committed)
+            // 2. Are group conversations (only type we manually add)
+            // 3. Were created recently (within last 30 seconds)
+            if (!serverIds.has(conv.id) && conv.type === 'group' && conv.createdAt) {
+              const createdTime = new Date(conv.createdAt).getTime();
+              const now = Date.now();
+              const age = now - createdTime;
+              // Keep if created within last 30 seconds
+              if (age < 30000) {
+                console.log(`[ChatContainer] Preserving manually added conversation ${conv.id} (not yet in server response)`);
+                return true;
+              }
+            }
+            return false;
+          });
+          
+          // Combine: server data first (has latest info), then manually added that aren't in server yet
+          const merged = [...conversationsData, ...manuallyAdded];
+         
+         // Remove duplicates (in case server now has the conversation)
+         const unique = merged.reduce((acc, conv) => {
+           if (!acc.find(c => c.id === conv.id)) {
+             acc.push(conv);
+           }
+           return acc;
+         }, []);
+         
+         // After setting state, check if we need to select a conversation from URL
+         // Use setTimeout to ensure state update is processed first
+         setTimeout(() => {
+           const searchParams = new URLSearchParams(window.location.search);
+           const conversationIdParam = searchParams.get('conversationId');
+           const createdParam = searchParams.get('created');
+           
+           if (conversationIdParam) {
+             // Check in the merged conversations (both server and manually added)
+             const foundConv = unique.find(c => c.id === Number(conversationIdParam));
+             if (foundConv) {
+               console.log('[ChatContainer] Selecting conversation from URL:', foundConv.id);
+               // Transform and select it
+               const transformed = {
+                 id: foundConv.id,
+                 conversationId: foundConv.id,
+                 name: foundConv.name || 'Group Chat',
+                 role: foundConv.type === 'group' ? 'group' : 'developer',
+                 chatType: foundConv.type,
+                 isGroup: foundConv.type === 'group',
+               };
+               setActiveUser(transformed);
+               // Clean up URL
+               window.history.replaceState({}, '', '/chat');
+               return;
+             }
+           }
+           
+           // Fallback: Find the most recent group conversation if created param exists
+           if (createdParam && unique.length > 0) {
+             const groupConversations = unique.filter(c => c.type === 'group');
+             if (groupConversations.length > 0) {
+               const newestConv = groupConversations.sort((a, b) => 
+                 new Date(b.createdAt || b.updatedAt) - new Date(a.createdAt || a.updatedAt)
+               )[0];
+               console.log('[ChatContainer] Selecting newly created group conversation:', newestConv.id);
+               // Transform and select it
+               const transformed = {
+                 id: newestConv.id,
+                 conversationId: newestConv.id,
+                 name: newestConv.name || 'Group Chat',
+                 role: 'group',
+                 chatType: 'group',
+                 isGroup: true,
+               };
+               setActiveUser(transformed);
+             }
+           }
+         }, 0);
+         
+         return unique;
+       });
       } catch (error) {
         console.error("Error fetching conversations:", error);
+      console.error("Error details:", error.response || error.message);
       } finally {
         setLoadingConversations(false);
       }
+  }, [currentUserId, user?.role]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  // Listen for refresh event and URL parameter
+  useEffect(() => {
+    // Check for refresh parameter in URL (only once)
+    const checkAndRefresh = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('refresh') === 'true' && !isRefreshingRef.current) {
+        // Remove the refresh parameter from URL
+        window.history.replaceState({}, '', '/chat');
+        
+        // Set refreshing flag
+        isRefreshingRef.current = true;
+        
+        // Single refresh attempt (no retries for URL parameter)
+        setTimeout(async () => {
+          try {
+            await fetchConversations();
+          } catch (error) {
+            console.error('[ChatContainer] Error refreshing conversations from URL:', error);
+          } finally {
+            isRefreshingRef.current = false;
+          }
+        }, 500);
+      }
     };
 
-    fetchData();
-  }, [currentUserId]);
+    // Initial check (only once)
+    checkAndRefresh();
+
+    // Listen for custom refresh event with retry logic
+    const handleRefresh = (event) => {
+      // Prevent multiple simultaneous refresh attempts
+      if (isRefreshingRef.current) {
+        console.log('[ChatContainer] Refresh already in progress, skipping...');
+        return;
+      }
+      
+      console.log('[ChatContainer] Refresh event received:', event.detail);
+      const eventDetail = event?.detail || {};
+      const conversationId = eventDetail.conversationId;
+      const conversation = eventDetail.conversation;
+      const action = eventDetail.action;
+      
+             // If we have conversation data from the event (just created), add it immediately to state
+      if (action === 'created' && conversation && conversation.id) {
+        console.log('[ChatContainer] Adding newly created conversation to state immediately:', conversation.id);
+        
+        // Transform the conversation to match our format
+        const transformedConv = {
+          id: conversation.id,
+          type: conversation.type || 'group',
+          name: conversation.name || 'Group Chat',
+          projectId: conversation.projectId || null,
+          status: conversation.status || 'active',
+          isFlagged: conversation.isFlagged || false,
+          lastMessage: null,
+          participant: {
+            unreadCount: 0,
+            isArchived: false,
+            isFavorite: false,
+            isMuted: false,
+            lastReadAt: null,
+          },
+          otherParticipantIds: [],
+          participantIds: conversation.participantIds || [],
+          participants: conversation.participants || [],
+          updatedAt: conversation.updatedAt || conversation.createdAt || new Date().toISOString(),
+          createdAt: conversation.createdAt || new Date().toISOString(),
+        };
+        
+        // Add to conversations state immediately
+        setConversations(prev => {
+          // Check if already exists to avoid duplicates
+          const exists = prev.some(c => c.id === transformedConv.id);
+          if (exists) {
+            console.log('[ChatContainer] Conversation already exists in state, updating it');
+            // Update existing conversation instead of skipping
+            return prev.map(c => c.id === transformedConv.id ? transformedConv : c);
+          }
+          console.log('[ChatContainer] Adding new conversation to state:', transformedConv.id);
+          // Add new conversation at the beginning (most recent first)
+          return [transformedConv, ...prev];
+        });
+        
+        // Transform and select it immediately
+        const transformed = {
+          id: conversation.id,
+          conversationId: conversation.id,
+          name: conversation.name || 'Group Chat',
+          role: 'group',
+          chatType: 'group',
+          isGroup: true,
+        };
+        console.log('[ChatContainer] Selecting newly created conversation:', transformed.id);
+        setActiveUser(transformed);
+      }
+      
+      // Only do a single refresh attempt if we have a conversation ID to look for
+      if (conversationId && action === 'created') {
+        // Set refreshing flag
+        isRefreshingRef.current = true;
+        
+        // Single refresh attempt after a delay to allow backend to commit
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current);
+        }
+        
+        refreshTimeoutRef.current = setTimeout(async () => {
+          try {
+            console.log('[ChatContainer] Refreshing conversations to sync with server...');
+            await fetchConversations();
+            
+            // Conversation should be preserved by fetchConversations if it was manually added recently
+            // No need to verify here since fetchConversations handles merging now
+          } catch (error) {
+            console.error('[ChatContainer] Error refreshing conversations:', error);
+          } finally {
+            isRefreshingRef.current = false;
+          }
+        }, 1000); // Single attempt after 1 second
+      }
+    };
+
+    window.addEventListener('refreshConversations', handleRefresh);
+
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      window.removeEventListener('refreshConversations', handleRefresh);
+      isRefreshingRef.current = false;
+    };
+  }, [fetchConversations]);
 
   // Transform conversations to chat user format
   const transformedConversations = useMemo(() => {
@@ -641,9 +898,8 @@ const ChatContainer = () => {
         }));
 
         // Refresh conversations to update last message
-        const conversationsResponse = await getConversationsApi({});
-        const conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
-        setConversations(conversationsData);
+         // Use fetchConversations to ensure proper merging with manually added conversations
+         await fetchConversations();
       }
     } catch (error) {
       console.error("Error sending message:", error);

@@ -10,9 +10,18 @@ const { applyControllerLogger } = require("shared/middleware/controllerLogger.mi
 const getConversations = async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;
+    const userRole = req.user?.role || req.user?.roles?.[0];
     if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
 
-    const { type, archived, favorites, flagged, search } = req.query;
+    const { type, archived, favorites, flagged, search, role } = req.query;
+
+    // For project owners requesting groups: automatically filter by role='project-owner'
+    // This shows only groups they created (where they have participant role='project-owner')
+    let filterRole = role;
+    if (!filterRole && userRole === 'project-owner' && type === 'group') {
+      filterRole = 'project-owner';
+      console.log(`[Get Conversations] Project owner requesting groups - filtering by role='project-owner'`);
+    }
 
     const filters = {
       type: type || undefined,
@@ -20,6 +29,7 @@ const getConversations = async (req, res) => {
       favorites: favorites === "true" ? true : favorites === "false" ? false : undefined,
       flagged: flagged === "true" ? true : undefined,
       search: search || undefined,
+      role: filterRole || undefined, // Filter by participant role ('project-owner' for groups created by project owner)
     };
 
     const conversations = await ConversationsModel.getConversationsByUser(
@@ -436,22 +446,24 @@ const createGroupConversation = async (req, res) => {
       name,
       projectId: projectId ? Number(projectId) : null,
       createdBy: userId, // Already normalized to number
+      creatorRole: userRole, // Pass user role so model can set participant role correctly
     });
 
     // Add all participants (should be developers only)
     if (participantIds && Array.isArray(participantIds)) {
       for (const participantId of participantIds) {
-        // Add as member (developers are members, creator is admin)
+        // Add as developer (developers have 'developer' role, creator has 'project-owner' role)
         await ConversationParticipantsModel.addParticipant(
           conversation.id, 
           Number(participantId),
-          "member"
+          "developer"
         );
       }
     }
 
-    // Creator (project-owner) is already added in createConversation with admin role
-    // Use a retry mechanism to ensure participant is queryable (handles transaction commit timing)
+        // Creator (project-owner) is already added in createConversation
+    // Use a retry mechanism to verify participant is queryable (handles transaction commit timing)
+    // DO NOT add the creator again - it's already added in createConversation
     let creatorParticipant = null;
     let retries = 5;
     let retryDelay = 200; // Start with 200ms
@@ -461,57 +473,40 @@ const createGroupConversation = async (req, res) => {
         conversation.id,
         userId
       );
-      
+
       if (!creatorParticipant) {
         retries--;
         if (retries > 0) {
-          console.log(`[Create Group] Participant not found, retrying in ${retryDelay}ms... (${retries} retries left)`);
+          console.log(`[Create Group] Creator participant not found yet, retrying in ${retryDelay}ms... (${retries} retries left)`);
           await new Promise(resolve => setTimeout(resolve, retryDelay));
           retryDelay *= 1.5; // Exponential backoff
         }
       }
     }
-    
-    if (!creatorParticipant) {
-      // If still not found after retries, add them explicitly
-      console.warn(`[Create Group] Creator ${userId} not found after retries, adding explicitly...`);
-      try {
-        const added = await ConversationParticipantsModel.addParticipant(conversation.id, userId, "admin");
-        if (added) {
-          creatorParticipant = added;
-          console.log(`[Create Group] ✅ Explicitly added creator as participant`);
-        }
-      } catch (error) {
-        console.error(`[Create Group] Error adding creator explicitly:`, error);
-        // Check one more time - might have been added by another process
+
+    // Only verify - do not add again since it's already added in createConversation
+    if (creatorParticipant) {
+      // Ensure role is 'project-owner' for project owners (in case it was set incorrectly)
+      if (userRole === "project-owner" && creatorParticipant.role !== "project-owner") {
+        console.log(`[Create Group] Updating creator role to project-owner...`);
+        await ConversationParticipantsModel.updateParticipant(conversation.id, userId, {
+          role: "project-owner",
+        });
         creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
           conversation.id,
           userId
         );
       }
-    }
-    
-    // Ensure role is admin
-    if (creatorParticipant && creatorParticipant.role !== "admin") {
-      console.log(`[Create Group] Updating creator role to admin...`);
-      await ConversationParticipantsModel.updateParticipant(conversation.id, userId, {
-        role: "admin",
-      });
-      creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
-        conversation.id,
-        userId
-      );
-    }
-    
-    // Final verification
-    if (creatorParticipant && creatorParticipant.role === "admin") {
-      console.log(`[Create Group] ✅ Group ${conversation.id} created by user ${userId} (verified as admin)`);
+      
+      console.log(`[Create Group] ✅ Group ${conversation.id} created by user ${userId} (verified as ${creatorParticipant.role})`);
     } else {
-      console.error(`[Create Group] ❌ Failed to verify creator ${userId} as admin for group ${conversation.id}`);
+      console.warn(`[Create Group] ⚠️ Creator ${userId} not found after retries, but participant should have been added in createConversation`);
+      console.warn(`[Create Group] This might indicate a database transaction issue. Participant should appear shortly.`);
       // Get all participants for debugging
       const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(conversation.id);
-      console.error(`[Create Group] All participants in group ${conversation.id}:`, 
+      console.log(`[Create Group] Current participants in group ${conversation.id}:`, 
         allParticipants.map(p => ({ userId: p.userId, role: p.role })));
+      // Don't throw an error - the participant was added in createConversation, it should be available soon
     }
 
     return res.status(201).json({
@@ -694,12 +689,12 @@ const addParticipantsToGroup = async (req, res) => {
       return new ErrorHandler("You are not a participant in this group", 403).sendError(res);
     }
     
-    if (userParticipant.role !== "admin") {
-      console.error(`[Add Participants] ❌ User ${userId} is not admin (role: ${userParticipant.role})`);
-      return new ErrorHandler("Only group admins can add participants", 403).sendError(res);
+    if (userParticipant.role !== "project-owner") {
+      console.error(`[Add Participants] ❌ User ${userId} is not project-owner (role: ${userParticipant.role})`);
+      return new ErrorHandler("Only group creators (project-owners) can add participants", 403).sendError(res);
     }
     
-    console.log(`[Add Participants] ✅ User ${userId} verified as admin`);
+    console.log(`[Add Participants] ✅ User ${userId} verified as project-owner`);
 
     // Add all participants (should be developers only)
     const addedParticipants = [];
@@ -718,11 +713,11 @@ const addParticipantsToGroup = async (req, res) => {
           continue;
         }
 
-        // Add participant as member (developers are members)
+        // Add participant as developer (developers have 'developer' role)
         const participant = await ConversationParticipantsModel.addParticipant(
           Number(conversationId),
           Number(participantId),
-          "member"
+          "developer"
         );
         addedParticipants.push(participant);
       } catch (error) {
@@ -813,14 +808,14 @@ const removeParticipantFromGroup = async (req, res) => {
       return new ErrorHandler("You are not a participant in this group", 403).sendError(res);
     }
     
-    if (userParticipant.role !== "admin") {
-      console.error(`[Remove Participant] User ${userId} is not admin (role: ${userParticipant.role})`);
-      return new ErrorHandler("Only group admins can remove participants", 403).sendError(res);
+    if (userParticipant.role !== "project-owner") {
+      console.error(`[Remove Participant] User ${userId} is not project-owner (role: ${userParticipant.role})`);
+      return new ErrorHandler("Only group creators (project-owners) can remove participants", 403).sendError(res);
     }
     
-    console.log(`[Remove Participant] ✅ User ${userId} verified as admin`);
+    console.log(`[Remove Participant] ✅ User ${userId} verified as project-owner`);
 
-    // Cannot remove yourself (admin)
+    // Cannot remove yourself (project-owner)
     if (Number(participantId) === Number(userId)) {
       return new ErrorHandler("Cannot remove yourself from the group", 400).sendError(res);
     }

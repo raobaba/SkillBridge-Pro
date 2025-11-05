@@ -7,7 +7,7 @@ const conversationParticipantsTable = pgTable("conversation_participants", {
   id: serial("id").primaryKey(),
   conversationId: integer("conversation_id").notNull(), // FK -> conversations.id
   userId: integer("user_id").notNull(), // FK -> users.id
-  role: text("role").default("member"), // member, admin (for groups)
+  role: text("role").default("member"), // 'project-owner' (group creator), 'developer' (developer in group), 'member' (default for direct messages)
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
   lastReadAt: timestamp("last_read_at"), // Last time user read messages
   unreadCount: integer("unread_count").default(0), // Unread message count

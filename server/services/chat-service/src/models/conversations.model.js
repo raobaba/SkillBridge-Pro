@@ -1,5 +1,5 @@
 const { pgTable, serial, integer, text, timestamp, boolean, pgEnum } = require("drizzle-orm/pg-core");
-const { eq, and, desc, ne } = require("drizzle-orm");
+const { eq, and, desc, ne, isNull } = require("drizzle-orm");
 const { db } = require("../config/database");
 
 // Enum for conversation types
@@ -38,8 +38,14 @@ const conversationsTable = pgTable("conversations", {
 class ConversationsModel {
   /**
    * Create a new conversation
+   * @param {Object} params
+   * @param {string} params.type - Conversation type ('direct', 'group', etc.)
+   * @param {string} params.name - Conversation name (for groups)
+   * @param {number} params.projectId - Project ID (optional)
+   * @param {number} params.createdBy - User ID of creator
+   * @param {string} params.creatorRole - User role of creator ('project-owner', 'developer', etc.)
    */
-  static async createConversation({ type, name, projectId, createdBy }) {
+  static async createConversation({ type, name, projectId, createdBy, creatorRole }) {
     const [conversation] = await db
       .insert(conversationsTable)
       .values({
@@ -55,20 +61,34 @@ class ConversationsModel {
       try {
         // Ensure createdBy is a number
         const creatorUserId = Number(createdBy);
-        const creatorRole = type === "group" ? "admin" : "member";
+        
+        // Determine participant role:
+        // - For groups: use 'project-owner' if creator is project-owner, otherwise 'developer'
+        // - For direct messages: always 'member'
+        let participantRole = "member";
+        if (type === "group") {
+          if (creatorRole === "project-owner") {
+            participantRole = "project-owner"; // Project owner creates group with 'project-owner' role
+          } else if (creatorRole === "developer") {
+            participantRole = "developer"; // Developer creates group with 'developer' role
+          } else {
+            participantRole = "member"; // Other roles join as member
+          }
+        }
         
         const [participant] = await db.insert(conversationParticipantsTable).values({
           conversationId: conversation.id,
           userId: creatorUserId,
-          role: creatorRole,
+          role: participantRole,
         }).returning();
         
-        console.log(`[Create Conversation] ✅ Added creator ${creatorUserId} as participant with role ${creatorRole}:`, {
+        console.log(`[Create Conversation] ✅ Added creator ${creatorUserId} as participant with role ${participantRole}:`, {
           participantId: participant?.id,
           userId: participant?.userId,
           userIdType: typeof participant?.userId,
           role: participant?.role,
-          conversationId: participant?.conversationId
+          conversationId: participant?.conversationId,
+          creatorUserRole: creatorRole
         });
         
         // Verify it was saved correctly
@@ -130,15 +150,15 @@ class ConversationsModel {
 
     // Check if any of these conversations also has userId2
     for (const conv of existing) {
-      const participants = await db
-        .select()
-        .from(conversationParticipantsTable)
-        .where(
-          and(
-            eq(conversationParticipantsTable.conversationId, conv.conversations.id),
-            eq(conversationParticipantsTable.leftAt, null)
-          )
-        );
+                const participants = await db
+            .select()
+            .from(conversationParticipantsTable)
+            .where(
+              and(
+                eq(conversationParticipantsTable.conversationId, conv.conversations.id),                                                                            
+                isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
+              )
+            );
 
       const participantIds = participants.map((p) => Number(p.userId));
       if (participantIds.includes(Number(userId1)) && participantIds.includes(Number(userId2)) && participants.length === 2) {
@@ -156,10 +176,12 @@ class ConversationsModel {
     }
 
     // Create new conversation with optional projectId
+    // Note: For direct conversations, creatorRole doesn't affect participant role (always 'member')
     const conversation = await this.createConversation({
       type: "direct",
       projectId: projectId ? Number(projectId) : null,
       createdBy: userId1,
+      creatorRole: null, // Direct conversations don't need creator role distinction
     });
 
     // Add both participants (creator already added, so add the other user)
@@ -174,15 +196,25 @@ class ConversationsModel {
 
   /**
    * Get conversations for a user
+   * @param {number} userId - User ID
+   * @param {Object} filters - Filter options
+   * @param {string} filters.type - Conversation type ('direct', 'group')
+   * @param {string} filters.role - Filter by participant role ('project-owner', 'member', 'admin')
+   * @param {boolean} filters.archived - Filter archived conversations
+   * @param {boolean} filters.favorites - Filter favorite conversations
+   * @param {boolean} filters.flagged - Filter flagged conversations
+   * @param {string} filters.search - Search term
    */
   static async getConversationsByUser(userId, filters = {}) {
     const { conversationParticipantsTable } = require("./conversation-participants.model");
-    const { type, archived, favorites, flagged, search } = filters;
+    const { type, archived, favorites, flagged, search, role } = filters;
+
+    console.log(`[Get Conversations By User] UserId: ${userId}, Filters:`, { type, role, archived, favorites, flagged, search });
 
     // Build where conditions array
     const conditions = [
       eq(conversationParticipantsTable.userId, Number(userId)),
-      eq(conversationParticipantsTable.leftAt, null),
+      isNull(conversationParticipantsTable.leftAt), // Use isNull() for proper null checks
     ];
 
     if (archived !== undefined) {
@@ -197,7 +229,29 @@ class ConversationsModel {
     if (type) {
       conditions.push(eq(conversationsTable.type, type));
     }
+    
+    // Filter by participant role
+    // For project owners requesting groups: filter by role='project-owner' to show only groups they created
+    if (role) {
+      conditions.push(eq(conversationParticipantsTable.role, role));
+      console.log(`[Get Conversations By User] Filtering by participant role: ${role}`);
+    }
 
+        console.log(`[Get Conversations By User] Query conditions count: ${conditions.length}`);
+    console.log(`[Get Conversations By User] Conditions:`, conditions.map(c => {
+      // Try to extract info from condition for logging
+      try {
+        return JSON.stringify(c);
+      } catch (e) {
+        return String(c);
+      }
+    }));
+
+    // Build the where clause
+    const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+    
+    console.log(`[Get Conversations By User] Executing query with userId=${userId}, type=${type}, role=${role}`);
+    
     const results = await db
       .select({
         conversation: conversationsTable,
@@ -206,10 +260,56 @@ class ConversationsModel {
       .from(conversationParticipantsTable)
       .innerJoin(
         conversationsTable,
-        eq(conversationParticipantsTable.conversationId, conversationsTable.id)
+        eq(conversationParticipantsTable.conversationId, conversationsTable.id) 
       )
-      .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+      .where(whereClause)        
       .orderBy(desc(conversationsTable.updatedAt));
+
+    console.log(`[Get Conversations By User] Found ${results.length} conversations`);                                                                           
+    if (results.length > 0) {
+      console.log(`[Get Conversations By User] Sample results:`, results.slice(0, 3).map(r => ({                                                                
+        conversationId: r.conversation.id,
+        conversationName: r.conversation.name,
+        conversationType: r.conversation.type,
+        participantUserId: r.participant.userId,
+        participantUserIdType: typeof r.participant.userId,
+        participantRole: r.participant.role,
+        participantRoleType: typeof r.participant.role,
+        requestedUserId: userId,
+        requestedUserIdType: typeof userId,
+        requestedRole: role
+      })));
+    } else {
+      console.log(`[Get Conversations By User] ⚠️ No conversations found for userId=${userId}, type=${type}, role=${role}`);
+      
+      // Debug: Check if there are any participants with this userId and role
+      if (role) {
+        try {
+          const debugResults = await db
+            .select()
+            .from(conversationParticipantsTable)
+            .where(
+              and(
+                eq(conversationParticipantsTable.userId, Number(userId)),
+                eq(conversationParticipantsTable.role, role),
+                isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
+              )
+            );
+          console.log(`[Get Conversations By User] Debug: Found ${debugResults.length} participants with userId=${userId} and role='${role}'`);
+          if (debugResults.length > 0) {
+            console.log(`[Get Conversations By User] Debug participant details:`, debugResults.map(p => ({
+              id: p.id,
+              conversationId: p.conversationId,
+              userId: p.userId,
+              role: p.role,
+              leftAt: p.leftAt
+            })));
+          }
+        } catch (debugError) {
+          console.error(`[Get Conversations By User] Debug query error:`, debugError);
+        }
+      }
+    }
 
     // Get last message for each conversation
     const conversationsWithLastMessage = await Promise.all(
@@ -220,14 +320,14 @@ class ConversationsModel {
         // Get other participants for direct messages
         let otherParticipants = [];
         if (result.conversation.type === "direct") {
-          const participants = await db
+                    const participants = await db
             .select()
             .from(conversationParticipantsTable)
             .where(
               and(
-                eq(conversationParticipantsTable.conversationId, result.conversation.id),
-                ne(conversationParticipantsTable.userId, Number(userId)),
-                eq(conversationParticipantsTable.leftAt, null)
+                eq(conversationParticipantsTable.conversationId, result.conversation.id),                                                                       
+                ne(conversationParticipantsTable.userId, Number(userId)),       
+                isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
               )
             );
           otherParticipants = participants;
