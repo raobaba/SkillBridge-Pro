@@ -121,22 +121,34 @@ const ChatContainer = () => {
 
     // Handle new message event
     socket.on("new_message", (data) => {
+      console.log('[Socket] 📨 Received new_message event:', data);
       const { conversationId, message } = data;
       
-      if (!conversationId || !message) return;
+      if (!conversationId || !message) {
+        console.warn('[Socket] ⚠️ Invalid new_message data:', { conversationId, message });
+        return;
+      }
+      
+      console.log('[Socket] Processing message for conversation:', conversationId);
 
       // Transform message to frontend format
-      const isCurrentUser = message.senderId === currentUserId;
+      const isCurrentUser = Number(message.senderId) === Number(currentUserId);
       const senderName = isCurrentUser 
-        ? "me" 
+        ? (user?.name || "You")
         : (usersMap[message.senderId]?.name || "Unknown");
+      const senderRole = isCurrentUser 
+        ? (user?.role || "developer")
+        : (usersMap[message.senderId]?.role || "developer");
       
       const timestamp = message.createdAt || message.timestamp;
       const date = timestamp ? new Date(timestamp) : new Date();
       
       const transformedMessage = {
         id: message.id,
-        sender: senderName,
+        sender: isCurrentUser ? "me" : senderName, // Keep "me" for isSent check
+        senderId: message.senderId, // Include senderId for robust isSent check
+        senderName: senderName, // Actual name for display
+        senderRole: senderRole, // Role for display
         text: message.content || "",
         time: date.toLocaleTimeString([], {
           hour: "2-digit",
@@ -151,8 +163,10 @@ const ChatContainer = () => {
         const existingMessages = prev[conversationId] || [];
         // Check if message already exists (avoid duplicates)
         if (existingMessages.some(m => m.id === transformedMessage.id)) {
+          console.log('[Socket] ⚠️ Message already exists, skipping duplicate:', transformedMessage.id);
           return prev;
         }
+        console.log('[Socket] ✅ Adding message to state:', transformedMessage);
         return {
           ...prev,
           [conversationId]: [...existingMessages, transformedMessage],
@@ -188,7 +202,7 @@ const ChatContainer = () => {
     socket.on("user_typing", (data) => {
       const { conversationId, userId, isTyping } = data;
       
-      if (!conversationId || userId === currentUserId) return;
+      if (!conversationId || Number(userId) === Number(currentUserId)) return;
 
       setTypingUsers(prev => {
         const current = prev[conversationId] || new Set();
@@ -262,7 +276,7 @@ const ChatContainer = () => {
       }
       disconnectSocket();
     };
-  }, [currentUserId, activeUser?.conversationId, usersMap]);
+  }, [currentUserId, activeUser?.conversationId, usersMap, user]);
 
   // Join/leave conversation rooms when active user changes
   useEffect(() => {
@@ -703,8 +717,10 @@ const ChatContainer = () => {
 
       const conversationId = activeUser.conversationId;
 
-      // If messages already loaded, don't reload
-      if (messages[conversationId]?.length > 0) {
+      // If messages already loaded, don't reload (unless it's a new group that might have welcome message)
+      // For new groups, always fetch to ensure welcome message is visible
+      const isNewGroup = activeUser?.isGroup && !messages[conversationId];
+      if (messages[conversationId]?.length > 0 && !isNewGroup) {
         return;
       }
 
@@ -716,17 +732,23 @@ const ChatContainer = () => {
 
         // Transform messages to frontend format
         const transformedMessages = messagesData.map(msg => {
-          const isCurrentUser = msg.senderId === currentUserId;
+          const isCurrentUser = Number(msg.senderId) === Number(currentUserId);
           const senderName = isCurrentUser 
-            ? "me" 
+            ? (user?.name || "You")
             : (usersMap[msg.senderId]?.name || "Unknown");
+          const senderRole = isCurrentUser 
+            ? (user?.role || "developer")
+            : (usersMap[msg.senderId]?.role || "developer");
           
           const timestamp = msg.createdAt || msg.timestamp;
           const date = timestamp ? new Date(timestamp) : new Date();
           
           return {
             id: msg.id,
-            sender: senderName,
+            sender: isCurrentUser ? "me" : senderName, // Keep "me" for isSent check
+            senderId: msg.senderId, // Include senderId for robust isSent check
+            senderName: senderName, // Actual name for display
+            senderRole: senderRole, // Role for display
             text: msg.content || "",
             time: date.toLocaleTimeString([], {
               hour: "2-digit",
@@ -795,26 +817,43 @@ const ChatContainer = () => {
   const permissions = getRolePermissions();
 
   const handleSend = async (text) => {
+    console.log('[HandleSend] Starting send message process', { 
+      text: text?.trim(), 
+      conversationId: activeUser?.conversationId,
+      userRole: user?.role,
+      permissions: permissions?.canSendMessages 
+    });
+
     // Check if user can send messages based on role and chat type
     if (!permissions?.canSendMessages) {
-      console.log("You don't have permission to send messages in this chat");
+      console.warn("[HandleSend] ❌ You don't have permission to send messages in this chat");
       return;
     }
 
     // For flagged chats, admins have read-only access
     if (activeUser?.isFlagged && user?.role === 'admin') {
-      console.log("This is a flagged chat - read-only access for moderation");
+      console.warn("[HandleSend] ❌ This is a flagged chat - read-only access for moderation");
       return;
     }
 
-    if (!text?.trim() || !activeUser?.conversationId) return;
+    if (!text?.trim() || !activeUser?.conversationId) {
+      console.warn("[HandleSend] ❌ Invalid input:", { text: text?.trim(), conversationId: activeUser?.conversationId });
+      return;
+    }
 
     const conversationId = activeUser.conversationId;
     const socket = socketRef.current;
 
+    console.log('[HandleSend] Socket status:', { 
+      hasSocket: !!socket, 
+      connected: socket?.connected,
+      socketId: socket?.id 
+    });
+
     try {
       // Try sending via Socket.io first (real-time)
       if (socket && socket.connected) {
+        console.log('[HandleSend] 📡 Sending via Socket.io');
         socket.emit("send_message", {
           conversationId,
           content: text.trim(),
@@ -826,6 +865,9 @@ const ChatContainer = () => {
         const newMessage = {
           id: `temp-${Date.now()}`, // Temporary ID
           sender: "me",
+          senderId: currentUserId, // Include senderId for robust isSent check
+          senderName: user?.name || "You",
+          senderRole: user?.role || "developer",
           text: text.trim(),
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -839,19 +881,27 @@ const ChatContainer = () => {
           ...prev,
           [conversationId]: [...currentMessages, newMessage],
         }));
+        
+        console.log('[HandleSend] ✅ Message sent via Socket.io, optimistic update added');
       } else {
         // Fallback to REST API if Socket.io is not available
-        await sendMessageApi({
+        console.log('[HandleSend] 📡 Socket.io not available, using REST API fallback');
+        const response = await sendMessageApi({
           conversationId,
           content: text.trim(),
           messageType: "text",
         });
+        
+        console.log('[HandleSend] ✅ REST API response:', response);
 
         // Optimistically add message to UI
         const currentMessages = messages?.[conversationId] || [];
         const newMessage = {
           id: Date.now(), // Temporary ID
           sender: "me",
+          senderId: currentUserId, // Include senderId for robust isSent check
+          senderName: user?.name || "You",
+          senderRole: user?.role || "developer",
           text: text.trim(),
           time: new Date().toLocaleTimeString([], {
             hour: "2-digit",
@@ -867,42 +917,69 @@ const ChatContainer = () => {
         }));
 
         // Refresh messages to get the actual message from server
-        const messagesResponse = await getMessagesApi(conversationId, 50, 0);
-        const messagesData = messagesResponse?.data?.data || messagesResponse?.data || [];
-        
-        const transformedMessages = messagesData.map(msg => {
-          const isCurrentUser = msg.senderId === currentUserId;
-          const senderName = isCurrentUser 
-            ? "me" 
-            : (usersMap[msg.senderId]?.name || "Unknown");
+        try {
+          console.log('[HandleSend] 🔄 Refreshing messages from server...');
+          const messagesResponse = await getMessagesApi(conversationId, 50, 0);
+          const messagesData = messagesResponse?.data?.data || messagesResponse?.data || [];
           
-          const timestamp = msg.createdAt || msg.timestamp;
-          const date = timestamp ? new Date(timestamp) : new Date();
+          console.log('[HandleSend] 📨 Received messages from server:', messagesData.length);
           
-          return {
-            id: msg.id,
-            sender: senderName,
-            text: msg.content || "",
-            time: date.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            timestamp: timestamp || date.toISOString(),
-            status: msg.status || "delivered"
-          };
-        });
+          const transformedMessages = messagesData.map(msg => {
+            const isCurrentUser = msg.senderId === currentUserId;
+            const senderName = isCurrentUser 
+              ? (user?.name || "You")
+              : (usersMap[msg.senderId]?.name || "Unknown");
+            const senderRole = isCurrentUser 
+              ? (user?.role || "developer")
+              : (usersMap[msg.senderId]?.role || "developer");
+            
+            const timestamp = msg.createdAt || msg.timestamp;
+            const date = timestamp ? new Date(timestamp) : new Date();
+            
+            return {
+              id: msg.id,
+              sender: isCurrentUser ? "me" : senderName, // Keep "me" for isSent check
+              senderName: senderName, // Actual name for display
+              senderRole: senderRole, // Role for display
+              text: msg.content || "",
+              time: date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              timestamp: timestamp || date.toISOString(),
+              status: msg.status || "delivered"
+            };
+          });
 
-        setMessages(prev => ({
-          ...prev,
-          [conversationId]: transformedMessages,
-        }));
+          setMessages(prev => ({
+            ...prev,
+            [conversationId]: transformedMessages,
+          }));
+          
+          console.log('[HandleSend] ✅ Messages updated in UI');
 
-        // Refresh conversations to update last message
-         // Use fetchConversations to ensure proper merging with manually added conversations
-         await fetchConversations();
+          // Refresh conversations to update last message
+          // Use fetchConversations to ensure proper merging with manually added conversations
+          await fetchConversations();
+        } catch (refreshError) {
+          console.error('[HandleSend] ⚠️ Error refreshing messages (non-critical):', refreshError);
+          // Don't fail the send - message was already sent successfully
+        }
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("[HandleSend] ❌ Error sending message:", error);
+      // Remove optimistic message if send failed
+      setMessages(prev => {
+        const conversationMessages = prev[conversationId] || [];
+        // Remove the last temporary message if it exists
+        const filtered = conversationMessages.filter(msg => 
+          !msg.id.toString().startsWith('temp-') && msg.id !== Date.now()
+        );
+        return {
+          ...prev,
+          [conversationId]: filtered,
+        };
+      });
     }
   };
 
@@ -1011,6 +1088,7 @@ const ChatContainer = () => {
               ? (messages?.[activeUser.conversationId] || []) 
               : []}
             typingUsers={typingUsers[activeUser?.conversationId] || new Set()}
+            currentUserId={currentUserId}
           />
           {loadingMessages[activeUser?.conversationId] && (
             <div className="p-4 text-center text-gray-400">

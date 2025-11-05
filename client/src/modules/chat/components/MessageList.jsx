@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import MessageItem from "./MessageItem";
 import { ArrowDown, Loader2 } from "lucide-react";
 
-const MessageList = ({ messages, isLoading = false, typingUsers = new Set() }) => {
+const MessageList = ({ messages, isLoading = false, typingUsers = new Set(), currentUserId }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -108,6 +108,7 @@ const MessageList = ({ messages, isLoading = false, typingUsers = new Set() }) =
                 <MessageItem 
                   key={msg.id} 
                   message={msg}
+                  currentUserId={currentUserId}
                   isFirstInGroup={msgIndex === 0}
                   isLastInGroup={msgIndex === group.messages.length - 1}
                 />

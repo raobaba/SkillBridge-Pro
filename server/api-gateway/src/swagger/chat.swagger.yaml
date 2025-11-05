@@ -64,6 +64,13 @@ paths:
           schema:
             type: string
           example: "project discussion"
+        - name: role
+          in: query
+          description: Filter by participant role (e.g., 'project-owner' to get groups created by project-owner, 'developer' for developer participants)
+          schema:
+            type: string
+            enum: [project-owner, developer, member]
+          example: project-owner
       responses:
         "200":
           description: Conversations retrieved successfully
@@ -152,10 +159,13 @@ paths:
         
         **Use Case**: After shortlisting developers for a project, project owners can create a group chat with the project name to facilitate team communication. The group can be associated with the project for better organization.
         
+        **Automatic Welcome Message**: When a group is created, an automatic welcome message is sent from the project-owner to all developers in the group, welcoming them to the project and encouraging engagement.
+        
         **Permissions**: 
         - Only project owners can create groups
         - Only developers can be added as participants
-        - Creator (project owner) is automatically set as admin
+        - Creator (project owner) is automatically added with role 'project-owner'
+        - Added developers have role 'developer'
       tags:
         - "💬 CHAT SERVICE - Conversations"
       security:
@@ -178,7 +188,7 @@ paths:
                   example: 42
                 participantIds:
                   type: array
-                  description: Array of developer user IDs to add as participants (should only contain developers). Typically includes shortlisted or accepted developers. Creator (project-owner) is added automatically as admin.
+                  description: Array of developer user IDs to add as participants (should only contain developers). Typically includes shortlisted or accepted developers. Creator (project-owner) is added automatically with role 'project-owner'. Do not include the creator's ID in this array.
                   items:
                     type: integer
                   example: [123, 456, 789]
@@ -213,7 +223,7 @@ paths:
   /api/v1/chat/conversations/{conversationId}/participants:
     post:
       summary: Add participants to group
-      description: Add developers to an existing group conversation (Project Owners only). Only group admins (project-owners who created the group) can add participants. Only developers can be added.
+      description: Add developers to an existing group conversation (Project Owners only). Only group creators (project-owners who created the group) can add participants. Only developers can be added, and they will be assigned the 'developer' role.
       tags:
         - "💬 CHAT SERVICE - Participants"
       security:
@@ -236,7 +246,7 @@ paths:
               properties:
                 participantIds:
                   type: array
-                  description: Array of developer user IDs to add as participants (should only contain developers)
+                  description: Array of developer user IDs to add as participants (should only contain developers). They will be assigned the 'developer' role in the group.
                   items:
                     type: integer
                   minItems: 1
@@ -277,15 +287,16 @@ paths:
         "401":
           description: Unauthorized
         "403":
-          description: Forbidden (not project-owner or not group admin)
+          description: Forbidden (not project-owner or not group creator)
         "404":
           description: Conversation not found
         "500":
           description: Internal server error
 
+  /api/v1/chat/conversations/{conversationId}/participants/{participantId}:
     delete:
       summary: Remove participant from group
-      description: Remove a developer from a group conversation (Project Owners only). Only group admins (project-owners who created the group) can remove participants. Cannot remove yourself.
+      description: Remove a developer from a group conversation (Project Owners only). Only group creators (project-owners who created the group) can remove participants. Cannot remove yourself.
       tags:
         - "💬 CHAT SERVICE - Participants"
       security:
@@ -327,7 +338,7 @@ paths:
         "401":
           description: Unauthorized
         "403":
-          description: Forbidden (not project-owner or not group admin)
+          description: Forbidden (not project-owner or not group creator)
         "404":
           description: Conversation not found
         "500":
@@ -994,9 +1005,13 @@ components:
           example: 456
         role:
           type: string
-          enum: [admin, member]
+          enum: [project-owner, developer, member]
           default: member
-          example: member
+          description: |
+            - 'project-owner': Project owner who created the group (has full permissions)
+            - 'developer': Developer participant in a group conversation
+            - 'member': Default role for direct message participants
+          example: developer
         joinedAt:
           type: string
           format: date-time

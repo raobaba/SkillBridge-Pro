@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 import { MoreVertical, Copy, Reply, Forward, Delete, Check, CheckCheck } from "lucide-react";
 import Button from "../../../components/Button";
 
-const MessageItem = ({ message }) => {
+const MessageItem = ({ message, currentUserId }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const isSent = message.sender === "me";
+  // Robust check: use sender === "me" OR senderId matches currentUserId
+  const isSent = message.sender === "me" || 
+    (message.senderId && currentUserId && Number(message.senderId) === Number(currentUserId));
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text);
@@ -60,20 +62,64 @@ const MessageItem = ({ message }) => {
       )}
 
       {/* Enhanced Message Bubble */}
-      <div className="relative group/message">
+      <div className="relative group/message" style={{ flexShrink: 0, minWidth: 0, maxWidth: '70%', width: 'fit-content' }}>
         <div
-          className={`group px-4 py-3 rounded-2xl max-w-[70%] sm:max-w-[60%] text-sm shadow-lg transition-all duration-300 hover:shadow-xl ${
+          className={`group px-4 py-3 rounded-2xl text-sm shadow-lg transition-all duration-300 hover:shadow-xl ${
             isSent
               ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white rounded-br-none hover:from-blue-600 hover:via-purple-600 hover:to-pink-600"
               : "bg-black/20 backdrop-blur-sm text-gray-200 rounded-bl-none border border-white/10 hover:border-blue-500/30"
           }`}
+          style={{ 
+            display: 'block',
+            width: '100%',
+            minWidth: '120px'
+          }}
         >
           {/* Message content */}
-          <div className="relative">
-            <p className="whitespace-pre-wrap break-words leading-relaxed">{message.text}</p>
+          <div className="relative" style={{ width: '100%' }}>
+            {/* Sender role badge (for received messages only) */}
+            {!isSent && message.senderRole && (
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                  message.senderRole === 'project-owner' 
+                    ? "bg-blue-500/30 text-blue-300 border border-blue-500/50"
+                    : message.senderRole === 'developer'
+                    ? "bg-green-500/30 text-green-300 border border-green-500/50"
+                    : message.senderRole === 'admin'
+                    ? "bg-red-500/30 text-red-300 border border-red-500/50"
+                    : "bg-gray-500/30 text-gray-300 border border-gray-500/50"
+                }`}>
+                  {message.senderRole}
+                </span>
+              </div>
+            )}
+            {/* "You" text (for sent messages only, no role badge) */}
+            {isSent && (
+              <div className="flex items-center gap-2 mb-1 justify-end">
+                <span className="text-xs font-semibold text-blue-100">
+                  You
+                </span>
+              </div>
+            )}
+            <p 
+              className={`leading-relaxed ${isSent ? 'text-left' : 'text-left'}`}
+              style={{ 
+                margin: 0,
+                padding: 0,
+                wordBreak: 'normal',
+                overflowWrap: 'break-word',
+                whiteSpace: 'normal',
+                display: 'block',
+                lineHeight: '1.5',
+                width: '100%',
+                textAlign: 'left'
+              }}
+            >
+              {String(message.text || '').trim()}
+            </p>
             
             {/* Message metadata */}
-            <div className={`flex items-center justify-between mt-2 ${
+            <div className={`flex items-center justify-between mt-2 gap-2 ${
               isSent ? "flex-row-reverse" : "flex-row"
             }`}>
               <span className={`text-[10px] ${

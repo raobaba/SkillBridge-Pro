@@ -150,15 +150,15 @@ class ConversationsModel {
 
     // Check if any of these conversations also has userId2
     for (const conv of existing) {
-                const participants = await db
-            .select()
-            .from(conversationParticipantsTable)
-            .where(
-              and(
-                eq(conversationParticipantsTable.conversationId, conv.conversations.id),                                                                            
+      const participants = await db
+        .select()
+        .from(conversationParticipantsTable)
+        .where(
+          and(
+            eq(conversationParticipantsTable.conversationId, conv.conversations.id),
                 isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
-              )
-            );
+          )
+        );
 
       const participantIds = participants.map((p) => Number(p.userId));
       if (participantIds.includes(Number(userId1)) && participantIds.includes(Number(userId2)) && participants.length === 2) {
@@ -251,7 +251,7 @@ class ConversationsModel {
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
     
     console.log(`[Get Conversations By User] Executing query with userId=${userId}, type=${type}, role=${role}`);
-    
+
     const results = await db
       .select({
         conversation: conversationsTable,
@@ -260,7 +260,7 @@ class ConversationsModel {
       .from(conversationParticipantsTable)
       .innerJoin(
         conversationsTable,
-        eq(conversationParticipantsTable.conversationId, conversationsTable.id) 
+        eq(conversationParticipantsTable.conversationId, conversationsTable.id)
       )
       .where(whereClause)        
       .orderBy(desc(conversationsTable.updatedAt));
@@ -320,13 +320,13 @@ class ConversationsModel {
         // Get other participants for direct messages
         let otherParticipants = [];
         if (result.conversation.type === "direct") {
-                    const participants = await db
+          const participants = await db
             .select()
             .from(conversationParticipantsTable)
             .where(
               and(
-                eq(conversationParticipantsTable.conversationId, result.conversation.id),                                                                       
-                ne(conversationParticipantsTable.userId, Number(userId)),       
+                eq(conversationParticipantsTable.conversationId, result.conversation.id),
+                ne(conversationParticipantsTable.userId, Number(userId)),
                 isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
               )
             );

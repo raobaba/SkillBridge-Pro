@@ -141,7 +141,7 @@ const ChatHeader = ({ user, permissions }) => {
             )}
 
             {/* More Options Menu */}
-            <div className="relative">
+            <div className="relative" style={{ zIndex: 99999 }}>
               <Button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 variant="ghost"
@@ -154,8 +154,8 @@ const ChatHeader = ({ user, permissions }) => {
 
               {/* Enhanced Dropdown Menu with High Z-Index */}
               {isMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-black/40 backdrop-blur-sm rounded-xl border border-white/20 shadow-2xl overflow-hidden z-[99999]">
-                  <div className="p-2">
+                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 rounded-xl border border-white/30 shadow-2xl overflow-hidden" style={{ backgroundColor: 'rgba(15, 23, 42, 0.98)', zIndex: 99999, backdropFilter: 'blur(12px)' }}>
+                  <div className="p-1">
                     {/* Search */}
                     <Button
                       onClick={() => {
@@ -164,10 +164,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <Search className="w-4 h-4" />
-                      Search Messages
+                      <Search className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Search Messages</span>
                     </Button>
                     
                     {/* View Profile */}
@@ -178,10 +179,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <User className="w-4 h-4" />
-                      View Profile
+                      <User className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">View Profile</span>
                     </Button>
 
                     {/* Star/Favorite */}
@@ -192,10 +194,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <Star className="w-4 h-4" />
-                      Add to Favorites
+                      <Star className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Add to Favorites</span>
                     </Button>
 
                     {/* Archive */}
@@ -206,10 +209,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <Archive className="w-4 h-4" />
-                      Archive Chat
+                      <Archive className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Archive Chat</span>
                     </Button>
 
                     {/* Settings */}
@@ -220,10 +224,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <Settings className="w-4 h-4" />
-                      Chat Settings
+                      <Settings className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Chat Settings</span>
                     </Button>
 
                     {/* Divider */}
@@ -237,10 +242,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-gray-300 hover:text-white hover:bg-blue-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <Phone className="w-4 h-4" />
-                      Mute Notifications
+                      <Phone className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Mute Notifications</span>
                     </Button>
 
                     {/* Block User */}
@@ -251,10 +257,11 @@ const ChatHeader = ({ user, permissions }) => {
                       }}
                       variant="ghost"
                       size="sm"
-                      className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-2"
+                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-3"
+                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
                     >
-                      <MoreVertical className="w-4 h-4" />
-                      Block User
+                      <MoreVertical className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                      <span className="text-left">Block User</span>
                     </Button>
                   </div>
                 </div>

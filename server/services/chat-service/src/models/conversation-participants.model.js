@@ -1,5 +1,5 @@
 const { pgTable, serial, integer, text, timestamp, boolean } = require("drizzle-orm/pg-core");
-const { eq, and, ne } = require("drizzle-orm");
+const { eq, and, ne, isNull } = require("drizzle-orm");
 const { db } = require("../config/database");
 
 // Conversation Participants table - users in a conversation
@@ -87,7 +87,7 @@ class ConversationParticipantsModel {
           and(
             eq(conversationParticipantsTable.conversationId, Number(conversationId)),
             eq(conversationParticipantsTable.userId, Number(userId)),
-            eq(conversationParticipantsTable.leftAt, null) // Only update active participants
+            isNull(conversationParticipantsTable.leftAt) // Only update active participants - use isNull() for proper null checks
           )
         )
         .returning();
@@ -106,7 +106,7 @@ class ConversationParticipantsModel {
     try {
       const conditions = [
         eq(conversationParticipantsTable.conversationId, Number(conversationId)),
-        eq(conversationParticipantsTable.leftAt, null),
+        isNull(conversationParticipantsTable.leftAt), // Use isNull() for proper null checks
       ];
 
       if (excludeUserId) {
@@ -152,7 +152,7 @@ class ConversationParticipantsModel {
           and(
             eq(conversationParticipantsTable.conversationId, convId),
             eq(conversationParticipantsTable.userId, usrId),
-            eq(conversationParticipantsTable.leftAt, null)
+            isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
           )
         );
       
@@ -181,7 +181,7 @@ class ConversationParticipantsModel {
         and(
           eq(conversationParticipantsTable.conversationId, Number(conversationId)),
           ne(conversationParticipantsTable.userId, Number(excludeUserId)),
-          eq(conversationParticipantsTable.leftAt, null)
+          isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
         )
       );
 

@@ -2775,7 +2775,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               >
                 Cancel
               </Button>
-                            <Button
+              <Button
                 onClick={handleConfirmGroupChat}
                 disabled={selectedDevelopers.length === 0 || !groupChatName.trim() || isCreatingGroupChat}                                                                             
                   className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"                 
@@ -2788,7 +2788,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 ) : (
                   <>
                     <MessageCircle className="w-4 h-4" />
-                    Create Group Chat
+                Create Group Chat
                   </>
                 )}
               </Button>

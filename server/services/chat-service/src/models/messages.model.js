@@ -1,5 +1,5 @@
 const { pgTable, serial, integer, text, timestamp, boolean } = require("drizzle-orm/pg-core");
-const { eq, and, or, desc, ne } = require("drizzle-orm");
+const { eq, and, or, desc, ne, isNull } = require("drizzle-orm");
 const { db } = require("../config/database");
 
 // Messages table
@@ -70,7 +70,7 @@ class MessagesModel {
         and(
           eq(conversationParticipantsTable.conversationId, Number(conversationId)),
           ne(conversationParticipantsTable.userId, Number(senderId)),
-          eq(conversationParticipantsTable.leftAt, null)
+          isNull(conversationParticipantsTable.leftAt) // Use isNull() for proper null checks
         )
       );
 

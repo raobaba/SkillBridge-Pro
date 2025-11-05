@@ -473,7 +473,7 @@ const createGroupConversation = async (req, res) => {
         conversation.id,
         userId
       );
-      
+
       if (!creatorParticipant) {
         retries--;
         if (retries > 0) {
@@ -483,21 +483,21 @@ const createGroupConversation = async (req, res) => {
         }
       }
     }
-    
+
     // Only verify - do not add again since it's already added in createConversation
     if (creatorParticipant) {
       // Ensure role is 'project-owner' for project owners (in case it was set incorrectly)
       if (userRole === "project-owner" && creatorParticipant.role !== "project-owner") {
         console.log(`[Create Group] Updating creator role to project-owner...`);
-      await ConversationParticipantsModel.updateParticipant(conversation.id, userId, {
+        await ConversationParticipantsModel.updateParticipant(conversation.id, userId, {
           role: "project-owner",
-      });
-      creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
-        conversation.id,
-        userId
-      );
-    }
-    
+        });
+        creatorParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+          conversation.id,
+          userId
+        );
+      }
+      
       console.log(`[Create Group] ✅ Group ${conversation.id} created by user ${userId} (verified as ${creatorParticipant.role})`);
     } else {
       console.warn(`[Create Group] ⚠️ Creator ${userId} not found after retries, but participant should have been added in createConversation`);
@@ -510,7 +510,6 @@ const createGroupConversation = async (req, res) => {
     }
 
     // Send welcome message automatically from project-owner to all developers
-    // This is wrapped in a try-catch and non-blocking - group creation will succeed even if this fails
     try {
       // Get all developer participants (excluding the project-owner)
       const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(conversation.id);
@@ -539,26 +538,21 @@ const createGroupConversation = async (req, res) => {
 
         console.log(`[Create Group] ✅ Welcome message sent to group ${conversation.id} from project-owner ${userId}`);
 
-        // Emit Socket.io event for real-time message delivery (non-blocking)
+        // Emit Socket.io event for real-time message delivery
         if (global.io && global.socketHandlers) {
-          try {
-            await global.socketHandlers.emitToConversation(
-              conversation.id,
-              "new_message",
-              {
-                conversationId: conversation.id,
-                message: welcomeMsg,
-              }
-            );
-          } catch (socketError) {
-            // Socket.io errors should not break the flow
-            console.error(`[Create Group] Socket.io emit error (non-critical):`, socketError);
-          }
+          await global.socketHandlers.emitToConversation(
+            conversation.id,
+            "new_message",
+            {
+              conversationId: conversation.id,
+              message: welcomeMsg,
+            }
+          );
         }
       }
     } catch (welcomeError) {
       // Log error but don't fail the group creation
-      console.error(`[Create Group] ⚠️ Failed to send welcome message (non-critical):`, welcomeError);
+      console.error(`[Create Group] ⚠️ Failed to send welcome message:`, welcomeError);
       // Don't throw - group was created successfully, welcome message is just a bonus
     }
 
