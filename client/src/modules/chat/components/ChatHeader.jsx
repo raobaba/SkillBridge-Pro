@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { User, Phone, Video, MoreVertical, Search, Settings, Archive, Star } from "lucide-react";
 import Button from "../../../components/Button";
+import ParticipantListModal from "./ParticipantListModal";
 
 const ChatHeader = ({ user, permissions }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState("Active now");
 
   const handleCall = (type) => {
@@ -54,7 +56,13 @@ const ChatHeader = ({ user, permissions }) => {
             
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-white font-semibold text-lg">{user?.name || 'Unknown User'}</h2>
+                <h2 
+                  className={`text-white font-semibold text-lg ${user?.isGroup ? 'cursor-pointer hover:text-purple-300 transition-colors' : ''}`}
+                  onClick={() => user?.isGroup && setIsParticipantsModalOpen(true)}
+                  title={user?.isGroup ? 'Click to view participants' : ''}
+                >
+                  {user?.name || 'Unknown User'}
+                </h2>
                 {/* Role indicators */}
                 {user?.isSystem && (
                   <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded border border-yellow-500/30">
@@ -277,6 +285,16 @@ const ChatHeader = ({ user, permissions }) => {
           className="fixed inset-0 z-[99998]"
           onClick={() => setIsMenuOpen(false)}
         ></div>
+      )}
+
+      {/* Participants Modal */}
+      {user?.isGroup && (
+        <ParticipantListModal
+          isOpen={isParticipantsModalOpen}
+          onClose={() => setIsParticipantsModalOpen(false)}
+          conversationId={user?.conversationId}
+          conversationName={user?.name}
+        />
       )}
     </div>
   );

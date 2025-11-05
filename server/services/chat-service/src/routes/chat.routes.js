@@ -28,6 +28,9 @@ chatRouter.post(
   chatController.addParticipantsToGroup
 );
 
+// Get participants of a conversation
+chatRouter.get("/conversations/:conversationId/participants", chatController.getConversationParticipants);
+
 // Remove participant from group (project owners only)
 chatRouter.delete(
   "/conversations/:conversationId/participants/:participantId",

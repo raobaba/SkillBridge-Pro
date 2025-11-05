@@ -908,6 +908,47 @@ const removeParticipantFromGroup = async (req, res) => {
   }
 };
 
+// Get participants of a conversation
+const getConversationParticipants = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    const { conversationId } = req.params;
+
+    if (!userId) return new ErrorHandler("User ID is required", 400).sendError(res);
+    if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
+
+    // Verify user is a participant in this conversation
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
+
+    if (!userParticipant) {
+      return new ErrorHandler("You are not a participant in this conversation", 403).sendError(res);
+    }
+
+    // Get all participants
+    const participants = await ConversationParticipantsModel.getParticipantsByConversationId(
+      Number(conversationId)
+    );
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Participants retrieved successfully",
+      data: participants,
+    });
+  } catch (error) {
+    console.error("Get Participants Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to retrieve participants",
+      error: error.message,
+    });
+  }
+};
+
 const controllers = {
   getConversations,
   getOrCreateDirectConversation,
@@ -919,6 +960,7 @@ const controllers = {
   createGroupConversation,
   addParticipantsToGroup,
   removeParticipantFromGroup,
+  getConversationParticipants,
   updateParticipantSettings,
   flagConversation,
   unflagConversation,

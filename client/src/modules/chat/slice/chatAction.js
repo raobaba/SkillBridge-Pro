@@ -92,3 +92,9 @@ export const unflagConversationApi = async (conversationId) => {
   return await fetchFromApiServer("DELETE", url);
 };
 
+// Get participants of a conversation
+export const getConversationParticipantsApi = async (conversationId) => {
+  const url = `api/v1/chat/conversations/${conversationId}/participants`;
+  return await fetchFromApiServer("GET", url);
+};
+

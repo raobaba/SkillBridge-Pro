@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   Search,
@@ -720,17 +720,52 @@ const DeveloperProjects = ({
     setSelectedProject(null);
   }, []);
 
+  const navigate = useNavigate();
+  
   const canJoinGroupChat = useCallback((projectId) => {
     const numericProjectId = Number(projectId);
-    // Check if status is "accepted" (case-insensitive) from any source
+    // Check if status is "accepted" or "shortlisted" (case-insensitive) from any source
     const status = getApplicationStatus(numericProjectId) || 
                   applicationStatusByProjectId[numericProjectId] || 
                   applicationStatusByProjectId[projectId] ||
                   (applicationStatusMap[numericProjectId]?.status) ||
                   (applicationStatusMap[projectId]?.status);
     
-    return status && status.toLowerCase() === "accepted";
+    if (!status) return false;
+    
+    const normalizedStatus = status.toLowerCase();
+    // Allow chat access for both "accepted" and "shortlisted" status
+    return normalizedStatus === "accepted" || normalizedStatus === "shortlisted";
   }, [applicationStatusByProjectId, applicationStatusMap, getApplicationStatus]);
+
+  // Handle joining group chat for a project
+  const handleJoinGroupChat = useCallback(async (projectId) => {
+    const numericProjectId = Number(projectId);
+    try {
+      // Import getConversationsApi dynamically to avoid circular dependencies
+      const { getConversationsApi } = await import("../../chat/slice/chatAction");
+      
+      // Fetch all conversations to find the group chat for this project
+      const conversationsResponse = await getConversationsApi({ type: 'group' });
+      const conversationsData = conversationsResponse?.data?.data || conversationsResponse?.data || [];
+      
+      // Find the group conversation that matches this projectId
+      const groupChat = conversationsData.find(
+        conv => conv.type === 'group' && Number(conv.projectId) === numericProjectId
+      );
+      
+      if (groupChat && groupChat.id) {
+        // Navigate to chat with the conversation ID
+        navigate(`/chat?conversationId=${groupChat.id}`);
+        toast.success(`Opening group chat for ${groupChat.name || 'this project'}`);
+      } else {
+        toast.error('Group chat not found for this project. It may not have been created yet.');
+      }
+    } catch (error) {
+      console.error('Error joining group chat:', error);
+      toast.error('Failed to open group chat. Please try again.');
+    }
+  }, [navigate]);
   const isProjectSaved = useCallback((projectId) => {
     if (!Array.isArray(saves)) return false;
     
@@ -1688,12 +1723,7 @@ const DeveloperProjects = ({
                             </Button>
                             {canJoinGroupChat(numericProjectId) ? (
                               <Button
-                                onClick={() =>
-                                  console.log(
-                                    "Joining group chat for",
-                                    numericProjectId
-                                  )
-                                }
+                                onClick={() => handleJoinGroupChat(numericProjectId)}
                                 className='px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 text-sm font-medium'
                               >
                                 Join Chat
