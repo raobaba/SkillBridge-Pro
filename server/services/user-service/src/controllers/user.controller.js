@@ -10,19 +10,60 @@ require("dotenv").config();
 
 const registerUser = async (req, res) => {
   try {
-    const { name, email, role, domains, experience, availability, password } =
-      req.body;
-    if (
-      !name ||
-      !email ||
-      !role ||
-      !domains ||
-      !experience ||
-      !availability ||
-      !password
-    ) {
+    const { 
+      name, 
+      email, 
+      role, 
+      domains, 
+      experience, 
+      availability, 
+      password,
+      adminKey,
+      company,
+      location,
+      website,
+      businessType
+    } = req.body;
+
+    // Basic validation - required for all roles
+    if (!name || !email || !role || !password) {
       return new ErrorHandler(
-        "Name, email, role, domains, experience, availability and password are required",
+        "Name, email, role, and password are required",
+        400
+      ).sendError(res);
+    }
+
+    // Role-specific validation
+    if (role === "developer") {
+      if (!domains || experience === undefined || experience === null || !availability) {
+        return new ErrorHandler(
+          "For developers, domains, experience, and availability are required",
+          400
+        ).sendError(res);
+      }
+    } else if (role === "admin") {
+      // Validate admin key if provided
+      if (adminKey) {
+        const validAdminKey = process.env.ADMIN_REGISTRATION_KEY;
+        if (adminKey !== validAdminKey) {
+          return new ErrorHandler(
+            "Invalid admin registration key",
+            403
+          ).sendError(res);
+        }
+      } else {
+        return new ErrorHandler(
+          "Admin registration requires an admin key",
+          400
+        ).sendError(res);
+      }
+    }
+
+    // Validate role
+    const validRoles = ["developer", "project-owner", "admin"];
+    if (!validRoles.includes(role)) {
+      return new ErrorHandler(
+        "Invalid role. Must be one of: developer, project-owner, admin",
         400
       ).sendError(res);
     }
@@ -35,67 +76,152 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
-    const user = await UserModel.createUser({
+    // Prepare user data with role-specific defaults
+    const userData = {
       name,
       email,
       role, // Keep for backward compatibility
-      domains,
-      experience,
-      availability,
       password: hashedPassword,
       isEmailVerified: false,
       resetPasswordToken: verificationToken,
       resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000),
-    });
+    };
+
+    // Add role-specific fields
+    if (role === "developer") {
+      userData.domainPreferences = domains;
+      userData.experience = experience.toString();
+      userData.availability = availability;
+      if (location) userData.location = location;
+    } else if (role === "project-owner") {
+      // For project owners, use company as domain preference or default
+      userData.domainPreferences = company || domains || "N/A";
+      userData.experience = "0";
+      userData.availability = availability || "full-time";
+      if (location) userData.location = location;
+      // Store additional project owner info in bio or a custom field
+      if (company) userData.bio = `Company: ${company}${website ? `\nWebsite: ${website}` : ""}${businessType ? `\nBusiness Type: ${businessType}` : ""}`;
+    } else if (role === "admin") {
+      // For admins, set defaults
+      userData.domainPreferences = "N/A";
+      userData.experience = "0";
+      userData.availability = "full-time";
+    }
+
+    const user = await UserModel.createUser(userData);
 
     // Assign the initial role to the user
     await UserModel.assignRole(user.id, role);
 
     const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
-    const emailBody = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "✅ Welcome to SkillBridge Pro - Verify Your Email",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Welcome to SkillBridge Pro!</h1>
-          </div>
-          <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
-            <h2 style="color: #333; margin-top: 0;">Hello ${name},</h2>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              Thank you for joining SkillBridge Pro! We're excited to have you on board. To get started, please verify your email address.
-            </p>
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #28a745;">
-              <h3 style="color: #28a745; margin-top: 0;">🚀 What's Next?</h3>
-              <ul style="color: #666; line-height: 1.6;">
-                <li>Verify your email to activate your account</li>
-                <li>Complete your profile setup</li>
-                <li>Start exploring projects or posting your own</li>
-                <li>Connect with developers and project owners</li>
-              </ul>
+    
+    // Role-specific email template generator
+    const getRoleSpecificSignupEmail = (role, name, userEmail, verificationUrl) => {
+      const templates = {
+        developer: {
+          gradient: "135deg, #3b82f6 0%, #8b5cf6 100%",
+          emoji: "👨‍💻",
+          title: "Welcome Developer!",
+          greeting: `Hello ${name},`,
+          message: "Thank you for joining SkillBridge Pro as a Developer! We're excited to help you build your career and connect with amazing projects.",
+          nextSteps: [
+            "Verify your email to activate your developer account",
+            "Complete your developer profile with skills and experience",
+            "Browse and apply to exciting projects that match your expertise",
+            "Build your portfolio and showcase your work",
+            "Connect with project owners and fellow developers"
+          ],
+          buttonColor: "135deg, #3b82f6 0%, #8b5cf6 100%",
+          buttonText: "✅ Verify My Developer Account"
+        },
+        "project-owner": {
+          gradient: "135deg, #10b981 0%, #14b8a6 100%",
+          emoji: "🏢",
+          title: "Welcome Project Owner!",
+          greeting: `Hello ${name},`,
+          message: "Thank you for joining SkillBridge Pro as a Project Owner! We're thrilled to help you find talented developers and bring your projects to life.",
+          nextSteps: [
+            "Verify your email to activate your project owner account",
+            "Complete your company profile and business information",
+            "Post your first project and start receiving applications",
+            "Browse talented developers and their portfolios",
+            "Build your dream development team"
+          ],
+          buttonColor: "135deg, #10b981 0%, #14b8a6 100%",
+          buttonText: "✅ Verify My Project Owner Account"
+        },
+        admin: {
+          gradient: "135deg, #ef4444 0%, #f97316 100%",
+          emoji: "🔐",
+          title: "Welcome Admin!",
+          greeting: `Hello ${name},`,
+          message: "Thank you for joining SkillBridge Pro as an Administrator! You now have access to manage and monitor the SkillBridge platform.",
+          nextSteps: [
+            "Verify your email to activate your admin account",
+            "Access the admin dashboard and system controls",
+            "Manage users, projects, and platform settings",
+            "Monitor system analytics and performance",
+            "Ensure platform security and quality"
+          ],
+          buttonColor: "135deg, #ef4444 0%, #f97316 100%",
+          buttonText: "✅ Verify My Admin Account",
+          securityNote: true
+        }
+      };
+
+      const template = templates[role] || templates.developer;
+      
+      return {
+        from: process.env.EMAIL_USER,
+        to: userEmail,
+        subject: `✅ ${template.title} - Verify Your Email`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(${template.gradient}); padding: 30px; border-radius: 10px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">${template.emoji} ${template.title}</h1>
             </div>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
-                ✅ Verify My Email
-              </a>
-            </div>
-            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-              <p style="color: #856404; margin: 0; font-size: 14px;">
-                <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
+            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+              <h2 style="color: #333; margin-top: 0;">${template.greeting}</h2>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                ${template.message} To get started, please verify your email address.
+              </p>
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${role === 'developer' ? '#3b82f6' : role === 'project-owner' ? '#10b981' : '#ef4444'};">
+                <h3 style="color: ${role === 'developer' ? '#3b82f6' : role === 'project-owner' ? '#10b981' : '#ef4444'}; margin-top: 0;">🚀 What's Next?</h3>
+                <ul style="color: #666; line-height: 1.6;">
+                  ${template.nextSteps.map(step => `<li>${step}</li>`).join('')}
+                </ul>
+              </div>
+              ${template.securityNote ? `
+              <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
+                <p style="color: #991b1b; margin: 0; font-size: 14px;">
+                  <strong>🔒 Security Notice:</strong> This is a secure admin account. Only authorized personnel should verify this email.
+                </p>
+              </div>
+              ` : ''}
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationUrl}" 
+                   style="background: linear-gradient(${template.buttonColor}); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                  ${template.buttonText}
+                </a>
+              </div>
+              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                <p style="color: #856404; margin: 0; font-size: 14px;">
+                  <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
+                </p>
+              </div>
+              <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                If you didn't create an account with SkillBridge Pro, you can safely ignore this email.
               </p>
             </div>
-            <p style="color: #666; font-size: 16px; line-height: 1.6;">
-              If you didn't create an account with SkillBridge Pro, you can safely ignore this email.
-            </p>
+            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+              <p>This email was sent from SkillBridge Pro</p>
+            </div>
           </div>
-          <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
-            <p>This email was sent from SkillBridge Pro</p>
-          </div>
-        </div>
-      `,
+        `,
+      };
     };
+
+    const emailBody = getRoleSpecificSignupEmail(role, name, email, verificationUrl);
 
     await sendMail(emailBody);
 
@@ -175,8 +301,13 @@ const loginUser = async (req, res) => {
     // ✅ Fetch user by email
     const user = await UserModel.getUserByEmail(email);
     console.log("user", user);
+    
+    // Check if email exists first
     if (!user) {
-      return new ErrorHandler("Invalid credentials", 401).sendError(res);
+      return new ErrorHandler(
+        "Account with this email does not exist. Please check your email address or sign up to create an account.",
+        401
+      ).sendError(res);
     }
 
     // ✅ Check if user has the requested role
@@ -188,11 +319,14 @@ const loginUser = async (req, res) => {
       ).sendError(res);
     }
 
-    // ✅ Check password
+    // ✅ Check password - only check if user exists
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     console.log("isPasswordMatch", isPasswordMatch);
     if (!isPasswordMatch) {
-      return new ErrorHandler("Invalid credentials", 401).sendError(res);
+      return new ErrorHandler(
+        "Incorrect password. Please check your password and try again.",
+        401
+      ).sendError(res);
     }
 
     // 🚨 If email not verified → send verification email again
@@ -205,47 +339,103 @@ const loginUser = async (req, res) => {
       });
 
       const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
-      const emailBody = {
-        from: process.env.EMAIL_USER,
-        to: user.email,
-        subject: "🔐 Email Verification Required - SkillBridge Pro",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px; text-align: center;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🔐 Email Verification Required</h1>
-            </div>
-            <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
-              <h2 style="color: #333; margin-top: 0;">Hello ${user.name},</h2>
-              <p style="color: #666; font-size: 16px; line-height: 1.6;">
-                We noticed you're trying to log in to SkillBridge Pro, but your email address hasn't been verified yet. Please verify your email to access your account.
-              </p>
-              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc3545;">
-                <h3 style="color: #dc3545; margin-top: 0;">⚠️ Action Required</h3>
-                <p style="color: #666; line-height: 1.6; margin: 0;">
-                  To complete your login and access all features of SkillBridge Pro, please verify your email address by clicking the button below.
+      
+      // Get user's role(s) for role-specific email
+      const userRoles = await UserModel.getUserRoles(user.id);
+      const primaryRole = userRoles && userRoles.length > 0 ? userRoles[0] : user.role || "developer";
+      
+      // Role-specific login verification email template generator
+      const getRoleSpecificLoginVerificationEmail = (role, userName, userEmail, verificationUrl) => {
+        const templates = {
+          developer: {
+            gradient: "135deg, #3b82f6 0%, #8b5cf6 100%",
+            emoji: "👨‍💻",
+            title: "Email Verification Required",
+            greeting: `Hello ${userName},`,
+            message: "We noticed you're trying to log in to your Developer account, but your email address hasn't been verified yet. Please verify your email to access your developer dashboard and start applying to projects.",
+            actionText: "To complete your login and access your developer account, please verify your email address by clicking the button below.",
+            buttonColor: "135deg, #3b82f6 0%, #8b5cf6 100%",
+            buttonText: "✅ Verify My Developer Account",
+            afterVerification: "Once verified, you'll be able to log in and access your developer dashboard, browse projects, and build your career!"
+          },
+          "project-owner": {
+            gradient: "135deg, #10b981 0%, #14b8a6 100%",
+            emoji: "🏢",
+            title: "Email Verification Required",
+            greeting: `Hello ${userName},`,
+            message: "We noticed you're trying to log in to your Project Owner account, but your email address hasn't been verified yet. Please verify your email to access your project management dashboard.",
+            actionText: "To complete your login and access your project owner account, please verify your email address by clicking the button below.",
+            buttonColor: "135deg, #10b981 0%, #14b8a6 100%",
+            buttonText: "✅ Verify My Project Owner Account",
+            afterVerification: "Once verified, you'll be able to log in and access your project dashboard, post projects, and hire talented developers!"
+          },
+          admin: {
+            gradient: "135deg, #ef4444 0%, #f97316 100%",
+            emoji: "🔐",
+            title: "Email Verification Required - Admin Account",
+            greeting: `Hello ${userName},`,
+            message: "We noticed you're trying to log in to your Admin account, but your email address hasn't been verified yet. Please verify your email to access the admin dashboard.",
+            actionText: "To complete your login and access the admin panel, please verify your email address by clicking the button below.",
+            buttonColor: "135deg, #ef4444 0%, #f97316 100%",
+            buttonText: "✅ Verify My Admin Account",
+            afterVerification: "Once verified, you'll be able to log in and access the admin dashboard to manage and monitor the SkillBridge platform.",
+            securityNote: true
+          }
+        };
+
+        const template = templates[role] || templates.developer;
+        
+        return {
+          from: process.env.EMAIL_USER,
+          to: userEmail,
+          subject: `${template.emoji} ${template.title} - SkillBridge Pro`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="background: linear-gradient(${template.gradient}); padding: 30px; border-radius: 10px; text-align: center;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">${template.emoji} ${template.title}</h1>
+              </div>
+              <div style="padding: 30px; background: #f8f9fa; border-radius: 10px; margin-top: 20px;">
+                <h2 style="color: #333; margin-top: 0;">${template.greeting}</h2>
+                <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                  ${template.message}
+                </p>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${role === 'developer' ? '#3b82f6' : role === 'project-owner' ? '#10b981' : '#ef4444'};">
+                  <h3 style="color: ${role === 'developer' ? '#3b82f6' : role === 'project-owner' ? '#10b981' : '#ef4444'}; margin-top: 0;">⚠️ Action Required</h3>
+                  <p style="color: #666; line-height: 1.6; margin: 0;">
+                    ${template.actionText}
+                  </p>
+                </div>
+                ${template.securityNote ? `
+                <div style="background: #fee2e2; padding: 15px; border-radius: 8px; border-left: 4px solid #ef4444; margin: 20px 0;">
+                  <p style="color: #991b1b; margin: 0; font-size: 14px;">
+                    <strong>🔒 Security Notice:</strong> This is a secure admin account. Only authorized personnel should verify this email.
+                  </p>
+                </div>
+                ` : ''}
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${verificationUrl}" 
+                     style="background: linear-gradient(${template.buttonColor}); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
+                    ${template.buttonText}
+                  </a>
+                </div>
+                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                  <p style="color: #856404; margin: 0; font-size: 14px;">
+                    <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
+                  </p>
+                </div>
+                <p style="color: #666; font-size: 16px; line-height: 1.6;">
+                  ${template.afterVerification}
                 </p>
               </div>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${verificationUrl}" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; display: inline-block;">
-                  ✅ Verify My Email Now
-                </a>
+              <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
+                <p>This email was sent from SkillBridge Pro</p>
               </div>
-              <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-                <p style="color: #856404; margin: 0; font-size: 14px;">
-                  <strong>⏰ Important:</strong> This verification link will expire in 15 minutes for security reasons.
-                </p>
-              </div>
-              <p style="color: #666; font-size: 16px; line-height: 1.6;">
-                Once verified, you'll be able to log in and access all the amazing features of SkillBridge Pro!
-              </p>
             </div>
-            <div style="text-align: center; margin-top: 20px; color: #999; font-size: 14px;">
-              <p>This email was sent from SkillBridge Pro</p>
-            </div>
-          </div>
-        `,
+          `,
+        };
       };
+
+      const emailBody = getRoleSpecificLoginVerificationEmail(primaryRole, user.name, user.email, verificationUrl);
 
       await sendMail(emailBody);
 

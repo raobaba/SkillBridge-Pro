@@ -1,160 +1,117 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useDispatch } from "react-redux";
-import { loginUser } from "../slice/userSlice";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { Input, Button } from "../../../components";
-import OAuthButtons from "../../../components/shared/OAuthButtons";
-import { useAuthForm } from "../../../components/hooks/useAuthForm";
+import React, { useState } from "react";
+import DeveloperSignIn from "./DeveloperSignIn";
+import ProjectOwnerSignIn from "./ProjectOwnerSignIn";
+import AdminSignIn from "./AdminSignIn";
 
-const SignIn = ({ switchMode }) => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const [searchParams] = useSearchParams();
-  const [loginFailed, setLoginFailed] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Get redirect URL from query parameters
-  const redirectTo = searchParams.get('redirect_to');
+const SignIn = ({ switchMode, onRoleChange }) => {
+  const [selectedRole, setSelectedRole] = useState("");
 
-  const initialFormData = {
-    email: "",
-    password: "",
-    role: "developer",
+  // Handle role selection
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    if (onRoleChange) {
+      onRoleChange(role);
+    }
   };
 
-  const {
-    formData,
-    errors,
-    loading,
-    handleChange,
-    handleSubmit,
-    handleAuthStateChange
-  } = useAuthForm(initialFormData, ["email", "password"]);
-
-  // Reset login failed state when user starts typing
-  const handleInputChange = useCallback((e) => {
-    if (loginFailed) {
-      setLoginFailed(false);
+  // Handle back to role selection
+  const handleBackToRoleSelection = () => {
+    setSelectedRole("");
+    if (onRoleChange) {
+      onRoleChange("");
     }
-    handleChange(e);
-  }, [loginFailed, handleChange]);
+  };
 
-  // Handle auth state changes
-  useEffect(() => {
-    handleAuthStateChange();
-  }, [handleAuthStateChange]);
-
-  // Track login failures
-  useEffect(() => {
-    if (errors.password || errors.email) {
-      setLoginFailed(true);
-    }
-  }, [errors]);
-
-  const onSubmit = useCallback(async (data) => {
-    try {
-      const result = await dispatch(loginUser(data));
-      if (result?.payload?.status === 200) {
-        // Navigate to the intended route or default to dashboard
-        const targetRoute = redirectTo ? decodeURIComponent(redirectTo) : "/dashboard";
-        navigate(targetRoute);
-      } else {
-        // Login failed - show forgot password option
-        setLoginFailed(true);
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      setLoginFailed(true);
-    }
-  }, [dispatch, navigate, redirectTo]);
-
-  return (
-    <div className='space-y-6'>
-      <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-        {/* Email */}
-        <Input
-          type='email'
-          label='Email'
-          name='email'
-          placeholder='Enter your email'
-          value={formData.email}
-          onChange={handleInputChange}
-          error={errors.email}
-          required
-        />
-
-        {/* Role Dropdown */}
-        <div>
-          <label className='block mb-2 text-sm font-medium text-gray-300'>
-            Role
-          </label>
-          <select
-            name='role'
-            value={formData.role}
-            onChange={handleChange}
-            className='w-full bg-white/10 px-4 py-3 rounded-lg border border-white/20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all'
-          >
-            <option className='bg-black text-white' value='developer'>
-              Developer
-            </option>
-            <option className='bg-black text-white' value='project-owner'>
-              Project Owner
-            </option>
-            <option className='bg-black text-white' value='admin'>
-              Admin
-            </option>
-          </select>
+  // Role selection screen
+  if (!selectedRole) {
+    return (
+      <div className='space-y-6'>
+        <div className='text-center mb-6'>
+        
+          <p className='text-gray-400 text-sm'>Select your account type to continue</p>
         </div>
 
-        {/* Password */}
-        <Input
-          type='password'
-          label='Password'
-          name='password'
-          placeholder='Enter your password'
-          value={formData.password}
-          onChange={handleInputChange}
-          error={errors.password}
-          showToggle={true}
-          isVisible={showPassword}
-          onToggle={() => setShowPassword(!showPassword)}
-          required
-        />
+        <div className='grid grid-cols-1 gap-4'>
+          <button
+            type='button'
+            onClick={() => handleRoleSelect("developer")}
+            className='p-6 bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-blue-500/30 rounded-lg hover:border-blue-500/60 hover:bg-blue-600/30 transition-all text-left group'
+          >
+            <div className='flex items-center justify-between'>
+              <div>
+                <h3 className='text-lg font-semibold text-white mb-1 group-hover:text-blue-300'>👨‍💻 Developer</h3>
+                <p className='text-sm text-gray-400'>Sign in to access your developer dashboard</p>
+              </div>
+              <span className='text-2xl'>→</span>
+            </div>
+          </button>
 
-        {/* Forgot Password if login failed */}
-        {loginFailed && (
-          <div className='mt-2 text-right'>
-            <p
-              onClick={() => navigate("/forgot-password")}
-              className='text-sm text-blue-400 hover:underline cursor-pointer'
-            >
-              Forgot Password?
-            </p>
-          </div>
-        )}
+          <button
+            type='button'
+            onClick={() => handleRoleSelect("project-owner")}
+            className='p-6 bg-gradient-to-r from-green-600/20 to-teal-600/20 border border-green-500/30 rounded-lg hover:border-green-500/60 hover:bg-green-600/30 transition-all text-left group'
+          >
+            <div className='flex items-center justify-between'>
+              <div>
+                <h3 className='text-lg font-semibold text-white mb-1 group-hover:text-green-300'>🏢 Project Owner</h3>
+                <p className='text-sm text-gray-400'>Sign in to manage your projects and team</p>
+              </div>
+              <span className='text-2xl'>→</span>
+            </div>
+          </button>
 
-        {/* Submit Button */}
-        <Button
-          type='submit'
-          disabled={loading}
-          className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
-        >
-          {loading ? "Signing In..." : "Sign In"}
-        </Button>
-      </form>
+          <button
+            type='button'
+            onClick={() => handleRoleSelect("admin")}
+            className='p-6 bg-gradient-to-r from-red-600/20 to-orange-600/20 border border-red-500/30 rounded-lg hover:border-red-500/60 hover:bg-red-600/30 transition-all text-left group'
+          >
+            <div className='flex items-center justify-between'>
+              <div>
+                <h3 className='text-lg font-semibold text-white mb-1 group-hover:text-red-300'>🔐 Admin</h3>
+                <p className='text-sm text-gray-400'>Sign in to access admin dashboard</p>
+              </div>
+              <span className='text-2xl'>→</span>
+            </div>
+          </button>
+        </div>
 
-      <p className='text-center text-sm text-gray-400'>
-        Don't have an account?{" "}
-        <span
-          onClick={switchMode}
-          className='text-blue-400 hover:text-blue-300 hover:underline cursor-pointer transition-colors'
-        >
-          Sign Up
-        </span>
-      </p>
+        <p className='text-center text-sm text-gray-400'>
+          Don't have an account?{" "}
+          <span
+            onClick={switchMode}
+            className='text-blue-400 hover:text-blue-300 hover:underline cursor-pointer transition-colors'
+          >
+            Sign Up
+          </span>
+        </p>
+      </div>
+    );
+  }
 
-      {/* OAuth Buttons */}
-      <OAuthButtons />
+  // Role-specific sign-in screen
+  return (
+    <div className='space-y-6'>
+      {/* Back button */}
+      <button
+        type='button'
+        onClick={handleBackToRoleSelection}
+        className='flex items-center text-sm text-gray-400 hover:text-gray-300 transition-colors'
+      >
+        <span className='mr-2'>←</span> Back to Role Selection
+      </button>
+
+      {/* Role-specific form */}
+      {selectedRole === "developer" && (
+        <DeveloperSignIn switchMode={switchMode} />
+      )}
+
+      {selectedRole === "project-owner" && (
+        <ProjectOwnerSignIn switchMode={switchMode} />
+      )}
+
+      {selectedRole === "admin" && (
+        <AdminSignIn switchMode={switchMode} />
+      )}
     </div>
   );
 };
