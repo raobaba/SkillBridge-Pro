@@ -1,12 +1,44 @@
-import React, { useState } from "react";
-import { User, Phone, Video, MoreVertical, Search, Settings, Archive, Star } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { User, Phone, Video, MoreVertical, Search, Settings, Archive, Star, Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 import Button from "../../../components/Button";
 import ParticipantListModal from "./ParticipantListModal";
+import { ConfirmModal } from "../../../components";
+import { deleteGroupConversation } from "../slice/chatSlice";
 
 const ChatHeader = ({ user, permissions }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user: currentUser } = useSelector((state) => state?.user || {});
+  const currentUserRole = currentUser?.role || currentUser?.roles?.[0];
+  const isProjectOwner = currentUserRole === 'project-owner';
+  const isDeveloper = currentUserRole === 'developer';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState("Active now");
+  const menuRef = useRef(null);
+
+  // Handle clicks outside menu to close it
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isMenuOpen && menuRef.current && !menuRef.current.contains(event.target)) {
+        console.log('[Menu] Click outside detected, closing menu');
+        setIsMenuOpen(false);
+      }
+    };
+
+    if (isMenuOpen) {
+      // Use a small delay to ensure the click event on button processes first
+      document.addEventListener('mousedown', handleClickOutside, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside, true);
+      };
+    }
+  }, [isMenuOpen]);
 
   const handleCall = (type) => {
     console.log(`${type} call initiated`);
@@ -33,10 +65,81 @@ const ChatHeader = ({ user, permissions }) => {
     // Star functionality would be implemented here
   };
 
+  const handleDeleteGroup = (e) => {
+    console.log('[Delete Conversation] 🚀 handleDeleteGroup function called!', e);
+    
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
+    // Get conversationId from user object (could be conversationId or id)
+    const conversationId = user?.conversationId || user?.id;
+  
+    // Validate conversationId exists (for both group and direct chats)
+    if (!conversationId) {
+      console.error('[Delete Conversation] ❌ Missing conversationId', { 
+        conversationId: conversationId, 
+        isGroup: user?.isGroup,
+        user: user
+      });
+      toast.error('Cannot delete: Invalid conversation');
+      setIsMenuOpen(false);
+      return;
+    }
+    
+    // Close the dropdown menu and open confirmation modal
+    console.log('[Delete Conversation] ⏳ Opening confirmation modal...');
+    setIsMenuOpen(false);
+    setIsDeleteConfirmModalOpen(true);
+  };
+
+  const handleConfirmDeleteGroup = async () => {
+    // Get conversationId from user object (could be conversationId or id)
+    const conversationId = user?.conversationId || user?.id;
+    const conversationType = user?.isGroup ? 'group' : 'direct chat';
+    
+    console.log('[Delete Conversation] ✅ User confirmed deletion. Starting...', conversationId);
+    setIsDeleteConfirmModalOpen(false);
+    setIsDeleting(true);
+    
+    try {
+      console.log('[Delete Conversation] 📡 Dispatching deleteGroupConversation action...', Number(conversationId));
+      const result = await dispatch(deleteGroupConversation(Number(conversationId))).unwrap();
+      console.log('[Delete Conversation] ✅ Success! Result:', result);
+      toast.success(`${user?.isGroup ? 'Group' : 'Chat'} "${user?.name || 'chat'}" has been deleted successfully`);
+      
+      // Navigate away from the deleted conversation
+      console.log('[Delete Conversation] 🔄 Navigating to /chat...');
+      navigate('/chat');
+      
+      // Refresh conversations list
+      setTimeout(() => {
+        console.log('[Delete Conversation] 🔄 Dispatching refresh event...');
+        window.dispatchEvent(new CustomEvent('refreshConversations'));
+      }, 100);
+    } catch (error) {
+      console.error('[Delete Conversation] ❌ Error caught:', error);
+      console.error('[Delete Conversation] ❌ Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        payload: error?.payload,
+        fullError: error
+      });
+      const errorMessage = error?.payload?.message || error?.message || error?.response?.data?.message || `Failed to delete ${conversationType}. Please try again.`;
+      console.error('[Delete Conversation] ❌ Error message to show:', errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      console.log('[Delete Conversation] 🏁 Finally block - setting isDeleting to false');
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="relative">
       {/* Enhanced Chat Header Container */}
-      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm p-4 shadow-2xl border-b border-white/10 relative overflow-visible z-50">
+      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm p-4 shadow-2xl border-b border-white/10 relative z-50" style={{ overflow: 'visible' }}>
         {/* Background decoration */}
         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm"></div>
         <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 blur-3xl"></div>
@@ -160,9 +263,28 @@ const ChatHeader = ({ user, permissions }) => {
                 <MoreVertical className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors duration-300" />
               </Button>
 
-              {/* Enhanced Dropdown Menu with High Z-Index */}
+              {/* Enhanced Dropdown Menu with High Z-Index - Positioned absolutely to not affect parent height */}
               {isMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-56 bg-slate-900 rounded-xl border border-white/30 shadow-2xl overflow-hidden" style={{ backgroundColor: 'rgba(15, 23, 42, 0.98)', zIndex: 99999, backdropFilter: 'blur(12px)' }}>
+                <div 
+                  ref={menuRef}
+                  data-menu-container
+                  className="absolute right-0 top-full mt-2 w-56 bg-slate-900 rounded-xl border border-white/30 shadow-2xl overflow-hidden" 
+                  style={{ 
+                    backgroundColor: 'rgba(15, 23, 42, 0.98)', 
+                    zIndex: 100000, 
+                    backdropFilter: 'blur(12px)',
+                    position: 'absolute'
+                  }}
+                  onClick={(e) => {
+                    // Prevent clicks inside menu from closing it
+                    console.log('[Menu Container] Click detected, stopping propagation');
+                    e.stopPropagation();
+                  }}
+                  onMouseDown={(e) => {
+                    // Also stop on mousedown to prevent any issues
+                    e.stopPropagation();
+                  }}
+                >
                   <div className="p-1">
                     {/* Search */}
                     <Button
@@ -242,6 +364,42 @@ const ChatHeader = ({ user, permissions }) => {
                     {/* Divider */}
                     <div className="my-2 border-t border-white/10"></div>
 
+                    {/* Delete Conversation - For project owners in group chats OR developers in direct chats they started */}
+                    {((isProjectOwner && user?.isGroup) || (isDeveloper && !user?.isGroup)) && (
+                      <Button
+                        onClick={(e) => {
+                          console.log('[Delete Conversation] ✅✅✅ Button onClick triggered!', {
+                            event: e,
+                            type: e?.type,
+                            target: e?.target,
+                            defaultPrevented: e?.defaultPrevented,
+                            isDeleting,
+                            conversationId: user?.conversationId || user?.id,
+                            isGroup: user?.isGroup,
+                            userRole: currentUserRole
+                          });
+                          if (e) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                          }
+                          console.log('[Delete Conversation] About to call handleDeleteGroup...');
+                          handleDeleteGroup(e);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        disabled={isDeleting}
+                        className="w-full justify-start px-3 py-2.5 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-3"
+                        style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px', cursor: 'pointer' }}
+                      >
+                        {isDeleting ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400 flex-shrink-0" style={{ minWidth: '16px' }}></div>
+                        ) : (
+                          <Trash2 className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                        )}
+                        <span className="text-left">{isDeleting ? 'Deleting...' : user?.isGroup ? 'Delete Group' : 'Delete Chat'}</span>
+                      </Button>
+                    )}
+
                     {/* Mute Notifications */}
                     <Button
                       onClick={() => {
@@ -257,20 +415,22 @@ const ChatHeader = ({ user, permissions }) => {
                       <span className="text-left">Mute Notifications</span>
                     </Button>
 
-                    {/* Block User */}
-                    <Button
-                      onClick={() => {
-                        console.log("Block user clicked");
-                        setIsMenuOpen(false);
-                      }}
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start px-3 py-2.5 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-3"
-                      style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
-                    >
-                      <MoreVertical className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
-                      <span className="text-left">Block User</span>
-                    </Button>
+                    {/* Block User - Only for direct chats */}
+                    {!user?.isGroup && (
+                      <Button
+                        onClick={() => {
+                          console.log("Block user clicked");
+                          setIsMenuOpen(false);
+                        }}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start px-3 py-2.5 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg flex items-center gap-3"
+                        style={{ margin: 0, paddingLeft: '12px', paddingRight: '12px' }}
+                      >
+                        <MoreVertical className="w-4 h-4 flex-shrink-0" style={{ minWidth: '16px' }} />
+                        <span className="text-left">Block User</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -279,13 +439,6 @@ const ChatHeader = ({ user, permissions }) => {
         </div>
       </div>
 
-      {/* Click outside to close menu */}
-      {isMenuOpen && (
-        <div
-          className="fixed inset-0 z-[99998]"
-          onClick={() => setIsMenuOpen(false)}
-        ></div>
-      )}
 
       {/* Participants Modal */}
       {user?.isGroup && (
@@ -294,8 +447,23 @@ const ChatHeader = ({ user, permissions }) => {
           onClose={() => setIsParticipantsModalOpen(false)}
           conversationId={user?.conversationId}
           conversationName={user?.name}
+          conversationType={user?.chatType || (user?.isGroup ? 'group' : 'direct')}
         />
       )}
+
+      {/* Delete Conversation Confirmation Modal */}
+      <ConfirmModal
+        isOpen={isDeleteConfirmModalOpen}
+        title={user?.isGroup ? "Delete Group" : "Delete Chat"}
+        message={`Are you sure you want to delete ${user?.isGroup ? `the group "${user?.name || 'this group'}"` : `this conversation with "${user?.name || 'this user'}"`}? This action cannot be undone.`}
+        onConfirm={handleConfirmDeleteGroup}
+        onCancel={() => setIsDeleteConfirmModalOpen(false)}
+        onClose={() => setIsDeleteConfirmModalOpen(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="default"
+        cancelVariant="ghost"
+      />
     </div>
   );
 };

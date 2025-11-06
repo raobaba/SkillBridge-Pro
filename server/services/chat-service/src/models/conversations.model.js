@@ -1,5 +1,5 @@
 const { pgTable, serial, integer, text, timestamp, boolean, pgEnum } = require("drizzle-orm/pg-core");
-const { eq, and, desc, ne, isNull } = require("drizzle-orm");
+const { eq, and, desc, ne, isNull, or } = require("drizzle-orm");
 const { db } = require("../config/database");
 
 // Enum for conversation types
@@ -215,6 +215,11 @@ class ConversationsModel {
     const conditions = [
       eq(conversationParticipantsTable.userId, Number(userId)),
       isNull(conversationParticipantsTable.leftAt), // Use isNull() for proper null checks
+      // Only include active and archived conversations (exclude deleted)
+      or(
+        eq(conversationsTable.status, 'active'),
+        eq(conversationsTable.status, 'archived')
+      ),
     ];
 
     if (archived !== undefined) {
@@ -389,6 +394,23 @@ class ConversationsModel {
       .update(conversationsTable)
       .set({ updatedAt: new Date() })
       .where(eq(conversationsTable.id, conversationId));
+  }
+
+  /**
+   * Delete conversation (soft delete by setting status to 'deleted')
+   * @param {number} conversationId - Conversation ID
+   * @returns {Promise<Object>} - Updated conversation object
+   */
+  static async deleteConversation(conversationId) {
+    const [conversation] = await db
+      .update(conversationsTable)
+      .set({
+        status: 'deleted',
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationsTable.id, conversationId))
+      .returning();
+    return conversation;
   }
 }
 

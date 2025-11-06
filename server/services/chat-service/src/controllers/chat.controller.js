@@ -949,6 +949,125 @@ const getConversationParticipants = async (req, res) => {
   }
 };
 
+// Delete conversation (group or direct)
+// - For groups: Only project owners who created the group can delete
+// - For direct: Only the developer who started the conversation can delete
+const deleteGroupConversation = async (req, res) => {
+  try {
+    // Normalize userId - handle both string and number from JWT
+    let userId = req.user?.userId || req.user?.id;
+    if (typeof userId === 'string') {
+      userId = parseInt(userId, 10);
+    } else {
+      userId = Number(userId);
+    }
+    
+    const userRole = req.user?.role || req.user?.roles?.[0];
+    const { conversationId } = req.params;
+
+    if (!userId || isNaN(userId) || userId <= 0) {
+      console.error(`[Delete Conversation] Invalid userId: ${req.user?.userId || req.user?.id}`);
+      return new ErrorHandler("User ID is required", 400).sendError(res);
+    }
+    if (!conversationId) return new ErrorHandler("Conversation ID is required", 400).sendError(res);
+
+    // Verify conversation exists
+    const conversation = await ConversationsModel.getConversationById(Number(conversationId));
+    if (!conversation) {
+      return new ErrorHandler("Conversation not found", 404).sendError(res);
+    }
+    if (conversation.status === "deleted") {
+      return new ErrorHandler("Conversation is already deleted", 400).sendError(res);
+    }
+
+    // Verify user is a participant
+    const userParticipant = await ConversationParticipantsModel.getParticipantByConversationAndUser(
+      Number(conversationId),
+      Number(userId)
+    );
+    
+    if (!userParticipant) {
+      return new ErrorHandler("You are not a participant in this conversation", 403).sendError(res);
+    }
+
+    // Check conversation type and verify permissions
+    if (conversation.type === "group") {
+      // For groups: Only project owners who created the group can delete
+      if (userRole !== "project-owner") {
+        return new ErrorHandler("Only project owners can delete group conversations", 403).sendError(res);
+      }
+      
+      if (userParticipant.role !== "project-owner") {
+        console.error(`[Delete Conversation] User ${userId} is not project-owner (role: ${userParticipant.role})`);
+        return new ErrorHandler("Only group creators (project-owners) can delete the group", 403).sendError(res);
+      }
+      
+      console.log(`[Delete Conversation] ✅ User ${userId} verified as project-owner and group creator`);
+    } else if (conversation.type === "direct") {
+      // For direct conversations: Only the developer who started the conversation can delete
+      // The initiator is the participant with the earliest joinedAt timestamp
+      const allParticipants = await ConversationParticipantsModel.getParticipantsByConversationId(Number(conversationId));
+      
+      if (allParticipants.length < 2) {
+        return new ErrorHandler("Invalid direct conversation", 400).sendError(res);
+      }
+
+      // Find the participant with the earliest joinedAt (the initiator)
+      const sortedParticipants = allParticipants.sort((a, b) => {
+        const dateA = new Date(a.joinedAt || a.createdAt);
+        const dateB = new Date(b.joinedAt || b.createdAt);
+        return dateA - dateB;
+      });
+      
+      const initiator = sortedParticipants[0];
+      
+      if (Number(initiator.userId) !== Number(userId)) {
+        console.error(`[Delete Conversation] User ${userId} is not the initiator (initiator: ${initiator.userId})`);
+        return new ErrorHandler("Only the person who started this conversation can delete it", 403).sendError(res);
+      }
+
+      // Only developers can delete direct conversations they started
+      if (userRole !== "developer") {
+        return new ErrorHandler("Only developers can delete direct conversations they started", 403).sendError(res);
+      }
+      
+      console.log(`[Delete Conversation] ✅ User ${userId} verified as developer and direct conversation initiator`);
+    } else {
+      return new ErrorHandler("This conversation type cannot be deleted", 400).sendError(res);
+    }
+
+    // Soft delete the conversation (set status to 'deleted')
+    const deletedConversation = await ConversationsModel.deleteConversation(Number(conversationId));
+
+    // Emit Socket.io event to notify all participants
+    if (global.io && global.socketHandlers) {
+      await global.socketHandlers.emitToConversation(
+        Number(conversationId),
+        "conversation_deleted",
+        {
+          conversationId: Number(conversationId),
+          deletedBy: Number(userId),
+        }
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Conversation deleted successfully",
+      data: deletedConversation,
+    });
+  } catch (error) {
+    console.error("Delete Conversation Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to delete conversation",
+      error: error.message,
+    });
+  }
+};
+
 const controllers = {
   getConversations,
   getOrCreateDirectConversation,
@@ -964,6 +1083,7 @@ const controllers = {
   updateParticipantSettings,
   flagConversation,
   unflagConversation,
+  deleteGroupConversation,
 };
 
 

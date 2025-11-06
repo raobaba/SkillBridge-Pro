@@ -70,5 +70,14 @@ chatRouter.delete(
   chatController.unflagConversation
 );
 
+// Delete conversation (group or direct)
+// - Groups: Only project owners who created the group can delete
+// - Direct: Only developers who started the conversation can delete
+// Permission checks are handled in the controller
+chatRouter.delete(
+  "/conversations/:conversationId",
+  chatController.deleteGroupConversation
+);
+
 module.exports = chatRouter;
 

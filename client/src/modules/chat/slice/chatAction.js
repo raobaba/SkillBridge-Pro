@@ -98,3 +98,15 @@ export const getConversationParticipantsApi = async (conversationId) => {
   return await fetchFromApiServer("GET", url);
 };
 
+// Remove participant from group (project owners only)
+export const removeParticipantFromGroupApi = async (conversationId, participantId) => {
+  const url = `api/v1/chat/conversations/${conversationId}/participants/${participantId}`;
+  return await fetchFromApiServer("DELETE", url);
+};
+
+// Delete group conversation (project owners only)
+export const deleteGroupConversationApi = async (conversationId) => {
+  const url = `api/v1/chat/conversations/${conversationId}`;
+  return await fetchFromApiServer("DELETE", url);
+};
+

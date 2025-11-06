@@ -508,15 +508,15 @@ const ChatContainer = () => {
       const conversation = eventDetail.conversation;
       const action = eventDetail.action;
       
-             // If we have conversation data from the event (just created), add it immediately to state
-      if (action === 'created' && conversation && conversation.id) {
-        console.log('[ChatContainer] Adding newly created conversation to state immediately:', conversation.id);
+             // If we have conversation data from the event (just created or direct message), add it immediately to state
+      if ((action === 'created' || action === 'direct_message') && conversation && conversation.id) {
+        console.log('[ChatContainer] Adding newly created/conversation to state immediately:', conversation.id, action);
         
         // Transform the conversation to match our format
         const transformedConv = {
           id: conversation.id,
-          type: conversation.type || 'group',
-          name: conversation.name || 'Group Chat',
+          type: conversation.type || (action === 'direct_message' ? 'direct' : 'group'),
+          name: conversation.name || (action === 'direct_message' ? 'Direct Message' : 'Group Chat'),
           projectId: conversation.projectId || null,
           status: conversation.status || 'active',
           isFlagged: conversation.isFlagged || false,
@@ -528,7 +528,7 @@ const ChatContainer = () => {
             isMuted: false,
             lastReadAt: null,
           },
-          otherParticipantIds: [],
+          otherParticipantIds: conversation.otherParticipantIds || [],
           participantIds: conversation.participantIds || [],
           participants: conversation.participants || [],
           updatedAt: conversation.updatedAt || conversation.createdAt || new Date().toISOString(),
@@ -550,20 +550,21 @@ const ChatContainer = () => {
         });
         
         // Transform and select it immediately
+        const isDirect = action === 'direct_message' || transformedConv.type === 'direct';
         const transformed = {
           id: conversation.id,
           conversationId: conversation.id,
-          name: conversation.name || 'Group Chat',
-          role: 'group',
-          chatType: 'group',
-          isGroup: true,
+          name: conversation.name || (isDirect ? 'Direct Message' : 'Group Chat'),
+          role: isDirect ? 'developer' : 'group',
+          chatType: isDirect ? 'direct' : 'group',
+          isGroup: !isDirect,
         };
-        console.log('[ChatContainer] Selecting newly created conversation:', transformed.id);
+        console.log('[ChatContainer] Selecting newly created/conversation:', transformed.id, action);
         setActiveUser(transformed);
       }
       
       // Only do a single refresh attempt if we have a conversation ID to look for
-      if (conversationId && action === 'created') {
+      if (conversationId && (action === 'created' || action === 'direct_message')) {
         // Set refreshing flag
         isRefreshingRef.current = true;
         

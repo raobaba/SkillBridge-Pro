@@ -1,16 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { X, User, Crown, Code, Users } from "lucide-react";
-import { getConversationParticipantsApi, getChatUsersApi } from "../slice/chatAction";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { X, User, Crown, Code, Users, MessageCircle, UserMinus } from "lucide-react";
+import { getConversationParticipantsApi, getChatUsersApi, getOrCreateDirectConversationApi } from "../slice/chatAction";
+import { removeParticipantFromGroup } from "../slice/chatSlice";
 import Button from "../../../components/Button";
+import { toast } from "react-toastify";
 
-const ParticipantListModal = ({ isOpen, onClose, conversationId, conversationName }) => {
+const ParticipantListModal = ({ isOpen, onClose, conversationId, conversationName, conversationType }) => {
   const { user } = useSelector((state) => state?.user || {});
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const currentUserId = user?.id || user?.userId;
+  const currentUserRole = user?.role || user?.roles?.[0];
+  const isProjectOwner = currentUserRole === 'project-owner';
+  const isGroupChat = conversationType === 'group';
   const [participants, setParticipants] = useState([]);
   const [usersMap, setUsersMap] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [messagingUserId, setMessagingUserId] = useState(null); // Track which user we're messaging
+  const [removingParticipantId, setRemovingParticipantId] = useState(null); // Track which participant is being removed
 
   useEffect(() => {
     if (isOpen && conversationId) {
@@ -83,6 +93,87 @@ const ParticipantListModal = ({ isOpen, onClose, conversationId, conversationNam
         return 'Developer';
       default:
         return 'Member';
+    }
+  };
+
+  // Handle direct message to a participant
+  const handleDirectMessage = async (participantUserId, participantName) => {
+    // Don't allow messaging yourself
+    if (currentUserId && Number(participantUserId) === Number(currentUserId)) {
+      toast.info("You can't message yourself");
+      return;
+    }
+
+    setMessagingUserId(participantUserId);
+    try {
+      // Get or create direct conversation
+      const response = await getOrCreateDirectConversationApi(participantUserId);
+      const conversationData = response?.data?.data || response?.data;
+      
+      if (conversationData && conversationData.id) {
+        // Close the modal first
+        onClose();
+        
+        // Navigate to chat with the conversation ID
+        navigate(`/chat?conversationId=${conversationData.id}&refresh=true`);
+        
+        // Dispatch event to refresh conversations in chat container
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('refreshConversations', { 
+            detail: { 
+              conversationId: conversationData.id,
+              conversation: conversationData,
+              action: 'direct_message'
+            } 
+          }));
+        }, 100);
+        
+        toast.success(`Opening direct message with ${participantName || 'user'}`);
+      } else {
+        toast.error('Failed to create conversation. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating direct conversation:', error);
+      toast.error(error?.response?.data?.message || 'Failed to start conversation. Please try again.');
+    } finally {
+      setMessagingUserId(null);
+    }
+  };
+
+  // Handle removing participant from group (project owners only)
+  const handleRemoveParticipant = async (participantUserId, participantName) => {
+    // Don't allow removing yourself
+    if (currentUserId && Number(participantUserId) === Number(currentUserId)) {
+      toast.error("You cannot remove yourself from the group");
+      return;
+    }
+
+    // Confirm removal
+    if (!window.confirm(`Are you sure you want to remove ${participantName || 'this participant'} from the group?`)) {
+      return;
+    }
+
+    setRemovingParticipantId(participantUserId);
+    try {
+      await dispatch(removeParticipantFromGroup({ 
+        conversationId, 
+        participantId: participantUserId 
+      })).unwrap();
+      
+      toast.success(`${participantName || 'Participant'} has been removed from the group`);
+      
+      // Refresh the participant list
+      await fetchParticipants();
+      
+      // Dispatch event to refresh conversations in chat container
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('refreshConversations'));
+      }, 100);
+    } catch (error) {
+      console.error('Error removing participant:', error);
+      toast.error(error?.message || error?.response?.data?.message || 'Failed to remove participant. Please try again.');
+    } finally {
+      setRemovingParticipantId(null);
     }
   };
 
@@ -184,7 +275,14 @@ const ParticipantListModal = ({ isOpen, onClose, conversationId, conversationNam
                         return (
                           <div
                             key={participant.id}
-                            className={`flex items-center gap-3 p-3 rounded-lg bg-black/20 hover:bg-black/30 transition-colors ${isCurrentUser ? 'ring-1 ring-purple-500/50' : ''}`}
+                            onClick={() => !isCurrentUser && handleDirectMessage(participant.userId, displayName)}
+                            className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
+                              isCurrentUser 
+                                ? 'bg-black/20 ring-1 ring-purple-500/50 cursor-default' 
+                                : messagingUserId === participant.userId
+                                ? 'bg-blue-500/20 hover:bg-blue-500/30 cursor-pointer'
+                                : 'bg-black/20 hover:bg-blue-500/20 hover:ring-1 hover:ring-blue-500/30 cursor-pointer'
+                            }`}
                           >
                             <div className="relative">
                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
@@ -202,9 +300,48 @@ const ParticipantListModal = ({ isOpen, onClose, conversationId, conversationNam
                                 <p className="text-gray-400 text-xs truncate">{userEmail}</p>
                               )}
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadge(participant.role)}`}>
-                              {getRoleLabel(participant.role)}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getRoleBadge(participant.role)}`}>
+                                {getRoleLabel(participant.role)}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                {!isCurrentUser && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDirectMessage(participant.userId, displayName);
+                                    }}
+                                    className="p-2 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center"
+                                    title={`Message ${displayName}`}
+                                    disabled={messagingUserId === participant.userId}
+                                  >
+                                    {messagingUserId === participant.userId ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-400"></div>
+                                    ) : (
+                                      <MessageCircle className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                )}
+                                {/* Show remove button for project owners in group chats, only for developers (not project owners) */}
+                                {isProjectOwner && isGroupChat && !isCurrentUser && participant.role === 'developer' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveParticipant(participant.userId, displayName);
+                                    }}
+                                    className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 transition-colors flex items-center justify-center"
+                                    title={`Remove ${displayName} from group`}
+                                    disabled={removingParticipantId === participant.userId}
+                                  >
+                                    {removingParticipantId === participant.userId ? (
+                                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
+                                    ) : (
+                                      <UserMinus className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         );
                       })}

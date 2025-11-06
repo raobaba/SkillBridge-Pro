@@ -11,6 +11,8 @@ import {
   updateParticipantSettingsApi,
   flagConversationApi,
   unflagConversationApi,
+  removeParticipantFromGroupApi,
+  deleteGroupConversationApi,
 } from "./chatAction";
 
 const initialState = {
@@ -158,6 +160,38 @@ export const unflagConversation = createAsyncThunk(
       return { conversationId, conversation: response };
     } catch (error) {
       return rejectWithValue(error.message || "Failed to unflag conversation");
+    }
+  }
+);
+
+export const removeParticipantFromGroup = createAsyncThunk(
+  "chat/removeParticipantFromGroup",
+  async ({ conversationId, participantId }, { rejectWithValue }) => {
+    try {
+      await removeParticipantFromGroupApi(conversationId, participantId);
+      return { conversationId, participantId };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to remove participant");
+    }
+  }
+);
+
+export const deleteGroupConversation = createAsyncThunk(
+  "chat/deleteGroupConversation",
+  async (conversationId, { rejectWithValue }) => {
+    try {
+      console.log('[Delete Group Thunk] Calling API for conversationId:', conversationId);
+      const response = await deleteGroupConversationApi(conversationId);
+      console.log('[Delete Group Thunk] API response:', response);
+      return { conversationId, conversation: response };
+    } catch (error) {
+      console.error('[Delete Group Thunk] Error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to delete group conversation";
+      return rejectWithValue({
+        message: errorMessage,
+        response: error?.response,
+        status: error?.response?.status
+      });
     }
   }
 );
@@ -365,6 +399,41 @@ const chatSlice = createSlice({
         if (convIndex !== -1 && conversation?.data) {
           state.conversations[convIndex] = { ...state.conversations[convIndex], ...conversation.data };
         }
+      })
+      
+      // Remove participant from group
+      .addCase(removeParticipantFromGroup.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(removeParticipantFromGroup.fulfilled, (state, action) => {
+        state.loading = false;
+        // Participant removal is handled by the backend and will be reflected on next fetch
+        // No need to update state here as the participant list will be refreshed
+      })
+      .addCase(removeParticipantFromGroup.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      
+      // Delete group conversation
+      .addCase(deleteGroupConversation.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteGroupConversation.fulfilled, (state, action) => {
+        state.loading = false;
+        const { conversationId } = action.payload;
+        // Remove conversation from state
+        state.conversations = state.conversations.filter(c => c.id !== conversationId);
+        // Clear active conversation if it was the deleted one
+        if (state.activeConversation?.id === conversationId) {
+          state.activeConversation = null;
+        }
+      })
+      .addCase(deleteGroupConversation.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
