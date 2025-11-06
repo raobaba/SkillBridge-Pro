@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { 
   Bell, 
   Briefcase, 
@@ -16,120 +18,91 @@ import {
   Users,
   TrendingUp,
   Target,
-  Zap
+  Zap,
+  Loader2
 } from "lucide-react";
 import { Badge, Button } from "../../../components";
 import { motion } from "framer-motion";
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+} from "../slice/notificationSlice";
 
 const DeveloperNotifications = ({ user }) => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "Project Match",
-      title: "New Project Match Found",
-      message: "We found 3 new projects that match your React and Node.js skills. Check them out!",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      category: "match",
-      action: "View Projects"
-    },
-    {
-      id: 2,
-      type: "Application Update",
-      title: "Application Status Update",
-      message: "Your application for 'E-commerce Platform Development' has been reviewed. The project owner wants to schedule an interview.",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      category: "application",
-      action: "Schedule Interview"
-    },
-    {
-      id: 3,
-      type: "Invitation",
-      title: "Project Invitation",
-      message: "Sarah Johnson invited you to join the 'AI Chatbot Development' project. You have 48 hours to respond.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      category: "invitation",
-      action: "Respond"
-    },
-    {
-      id: 4,
-      type: "Task Deadline",
-      title: "Task Deadline Reminder",
-      message: "Your task 'Implement user authentication' is due in 2 days. Make sure to submit on time.",
-      read: true,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      category: "deadline",
-      action: "View Task"
-    },
-    {
-      id: 5,
-      type: "Chat Message",
-      title: "New Chat Message",
-      message: "Mike Chen sent you a message: 'Hey, can you review the API documentation I shared?'",
-      read: false,
-      priority: "low",
-      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-      category: "chat",
-      action: "Reply"
-    },
-    {
-      id: 6,
-      type: "Endorsement",
-      title: "New Endorsement Received",
-      message: "Alex Rodriguez endorsed your 'React.js' skill after completing the Mobile App project.",
-      read: true,
-      priority: "low",
-      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      category: "endorsement",
-      action: "View Profile"
-    },
-    {
-      id: 7,
-      type: "Review",
-      title: "Project Review Posted",
-      message: "Your work on the 'E-commerce Platform' project has been reviewed. You received 5 stars!",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
-      category: "review",
-      action: "View Review"
-    },
-    {
-      id: 8,
-      type: "Career Opportunity",
-      title: "Career Opportunity Alert",
-      message: "Based on your skills, we found a Senior Developer position at TechCorp that might interest you.",
-      read: true,
-      priority: "low",
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-      category: "career",
-      action: "View Job"
-    }
-  ]);
+  const dispatch = useDispatch();
+  const { notifications: notificationsList, unreadCount, loading, error } = useSelector((state) => state.notifications || { notifications: [], unreadCount: 0, loading: false, error: null });
+  
+  // Transform API response to match UI expectations
+  const notifications = useMemo(() => {
+    // Ensure notificationsList is always an array
+    const list = Array.isArray(notificationsList) ? notificationsList : [];
+    return list.map(notif => ({
+      id: notif.id,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      read: notif.read,
+      priority: notif.priority || "medium",
+      createdAt: notif.createdAt,
+      category: notif.category,
+      action: notif.action,
+      actionUrl: notif.actionUrl,
+    }));
+  }, [notificationsList]);
 
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showArchived, setShowArchived] = useState(false);
 
-  const handleMarkRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
-    );
+  // Fetch notifications on component mount
+  useEffect(() => {
+    dispatch(getNotifications({ archived: false }));
+    dispatch(getUnreadCount());
+  }, [dispatch]);
+
+  // Refresh notifications periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(getNotifications({ archived: false }));
+      dispatch(getUnreadCount());
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  const handleMarkRead = async (id) => {
+    try {
+      await dispatch(markAsRead(id)).unwrap();
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to mark notification as read");
+    }
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await dispatch(markAllAsRead()).unwrap();
+      dispatch(getUnreadCount());
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      toast.error(error || "Failed to mark all notifications as read");
+    }
   };
 
-  const handleDeleteNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  const handleDeleteNotification = async (id) => {
+    try {
+      await dispatch(deleteNotification(id)).unwrap();
+      toast.success("Notification deleted");
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to delete notification");
+    }
   };
 
   const filteredAndSortedList = useMemo(() => {
@@ -192,7 +165,6 @@ const DeveloperNotifications = ({ user }) => {
   };
 
   const tabs = ["All", "Project Match", "Application Update", "Invitation", "Task Deadline", "Chat Message", "Endorsement", "Review", "Career Opportunity"];
-  const unreadCount = notifications.filter(notif => !notif.read).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
@@ -294,7 +266,18 @@ const DeveloperNotifications = ({ user }) => {
 
         {/* Notification List */}
         <div className="space-y-4">
-          {filteredAndSortedList.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-400 text-lg">Loading notifications...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 text-lg">Error loading notifications</p>
+              <p className="text-gray-500 text-sm mt-2">{error}</p>
+            </div>
+          ) : filteredAndSortedList.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">No notifications found</p>

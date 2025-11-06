@@ -20,13 +20,51 @@ async function createEnums() {
     const client = await pool.connect();
     
     const enums = [
+      // User Service Enums
       {
         name: 'role',
         values: ['developer', 'project-owner', 'admin']
       },
       {
+        name: 'notification_type',
+        values: [
+          'Project Match',
+          'Application Update',
+          'Invitation',
+          'Task Deadline',
+          'Chat Message',
+          'Endorsement',
+          'Review',
+          'Career Opportunity',
+          'New Applicant',
+          'Recommended Developer',
+          'Project Update',
+          'Billing Reminder',
+          'Project Milestone',
+          'Team Invitation',
+          'Budget Alert',
+          'Flagged User',
+          'Dispute Report',
+          'System Alert',
+          'Billing Alert',
+          'Moderation Task',
+          'Security Alert',
+          'Platform Health',
+          'User Verification',
+          'Feature Request',
+          'Compliance Alert',
+          'Other'
+        ]
+      },
+      {
+        name: 'notification_priority',
+        values: ['high', 'medium', 'low']
+      },
+      
+      // Project Service Enums
+      {
         name: 'project_status',
-        values: ['draft', 'active', 'paused', 'completed', 'cancelled', 'upcoming']
+        values: ['draft', 'upcoming', 'active', 'paused', 'completed', 'cancelled']
       },
       {
         name: 'priority',
@@ -34,15 +72,29 @@ async function createEnums() {
       },
       {
         name: 'experience_level',
-        values: ['entry', 'junior', 'mid', 'senior', 'expert']
+        values: ['entry', 'junior', 'mid', 'senior', 'expert', 'lead']
       },
       {
         name: 'applicant_status',
-        values: ['applied', 'reviewed', 'shortlisted', 'interviewed', 'accepted', 'rejected', 'withdrawn']
+        values: ['applied', 'reviewed', 'shortlisted', 'interviewed', 'interviewing', 'accepted', 'rejected', 'withdrawn']
       },
       {
         name: 'boost_plan',
-        values: ['basic', 'premium', 'enterprise']
+        values: ['basic', 'premium', 'spotlight', 'enterprise']
+      },
+      {
+        name: 'filter_type',
+        values: ['status', 'priority', 'experience_level', 'work_arrangement', 'payment_term', 'currency', 'sort_option', 'skill', 'location', 'category', 'tag']
+      },
+      
+      // Chat Service Enums
+      {
+        name: 'conversation_type',
+        values: ['direct', 'group', 'system', 'moderation']
+      },
+      {
+        name: 'conversation_status',
+        values: ['active', 'archived', 'deleted']
       }
     ];
     

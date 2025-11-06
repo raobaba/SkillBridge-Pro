@@ -1,5 +1,6 @@
 const express = require("express");
 const userController = require("../controllers/user.controller");
+const notificationsController = require("../controllers/notifications.controller");
 const authenticate = require("shared/middleware/auth.middleware");
 const { requireRole } = require("shared/middleware/roleAuth.middleware");
 
@@ -62,5 +63,14 @@ userRouter.get("/developer/reviews", authenticate, userController.getDeveloperRe
 userRouter.get("/developer/endorsements", authenticate, userController.getDeveloperEndorsements);
 userRouter.get("/developer/achievements", authenticate, userController.getDeveloperAchievements);
 userRouter.get("/leaderboard", authenticate, userController.getLeaderboard);
+
+// Notifications
+userRouter.get("/notifications", authenticate, notificationsController.getNotifications);
+userRouter.get("/notifications/unread-count", authenticate, notificationsController.getUnreadCount);
+userRouter.post("/notifications", authenticate, notificationsController.createNotification);
+userRouter.put("/notifications/:notificationId/read", authenticate, notificationsController.markAsRead);
+userRouter.put("/notifications/read-all", authenticate, notificationsController.markAllAsRead);
+userRouter.delete("/notifications/:notificationId", authenticate, notificationsController.deleteNotification);
+userRouter.delete("/notifications", authenticate, notificationsController.deleteAllNotifications);
 
 module.exports = userRouter;

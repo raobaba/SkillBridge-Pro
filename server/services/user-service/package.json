@@ -10,6 +10,7 @@
     "db:rollback": "cross-env SERVICE_NAME=user-service node ../../shared/migration/rollback.js",
     "db:status": "cross-env SERVICE_NAME=user-service node ../../shared/migration/status.js",
     "db:seed": "node src/db/seed.js",
+    "db:seed:notifications": "node src/db/seed-notifications.js",
     "db:reset": "npm run db:rollback && npm run db:migrate"
   },
   "keywords": [],

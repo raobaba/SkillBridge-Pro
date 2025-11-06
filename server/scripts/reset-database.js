@@ -21,7 +21,7 @@ async function resetDatabase() {
     
     // Drop all custom types
     console.log('1️⃣ Dropping all custom types...');
-    const types = ['role', 'project_status', 'priority', 'experience_level', 'applicant_status', 'boost_plan', 'filter_type'];
+    const types = ['role', 'project_status', 'priority', 'experience_level', 'applicant_status', 'boost_plan', 'filter_type', 'conversation_type', 'conversation_status', 'notification_type', 'notification_priority'];
     for (const typeName of types) {
       try {
         await client.query(`DROP TYPE IF EXISTS ${typeName} CASCADE;`);

@@ -6,6 +6,7 @@ import profileReducer from "../../modules/profile/slice/profileSlice";
 import settingsReducer from "../../modules/settings/slice/settingsSlice";
 import gamificationReducer from "../../modules/gamification/slice/gamificationSlice";
 import chatReducer from "../../modules/chat/slice/chatSlice";
+import notificationReducer from "../../modules/notifications/slice/notificationSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
@@ -14,6 +15,7 @@ const appReducer = combineReducers({
   settings: settingsReducer,
   gamification: gamificationReducer,
   chat: chatReducer,
+  notifications: notificationReducer,
 });
 
 export const rootReducer = (state, action) => {

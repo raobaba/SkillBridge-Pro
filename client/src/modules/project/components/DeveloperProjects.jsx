@@ -721,7 +721,7 @@ const DeveloperProjects = ({
   }, []);
 
   const navigate = useNavigate();
-  
+
   const canJoinGroupChat = useCallback((projectId) => {
     const numericProjectId = Number(projectId);
     // Check if status is "accepted" or "shortlisted" (case-insensitive) from any source
@@ -1263,7 +1263,7 @@ const DeveloperProjects = ({
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6'>
                   {/* Budget Range */}
                   <div className='space-y-3'>
-                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
+                    <label className='text-sm font-medium text-gray-300 flex items-center gap-2'>
                       <DollarSign className='w-4 h-4 text-green-400' />
                       Budget Range
                     </label>
@@ -1291,7 +1291,7 @@ const DeveloperProjects = ({
 
                   {/* Remote Only Toggle */}
                   <div className='space-y-3'>
-                    <label className='block text-sm font-medium text-gray-300 flex items-center gap-2'>
+                    <label className='text-sm font-medium text-gray-300 flex items-center gap-2'>
                       <MapPin className='w-4 h-4 text-blue-400' />
                       Work Arrangement
                     </label>

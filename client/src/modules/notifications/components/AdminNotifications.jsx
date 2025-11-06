@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { 
   Bell, 
   Shield, 
@@ -19,142 +21,91 @@ import {
   CreditCard,
   Flag,
   Eye,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 import { Badge, Button } from "../../../components";
 import { motion } from "framer-motion";
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+} from "../slice/notificationSlice";
 
 const AdminNotifications = ({ user }) => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "Flagged User",
-      title: "Suspicious User Activity",
-      message: "User 'john_doe123' has been flagged for suspicious behavior. Multiple fake reviews detected.",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-      category: "moderation",
-      action: "Review User"
-    },
-    {
-      id: 2,
-      type: "Dispute Report",
-      title: "Payment Dispute Filed",
-      message: "Project 'E-commerce Platform' has a payment dispute between developer and project owner. Investigation needed.",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      category: "dispute",
-      action: "Investigate"
-    },
-    {
-      id: 3,
-      type: "System Alert",
-      title: "High Server Load Detected",
-      message: "Server load is at 85%. Consider scaling resources or investigating potential issues.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      category: "system",
-      action: "View Metrics"
-    },
-    {
-      id: 4,
-      type: "Billing Alert",
-      title: "Payment Processing Issue",
-      message: "Payment gateway is experiencing 5% failure rate. Check payment processor status.",
-      read: true,
-      priority: "high",
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      category: "billing",
-      action: "Check Gateway"
-    },
-    {
-      id: 5,
-      type: "Moderation Task",
-      title: "Content Review Required",
-      message: "15 new project descriptions need review for inappropriate content. Automated filters flagged them.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-      category: "moderation",
-      action: "Review Content"
-    },
-    {
-      id: 6,
-      type: "Security Alert",
-      title: "Unusual Login Pattern",
-      message: "Multiple failed login attempts detected from IP 192.168.1.100. Consider blocking or investigating.",
-      read: true,
-      priority: "high",
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      category: "security",
-      action: "Block IP"
-    },
-    {
-      id: 7,
-      type: "Platform Health",
-      title: "Database Performance Issue",
-      message: "Database query response time increased by 200%. Check for optimization opportunities.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-      category: "system",
-      action: "Optimize DB"
-    },
-    {
-      id: 8,
-      type: "User Verification",
-      title: "Bulk Account Verification",
-      message: "50 new user accounts require manual verification. Review documentation and approve.",
-      read: true,
-      priority: "low",
-      createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-      category: "verification",
-      action: "Verify Accounts"
-    },
-    {
-      id: 9,
-      type: "Feature Request",
-      title: "Popular Feature Request",
-      message: "Video call integration has been requested by 200+ users. Consider prioritizing development.",
-      read: false,
-      priority: "low",
-      createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-      category: "feature",
-      action: "Review Request"
-    },
-    {
-      id: 10,
-      type: "Compliance Alert",
-      title: "GDPR Compliance Check",
-      message: "Quarterly GDPR compliance review is due. Ensure all data handling practices are compliant.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-      category: "compliance",
-      action: "Start Review"
-    }
-  ]);
+  const dispatch = useDispatch();
+  const { notifications: notificationsList, unreadCount, loading, error } = useSelector((state) => state.notifications || { notifications: [], unreadCount: 0, loading: false, error: null });
+  
+  // Transform API response to match UI expectations
+  const notifications = useMemo(() => {
+    // Ensure notificationsList is always an array
+    const list = Array.isArray(notificationsList) ? notificationsList : [];
+    return list.map(notif => ({
+      id: notif.id,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      read: notif.read,
+      priority: notif.priority || "medium",
+      createdAt: notif.createdAt,
+      category: notif.category,
+      action: notif.action,
+      actionUrl: notif.actionUrl,
+    }));
+  }, [notificationsList]);
 
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showArchived, setShowArchived] = useState(false);
 
-  const handleMarkRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
-    );
+  // Fetch notifications on component mount
+  useEffect(() => {
+    dispatch(getNotifications({ archived: false }));
+    dispatch(getUnreadCount());
+  }, [dispatch]);
+
+  // Refresh notifications periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(getNotifications({ archived: false }));
+      dispatch(getUnreadCount());
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  const handleMarkRead = async (id) => {
+    try {
+      await dispatch(markAsRead(id)).unwrap();
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to mark notification as read");
+    }
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await dispatch(markAllAsRead()).unwrap();
+      dispatch(getUnreadCount());
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      toast.error(error || "Failed to mark all notifications as read");
+    }
   };
 
-  const handleDeleteNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  const handleDeleteNotification = async (id) => {
+    try {
+      await dispatch(deleteNotification(id)).unwrap();
+      toast.success("Notification deleted");
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to delete notification");
+    }
   };
 
   const filteredAndSortedList = useMemo(() => {
@@ -219,7 +170,6 @@ const AdminNotifications = ({ user }) => {
   };
 
   const tabs = ["All", "Flagged User", "Dispute Report", "System Alert", "Billing Alert", "Moderation Task", "Security Alert", "Platform Health", "User Verification", "Feature Request", "Compliance Alert"];
-  const unreadCount = notifications.filter(notif => !notif.read).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
@@ -321,7 +271,18 @@ const AdminNotifications = ({ user }) => {
 
         {/* Notification List */}
         <div className="space-y-4">
-          {filteredAndSortedList.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-400 text-lg">Loading notifications...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 text-lg">Error loading notifications</p>
+              <p className="text-gray-500 text-sm mt-2">{error}</p>
+            </div>
+          ) : filteredAndSortedList.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">No notifications found</p>

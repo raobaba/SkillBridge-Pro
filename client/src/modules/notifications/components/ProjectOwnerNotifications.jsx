@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { 
   Bell, 
   Users, 
@@ -16,131 +18,91 @@ import {
   TrendingUp,
   Target,
   FileText,
-  CreditCard
+  CreditCard,
+  Loader2
 } from "lucide-react";
 import { Badge, Button } from "../../../components";
 import { motion } from "framer-motion";
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+} from "../slice/notificationSlice";
 
 const ProjectOwnerNotifications = ({ user }) => {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: "New Applicant",
-      title: "New Application Received",
-      message: "John Smith applied for your 'E-commerce Platform Development' project. Review their profile and skills.",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      category: "application",
-      action: "Review Application"
-    },
-    {
-      id: 2,
-      type: "Recommended Developer",
-      title: "Developer Recommendation",
-      message: "We found Sarah Johnson, a Senior React Developer with 5+ years experience, perfect for your project.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-      category: "recommendation",
-      action: "View Profile"
-    },
-    {
-      id: 3,
-      type: "Project Update",
-      title: "Project Progress Update",
-      message: "Mike Chen completed the user authentication module. The project is 60% complete.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      category: "progress",
-      action: "View Progress"
-    },
-    {
-      id: 4,
-      type: "Billing Reminder",
-      title: "Payment Due Soon",
-      message: "Your monthly subscription payment of $99 is due in 3 days. Update your payment method if needed.",
-      read: true,
-      priority: "high",
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-      category: "billing",
-      action: "Pay Now"
-    },
-    {
-      id: 5,
-      type: "Chat Message",
-      title: "New Chat Message",
-      message: "Alex Rodriguez sent you a message: 'I have some questions about the project requirements.'",
-      read: false,
-      priority: "low",
-      createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
-      category: "chat",
-      action: "Reply"
-    },
-    {
-      id: 6,
-      type: "Task Deadline",
-      title: "Task Deadline Alert",
-      message: "The 'Database Design' task assigned to Sarah Johnson is due tomorrow. Check progress.",
-      read: true,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
-      category: "deadline",
-      action: "Check Progress"
-    },
-    {
-      id: 7,
-      type: "Project Milestone",
-      title: "Milestone Completed",
-      message: "The 'Frontend Development' milestone has been completed by the development team. Review the deliverables.",
-      read: false,
-      priority: "medium",
-      createdAt: new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString(),
-      category: "milestone",
-      action: "Review Deliverables"
-    },
-    {
-      id: 8,
-      type: "Team Invitation",
-      title: "Team Member Invitation",
-      message: "You've been invited to join the 'AI Development Team' by TechCorp. Accept to collaborate.",
-      read: true,
-      priority: "low",
-      createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
-      category: "invitation",
-      action: "Accept Invitation"
-    },
-    {
-      id: 9,
-      type: "Budget Alert",
-      title: "Budget Usage Alert",
-      message: "You've used 80% of your project budget. Consider upgrading or optimizing costs.",
-      read: false,
-      priority: "high",
-      createdAt: new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString(),
-      category: "budget",
-      action: "View Budget"
-    }
-  ]);
+  const dispatch = useDispatch();
+  const { notifications: notificationsList, unreadCount, loading, error } = useSelector((state) => state.notifications || { notifications: [], unreadCount: 0, loading: false, error: null });
+  
+  // Transform API response to match UI expectations
+  const notifications = useMemo(() => {
+    // Ensure notificationsList is always an array
+    const list = Array.isArray(notificationsList) ? notificationsList : [];
+    return list.map(notif => ({
+      id: notif.id,
+      type: notif.type,
+      title: notif.title,
+      message: notif.message,
+      read: notif.read,
+      priority: notif.priority || "medium",
+      createdAt: notif.createdAt,
+      category: notif.category,
+      action: notif.action,
+      actionUrl: notif.actionUrl,
+    }));
+  }, [notificationsList]);
 
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showArchived, setShowArchived] = useState(false);
 
-  const handleMarkRead = (id) => {
-    setNotifications(prev =>
-      prev.map(notif => notif.id === id ? { ...notif, read: true } : notif)
-    );
+  // Fetch notifications on component mount
+  useEffect(() => {
+    dispatch(getNotifications({ archived: false }));
+    dispatch(getUnreadCount());
+  }, [dispatch]);
+
+  // Refresh notifications periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      dispatch(getNotifications({ archived: false }));
+      dispatch(getUnreadCount());
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  const handleMarkRead = async (id) => {
+    try {
+      await dispatch(markAsRead(id)).unwrap();
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to mark notification as read");
+    }
   };
 
-  const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await dispatch(markAllAsRead()).unwrap();
+      dispatch(getUnreadCount());
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      toast.error(error || "Failed to mark all notifications as read");
+    }
   };
 
-  const handleDeleteNotification = (id) => {
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+  const handleDeleteNotification = async (id) => {
+    try {
+      await dispatch(deleteNotification(id)).unwrap();
+      toast.success("Notification deleted");
+      // Refresh unread count
+      dispatch(getUnreadCount());
+    } catch (error) {
+      toast.error(error || "Failed to delete notification");
+    }
   };
 
   const filteredAndSortedList = useMemo(() => {
@@ -204,7 +166,6 @@ const ProjectOwnerNotifications = ({ user }) => {
   };
 
   const tabs = ["All", "New Applicant", "Recommended Developer", "Project Update", "Billing Reminder", "Chat Message", "Task Deadline", "Project Milestone", "Team Invitation", "Budget Alert"];
-  const unreadCount = notifications.filter(notif => !notif.read).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
@@ -306,7 +267,18 @@ const ProjectOwnerNotifications = ({ user }) => {
 
         {/* Notification List */}
         <div className="space-y-4">
-          {filteredAndSortedList.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-400 text-lg">Loading notifications...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 text-lg">Error loading notifications</p>
+              <p className="text-gray-500 text-sm mt-2">{error}</p>
+            </div>
+          ) : filteredAndSortedList.length === 0 ? (
             <div className="text-center py-12">
               <Bell className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-400 text-lg">No notifications found</p>
