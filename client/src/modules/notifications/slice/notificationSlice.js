@@ -33,7 +33,11 @@ export const getUnreadCount = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getUnreadCountApi();
-      return response.data.count;
+      // Backend returns: { success: true, data: { count } }
+      // Axios wraps it, so response.data is the object above
+      // response.data.data.count is the actual count
+      const count = response?.data?.data?.count ?? response?.data?.count ?? 0;
+      return count;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || error.message || "Failed to fetch unread count"

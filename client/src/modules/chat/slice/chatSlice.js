@@ -250,7 +250,12 @@ const chatSlice = createSlice({
       })
       .addCase(getConversations.fulfilled, (state, action) => {
         state.loading = false;
-        state.conversations = action.payload?.data || [];
+        // Handle different response structures:
+        // - response.data.data (if API returns { success: true, data: [...] })
+        // - response.data (if API returns array directly)
+        // - Ensure it's always an array
+        const conversations = action.payload?.data?.data || action.payload?.data || action.payload || [];
+        state.conversations = Array.isArray(conversations) ? conversations : [];
       })
       .addCase(getConversations.rejected, (state, action) => {
         state.loading = false;

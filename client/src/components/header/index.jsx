@@ -7,6 +7,8 @@ import { getToken } from "../../services/utils";
 import {Button,Input} from "../../components"
 import { ConfirmModal } from "../index";
 import { logOut } from "../../modules/authentication/slice/userSlice";
+import { getNotifications, getUnreadCount } from "../../modules/notifications/slice/notificationSlice";
+import { getConversations } from "../../modules/chat/slice/chatSlice";
 
 const Navbar = ({
   onLogoutClick,
@@ -25,26 +27,42 @@ const Navbar = ({
   const dropdownRefApp = useRef(null);
   const notificationsRef = useRef(null);
   const messagesRef = useRef(null);
-  const [notifications, setNotifications] = useState(4);
-  const [messages, setMessages] = useState(1);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
-  const [expandedMessageIndex, setExpandedMessageIndex] = useState(null);
-  const [messageInput, setMessageInput] = useState("");
-  const [messagesList, setMessagesList] = useState(
-    Array(messages)
-      .fill("")
-      .map((_, i) => ({
-        id: i + 1,
-        text: `Preview content for message ${i + 1}`,
-        fullText: `This is the full detailed message content of message ${i + 1}. It contains all the important details you need to know. Here we describe the message context, relevant instructions, and additional information to ensure clarity and understanding. You can read, reply, or take necessary actions based on this content.`,
-        sender: "User",
-      }))
-  );
 
   const token = getToken();
   const userFromRedux = useSelector((state) => state.user?.user);
   const user = userFromRedux || data;
+  
+  // Get notifications from Redux store
+  const notificationsList = useSelector((state) => state.notifications?.notifications || []);
+  const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
+  const notificationsLoading = useSelector((state) => state.notifications?.loading || false);
+  
+  // Get chat conversations from Redux store
+  const conversationsRaw = useSelector((state) => state.chat?.conversations);
+  const chatLoading = useSelector((state) => state.chat?.loading || false);
+  
+  // Ensure conversations is always an array
+  const conversations = Array.isArray(conversationsRaw) ? conversationsRaw : [];
+  
+  // Calculate total unread messages count from all conversations
+  // Based on API response structure: { participant: { unreadCount: number } }
+  const totalUnreadMessages = conversations.reduce((total, conv) => {
+    if (!conv || !conv.participant) return total;
+    const unreadCount = Number(conv.participant.unreadCount) || 0;
+    return total + unreadCount;
+  }, 0);
+  
+  // Get recent conversations sorted by last message timestamp (most recent first)
+  const recentConversations = conversations
+    .filter(conv => conv && conv.lastMessage && !conv.participant?.isArchived)
+    .sort((a, b) => {
+      const timeA = new Date(a.lastMessage?.timestamp || 0).getTime();
+      const timeB = new Date(b.lastMessage?.timestamp || 0).getTime();
+      return timeB - timeA;
+    })
+    .slice(0, 5); // Show only 5 most recent
   
 
   const homeMenuItems = [
@@ -116,6 +134,50 @@ const Navbar = ({
     { label: "Portfolio Sync", action: () => navigate("/portfolio-sync") },
     { label: "Logout", action: () => setIsLogoutOpen(true) },
   ];
+
+  // Fetch notifications when component mounts and user is logged in
+  useEffect(() => {
+    if (token && user) {
+      // Fetch unread count immediately
+      dispatch(getUnreadCount());
+      
+      // Fetch recent notifications (limit to 10 for dropdown, both read and unread)
+      dispatch(getNotifications({ limit: 10 }));
+      
+      // Fetch conversations for messages
+      dispatch(getConversations({ archived: false }));
+    }
+  }, [token, user, dispatch]);
+
+  // Refresh notifications when dropdown opens
+  useEffect(() => {
+    if (notificationsOpen && token && user) {
+      dispatch(getUnreadCount());
+      dispatch(getNotifications({ limit: 10 }));
+    }
+  }, [notificationsOpen, token, user, dispatch]);
+
+  // Refresh conversations when messages dropdown opens
+  useEffect(() => {
+    if (messagesOpen && token && user) {
+      dispatch(getConversations({ archived: false }));
+    }
+  }, [messagesOpen, token, user, dispatch]);
+
+  // Format date helper
+  const formatNotificationDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return "Just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -280,9 +342,9 @@ const Navbar = ({
                     onClick={() => toggleDropdown('notifications')}
                   >
                     <Bell className='w-5 h-5' />
-                    {notifications > 0 && (
-                      <span className='absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-xs rounded-full flex items-center justify-center'>
-                        {notifications}
+                    {unreadCount > 0 && (
+                      <span className='absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-semibold'>
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </Button>
@@ -293,33 +355,80 @@ const Navbar = ({
                       className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'
                       data-dropdown-content
                     >
-                      <h4 className="text-gray-200 font-semibold mb-2">Notifications</h4>
-                      <div className="max-h-64 overflow-y-auto">
-                        {[...Array(notifications)].map((_, index) => (
-                          <div
-                            key={index}
-                            onClick={() => {
-                              navigate("/notifications");
-                              setNotificationsOpen(false);
-                            }}
-                            className="px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
-                          >
-                            <p className="text-gray-300 text-sm">Notification {index + 1}</p>
-                            <p className="text-gray-400 text-xs">Details of the notification...</p>
-                          </div>
-                        ))}
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-gray-200 font-semibold">Notifications</h4>
+                        {unreadCount > 0 && (
+                          <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+                            {unreadCount} unread
+                          </span>
+                        )}
                       </div>
-                      <Button
-                        onClick={() => {
-                          navigate("/notifications");
-                          setNotificationsOpen(false);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="w-full mt-2 text-blue-400 hover:text-blue-500"
-                      >
-                        View All
-                      </Button>
+                      <div className="max-h-64 overflow-y-auto">
+                        {notificationsLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                          </div>
+                        ) : notificationsList.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Bell className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                            <p className="text-gray-400 text-sm">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notificationsList.map((notification) => (
+                            <div
+                              key={notification.id}
+                              onClick={() => {
+                                navigate(notification.actionUrl || "/notifications");
+                                setNotificationsOpen(false);
+                              }}
+                              className={`px-3 py-2 mb-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors border-l-2 ${
+                                !notification.read 
+                                  ? 'bg-gray-800 border-blue-500' 
+                                  : 'bg-gray-800/50 border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate ${
+                                    !notification.read ? 'text-white' : 'text-gray-300'
+                                  }`}>
+                                    {notification.title}
+                                  </p>
+                                  <p className="text-gray-400 text-xs mt-1 line-clamp-2">
+                                    {notification.message}
+                                  </p>
+                                  {notification.type && (
+                                    <span className="inline-block mt-1 text-xs text-gray-500 bg-gray-700/50 px-2 py-0.5 rounded">
+                                      {notification.type}
+                                    </span>
+                                  )}
+                                </div>
+                                {!notification.read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                                )}
+                              </div>
+                              {notification.createdAt && (
+                                <p className="text-gray-500 text-xs mt-1">
+                                  {formatNotificationDate(notification.createdAt)}
+                                </p>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      {notificationsList.length > 0 && (
+                        <Button
+                          onClick={() => {
+                            navigate("/notifications");
+                            setNotificationsOpen(false);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 text-blue-400 hover:text-blue-500"
+                        >
+                          View All Notifications
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -333,9 +442,9 @@ const Navbar = ({
                     onClick={() => toggleDropdown('messages')}
                   >
                     <MessageSquare className='w-5 h-5' />
-                    {messages > 0 && (
-                      <span className='absolute -top-1 -right-1 w-5 h-5 bg-blue-500 text-xs rounded-full flex items-center justify-center'>
-                        {messages}
+                    {totalUnreadMessages > 0 && (
+                      <span className='absolute -top-1 -right-1 min-w-[20px] h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-semibold px-1.5'>
+                        {totalUnreadMessages > 99 ? '99+' : totalUnreadMessages}
                       </span>
                     )}
                   </Button>
@@ -345,33 +454,97 @@ const Navbar = ({
                       className='absolute right-0 mt-2 w-80 bg-black/90 backdrop-blur-sm border border-white/10 rounded-lg shadow-lg z-50 p-3'
                       data-dropdown-content
                     >
-                      <h4 className="text-gray-200 font-semibold mb-2">Messages</h4>
-                      <div className="max-h-64 overflow-y-auto">
-                        {[...Array(messages)].map((_, index) => (
-                          <div
-                            key={index}
-                            onClick={() => {
-                              navigate("/chat");
-                              setMessagesOpen(false);
-                            }}
-                            className="px-3 py-2 mb-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
-                          >
-                            <p className="text-gray-300 text-sm">Message {index + 1}</p>
-                            <p className="text-gray-400 text-xs">Preview content...</p>
-                          </div>
-                        ))}
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-gray-200 font-semibold">Messages</h4>
+                        {totalUnreadMessages > 0 && (
+                          <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
+                            {totalUnreadMessages} unread
+                          </span>
+                        )}
                       </div>
-                      <Button
-                        onClick={() => {
-                          navigate("/chat");
-                          setMessagesOpen(false);
-                        }}
-                        variant="ghost"
-                        size="sm"
-                        className="w-full mt-2 text-blue-400 hover:text-blue-500"
-                      >
-                        View All Messages
-                      </Button>
+                      <div className="max-h-64 overflow-y-auto">
+                        {chatLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
+                          </div>
+                        ) : recentConversations.length === 0 ? (
+                          <div className="text-center py-8">
+                            <MessageSquare className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                            <p className="text-gray-400 text-sm">No messages yet</p>
+                          </div>
+                        ) : (
+                          recentConversations.map((conversation) => {
+                            const unreadCount = conversation.participant?.unreadCount || 0;
+                            const lastMessage = conversation.lastMessage;
+                            const isUnread = unreadCount > 0;
+                            
+                            return (
+                              <div
+                                key={conversation.id}
+                                onClick={() => {
+                                  navigate(`/chat?conversation=${conversation.id}`);
+                                  setMessagesOpen(false);
+                                }}
+                                className={`px-3 py-2 mb-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors border-l-2 ${
+                                  isUnread 
+                                    ? 'bg-gray-800 border-blue-500' 
+                                    : 'bg-gray-800/50 border-transparent'
+                                }`}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <p className={`text-sm font-medium truncate ${
+                                        isUnread ? 'text-white' : 'text-gray-300'
+                                      }`}>
+                                        {conversation.name || 'Unknown User'}
+                                      </p>
+                                      {conversation.type === 'group' && (
+                                        <span className="text-xs text-gray-500 bg-gray-700/50 px-1.5 py-0.5 rounded">
+                                          Group
+                                        </span>
+                                      )}
+                                    </div>
+                                    {lastMessage && (
+                                      <>
+                                        <p className="text-gray-400 text-xs mt-1 line-clamp-2">
+                                          {lastMessage.content}
+                                        </p>
+                                        <p className="text-gray-500 text-xs mt-1">
+                                          {formatNotificationDate(lastMessage.timestamp)}
+                                        </p>
+                                      </>
+                                    )}
+                                  </div>
+                                  {isUnread && (
+                                    <div className="flex flex-col items-end gap-1">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                                      {unreadCount > 1 && (
+                                        <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                                          {unreadCount > 9 ? '9+' : unreadCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      {recentConversations.length > 0 && (
+                        <Button
+                          onClick={() => {
+                            navigate("/chat");
+                            setMessagesOpen(false);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full mt-2 text-blue-400 hover:text-blue-500"
+                        >
+                          View All Messages
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
