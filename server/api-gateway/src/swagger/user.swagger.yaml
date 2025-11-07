@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: User Service API
-  description: API for user registration, login, profile management, password reset, email verification, and OAuth updates
+  description: API for user registration, login, profile management, password reset, email verification, OAuth updates, portfolio synchronization, and notifications
   version: 1.0.0
 
 servers:
@@ -21,6 +21,10 @@ tags:
     description: "User Service: Developer listings and discovery"
   - name: "🔵 USER SERVICE - Role Management"
     description: "User Service: User role management (Admin only)"
+  - name: "🔵 USER SERVICE - Portfolio Sync"
+    description: "User Service: Portfolio synchronization with external platforms (GitHub, StackOverflow)"
+  - name: "🔵 USER SERVICE - Notifications"
+    description: "User Service: User notifications management"
 
 paths:
   /api/v1/user/register:
@@ -679,6 +683,691 @@ paths:
         "500":
           description: Internal server error
 
+  # ============================================
+  # PORTFOLIO SYNC ENDPOINTS
+  # ============================================
+
+  /api/v1/user/portfolio-sync/status:
+    get:
+      summary: Get portfolio sync status
+      description: Get synchronization status for all connected integrations (GitHub, StackOverflow)
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sync status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/SyncStatus"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/integrations:
+    get:
+      summary: Get connected integrations
+      description: Get list of all connected portfolio integrations
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Integrations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Integration"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/integrations/github/connect:
+    post:
+      summary: Connect GitHub integration
+      description: Connect GitHub account for portfolio synchronization
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken]
+              properties:
+                accessToken:
+                  type: string
+                  description: GitHub OAuth access token
+                  example: "gho_xxxxxxxxxxxxxxxxxxxx"
+                refreshToken:
+                  type: string
+                  description: GitHub OAuth refresh token (optional)
+                  example: "ghr_xxxxxxxxxxxxxxxxxxxx"
+                expiresIn:
+                  type: integer
+                  description: Token expiration time in seconds
+                  example: 3600
+                scope:
+                  type: string
+                  description: OAuth scopes granted
+                  example: "read:user,repo"
+      responses:
+        "200":
+          description: GitHub connected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "GitHub connected successfully"
+                  data:
+                    type: object
+                    properties:
+                      platform:
+                        type: string
+                        example: "github"
+                      username:
+                        type: string
+                        example: "johndoe"
+        "400":
+          description: Bad request - missing access token
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/integrations/stackoverflow/connect:
+    post:
+      summary: Connect StackOverflow integration
+      description: Connect StackOverflow account for portfolio synchronization
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accessToken, userId]
+              properties:
+                accessToken:
+                  type: string
+                  description: StackOverflow OAuth access token
+                  example: "xxxxxxxxxxxxxxxxxxxx"
+                userId:
+                  type: integer
+                  description: StackOverflow user ID
+                  example: 123456
+                username:
+                  type: string
+                  description: StackOverflow username (optional)
+                  example: "johndoe"
+      responses:
+        "200":
+          description: StackOverflow connected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "StackOverflow connected successfully"
+                  data:
+                    type: object
+                    properties:
+                      platform:
+                        type: string
+                        example: "stackoverflow"
+                      userId:
+                        type: integer
+                        example: 123456
+        "400":
+          description: Bad request - missing required fields
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/integrations/{platform}/disconnect:
+    post:
+      summary: Disconnect integration
+      description: Disconnect a portfolio integration (GitHub or StackOverflow)
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: platform
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [github, stackoverflow]
+          description: Platform to disconnect
+      responses:
+        "200":
+          description: Integration disconnected successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "github disconnected successfully"
+        "400":
+          description: Bad request - invalid platform
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/sync:
+    post:
+      summary: Trigger portfolio sync
+      description: Trigger synchronization for a specific platform or all platforms
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                  enum: [github, stackoverflow, portfolio, all]
+                  default: all
+                  description: Platform to sync. Use 'portfolio' to sync from portfolio URL, 'all' to sync all platforms
+                  example: "all"
+                stackOverflowUserId:
+                  type: integer
+                  description: Required when platform is 'stackoverflow'
+                  example: 123456
+      responses:
+        "200":
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Sync completed"
+                  data:
+                    type: object
+                    description: Sync results for each platform
+        "400":
+          description: Bad request - missing required fields or invalid platform
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/history:
+    get:
+      summary: Get sync history
+      description: Get synchronization history for the authenticated user
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+          description: Maximum number of history records to return
+      responses:
+        "200":
+          description: Sync history retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SyncHistory"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/data:
+    get:
+      summary: Get sync data
+      description: Get synchronized portfolio data from connected platforms
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: platform
+          in: query
+          schema:
+            type: string
+            enum: [github, stackoverflow]
+          description: Filter by platform (optional)
+        - name: dataType
+          in: query
+          schema:
+            type: string
+          description: Filter by data type (e.g., 'repository', 'answer')
+      responses:
+        "200":
+          description: Sync data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SyncData"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/portfolio-sync/skills:
+    get:
+      summary: Get skill scores
+      description: Get calculated skill scores from portfolio data
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: platform
+          in: query
+          schema:
+            type: string
+            enum: [github, stackoverflow, overall]
+            default: overall
+          description: Platform to get skills for, or 'overall' for aggregated skills
+      responses:
+        "200":
+          description: Skill scores retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/SkillScores"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  # ============================================
+  # NOTIFICATION ENDPOINTS
+  # ============================================
+
+  /api/v1/user/notifications:
+    get:
+      summary: Get all notifications
+      description: Retrieve all notifications for the authenticated user with optional filters
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by notification type
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: read
+          in: query
+          schema:
+            type: boolean
+          description: Filter by read status
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [low, medium, high]
+          description: Filter by priority
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Include archived notifications
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+          description: Maximum number of notifications to return
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of notifications to skip
+      responses:
+        "200":
+          description: Notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Notifications retrieved successfully"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notification"
+                  count:
+                    type: integer
+                    example: 25
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    post:
+      summary: Create notification
+      description: Create a new notification for the authenticated user or a specified user
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationCreate"
+      responses:
+        "201":
+          description: Notification created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Notification created successfully"
+                  data:
+                    $ref: "#/components/schemas/Notification"
+        "400":
+          description: Bad request - missing required fields
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete all notifications
+      description: Delete all notifications for the authenticated user
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "All notifications deleted successfully"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/notifications/unread-count:
+    get:
+      summary: Get unread notifications count
+      description: Get the count of unread notifications for the authenticated user
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Unread count retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Unread count retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 5
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/notifications/{notificationId}/read:
+    put:
+      summary: Mark notification as read
+      description: Mark a specific notification as read
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Notification ID
+      responses:
+        "200":
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Notification marked as read"
+                  data:
+                    $ref: "#/components/schemas/Notification"
+        "400":
+          description: Bad request - notification ID required
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - notification does not belong to user
+        "404":
+          description: Notification not found
+        "500":
+          description: Internal server error
+
+  /api/v1/user/notifications/read-all:
+    put:
+      summary: Mark all notifications as read
+      description: Mark all notifications as read for the authenticated user
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "All notifications marked as read"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/user/notifications/{notificationId}:
+    delete:
+      summary: Delete notification
+      description: Delete a specific notification
+      tags:
+        - "🔵 USER SERVICE - Notifications"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Notification ID
+      responses:
+        "200":
+          description: Notification deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  status:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Notification deleted successfully"
+                  data:
+                    $ref: "#/components/schemas/Notification"
+        "400":
+          description: Bad request - notification ID required
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - notification does not belong to user
+        "404":
+          description: Notification not found
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     bearerAuth:
@@ -793,7 +1482,306 @@ components:
         portfolioScore:
           type: integer
           example: 0
+        portfolioUrl:
+          type: string
+          example: https://johndoe.dev
         notificationPrefs:
           type: object
           example: { "email": true, "sms": false }
       required: []
+
+    # Portfolio Sync Schemas
+    SyncStatus:
+      type: object
+      properties:
+        integrations:
+          type: object
+          properties:
+            github:
+              type: object
+              properties:
+                connected:
+                  type: boolean
+                  example: true
+                lastSync:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: "2024-01-15T10:30:00Z"
+                dataCount:
+                  type: integer
+                  example: 25
+            stackoverflow:
+              type: object
+              properties:
+                connected:
+                  type: boolean
+                  example: true
+                lastSync:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: "2024-01-15T10:30:00Z"
+                dataCount:
+                  type: integer
+                  example: 15
+        overallScore:
+          type: integer
+          example: 85
+        skills:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            javascript: 95
+            react: 88
+            nodejs: 82
+        lastSync:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T10:30:00Z"
+
+    Integration:
+      type: object
+      properties:
+        platform:
+          type: string
+          enum: [github, stackoverflow]
+          example: "github"
+        username:
+          type: string
+          example: "johndoe"
+        connectedAt:
+          type: string
+          format: date-time
+          example: "2024-01-01T00:00:00Z"
+        lastSync:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T10:30:00Z"
+
+    SyncHistory:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        platform:
+          type: string
+          enum: [github, stackoverflow, portfolio]
+          example: "github"
+        status:
+          type: string
+          enum: [pending, in_progress, completed, failed]
+          example: "completed"
+        itemsProcessed:
+          type: integer
+          example: 25
+        itemsFailed:
+          type: integer
+          example: 0
+        errorMessage:
+          type: string
+          nullable: true
+          example: null
+        startedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T10:35:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    SyncData:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        platform:
+          type: string
+          enum: [github, stackoverflow]
+          example: "github"
+        dataType:
+          type: string
+          example: "repository"
+        platformId:
+          type: string
+          example: "123456"
+        title:
+          type: string
+          example: "My Awesome Project"
+        description:
+          type: string
+          example: "A cool project description"
+        url:
+          type: string
+          example: "https://github.com/johndoe/awesome-project"
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            stars: 150
+            language: "JavaScript"
+            forks: 25
+        syncedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:35:00Z"
+
+    SkillScores:
+      type: object
+      properties:
+        overallScore:
+          type: integer
+          example: 85
+        skills:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            javascript: 95
+            react: 88
+            nodejs: 82
+            python: 75
+            typescript: 90
+
+    # Notification Schemas
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 123
+        type:
+          type: string
+          example: "project_invitation"
+        title:
+          type: string
+          example: "New Project Invitation"
+        message:
+          type: string
+          example: "You have been invited to join Project X"
+        category:
+          type: string
+          example: "projects"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          example: "medium"
+        read:
+          type: boolean
+          example: false
+        archived:
+          type: boolean
+          example: false
+        action:
+          type: string
+          nullable: true
+          example: "view_project"
+        actionUrl:
+          type: string
+          nullable: true
+          example: "/projects/123"
+        relatedEntityId:
+          type: integer
+          nullable: true
+          example: 123
+        relatedEntityType:
+          type: string
+          nullable: true
+          example: "project"
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          example:
+            projectName: "Project X"
+            inviterName: "Jane Doe"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
+    NotificationCreate:
+      type: object
+      required: [type, title, message]
+      properties:
+        userId:
+          type: integer
+          description: Target user ID (optional, defaults to authenticated user)
+          example: 123
+        type:
+          type: string
+          description: Notification type
+          example: "project_invitation"
+        title:
+          type: string
+          description: Notification title
+          example: "New Project Invitation"
+        message:
+          type: string
+          description: Notification message
+          example: "You have been invited to join Project X"
+        category:
+          type: string
+          description: Notification category
+          example: "projects"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          example: "medium"
+        action:
+          type: string
+          description: Action identifier
+          example: "view_project"
+        actionUrl:
+          type: string
+          description: URL for the action
+          example: "/projects/123"
+        relatedEntityId:
+          type: integer
+          description: Related entity ID
+          example: 123
+        relatedEntityType:
+          type: string
+          description: Related entity type
+          example: "project"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata
+          example:
+            projectName: "Project X"
+            inviterName: "Jane Doe"

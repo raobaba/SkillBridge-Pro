@@ -3,6 +3,7 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const GitHubStrategy = require("passport-github2").Strategy;
 const LinkedInStrategy = require("passport-linkedin-oauth2").Strategy;
 const { UserModel } = require("../models/user.model");
+const API_URLS = require("./api-urls.config");
 
 require("dotenv").config();
 
@@ -22,9 +23,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
       {
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL:
-          process.env.GOOGLE_CALLBACK_URL ||
-          "http://localhost:3000/api/v1/auth/google/callback",
+        callbackURL: API_URLS.GOOGLE_CALLBACK_URL,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -58,9 +57,7 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
       {
         clientID: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        callbackURL:
-          process.env.GITHUB_CALLBACK_URL ||
-          "http://localhost:3000/api/v1/auth/github/callback",
+        callbackURL: API_URLS.GITHUB_CALLBACK_URL,
       },
       async (accessToken, refreshToken, profile, done) => {
         try {
@@ -95,9 +92,7 @@ if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
       {
         clientID: process.env.LINKEDIN_CLIENT_ID,
         clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-        callbackURL:
-          process.env.LINKEDIN_CALLBACK_URL ||
-          "http://localhost:3000/api/v1/auth/linkedin/callback",
+        callbackURL: API_URLS.LINKEDIN_CALLBACK_URL,
         scope: ["openid", "profile", "email"],
         state: true,
       },

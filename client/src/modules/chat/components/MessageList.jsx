@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import MessageItem from "./MessageItem";
-import { ArrowDown, Loader2 } from "lucide-react";
+import { ArrowDown } from "lucide-react";
+import { CircularLoader } from "../../../components";
 
 const MessageList = ({ messages, isLoading = false, typingUsers = new Set(), currentUserId }) => {
   const messagesEndRef = useRef(null);
@@ -118,11 +119,8 @@ const MessageList = ({ messages, isLoading = false, typingUsers = new Set(), cur
 
           {/* Loading indicator */}
           {isLoading && (
-            <div className="flex items-center justify-center py-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-black/20 backdrop-blur-sm rounded-full border border-white/10">
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                <span className="text-xs text-gray-400">Loading messages...</span>
-              </div>
+            <div className="relative h-32">
+              <CircularLoader />
             </div>
           )}
 

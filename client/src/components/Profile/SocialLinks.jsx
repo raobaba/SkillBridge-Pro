@@ -25,13 +25,6 @@ export default function SocialLinks({ editing, form, handleChange, userData }) {
             className='bg-white/10'
           />
           <Input
-            name='portfolioUrl'
-            value={form?.portfolioUrl || ""}
-            onChange={handleChange}
-            placeholder='Portfolio Website'
-            className='bg-white/10'
-          />
-          <Input
             name='stackoverflowUrl'
             value={form?.stackoverflowUrl || ""}
             onChange={handleChange}
@@ -59,16 +52,6 @@ export default function SocialLinks({ editing, form, handleChange, userData }) {
               className='flex items-center'
             >
               <Linkedin className='w-5 h-5 mr-2' /> LinkedIn
-            </a>
-          )}
-          {userData?.portfolioUrl && (
-            <a
-              href={userData.portfolioUrl}
-              target='_blank'
-              rel='noreferrer'
-              className='flex items-center'
-            >
-              <Globe className='w-5 h-5 mr-2' /> Portfolio
             </a>
           )}
           {userData?.stackoverflowUrl && (

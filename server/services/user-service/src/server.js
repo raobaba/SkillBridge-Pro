@@ -13,6 +13,8 @@ const cloudinary = require("cloudinary").v2;
 
 const userRouter = require("./routes/user.route");
 const authRouter = require("./routes/auth.route");
+const notificationsRouter = require("./routes/notifications.route");
+const portfolioSyncRouter = require("./routes/portfolio-sync.route");
 require("./config/passport");
 
 const app = express();
@@ -51,6 +53,8 @@ app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
 app.use("/api/v1/user", userRouter);
+app.use("/api/v1/user/notifications", notificationsRouter);
+app.use("/api/v1/user/portfolio-sync", portfolioSyncRouter);
 app.use("/api/v1/auth", authRouter);
 
 // ❌ Handle Undefined Routes (Optional)

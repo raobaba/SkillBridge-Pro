@@ -5,7 +5,8 @@ import MessageList from "../components/MessageList";
 import ChatBox from "../components/ChatBox";
 import ChatSidebar from "../components/ChatSidebar";
 import { useNavigate } from "react-router-dom";
-import { Menu, X, Shield, Users, MessageCircle, AlertTriangle } from "lucide-react";
+import { Menu, X, Shield, Users, MessageCircle, AlertTriangle, Code, ArrowLeft } from "lucide-react";
+import { CircularLoader } from "../../../components";
 import { 
   getConversationsApi, 
   getMessagesApi, 
@@ -1012,57 +1013,84 @@ const ChatContainer = () => {
 
   return (
     <>
-      {/* Role-based Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 px-4 py-1 border-b border-white/10">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-              <MessageCircle className="w-5 h-5 text-white" />
+      {/* Enhanced Header with SkillBridge Pro Branding */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: SkillBridge Pro Logo & Back Button */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-2 group hover:opacity-80 transition-opacity"
+                title="Go back to Dashboard"
+              >
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                  <Code className="w-5 h-5 text-white" />
+                </div>
+                <div className="hidden sm:block">
+                  <span className="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent text-xl sm:text-2xl">
+                    SkillBridge Pro
+                  </span>
+                  <div className="text-xs text-gray-400 mt-0.5">Communication Center</div>
+                </div>
+                <ArrowLeft className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors sm:hidden" />
+              </button>
+              
+              {/* Mobile: Chat Title */}
+              <div className="sm:hidden flex items-center gap-2 ml-2">
+                <MessageCircle className="w-5 h-5 text-white" />
+                <h1 className="text-lg font-bold text-white">Chat</h1>
+              </div>
             </div>
-            <div onClick={()=>navigate('/')}>
-              <h1 className="text-xl font-bold text-white">Communication Center</h1>
-              <p className="text-sm text-gray-300">
-                {user?.role === 'developer' && 'Chat with Project Owners & Join Group Discussions'}
-                {user?.role === 'project-owner' && 'Manage Team Communications & Project Chats'}
-                {user?.role === 'admin' && 'Monitor Flagged Chats & System Notifications'}
-              </p>
+
+            {/* Right: Role Badge & Desktop Description */}
+            <div className="flex items-center gap-4">
+              {/* Desktop: Description */}
+              <div className="hidden md:block text-right">
+                <p className="text-sm text-gray-300">
+                  {user?.role === 'developer' && 'Chat with Project Owners & Join Group Discussions'}
+                  {user?.role === 'project-owner' && 'Manage Team Communications & Project Chats'}
+                  {user?.role === 'admin' && 'Monitor Flagged Chats & System Notifications'}
+                </p>
+              </div>
+              
+              {/* Role Badge */}
+              {user?.role === 'admin' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-500/20 rounded-lg border border-red-500/30">
+                  <Shield className="w-4 h-4 text-red-400" />
+                  <span className="text-sm text-red-300 hidden sm:inline">Moderation Mode</span>
+                </div>
+              )}
+              {user?.role === 'project-owner' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/20 rounded-lg border border-blue-500/30">
+                  <Users className="w-4 h-4 text-blue-400" />
+                  <span className="text-sm text-blue-300 hidden sm:inline">Team Management</span>
+                </div>
+              )}
+              {user?.role === 'developer' && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-lg border border-green-500/30">
+                  <MessageCircle className="w-4 h-4 text-green-400" />
+                  <span className="text-sm text-green-300 hidden sm:inline">Collaboration</span>
+                </div>
+              )}
             </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {user?.role === 'admin' && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-red-500/20 rounded-lg border border-red-500/30">
-                <Shield className="w-4 h-4 text-red-400" />
-                <span className="text-sm text-red-300">Moderation Mode</span>
-              </div>
-            )}
-            {user?.role === 'project-owner' && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                <Users className="w-4 h-4 text-blue-400" />
-                <span className="text-sm text-blue-300">Team Management</span>
-              </div>
-            )}
-            {user?.role === 'developer' && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 rounded-lg border border-green-500/30">
-                <MessageCircle className="w-4 h-4 text-green-400" />
-                <span className="text-sm text-green-300">Collaboration</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       {/* Mobile toggle button */}
-      <div className="sm:hidden flex justify-start p-2 bg-slate-900">
+      <div className="sm:hidden flex justify-start p-2 bg-slate-900 border-b border-white/10">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 rounded-full bg-gray-700 text-white"
+          className="p-2 rounded-full bg-gray-700/50 hover:bg-gray-700 text-white transition-colors"
+          aria-label="Toggle sidebar"
         >
           {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
 
-      <div className="flex h-[565px] w-full max-w-full mx-auto overflow-hidden shadow-lg bg-slate-900">
+      {/* Main Chat Container */}
+      <div className="flex h-[calc(100vh-112px)] sm:h-[calc(100vh-64px)] w-full max-w-full mx-auto overflow-hidden shadow-lg bg-slate-900">
         {/* Sidebar */}
         <div
           className={`fixed sm:relative z-20 h-full transition-transform duration-300 bg-slate-800 ${
@@ -1088,14 +1116,10 @@ const ChatContainer = () => {
             messages={activeUser?.conversationId 
               ? (messages?.[activeUser.conversationId] || []) 
               : []}
+            isLoading={loadingMessages[activeUser?.conversationId] || false}
             typingUsers={typingUsers[activeUser?.conversationId] || new Set()}
             currentUserId={currentUserId}
           />
-          {loadingMessages[activeUser?.conversationId] && (
-            <div className="p-4 text-center text-gray-400">
-              Loading messages...
-            </div>
-          )}
           {permissions?.canSendMessages && !activeUser?.isFlagged && (
             <ChatBox 
               onSend={handleSend} 

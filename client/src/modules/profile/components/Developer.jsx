@@ -38,7 +38,7 @@ import {
   ArrowUp,
   ArrowDown
 } from "lucide-react";
-import { ConfirmModal, Modal } from "../../../components";
+import { ConfirmModal, Modal, Badge } from "../../../components";
 import Circular from "../../../components/loader/Circular";
 import Navbar from "../../../components/header";
 import Button from "../../../components/Button";
@@ -50,6 +50,7 @@ import {
   SocialLinks,
   UserCard,
   InfoCard,
+  Portfolio,
 } from "../../../components/Profile";
 import {
   getDeveloperAppliedProjects,
@@ -348,28 +349,70 @@ const Developer = memo(function Developer({
             userData={userData}
           />
 
+          {/* Portfolio */}
+          <Portfolio
+            editing={editing}
+            form={form}
+            handleChange={handleChange}
+            userData={userData}
+          />
+
           {/* Resume */}
           <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
             <h2 className='text-xl font-semibold mb-4 flex items-center'>
               <FileText className='w-8 h-8 mr-2 text-amber-400' /> Resume
             </h2>
             {editing ? (
-              <input
-                id='file'
-                name='file'
-                type='file'
-                accept='application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,text/plain'
-                onChange={handleResumeChange}
-                className='block text-sm text-gray-300'
-              />
-            ) : userData?.resumeUrl?.url ? (
+              <div className="space-y-4">
+                {/* Resume URL Input */}
+                <div className="space-y-2">
+                  <label className="text-white text-sm font-medium">Resume URL</label>
+                  <input
+                    type="url"
+                    name="resumeUrl"
+                    value={
+                      typeof form?.resumeUrl === 'object' && form?.resumeUrl?.url
+                        ? form.resumeUrl.url
+                        : typeof form?.resumeUrl === 'string'
+                        ? form.resumeUrl
+                        : userData?.resumeUrl?.url || userData?.resumeUrl || ""
+                    }
+                    onChange={(e) => {
+                      const resumeUrlValue = e.target.value;
+                      handleChange({
+                        target: {
+                          name: 'resumeUrl',
+                          value: resumeUrlValue
+                        }
+                      });
+                    }}
+                    placeholder="https://your-resume.com or upload file below"
+                    className="w-full p-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:ring-1 focus:ring-amber-400 focus:outline-none"
+                  />
+                </div>
+                {/* Resume File Upload */}
+                <div className="space-y-2">
+                  <label className="text-white text-sm font-medium">Upload Resume File</label>
+                  <input
+                    id='file'
+                    name='file'
+                    type='file'
+                    accept='application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,text/plain'
+                    onChange={handleResumeChange}
+                    className='block text-sm text-gray-300 w-full p-2 rounded-xl bg-white/10 border border-white/20'
+                  />
+                  <p className='text-gray-500 text-xs'>PDF, DOC, DOCX up to 10MB</p>
+                </div>
+              </div>
+            ) : userData?.resumeUrl?.url || (typeof userData?.resumeUrl === 'string' && userData.resumeUrl) ? (
               <a
-                href={userData?.resumeUrl?.url}
+                href={typeof userData?.resumeUrl === 'object' ? userData.resumeUrl.url : userData.resumeUrl}
                 target='_blank'
                 rel='noopener noreferrer'
-                className='text-blue-400 underline'
+                className='flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors'
               >
-                View Resume
+                <ExternalLink className="w-4 h-4" />
+                <span className="font-medium">View Resume</span>
               </a>
             ) : (
               <p className='text-gray-400'>No resume uploaded</p>
@@ -377,7 +420,7 @@ const Developer = memo(function Developer({
           </div>
 
           {/* Skills */}
-          <Skills editing={editing} form={form} setForm={setForm} />
+          <Skills editing={editing} form={form} setForm={setForm} userData={userData} />
 
           {/* Social Links */}
           <SocialLinks

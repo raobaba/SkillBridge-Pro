@@ -8,9 +8,6 @@ import { Settings as SettingsIcon } from "lucide-react";
 import { useSelector } from "react-redux";
 import ProfileSettings from "../components/ProfileSettings";
 import AccountSettings from "../components/AccountSettings";
-import Integrations from "../components/Integrations";
-import SkillsExperience from "../components/SkillsExperience";
-import PortfolioResume from "../components/PortfolioResume";
 import DangerZone from "../components/DangerZone";
 
 const Settings = () => {
@@ -34,20 +31,14 @@ const Settings = () => {
     user.privacy || { profilePublic: true, dataSharing: false }
   );
 
-  const [integrations, setIntegrations] = useState({
-    github: !!user.githubUrl,
-    linkedin: !!user.linkedinUrl,
-    googleCalendar: true,
-  });
-
   // Dynamic role-based section visibility
-  // Base sections available to all roles
-  const baseSections = ['profile', 'account', 'notifications', 'privacy', 'integrations', 'danger'];
+  // Base sections available to all roles - removed portfolio, skills, integrations
+  const baseSections = ['profile', 'account', 'notifications', 'privacy', 'danger'];
   
   // Additional sections based on role
   const roleBasedSections = {
-    developer: ['billing', 'portfolio', 'skills'],
-    'project-owner': ['billing', 'portfolio'],
+    developer: ['billing'],
+    'project-owner': ['billing'],
     admin: [],
   };
   
@@ -94,8 +85,6 @@ const Settings = () => {
     setNotifPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
   const togglePrivacy = (type) =>
     setPrivacyPrefs((prev) => ({ ...prev, [type]: !prev[type] }));
-  const toggleIntegration = (type) =>
-    setIntegrations((prev) => ({ ...prev, [type]: !prev[type] }));
 
   const handleSaveProfile = () => console.log("Profile saved", formData);
   const handleSaveNotifications = () =>
@@ -114,7 +103,7 @@ const Settings = () => {
               Settings
             </h1>
           </div>
-          <p className='text-gray-300 text-sm mb-6'>Manage your profile, privacy, notifications, billing and integrations.</p>
+          <p className='text-gray-300 text-sm mb-6'>Manage your account settings, privacy, and notification preferences.</p>
 
           {/* Quick Navigation */}
           <div className='mb-6 overflow-x-auto'>
@@ -125,9 +114,6 @@ const Settings = () => {
                 { key: 'notifications', href: '#notifications', label: 'Notifications' },
                 { key: 'privacy', href: '#privacy', label: 'Privacy' },
                 { key: 'billing', href: '#billing', label: 'Billing' },
-                { key: 'integrations', href: '#integrations', label: 'Integrations' },
-                { key: 'portfolio', href: '#portfolio', label: 'Portfolio' },
-                { key: 'skills', href: '#skills', label: 'Skills' },
                 { key: 'danger', href: '#danger', label: 'Danger Zone' },
               ]
                 .filter((item) => visible(item.key))
@@ -189,28 +175,6 @@ const Settings = () => {
                 </section>
               )}
 
-              {/* Integrations */}
-              {visible('integrations') && (
-                <section id='integrations'>
-                  <Integrations
-                  integrations={integrations}
-                  toggleIntegration={toggleIntegration}
-                  />
-                </section>
-              )}
-
-              {/* Portfolio & Resume */}
-              {visible('portfolio') && (
-                <section id='portfolio'>
-                  <PortfolioResume user={user} />
-                </section>
-              )}
-              {/* Skills & Experience */}
-              {visible('skills') && (
-                <section id='skills'>
-                  <SkillsExperience user={user} />
-                </section>
-              )}
               {/* Danger Zone */}
               {visible('danger') && (
                 <section id='danger'>

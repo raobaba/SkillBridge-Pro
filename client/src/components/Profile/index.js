@@ -6,6 +6,7 @@ import SocialLinks from "./SocialLinks";
 import UserCard from "./UserCard";
 import DataTable from "./DataTable";
 import InfoCard from "./InfoCard";
+import Portfolio from "./Portfolio";
 
 export {
   Bio,
@@ -16,4 +17,5 @@ export {
   UserCard,
   DataTable,
   InfoCard,
+  Portfolio,
 };

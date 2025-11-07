@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Search, Plus, MessageCircle, Users, Settings, Archive, Star } from "lucide-react";
-import {Button,Input } from "../../../components";
+import { Button } from "../../../components";
 
 const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissions }) => {
   const [search, setSearch] = useState("");
@@ -42,14 +42,14 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
           {/* Enhanced Search Bar */}
           <div className="relative flex items-center gap-2">
             {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
-              <Input
+            <div className="relative flex-1 border border-white/20 rounded-xl overflow-hidden focus-within:border-blue-500/50 transition-all duration-300">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none z-10" />
+              <input
                 type="text"
                 placeholder="Search chats..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-black/20 backdrop-blur-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 border border-white/10 transition-all duration-300 hover:border-blue-500/30"
+                className="w-full pl-10 pr-4 py-2.5 bg-transparent text-white placeholder-gray-400 focus:outline-none focus:ring-0 border-0 transition-all duration-300"
               />
             </div>
             

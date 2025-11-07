@@ -62,8 +62,6 @@ export default function SettingsPage() {
               {/* Integrations */}
               <Integrations />
 
-              {/* Portfolio & Resume */}
-              <PortfolioResume user={user} />
 
               {/* Danger Zone */}
               <DangerZone />
