@@ -2,7 +2,7 @@ const express = require("express");
 const passport = require("passport");
 const authRouter = express.Router();
 
-const FRONTEND_URL = process.env.CLIENT_URL || "http://localhost:5173";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // 🌐 Google OAuth
 authRouter.get(
@@ -48,6 +48,31 @@ authRouter.get(
 
 authRouter.get(
   "/github/callback",
+  // Unified callback handler - routes to portfolio sync or regular auth
+  async (req, res, next) => {
+    // Check if this is a portfolio sync OAuth flow
+    if (req.session?.portfolioSyncUserId) {
+      // Route to portfolio sync handler - don't serialize user for portfolio sync
+      return passport.authenticate("github-portfolio-sync", {
+        failureRedirect: `${process.env.CLIENT_URL || process.env.FRONTEND_URL || FRONTEND_URL}/portfolio-sync?error=github_connection_failed`,
+        session: false, // Don't create a session for portfolio sync
+      })(req, res, (err) => {
+        if (err) {
+          console.error("Portfolio sync OAuth error:", err);
+          const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || FRONTEND_URL;
+          return res.redirect(`${clientUrl}/portfolio-sync?error=github_connection_failed`);
+        }
+        // Success - tokens are already stored in database by the passport strategy
+        // Clear the session flag
+        delete req.session.portfolioSyncUserId;
+        const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || FRONTEND_URL;
+        const redirectUrl = `${clientUrl}/portfolio-sync?status=github_connected`;
+        res.redirect(redirectUrl);
+      });
+    }
+    // Otherwise, use regular auth handler
+    next();
+  },
   passport.authenticate("github", { failureRedirect: `${FRONTEND_URL}/auth` }),
   (req, res) => {
     // Get redirect URL from session or default to dashboard

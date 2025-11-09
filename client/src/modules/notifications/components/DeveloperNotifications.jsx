@@ -21,7 +21,7 @@ import {
   Zap,
   Loader2
 } from "lucide-react";
-import { Badge, Button } from "../../../components";
+import { Badge, Button, CircularLoader } from "../../../components";
 import { motion } from "framer-motion";
 import {
   getNotifications,
@@ -267,10 +267,9 @@ const DeveloperNotifications = ({ user }) => {
         {/* Notification List */}
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-12">
-              <Loader2 className="w-16 h-16 text-blue-400 mx-auto mb-4 animate-spin" />
-              <p className="text-gray-400 text-lg">Loading notifications...</p>
-            </div>
+             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+             <CircularLoader />
+           </div>
           ) : error ? (
             <div className="text-center py-12">
               <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />

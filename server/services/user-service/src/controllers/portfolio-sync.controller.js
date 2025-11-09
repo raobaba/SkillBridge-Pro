@@ -2,6 +2,7 @@ const { PortfolioSyncModel } = require("../models/portfolio-sync.model");
 const { PortfolioSyncService } = require("../services/portfolio-sync.service");
 const ErrorHandler = require("shared/utils/errorHandler");
 const API_URLS = require("../config/api-urls.config");
+const logger = require("shared/utils/logger.utils");
 
 // Get sync status for all integrations
 const getSyncStatus = async (req, res) => {
@@ -48,7 +49,9 @@ const getSyncStatus = async (req, res) => {
       data: status,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in getSyncStatus: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -75,7 +78,9 @@ const getIntegrations = async (req, res) => {
       data: integrations,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in getIntegrations: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -124,6 +129,8 @@ const connectGitHub = async (req, res) => {
       },
     });
   } catch (error) {
+    logger.error(`Error in connectGitHub: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
     return new ErrorHandler(error.message || "Failed to connect GitHub", 500).sendError(res);
   }
 };
@@ -138,17 +145,32 @@ const connectStackOverflow = async (req, res) => {
       return new ErrorHandler("User not authenticated", 401).sendError(res);
     }
 
-    if (!accessToken || !stackOverflowUserId) {
-      return new ErrorHandler("Access token and user ID are required", 400).sendError(res);
+    if (!stackOverflowUserId) {
+      return new ErrorHandler("StackOverflow user ID is required", 400).sendError(res);
     }
 
-    await PortfolioSyncModel.upsertIntegrationToken(userId, "stackoverflow", {
-      accessToken,
-      tokenType: "Bearer",
+    // StackOverflow public API doesn't require access token for read-only data
+    // Access token is optional and only needed for write operations
+    const tokenData = {
       platformUserId: stackOverflowUserId.toString(),
       platformUsername: username || stackOverflowUserId.toString(),
       isActive: true,
+      tokenType: "Bearer", // Always set tokenType, even if no accessToken (database default)
+    };
+
+    // Only include accessToken if provided and not empty
+    if (accessToken && accessToken.trim()) {
+      tokenData.accessToken = accessToken.trim();
+    }
+
+    console.log("Connecting StackOverflow with data:", {
+      userId,
+      platformUserId: tokenData.platformUserId,
+      platformUsername: tokenData.platformUsername,
+      hasAccessToken: !!tokenData.accessToken,
     });
+
+    await PortfolioSyncModel.upsertIntegrationToken(userId, "stackoverflow", tokenData);
 
     res.json({
       success: true,
@@ -159,7 +181,18 @@ const connectStackOverflow = async (req, res) => {
       },
     });
   } catch (error) {
-    return new ErrorHandler(error.message || "Failed to connect StackOverflow", 500).sendError(res);
+    logger.error(`Error in connectStackOverflow: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code,
+    });
+    return new ErrorHandler(
+      error.message || "Failed to connect StackOverflow",
+      error.statusCode || 500
+    ).sendError(res);
   }
 };
 
@@ -184,7 +217,9 @@ const disconnectIntegration = async (req, res) => {
       message: `${platform} disconnected successfully`,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in disconnectIntegration: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -201,20 +236,31 @@ const triggerSync = async (req, res) => {
     let results;
 
     if (platform === "github") {
-      results = await PortfolioSyncService.syncGitHub(userId);
+      try {
+        results = await PortfolioSyncService.syncGitHub(userId);
+      } catch (error) {
+        // Check if it's a "not connected" error
+        if (error.message && error.message.includes("not connected")) {
+          return new ErrorHandler(error.message, 400).sendError(res);
+        }
+        throw error;
+      }
     } else if (platform === "stackoverflow") {
+      // stackOverflowUserId is optional - will be retrieved from integration token or user's stackoverflowUrl
       const { stackOverflowUserId } = req.body;
-      if (!stackOverflowUserId) {
-        return new ErrorHandler("StackOverflow user ID is required", 400).sendError(res);
+      try {
+        results = await PortfolioSyncService.syncStackOverflow(userId, stackOverflowUserId || null);
+      } catch (error) {
+        // Check if it's a "not connected" error
+        if (error.message && error.message.includes("not connected")) {
+          return new ErrorHandler(error.message, 400).sendError(res);
+        }
+        throw error;
       }
-      results = await PortfolioSyncService.syncStackOverflow(userId, stackOverflowUserId);
     } else if (platform === "portfolio") {
-      const { UserModel } = require("../models/user.model");
-      const user = await UserModel.getUserById(userId);
-      if (!user?.portfolioUrl) {
-        return new ErrorHandler("Portfolio URL not found", 400).sendError(res);
-      }
-      results = await PortfolioSyncService.syncPortfolio(userId, user.portfolioUrl);
+      // portfolioUrl is optional - will be retrieved from user profile
+      const { portfolioUrl } = req.body;
+      results = await PortfolioSyncService.syncPortfolio(userId, portfolioUrl || null);
     } else if (platform === "all" || !platform) {
       results = await PortfolioSyncService.syncAll(userId);
     } else {
@@ -227,7 +273,9 @@ const triggerSync = async (req, res) => {
       data: results,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in triggerSync: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -248,7 +296,9 @@ const getSyncHistory = async (req, res) => {
       data: history,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in getSyncHistory: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -269,7 +319,9 @@ const getSyncData = async (req, res) => {
       data,
     });
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in getSyncData: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 
@@ -297,7 +349,9 @@ const getSkillScores = async (req, res) => {
       });
     }
   } catch (error) {
-    return new ErrorHandler(error.message, 500).sendError(res);
+    logger.error(`Error in getSkillScores: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
   }
 };
 

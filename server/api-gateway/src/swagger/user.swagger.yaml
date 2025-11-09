@@ -687,6 +687,110 @@ paths:
   # PORTFOLIO SYNC ENDPOINTS
   # ============================================
 
+  /api/v1/user/portfolio-sync/oauth/github:
+    get:
+      summary: Initiate GitHub OAuth for portfolio sync
+      description: |
+        Initiates GitHub OAuth flow for portfolio synchronization. 
+        User must be authenticated. After authorization, tokens are stored encrypted in the database.
+        Redirects to GitHub OAuth page, then back to callback URL.
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      responses:
+        "302":
+          description: Redirects to GitHub OAuth authorization page
+          headers:
+            Location:
+              schema:
+                type: string
+                example: "https://github.com/login/oauth/authorize?client_id=..."
+        "401":
+          description: Unauthorized - Authentication required
+        "500":
+          description: Internal server error - Failed to save session
+
+  /api/v1/user/portfolio-sync/oauth/github/callback:
+    get:
+      summary: GitHub OAuth callback for portfolio sync
+      description: |
+        GitHub OAuth callback handler. This endpoint is called by GitHub after user authorization.
+        Tokens are automatically stored in the database (encrypted).
+        Redirects to frontend portfolio sync page with status.
+        - On success: Redirects to `/portfolio-sync?status=github_connected`
+        - On failure: Redirects to `/portfolio-sync?error=github_connection_failed`
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      parameters:
+        - name: code
+          in: query
+          schema:
+            type: string
+          description: GitHub OAuth authorization code
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: OAuth state parameter
+        - name: error
+          in: query
+          schema:
+            type: string
+          description: OAuth error (if authorization was denied)
+      responses:
+        "302":
+          description: Redirects to frontend with status (success or error)
+          headers:
+            Location:
+              schema:
+                type: string
+                description: Frontend URL with status or error query parameter
+                example: "http://localhost:5173/portfolio-sync?status=github_connected"
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                success:
+                  summary: Successful connection
+                  value:
+                    redirect: "http://localhost:5173/portfolio-sync?status=github_connected"
+                error:
+                  summary: Connection failed
+                  value:
+                    redirect: "http://localhost:5173/portfolio-sync?error=github_connection_failed"
+
+  /api/v1/user/portfolio-sync/oauth/stackoverflow:
+    get:
+      summary: StackOverflow OAuth information
+      description: |
+        Returns instructions for StackOverflow integration.
+        StackOverflow OAuth is not fully implemented, so manual token connection is recommended.
+      tags:
+        - "🔵 USER SERVICE - Portfolio Sync"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: StackOverflow OAuth instructions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "StackOverflow OAuth integration"
+                  instructions:
+                    type: string
+                    example: "Please use the connect endpoint with your access token"
+        "401":
+          description: Unauthorized
+
   /api/v1/user/portfolio-sync/status:
     get:
       summary: Get portfolio sync status
@@ -901,7 +1005,12 @@ paths:
   /api/v1/user/portfolio-sync/sync:
     post:
       summary: Trigger portfolio sync
-      description: Trigger synchronization for a specific platform or all platforms
+      description: |
+        Trigger synchronization for a specific platform or all platforms.
+        - For 'github': Syncs repositories and commits, calculates skills
+        - For 'stackoverflow': Syncs answers and tags, calculates skills
+        - For 'portfolio': Syncs portfolio URL (placeholder - web scraping not implemented)
+        - For 'all': Syncs all connected platforms
       tags:
         - "🔵 USER SERVICE - Portfolio Sync"
       security:
@@ -921,8 +1030,12 @@ paths:
                   example: "all"
                 stackOverflowUserId:
                   type: integer
-                  description: Required when platform is 'stackoverflow'
+                  description: Optional StackOverflow user ID (will be retrieved from integration token or user profile if not provided)
                   example: 123456
+                portfolioUrl:
+                  type: string
+                  description: Optional portfolio URL (will be retrieved from user profile if not provided)
+                  example: "https://johndoe.dev"
       responses:
         "200":
           description: Sync completed successfully
@@ -938,14 +1051,86 @@ paths:
                     type: string
                     example: "Sync completed"
                   data:
-                    type: object
-                    description: Sync results for each platform
+                    oneOf:
+                      - $ref: "#/components/schemas/GitHubSyncResult"
+                      - $ref: "#/components/schemas/StackOverflowSyncResult"
+                      - $ref: "#/components/schemas/PortfolioSyncResult"
+                      - $ref: "#/components/schemas/AllPlatformsSyncResult"
+              examples:
+                github:
+                  value:
+                    success: true
+                    message: "Sync completed"
+                    data:
+                      success: true
+                      data:
+                        repositories: []
+                        commits: []
+                        totalRepos: 25
+                        totalCommits: 150
+                        totalStars: 500
+                      skills:
+                        JavaScript:
+                          score: 90
+                          level: "expert"
+                          evidenceCount: 45
+                      githubUsername: "johndoe"
+                      githubUrl: "https://github.com/johndoe"
+                all:
+                  value:
+                    success: true
+                    message: "Sync completed"
+                    data:
+                      github:
+                        success: true
+                        data:
+                          totalRepos: 25
+                          totalCommits: 150
+                        skills: {}
+                      stackoverflow:
+                        success: true
+                        data:
+                          totalAnswers: 150
+                          totalReputation: 5000
+                        skills: {}
+                      portfolio:
+                        success: true
+                        portfolioScore: 85
+                      errors: []
         "400":
           description: Bad request - missing required fields or invalid platform
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Invalid platform"
+                  status:
+                    type: integer
+                    example: 400
         "401":
           description: Unauthorized
         "500":
-          description: Internal server error
+          description: Internal server error - sync failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "GitHub not connected. Please connect your GitHub account first."
+                  status:
+                    type: integer
+                    example: 500
 
   /api/v1/user/portfolio-sync/history:
     get:
@@ -1027,7 +1212,12 @@ paths:
   /api/v1/user/portfolio-sync/skills:
     get:
       summary: Get skill scores
-      description: Get calculated skill scores from portfolio data
+      description: |
+        Get calculated skill scores from portfolio data.
+        - Use 'overall' or omit parameter to get aggregated skills from all platforms
+        - Use 'github' to get skills from GitHub repositories only
+        - Use 'stackoverflow' to get skills from StackOverflow tags only
+        - Use 'portfolio' to get skills from portfolio URL (if available)
       tags:
         - "🔵 USER SERVICE - Portfolio Sync"
       security:
@@ -1037,9 +1227,9 @@ paths:
           in: query
           schema:
             type: string
-            enum: [github, stackoverflow, overall]
+            enum: [github, stackoverflow, portfolio, overall]
             default: overall
-          description: Platform to get skills for, or 'overall' for aggregated skills
+          description: Platform to get skills for, or 'overall' for aggregated skills from all platforms
       responses:
         "200":
           description: Skill scores retrieved successfully
@@ -1052,7 +1242,56 @@ paths:
                     type: boolean
                     example: true
                   data:
-                    $ref: "#/components/schemas/SkillScores"
+                    oneOf:
+                      - $ref: "#/components/schemas/SkillScores"
+                      - type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            userId:
+                              type: integer
+                            platform:
+                              type: string
+                            skillName:
+                              type: string
+                            score:
+                              type: integer
+                            level:
+                              type: string
+                            evidenceCount:
+                              type: integer
+                            lastCalculatedAt:
+                              type: string
+                              format: date-time
+              examples:
+                overall:
+                  value:
+                    success: true
+                    data:
+                      overallScore: 85
+                      skills:
+                        JavaScript:
+                          score: 90
+                          level: "expert"
+                          evidenceCount: 45
+                        Python:
+                          score: 75
+                          level: "advanced"
+                          evidenceCount: 30
+                platform:
+                  value:
+                    success: true
+                    data:
+                      - id: 1
+                        userId: 123
+                        platform: "github"
+                        skillName: "JavaScript"
+                        score: 90
+                        level: "expert"
+                        evidenceCount: 45
+                        lastCalculatedAt: "2024-01-15T10:30:00Z"
         "401":
           description: Unauthorized
         "500":
@@ -1527,19 +1766,40 @@ components:
                   example: 15
         overallScore:
           type: integer
+          description: Overall portfolio score (average of all skill scores)
+          minimum: 0
+          maximum: 100
           example: 85
         skills:
           type: object
           additionalProperties:
-            type: integer
+            type: object
+            properties:
+              score:
+                type: integer
+                example: 90
+              level:
+                type: string
+                enum: [beginner, intermediate, advanced, expert]
+                example: "expert"
+              evidenceCount:
+                type: integer
+                example: 45
+          description: Skills with scores, levels, and evidence counts
           example:
-            javascript: 95
-            react: 88
-            nodejs: 82
+            JavaScript:
+              score: 90
+              level: "expert"
+              evidenceCount: 45
+            Python:
+              score: 75
+              level: "advanced"
+              evidenceCount: 30
         lastSync:
           type: string
           format: date-time
           nullable: true
+          description: Timestamp of last successful sync
           example: "2024-01-15T10:30:00Z"
 
     Integration:
@@ -1567,41 +1827,62 @@ components:
       properties:
         id:
           type: integer
+          description: Sync history record ID
           example: 1
         userId:
           type: integer
+          description: User ID who performed the sync
           example: 123
         platform:
           type: string
-          enum: [github, stackoverflow, portfolio]
+          enum: [github, stackoverflow, portfolio, all]
+          description: Platform that was synced
           example: "github"
         status:
           type: string
-          enum: [pending, in_progress, completed, failed]
-          example: "completed"
-        itemsProcessed:
+          enum: [success, partial, failed]
+          description: Sync status - 'success' if all items synced, 'partial' if some failed, 'failed' if sync failed
+          example: "success"
+        itemsSynced:
           type: integer
+          description: Total number of items synced (repositories + commits, answers + tags, etc.)
+          default: 0
+          example: 175
+        itemsUpdated:
+          type: integer
+          description: Number of items updated (existing items that were refreshed)
+          default: 0
           example: 25
         itemsFailed:
           type: integer
+          description: Number of items that failed to sync
+          default: 0
           example: 0
         errorMessage:
           type: string
           nullable: true
+          description: Error message if sync failed or partially failed
           example: null
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Additional sync metadata (username, user ID, completion details, etc.)
+          example:
+            githubUsername: "johndoe"
+            totalRepos: 25
+            totalCommits: 150
         startedAt:
           type: string
           format: date-time
+          description: When the sync operation started
           example: "2024-01-15T10:30:00Z"
         completedAt:
           type: string
           format: date-time
           nullable: true
-          example: "2024-01-15T10:35:00Z"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2024-01-15T10:30:00Z"
+          description: When the sync operation completed (null if still in progress)
+          example: "2024-01-15T10:30:15Z"
 
     SyncData:
       type: object
@@ -1614,37 +1895,56 @@ components:
           example: 123
         platform:
           type: string
-          enum: [github, stackoverflow]
+          enum: [github, stackoverflow, portfolio]
           example: "github"
         dataType:
           type: string
+          enum: [repository, commit, answer, tag]
+          description: Type of synced data
           example: "repository"
-        platformId:
+        platformItemId:
           type: string
+          description: External platform's item ID
           example: "123456"
         title:
           type: string
-          example: "My Awesome Project"
+          description: Item title or name
+          example: "my-awesome-project"
         description:
           type: string
+          nullable: true
+          description: Item description
           example: "A cool project description"
         url:
           type: string
-          example: "https://github.com/johndoe/awesome-project"
+          nullable: true
+          description: Item URL
+          example: "https://github.com/johndoe/my-awesome-project"
         metadata:
           type: object
           additionalProperties: true
+          description: Additional metadata (varies by dataType)
           example:
-            stars: 150
             language: "JavaScript"
+            stars: 150
             forks: 25
+            topics: ["react", "nodejs"]
+            createdAt: "2024-01-01T00:00:00Z"
+            updatedAt: "2024-01-15T00:00:00Z"
         syncedAt:
           type: string
           format: date-time
+          description: When this item was last synced
           example: "2024-01-15T10:35:00Z"
         createdAt:
           type: string
           format: date-time
+          description: When this record was created
+          example: "2024-01-15T10:35:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When this record was last updated
           example: "2024-01-15T10:35:00Z"
 
     SkillScores:
@@ -1652,17 +1952,159 @@ components:
       properties:
         overallScore:
           type: integer
+          description: Overall portfolio score (average of all skill scores)
+          minimum: 0
+          maximum: 100
           example: 85
         skills:
           type: object
           additionalProperties:
-            type: integer
+            $ref: "#/components/schemas/Skill"
+          description: Skills with scores, levels, and evidence counts
           example:
-            javascript: 95
-            react: 88
-            nodejs: 82
-            python: 75
-            typescript: 90
+            JavaScript:
+              score: 90
+              level: "expert"
+              evidenceCount: 45
+            Python:
+              score: 75
+              level: "advanced"
+              evidenceCount: 30
+            React:
+              score: 80
+              level: "expert"
+              evidenceCount: 25
+
+    Skill:
+      type: object
+      properties:
+        score:
+          type: integer
+          description: Skill score (0-100)
+          minimum: 0
+          maximum: 100
+          example: 90
+        level:
+          type: string
+          enum: [beginner, intermediate, advanced, expert]
+          description: Skill level based on score
+          example: "expert"
+        evidenceCount:
+          type: integer
+          description: Number of repositories/answers/tags demonstrating this skill
+          example: 45
+
+    GitHubSyncResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            repositories:
+              type: array
+              items:
+                type: object
+            commits:
+              type: array
+              items:
+                type: object
+            totalRepos:
+              type: integer
+              example: 25
+            totalCommits:
+              type: integer
+              example: 150
+            totalStars:
+              type: integer
+              example: 500
+        skills:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Skill"
+        githubUsername:
+          type: string
+          example: "johndoe"
+        githubUrl:
+          type: string
+          example: "https://github.com/johndoe"
+
+    StackOverflowSyncResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            user:
+              type: object
+            answers:
+              type: array
+              items:
+                type: object
+            tags:
+              type: array
+              items:
+                type: object
+            totalAnswers:
+              type: integer
+              example: 150
+            totalReputation:
+              type: integer
+              example: 5000
+        skills:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Skill"
+        stackOverflowUserId:
+          type: string
+          example: "12345"
+
+    PortfolioSyncResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        portfolioScore:
+          type: integer
+          example: 85
+        skills:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Skill"
+        portfolioUrl:
+          type: string
+          example: "https://johndoe.dev"
+
+    AllPlatformsSyncResult:
+      type: object
+      properties:
+        github:
+          $ref: "#/components/schemas/GitHubSyncResult"
+          nullable: true
+        stackoverflow:
+          $ref: "#/components/schemas/StackOverflowSyncResult"
+          nullable: true
+        portfolio:
+          $ref: "#/components/schemas/PortfolioSyncResult"
+          nullable: true
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              platform:
+                type: string
+                example: "github"
+              error:
+                type: string
+                example: "GitHub not connected"
+          description: Array of errors for platforms that failed to sync
 
     # Notification Schemas
     Notification:

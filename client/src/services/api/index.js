@@ -39,7 +39,14 @@ const fetchApiWrapper = (
   options = {},
   Authorization,
 ) => {
-  const url = import.meta.env.VITE_APP_API_URL + uri;
+  // Ensure proper URL construction
+  let baseUrl = import.meta.env.VITE_APP_API_URL || "http://localhost:3000";
+  // Remove trailing slash from baseUrl
+  baseUrl = baseUrl.replace(/\/+$/, "");
+  // Ensure uri starts with a slash
+  const normalizedUri = uri.startsWith("/") ? uri : `/${uri}`;
+  const url = `${baseUrl}${normalizedUri}`;
+  
   const config = getHeaderConfig(requestType, options, Authorization);
   if (requestType === "GET") {
     return axios({ url, method: "get", ...config });

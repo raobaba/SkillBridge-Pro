@@ -113,7 +113,10 @@ const registerUser = async (req, res) => {
     // Assign the initial role to the user
     await UserModel.assignRole(user.id, role);
 
-    const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
+    // Get base URL for verification - prefer explicit VERIFY_EMAIL_URL, otherwise construct from CLIENT_URL/FRONTEND_URL
+    const verifyEmailBaseUrl = process.env.VERIFY_EMAIL_URL || 
+      (process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173") + "/verify-email";
+    const verificationUrl = `${verifyEmailBaseUrl}?token=${verificationToken}`;
     
     // Role-specific email template generator
     const getRoleSpecificSignupEmail = (role, name, userEmail, verificationUrl) => {
@@ -338,7 +341,10 @@ const loginUser = async (req, res) => {
         resetPasswordExpire: new Date(Date.now() + 15 * 60 * 1000), // 15 min
       });
 
-      const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
+      // Get base URL for verification - prefer explicit VERIFY_EMAIL_URL, otherwise construct from CLIENT_URL/FRONTEND_URL
+      const verifyEmailBaseUrl = process.env.VERIFY_EMAIL_URL || 
+        (process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173") + "/verify-email";
+      const verificationUrl = `${verifyEmailBaseUrl}?token=${verificationToken}`;
       
       // Get user's role(s) for role-specific email
       const userRoles = await UserModel.getUserRoles(user.id);
@@ -536,7 +542,10 @@ const forgetPassword = async (req, res) => {
 
     await UserModel.setResetPasswordToken(user.id, hashedToken, expireTime);
 
-    const resetUrl = `http://localhost:5173/reset-password?token=${resetToken}`;
+    // Get base URL for password reset - prefer explicit RESET_PASSWORD_URL, otherwise construct from CLIENT_URL/FRONTEND_URL
+    const resetPasswordBaseUrl = process.env.RESET_PASSWORD_URL || 
+      (process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5173") + "/reset-password";
+    const resetUrl = `${resetPasswordBaseUrl}?token=${resetToken}`;
     const emailBody = {
       from: process.env.EMAIL_USER,
       to: email,

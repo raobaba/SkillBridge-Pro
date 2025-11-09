@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Navbar from "../../../components/header";
-import { Footer } from "../../../components";
+import { Footer, CircularLoader } from "../../../components";
 
 // Role-specific components
 import DeveloperPortfolioSync from "../components/DeveloperPortfolioSync";
@@ -51,11 +51,8 @@ const PortfolioSync = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading PortfolioSync...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
+        <CircularLoader />
       </div>
     );
   }

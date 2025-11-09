@@ -12,8 +12,16 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (id, done) => {
-  const user = await UserModel.getUserById(id);
-  done(null, user);
+  try {
+    const user = await UserModel.getUserById(id);
+    if (!user) {
+      return done(new Error("User not found"), null);
+    }
+    done(null, user);
+  } catch (error) {
+    console.error("Error deserializing user:", error);
+    done(error, null);
+  }
 });
 
 // 🔗 Google OAuth Strategy
@@ -50,9 +58,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   console.log("⚠️ Google OAuth not configured - skipping Google strategy");
 }
 
-// 🧑‍💻 GitHub OAuth Strategy
+// 🧑‍💻 GitHub OAuth Strategy (for authentication)
 if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   passport.use(
+    "github",
     new GitHubStrategy(
       {
         clientID: process.env.GITHUB_CLIENT_ID,
@@ -83,6 +92,64 @@ if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
   console.log("✅ GitHub OAuth strategy configured");
 } else {
   console.log("⚠️ GitHub OAuth not configured - skipping GitHub strategy");
+}
+
+// 🧑‍💻 GitHub OAuth Strategy for Portfolio Sync (stores tokens in database)
+if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
+  try {
+    const { PortfolioSyncModel } = require("../models/portfolio-sync.model");
+    
+    passport.use(
+      "github-portfolio-sync",
+      new GitHubStrategy(
+        {
+          clientID: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          callbackURL: API_URLS.GITHUB_CALLBACK_URL, // Use same callback URL as regular auth
+          scope: ["user:email", "repo", "read:user"],
+          passReqToCallback: true, // Enable access to req in callback
+        },
+        async (req, accessToken, refreshToken, profile, done) => {
+          try {
+            // Get userId from session (set during initiation)
+            const userId = req.session?.portfolioSyncUserId || null;
+            
+            if (!userId) {
+              return done(new Error("User ID not found in session. Please ensure you're logged in."), null);
+            }
+
+            // Store tokens in database
+            await PortfolioSyncModel.upsertIntegrationToken(userId, "github", {
+              accessToken,
+              refreshToken: refreshToken || null,
+              tokenType: "Bearer",
+              expiresAt: null, // GitHub tokens don't expire by default
+              scope: "user:email,repo,read:user",
+              platformUserId: profile.id.toString(),
+              platformUsername: profile.username,
+              isActive: true,
+            });
+
+            // Clear session data
+            delete req.session.portfolioSyncUserId;
+
+            // Return profile with userId for redirect handler
+            profile.userId = userId;
+            done(null, profile);
+          } catch (error) {
+            console.error("Error storing GitHub tokens:", error);
+            done(error, null);
+          }
+        }
+      )
+    );
+    console.log("✅ GitHub Portfolio Sync OAuth strategy configured");
+    console.log("   Callback URL:", API_URLS.GITHUB_CALLBACK_URL);
+  } catch (error) {
+    console.error("❌ Error configuring GitHub Portfolio Sync OAuth strategy:", error);
+  }
+} else {
+  console.warn("⚠️  GitHub Portfolio Sync OAuth strategy not configured: GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET not set");
 }
 
 // 👔 LinkedIn OAuth Strategy
