@@ -9,6 +9,8 @@ import {
   getSyncHistoryApi,
   getSyncDataApi,
   getSkillScoresApi,
+  getDevelopersApi,
+  getDeveloperPortfolioSyncDataApi,
 } from "./portfolioSyncAction";
 
 // Initial state
@@ -18,6 +20,8 @@ const initialState = {
   syncHistory: [],
   syncData: [],
   skillScores: null,
+  developers: [], // Developers list with portfolio sync data (for project owners)
+  developersLoading: false,
   loading: false,
   syncing: false,
   error: null,
@@ -170,6 +174,161 @@ export const getSkillScores = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to get skill scores" }
+      );
+    }
+  }
+);
+
+// Get developers with portfolio sync data (for project owners)
+export const getDevelopersWithPortfolioData = createAsyncThunk(
+  "portfolioSync/getDevelopersWithPortfolioData",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      // Fetch developers list
+      const developersResponse = await getDevelopersApi(params);
+      
+      if (!developersResponse.data?.success || !developersResponse.data?.developers) {
+        return { developers: [] };
+      }
+
+      const developersList = developersResponse.data.developers;
+      
+      // For each developer, try to fetch their portfolio sync data
+      // Note: Currently portfolio sync APIs only work for authenticated user
+      // This will be populated when backend supports querying other users' data
+      const developersWithPortfolioData = await Promise.all(
+        developersList.map(async (developer) => {
+          try {
+            // Try to get portfolio sync data (will fail if not supported)
+            const portfolioData = await getDeveloperPortfolioSyncDataApi(developer.id);
+            
+            // Extract skills from developer's profile
+            // Backend returns skills as an object: {"Node.js": "Beginner", "Express.js": "Beginner", ...}
+            let topSkills = ["No skills data"];
+            if (developer.skills && typeof developer.skills === 'object') {
+              // Extract skill names from the skills object
+              topSkills = Object.keys(developer.skills).slice(0, 4);
+            } else if (developer.domainPreferences) {
+              // Fallback to domainPreferences if skills object is not available
+              // domainPreferences is a string like "Software Development, Data Science, AI/ML"
+              topSkills = developer.domainPreferences
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => d.length > 0)
+                .slice(0, 4);
+            }
+
+            // Check if platforms are connected based on URL presence
+            const githubConnected = !!(developer.githubUrl && developer.githubUrl.trim());
+            const linkedinConnected = !!(developer.linkedinUrl && developer.linkedinUrl.trim());
+            const stackoverflowConnected = !!(developer.stackoverflowUrl && developer.stackoverflowUrl.trim());
+            const portfolioConnected = !!(developer.portfolioUrl && developer.portfolioUrl.trim());
+
+            // Transform to component format
+            return {
+              id: developer.id,
+              name: developer.name || "Unknown",
+              title: developer.bio || developer.domainPreferences || "Developer",
+              location: developer.location || "Not specified",
+              rating: developer.portfolioScore || 0, // Use portfolioScore as rating
+              experience: developer.experience || "Not specified",
+              avatarUrl: developer.avatarUrl || null,
+              skills: topSkills,
+              github: {
+                connected: githubConnected,
+                url: developer.githubUrl || null,
+                projects: 0, // Will be populated when backend supports it
+                commits: 0,
+                stars: 0,
+                skillScore: 0
+              },
+              linkedin: {
+                connected: linkedinConnected,
+                url: developer.linkedinUrl || null,
+                connections: 0,
+                skillScore: 0
+              },
+              stackoverflow: {
+                connected: stackoverflowConnected,
+                url: developer.stackoverflowUrl || null,
+                reputation: 0, // Will be populated when backend supports it
+                answers: 0,
+                skillScore: 0
+              },
+              portfolio: {
+                connected: portfolioConnected,
+                url: developer.portfolioUrl || null,
+                projects: [],
+                contributions: 0,
+                lastActivity: "Never"
+              }
+            };
+          } catch (error) {
+            // Return developer with basic data if portfolio sync fails
+            // Extract skills from developer's profile
+            let topSkills = ["No skills data"];
+            if (developer.skills && typeof developer.skills === 'object') {
+              topSkills = Object.keys(developer.skills).slice(0, 4);
+            } else if (developer.domainPreferences) {
+              topSkills = developer.domainPreferences
+                .split(',')
+                .map(d => d.trim())
+                .filter(d => d.length > 0)
+                .slice(0, 4);
+            }
+
+            // Check if platforms are connected based on URL presence
+            const githubConnected = !!(developer.githubUrl && developer.githubUrl.trim());
+            const linkedinConnected = !!(developer.linkedinUrl && developer.linkedinUrl.trim());
+            const stackoverflowConnected = !!(developer.stackoverflowUrl && developer.stackoverflowUrl.trim());
+            const portfolioConnected = !!(developer.portfolioUrl && developer.portfolioUrl.trim());
+
+            return {
+              id: developer.id,
+              name: developer.name || "Unknown",
+              title: developer.bio || developer.domainPreferences || "Developer",
+              location: developer.location || "Not specified",
+              rating: developer.portfolioScore || 0,
+              experience: developer.experience || "Not specified",
+              avatarUrl: developer.avatarUrl || null,
+              skills: topSkills,
+              github: {
+                connected: githubConnected,
+                url: developer.githubUrl || null,
+                projects: 0,
+                commits: 0,
+                stars: 0,
+                skillScore: 0
+              },
+              linkedin: {
+                connected: linkedinConnected,
+                url: developer.linkedinUrl || null,
+                connections: 0,
+                skillScore: 0
+              },
+              stackoverflow: {
+                connected: stackoverflowConnected,
+                url: developer.stackoverflowUrl || null,
+                reputation: 0,
+                answers: 0,
+                skillScore: 0
+              },
+              portfolio: {
+                connected: portfolioConnected,
+                url: developer.portfolioUrl || null,
+                projects: [],
+                contributions: 0,
+                lastActivity: "Never"
+              }
+            };
+          }
+        })
+      );
+
+      return { developers: developersWithPortfolioData };
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch developers with portfolio data" }
       );
     }
   }
@@ -328,6 +487,22 @@ const portfolioSyncSlice = createSlice({
       .addCase(getSkillScores.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || "Failed to get skill scores";
+      });
+
+    // Get Developers with Portfolio Data
+    builder
+      .addCase(getDevelopersWithPortfolioData.pending, (state) => {
+        state.developersLoading = true;
+        state.error = null;
+      })
+      .addCase(getDevelopersWithPortfolioData.fulfilled, (state, action) => {
+        state.developersLoading = false;
+        state.developers = action.payload?.developers || [];
+      })
+      .addCase(getDevelopersWithPortfolioData.rejected, (state, action) => {
+        state.developersLoading = false;
+        state.error = action.payload?.message || "Failed to fetch developers with portfolio data";
+        state.developers = [];
       });
   },
 });

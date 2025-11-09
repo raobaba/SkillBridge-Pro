@@ -1,166 +1,46 @@
 import React, { useState, useEffect } from "react";
-import { Badge, Button } from "../../../components";
+import { useDispatch, useSelector } from "react-redux";
+import { Badge, Button, CircularLoader } from "../../../components";
 import { 
   Github, 
   Linkedin, 
-  FileText, 
-  RefreshCw, 
-  Settings, 
   Link, 
   ExternalLink,
-  CheckCircle,
-  AlertCircle,
-  Clock,
-  TrendingUp,
   Activity,
-  Zap,
-  Shield,
-  Globe,
   Code,
-  Database,
-  Calendar,
-  BarChart3,
-  Download,
-  Upload,
-  Eye,
   EyeOff,
-  Target,
-  Award,
   Star,
   Users,
-  BookOpen,
   Brain,
   Search,
-  Filter,
-  User,
   MapPin,
   Mail,
-  Phone
+  User,
 } from "lucide-react";
+import { getDevelopersWithPortfolioData } from "../slice/portfolioSyncSlice";
 
 const ProjectOwnerPortfolioSync = ({ user }) => {
+  const dispatch = useDispatch();
+  const { developers, developersLoading, error } = useSelector((state) => state.portfolioSync);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeveloper, setSelectedDeveloper] = useState(null);
-  const [developers, setDevelopers] = useState([
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      title: "Senior React Developer",
-      location: "San Francisco, CA",
-      rating: 4.8,
-      experience: "5 years",
-      skills: ["React", "Node.js", "TypeScript", "AWS"],
-      github: {
-        connected: true,
-        projects: 15,
-        commits: 234,
-        stars: 45,
-        skillScore: 92
-      },
-      linkedin: {
-        connected: true,
-        connections: 500,
-        skillScore: 88
-      },
-      stackoverflow: {
-        connected: true,
-        reputation: 2100,
-        answers: 78,
-        skillScore: 85
-      },
-      portfolio: {
-        projects: [
-          { name: "E-commerce Platform", tech: "React, Node.js", stars: 12 },
-          { name: "Task Management App", tech: "Vue.js, Express", stars: 8 },
-          { name: "Weather Dashboard", tech: "React, TypeScript", stars: 15 }
-        ],
-        contributions: 156,
-        lastActivity: "2 hours ago"
-      }
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      title: "Full Stack Developer",
-      location: "Austin, TX",
-      rating: 4.6,
-      experience: "3 years",
-      skills: ["Python", "Django", "React", "PostgreSQL"],
-      github: {
-        connected: true,
-        projects: 8,
-        commits: 189,
-        stars: 23,
-        skillScore: 78
-      },
-      linkedin: {
-        connected: false,
-        connections: 0,
-        skillScore: 0
-      },
-      stackoverflow: {
-        connected: true,
-        reputation: 1450,
-        answers: 45,
-        skillScore: 82
-      },
-      portfolio: {
-        projects: [
-          { name: "Blog Platform", tech: "Django, React", stars: 6 },
-          { name: "API Gateway", tech: "Python, FastAPI", stars: 9 },
-          { name: "Data Analytics Tool", tech: "Python, Pandas", stars: 4 }
-        ],
-        contributions: 98,
-        lastActivity: "1 day ago"
-      }
-    },
-    {
-      id: 3,
-      name: "Alex Rodriguez",
-      title: "Frontend Developer",
-      location: "New York, NY",
-      rating: 4.9,
-      experience: "4 years",
-      skills: ["Vue.js", "JavaScript", "CSS", "Figma"],
-      github: {
-        connected: true,
-        projects: 22,
-        commits: 312,
-        stars: 67,
-        skillScore: 95
-      },
-      linkedin: {
-        connected: true,
-        connections: 750,
-        skillScore: 90
-      },
-      stackoverflow: {
-        connected: false,
-        reputation: 0,
-        answers: 0,
-        skillScore: 0
-      },
-      portfolio: {
-        projects: [
-          { name: "Design System", tech: "Vue.js, CSS", stars: 18 },
-          { name: "Portfolio Website", tech: "JavaScript, CSS", stars: 12 },
-          { name: "UI Component Library", tech: "Vue.js, TypeScript", stars: 25 }
-        ],
-        contributions: 203,
-        lastActivity: "3 hours ago"
-      }
-    }
-  ]);
+  const [avatarErrors, setAvatarErrors] = useState({});
 
-  const [filteredDevelopers, setFilteredDevelopers] = useState(developers);
-
+  // Fetch developers with portfolio sync data
   useEffect(() => {
-    const filtered = developers.filter(dev => 
+    if (user?.id) {
+      dispatch(getDevelopersWithPortfolioData({ limit: 50 }));
+    }
+  }, [dispatch, user?.id]);
+
+  // Filter developers based on search query
+  const filteredDevelopers = React.useMemo(() => {
+    if (!developers || developers.length === 0) return [];
+    return developers.filter(dev => 
       dev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       dev.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       dev.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
     );
-    setFilteredDevelopers(filtered);
   }, [searchQuery, developers]);
 
   const getSkillScore = (developer) => {
@@ -190,8 +70,22 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-            {developer.name.charAt(0)}
+          {/* Enhanced Avatar */}
+          <div className="relative group">
+            {developer.avatarUrl && !avatarErrors[developer.id] ? (
+              <img
+                src={developer.avatarUrl}
+                alt={developer.name}
+                className="w-14 h-14 rounded-full border-2 border-white/20 object-cover shadow-lg group-hover:scale-110 transition-transform duration-300"
+                onError={() => setAvatarErrors(prev => ({ ...prev, [developer.id]: true }))}
+              />
+            ) : (
+              <div className="w-14 h-14 rounded-full border-2 border-white/20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300 ring-1 ring-white/10">
+                {developer.name ? developer.name.charAt(0).toUpperCase() : <User className="w-7 h-7" />}
+              </div>
+            )}
+            {/* Status indicator */}
+            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-slate-900 rounded-full shadow-lg ring-2 ring-slate-900/50"></div>
           </div>
           <div>
             <h3 className="text-lg font-bold text-white">{developer.name}</h3>
@@ -206,7 +100,7 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
         <div className="text-right">
           <div className="flex items-center gap-1 mb-1">
             <Star className="w-4 h-4 text-yellow-400" />
-            <span className="text-white font-semibold">{developer.rating}</span>
+            <span className="text-white font-semibold">{developer.rating || 0}</span>
           </div>
           <div className="flex items-center gap-1">
             <Brain className="w-4 h-4 text-blue-400" />
@@ -217,14 +111,22 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
 
       <div className="mb-4">
         <div className="flex flex-wrap gap-2">
-          {developer.skills.slice(0, 4).map((skill, index) => (
-            <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">
-              {skill}
-            </span>
-          ))}
-          {developer.skills.length > 4 && (
+          {developer.skills && developer.skills.length > 0 && developer.skills[0] !== "No skills data" ? (
+            <>
+              {developer.skills.slice(0, 4).map((skill, index) => (
+                <span key={index} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full">
+                  {skill}
+                </span>
+              ))}
+              {developer.skills.length > 4 && (
+                <span className="px-2 py-1 bg-gray-500/20 text-gray-300 text-xs rounded-full">
+                  +{developer.skills.length - 4} more
+                </span>
+              )}
+            </>
+          ) : (
             <span className="px-2 py-1 bg-gray-500/20 text-gray-300 text-xs rounded-full">
-              +{developer.skills.length - 4} more
+              No skills data
             </span>
           )}
         </div>
@@ -236,8 +138,19 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
             <Github className="w-4 h-4 text-gray-400" />
             <span className="text-xs text-gray-400">GitHub</span>
           </div>
-          <div className="text-sm text-white font-semibold">
-            {developer.github.connected ? `${developer.github.projects} projects` : "Not connected"}
+          <div className="text-sm font-semibold">
+            {developer.github.connected ? (
+              <a 
+                href={developer.github.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-400 hover:text-green-300 transition-colors"
+              >
+                Connected
+              </a>
+            ) : (
+              <span className="text-red-400">Not connected</span>
+            )}
           </div>
         </div>
         <div className="text-center">
@@ -245,8 +158,19 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
             <Linkedin className="w-4 h-4 text-gray-400" />
             <span className="text-xs text-gray-400">LinkedIn</span>
           </div>
-          <div className="text-sm text-white font-semibold">
-            {developer.linkedin.connected ? `${developer.linkedin.connections} connections` : "Not connected"}
+          <div className="text-sm font-semibold">
+            {developer.linkedin.connected ? (
+              <a 
+                href={developer.linkedin.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-400 hover:text-green-300 transition-colors"
+              >
+                Connected
+              </a>
+            ) : (
+              <span className="text-red-400">Not connected</span>
+            )}
           </div>
         </div>
         <div className="text-center">
@@ -254,8 +178,19 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
             <Code className="w-4 h-4 text-gray-400" />
             <span className="text-xs text-gray-400">StackOverflow</span>
           </div>
-          <div className="text-sm text-white font-semibold">
-            {developer.stackoverflow.connected ? `${developer.stackoverflow.reputation} rep` : "Not connected"}
+          <div className="text-sm font-semibold">
+            {developer.stackoverflow.connected ? (
+              <a 
+                href={developer.stackoverflow.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-green-400 hover:text-green-300 transition-colors"
+              >
+                Connected
+              </a>
+            ) : (
+              <span className="text-red-400">Not connected</span>
+            )}
           </div>
         </div>
       </div>
@@ -279,12 +214,26 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
     <div className="bg-white/5 border border-white/10 rounded-xl p-6">
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-            {developer.name.charAt(0)}
+          {/* Enhanced Avatar for Detail View */}
+          <div className="relative group">
+            {developer.avatarUrl && !avatarErrors[developer.id] ? (
+              <img
+                src={developer.avatarUrl}
+                alt={developer.name}
+                className="w-20 h-20 rounded-full border-4 border-white/30 object-cover shadow-xl group-hover:scale-105 transition-transform duration-300"
+                onError={() => setAvatarErrors(prev => ({ ...prev, [developer.id]: true }))}
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-full border-4 border-white/30 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-3xl shadow-xl group-hover:scale-105 transition-transform duration-300 ring-2 ring-white/20">
+                {developer.name ? developer.name.charAt(0).toUpperCase() : <User className="w-10 h-10" />}
+              </div>
+            )}
+            {/* Status indicator */}
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-slate-900 rounded-full shadow-lg ring-2 ring-slate-900/50"></div>
           </div>
           <div>
             <h2 className="text-2xl font-bold text-white">{developer.name}</h2>
-            <p className="text-gray-300">{developer.title}</p>
+            <p className="text-gray-300">{developer.title || "Developer"}</p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1">
                 <MapPin className="w-4 h-4 text-gray-400" />
@@ -292,7 +241,7 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
               </div>
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 text-yellow-400" />
-                <span className="text-sm text-white">{developer.rating}/5.0</span>
+                <span className="text-sm text-white">{developer.rating || 0}/5.0</span>
               </div>
               <div className="flex items-center gap-1">
                 <Brain className="w-4 h-4 text-blue-400" />
@@ -404,9 +353,23 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
     </div>
   );
 
+  if (developersLoading) {
+    return (
+      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
+        <CircularLoader />
+      </div>
+    );
+  }
+
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
       <div className='max-w-7xl mx-auto px-4 py-6 sm:py-8'>
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+            <p className="text-red-300">{error}</p>
+          </div>
+        )}
         {/* Enhanced Header */}
         <div className="bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 backdrop-blur-sm p-6 rounded-2xl border border-white/10 mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">

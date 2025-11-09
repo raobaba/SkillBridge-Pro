@@ -8,12 +8,23 @@ node_modules/
 .env.test.local
 .env.production.local
 
-# Logs
-logs
+# Logs - All log files and directories
 *.log
+**/*.log
+logs/
+**/logs/
+log/
+**/log/
+*-service.log
+*-gateway.log
+access.log
+combined-*.log
+error-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # Runtime data
 pids

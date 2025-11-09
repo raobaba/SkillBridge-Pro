@@ -58,3 +58,30 @@ export const getSkillScoresApi = async (platform = null) => {
   return await fetchFromApiServer("GET", url, null, params);
 };
 
+// Get developers list (for project owners)
+export const getDevelopersApi = async (params = {}) => {
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `api/v1/user/developers${queryParams ? `?${queryParams}` : ''}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Get developer portfolio sync data (for project owners to view developers' data)
+export const getDeveloperPortfolioSyncDataApi = async (developerId) => {
+  // Note: This will need backend support to query other users' portfolio sync data
+  // For now, we'll return empty data structure
+  // TODO: Create backend endpoint for project owners to view developers' portfolio sync data
+  return {
+    data: {
+      success: true,
+      data: {
+        integrations: {
+          github: { connected: false, lastSync: null, dataCount: 0 },
+          stackoverflow: { connected: false, lastSync: null, dataCount: 0 },
+        },
+        overallScore: 0,
+        skills: {},
+      }
+    }
+  };
+};
+

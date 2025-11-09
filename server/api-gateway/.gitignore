@@ -23,8 +23,6 @@ error-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
 # Runtime data
 pids
@@ -57,18 +55,6 @@ jspm_packages/
 # dotenv environment variables file
 .env
 
-# Temporary files created by express-fileupload
-tmp/
-
-# Database
-*.db
-*.sqlite
-
-# Database backups (contain sensitive data - never commit!)
-src/db/backups/
-**/db/backups/
-*.sql
-
 # IDE
 .vscode/
 .idea/
@@ -78,3 +64,4 @@ src/db/backups/
 # OS
 .DS_Store
 Thumbs.db
+
