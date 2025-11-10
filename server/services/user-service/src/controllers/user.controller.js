@@ -1547,6 +1547,83 @@ const getRoleStats = async (req, res) => {
 };
 
 // ============================================
+// ADMIN ANALYTICS
+// ============================================
+
+// Get admin analytics
+const getAdminAnalytics = async (req, res) => {
+  try {
+    const { timeframe = '6m' } = req.query;
+    const axios = require("axios");
+    
+    const analytics = await UserModel.getAdminAnalytics(timeframe);
+    
+    // Get project stats from project-service
+    let projectStats = {
+      projectsPosted: 0,
+      projectsByDomain: [],
+      totalProjects: 0,
+      activeProjects: 0,
+      completedProjects: 0,
+      monthlyGrowth: 0,
+    };
+    
+    try {
+      const API_GATEWAY_URL = process.env.API_GATEWAY_URL || "http://localhost:3000";
+      const authToken = req.headers.authorization; // Forward auth token
+      
+      const projectStatsResponse = await axios.get(
+        `${API_GATEWAY_URL}/api/v1/projects/admin/stats?timeframe=${timeframe}`,
+        {
+          headers: {
+            Authorization: authToken,
+          },
+          timeout: 10000,
+          validateStatus: (status) => status < 500,
+        }
+      );
+      
+      if (projectStatsResponse.status === 200 && projectStatsResponse.data?.success) {
+        const stats = projectStatsResponse.data.data;
+        projectStats = {
+          projectsPosted: stats.totalProjects || 0,
+          projectsInTimeframe: stats.projectsInTimeframe || 0,
+          totalProjects: stats.totalProjects || 0,
+          activeProjects: stats.activeProjects || 0,
+          completedProjects: stats.completedProjects || 0,
+          projectsByDomain: stats.projectsByCategory || [],
+          projectsByMonth: stats.projectsByMonth || [],
+          monthlyGrowth: stats.monthlyGrowth || 0,
+        };
+      } else {
+        console.warn("Failed to fetch project stats from project-service:", projectStatsResponse.status, projectStatsResponse.data);
+      }
+    } catch (error) {
+      console.error("Error fetching project stats from project-service:", error.message);
+      // Continue with default project stats if service is unavailable
+    }
+
+    res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Admin analytics retrieved successfully",
+      data: {
+        ...analytics,
+        projectStats,
+      },
+    });
+  } catch (error) {
+    console.error("Get admin analytics error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch admin analytics",
+      error: error.message,
+    });
+  }
+};
+
+// ============================================
 // DEVELOPER DASHBOARD / GAMIFICATION
 // ============================================
 
@@ -1740,6 +1817,8 @@ module.exports = {
   getUserRoles,
   getUserWithRoles,
   getRoleStats,
+  // Admin Analytics
+  getAdminAnalytics,
   // Developer Dashboard / Gamification
   getDeveloperStats,
   getDeveloperReviews,

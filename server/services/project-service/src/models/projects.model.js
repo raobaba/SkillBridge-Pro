@@ -713,6 +713,156 @@ class ProjectsModel {
       throw error;
     }
   }
+
+  // Get admin project statistics
+  static async getAdminProjectStats(timeframe = '6m') {
+    const { sql } = require("drizzle-orm");
+    
+    // Calculate date range based on timeframe
+    const now = new Date();
+    let startDate = new Date();
+    switch (timeframe) {
+      case '1w':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '1m':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case '3m':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case '6m':
+        startDate.setMonth(now.getMonth() - 6);
+        break;
+      case '1y':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(now.getMonth() - 6);
+    }
+
+    // Get total projects count
+    const totalProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+    `);
+    const totalProjects = Number(totalProjectsResult.rows[0]?.count || 0);
+
+    // Get projects posted in timeframe
+    const projectsInTimeframeResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND created_at >= ${startDate}
+    `);
+    const projectsInTimeframe = Number(projectsInTimeframeResult.rows[0]?.count || 0);
+
+    // Get projects by category
+    const projectsByCategoryResult = await db.execute(sql`
+      SELECT 
+        COALESCE(category, 'Other') as category,
+        COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      GROUP BY category
+      ORDER BY count DESC
+    `);
+    const projectsByCategory = projectsByCategoryResult.rows.map(row => ({
+      domain: row.category || 'Other',
+      count: Number(row.count || 0)
+    }));
+
+    // Get projects by status
+    const projectsByStatusResult = await db.execute(sql`
+      SELECT 
+        status,
+        COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      GROUP BY status
+    `);
+    const projectsByStatus = projectsByStatusResult.rows.reduce((acc, row) => {
+      acc[row.status] = Number(row.count || 0);
+      return acc;
+    }, {});
+
+    // Get active projects count
+    const activeProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND status = 'active'
+    `);
+    const activeProjects = Number(activeProjectsResult.rows[0]?.count || 0);
+
+    // Get completed projects count
+    const completedProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND status = 'completed'
+    `);
+    const completedProjects = Number(completedProjectsResult.rows[0]?.count || 0);
+
+    // Get projects by month (for chart)
+    const projectsByMonthResult = await db.execute(sql`
+      SELECT 
+        TO_CHAR(created_at, 'Mon') as month,
+        EXTRACT(MONTH FROM created_at) as month_num,
+        COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND created_at >= ${startDate}
+      GROUP BY EXTRACT(MONTH FROM created_at), TO_CHAR(created_at, 'Mon')
+      ORDER BY EXTRACT(MONTH FROM created_at)
+    `);
+    const projectsByMonth = projectsByMonthResult.rows.map(row => ({
+      month: row.month,
+      count: Number(row.count || 0)
+    }));
+
+    // Calculate monthly growth
+    const lastMonth = new Date(now);
+    lastMonth.setMonth(now.getMonth() - 1);
+    const lastMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth() - 1, 1);
+    const previousMonthEnd = lastMonthStart;
+
+    const lastMonthProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND created_at >= ${lastMonthStart}
+      AND created_at < ${lastMonthEnd}
+    `);
+    const lastMonthProjects = Number(lastMonthProjectsResult.rows[0]?.count || 0);
+
+    const previousMonthProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false
+      AND created_at >= ${previousMonthStart}
+      AND created_at < ${previousMonthEnd}
+    `);
+    const previousMonthProjects = Number(previousMonthProjectsResult.rows[0]?.count || 0);
+
+    const monthlyGrowth = previousMonthProjects > 0 
+      ? ((lastMonthProjects - previousMonthProjects) / previousMonthProjects * 100).toFixed(1)
+      : lastMonthProjects > 0 ? 100 : 0;
+
+    return {
+      totalProjects,
+      projectsInTimeframe,
+      activeProjects,
+      completedProjects,
+      projectsByCategory,
+      projectsByStatus,
+      projectsByMonth,
+      monthlyGrowth: parseFloat(monthlyGrowth),
+    };
+  }
 }
 
 module.exports = {

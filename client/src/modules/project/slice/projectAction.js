@@ -70,6 +70,25 @@ export const getDeveloperAppliedProjectsApi = async () => {
   return await fetchFromApiServer("GET", url);
 };
 
+// Developer tasks
+export const getDeveloperTasksApi = async (params = {}) => {
+  const queryParams = new URLSearchParams(params).toString();
+  const url = `api/v1/projects/developer/tasks${queryParams ? `?${queryParams}` : ''}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Get active projects for project owner
+export const getActiveProjectsForOwnerApi = async () => {
+  const url = `api/v1/projects/owner/active-projects`;
+  return await fetchFromApiServer("GET", url);
+};
+
+// Get project categories for project owner
+export const getProjectCategoriesForOwnerApi = async () => {
+  const url = `api/v1/projects/owner/categories`;
+  return await fetchFromApiServer("GET", url);
+};
+
 // Invitation Management
 export const createInviteApi = async (data) => {
   const url = `api/v1/projects/invite`;

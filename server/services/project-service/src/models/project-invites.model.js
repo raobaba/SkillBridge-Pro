@@ -66,10 +66,56 @@ class ProjectInvitesModel {
   }
 
   static async getInvitesByEmail(email) {
-    return await db
-      .select()
-      .from(projectInvitesTable)
-      .where(eq(projectInvitesTable.invitedEmail, email));
+    const { sql } = require("drizzle-orm");
+    
+    // Join with projects table to get project information
+    const invites = await db.execute(sql`
+      SELECT 
+        pi.id,
+        pi.project_id as "projectId",
+        pi.invited_email as "invitedEmail",
+        pi.invited_user_id as "invitedUserId",
+        pi.role,
+        pi.message,
+        pi.status,
+        pi.sent_at as "sentAt",
+        pi.responded_at as "respondedAt",
+        p.title as "projectTitle",
+        p.description as "projectDescription",
+        p.status as "projectStatus",
+        p.owner_id as "projectOwnerId",
+        u.id as "ownerId",
+        u.name as "projectOwnerName",
+        u.email as "ownerEmail"
+      FROM project_invites pi
+      LEFT JOIN projects p ON pi.project_id = p.id
+      LEFT JOIN users u ON p.owner_id = u.id
+      WHERE pi.invited_email = ${email}
+        AND (p.is_deleted = false OR p.is_deleted IS NULL)
+      ORDER BY pi.sent_at DESC
+    `);
+    
+    // Ensure all field names are properly camelCased
+    return (invites.rows || []).map(invite => ({
+      id: invite.id,
+      projectId: invite.projectId || invite.project_id,
+      invitedEmail: invite.invitedEmail || invite.invited_email,
+      invitedUserId: invite.invitedUserId || invite.invited_user_id,
+      role: invite.role,
+      message: invite.message,
+      status: invite.status,
+      sentAt: invite.sentAt || invite.sent_at,
+      respondedAt: invite.respondedAt || invite.responded_at,
+      projectTitle: invite.projectTitle || invite.project_title || null,
+      projectName: invite.projectTitle || invite.project_title || null, // Alias for compatibility
+      projectDescription: invite.projectDescription || invite.project_description || null,
+      projectStatus: invite.projectStatus || invite.project_status || null,
+      projectOwnerId: invite.projectOwnerId || invite.project_owner_id || null,
+      projectOwnerName: invite.projectOwnerName || invite.project_owner_name || null,
+      ownerEmail: invite.ownerEmail || invite.owner_email || null,
+      createdAt: invite.sentAt || invite.sent_at, // Alias for compatibility
+      invitedAt: invite.sentAt || invite.sent_at, // Alias for compatibility
+    }));
   }
 
   static async getInvitesByStatus(status) {

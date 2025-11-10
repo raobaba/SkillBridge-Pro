@@ -926,6 +926,204 @@ class UserModel {
 
     return achievements;
   }
+
+  // ============================================
+  // ADMIN ANALYTICS
+  // ============================================
+
+  /**
+   * Get comprehensive admin analytics
+   * Includes: user stats, project stats, revenue, moderation stats, system health
+   */
+  static async getAdminAnalytics(timeframe = '6m') {
+    const { sql } = require("drizzle-orm");
+    
+    // Calculate date range based on timeframe
+    const now = new Date();
+    let startDate = new Date();
+    switch (timeframe) {
+      case '1w':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '1m':
+        startDate.setMonth(now.getMonth() - 1);
+        break;
+      case '3m':
+        startDate.setMonth(now.getMonth() - 3);
+        break;
+      case '6m':
+        startDate.setMonth(now.getMonth() - 6);
+        break;
+      case '1y':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+      default:
+        startDate.setMonth(now.getMonth() - 6);
+    }
+
+    // Get total users count
+    const totalUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+    `);
+    const totalUsers = Number(totalUsersResult.rows[0]?.count || 0);
+
+    // Get active developers count (users with role 'developer')
+    const activeDevelopersResult = await db.execute(sql`
+      SELECT COUNT(DISTINCT u.id) as count
+      FROM users u
+      WHERE u.is_deleted = false
+      AND (u.role = 'developer' OR u.roles::text LIKE '%developer%')
+    `);
+    const activeDevelopers = Number(activeDevelopersResult.rows[0]?.count || 0);
+
+    // Get project owners count
+    const projectOwnersResult = await db.execute(sql`
+      SELECT COUNT(DISTINCT u.id) as count
+      FROM users u
+      WHERE u.is_deleted = false
+      AND (u.role = 'project-owner' OR u.roles::text LIKE '%project-owner%')
+    `);
+    const projectOwners = Number(projectOwnersResult.rows[0]?.count || 0);
+
+    // Get users by month (for chart)
+    const usersByMonthResult = await db.execute(sql`
+      SELECT 
+        TO_CHAR(created_at, 'Mon') as month,
+        EXTRACT(MONTH FROM created_at) as month_num,
+        COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+      AND created_at >= ${startDate}
+      GROUP BY EXTRACT(MONTH FROM created_at), TO_CHAR(created_at, 'Mon')
+      ORDER BY EXTRACT(MONTH FROM created_at)
+    `);
+    const usersByMonth = usersByMonthResult.rows.map(row => ({
+      month: row.month,
+      count: Number(row.count || 0)
+    }));
+
+    // Get monthly growth (users created in last month vs previous month)
+    const lastMonth = new Date(now);
+    lastMonth.setMonth(now.getMonth() - 1);
+    const lastMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonthStart = new Date(lastMonth.getFullYear(), lastMonth.getMonth() - 1, 1);
+    const previousMonthEnd = lastMonthStart;
+
+    const lastMonthUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+      AND created_at >= ${lastMonthStart}
+      AND created_at < ${lastMonthEnd}
+    `);
+    const lastMonthUsers = Number(lastMonthUsersResult.rows[0]?.count || 0);
+
+    const previousMonthUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+      AND created_at >= ${previousMonthStart}
+      AND created_at < ${previousMonthEnd}
+    `);
+    const previousMonthUsers = Number(previousMonthUsersResult.rows[0]?.count || 0);
+
+    const monthlyGrowth = previousMonthUsers > 0 
+      ? ((lastMonthUsers - previousMonthUsers) / previousMonthUsers * 100).toFixed(1)
+      : lastMonthUsers > 0 ? 100 : 0;
+
+    // Get user retention (users active in last 30 days / total users)
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    const activeUsersResult = await db.execute(sql`
+      SELECT COUNT(DISTINCT u.id) as count
+      FROM users u
+      WHERE u.is_deleted = false
+      AND u.updated_at >= ${thirtyDaysAgo}
+    `);
+    const activeUsers = Number(activeUsersResult.rows[0]?.count || 0);
+    const userRetention = totalUsers > 0 
+      ? ((activeUsers / totalUsers) * 100).toFixed(1)
+      : 0;
+
+    // Get average rating (from project reviews - requires cross-service access)
+    // For now, return a placeholder - this would need to be calculated from project-service
+    const avgRating = 4.5; // TODO: Calculate from project reviews
+
+    // Get revenue (placeholder - would need to be calculated from billing/subscription service)
+    const revenue = "$58,000"; // TODO: Calculate from actual revenue data
+
+    // Get flagged content count (placeholder - would need a flagged_content table)
+    const flaggedContent = 8; // TODO: Get from flagged_content table
+
+    // Get pending moderation count
+    const pendingModeration = 15; // TODO: Get from moderation table
+
+    // Get resolved issues count
+    const resolvedIssues = 45; // TODO: Get from issues/resolutions table
+
+    // Get banned users count
+    const bannedUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = true
+    `);
+    const bannedUsers = Number(bannedUsersResult.rows[0]?.count || 0);
+
+    // Get suspended accounts count (placeholder - would need a suspended field)
+    const suspendedAccounts = 7; // TODO: Get from users table where suspended = true
+
+    // Get active sessions (placeholder - would need session tracking)
+    const activeSessions = 342; // TODO: Get from active sessions
+
+    // Get system uptime (placeholder - would need system monitoring)
+    const systemUptime = 99.9; // TODO: Get from system monitoring
+
+    return {
+      stats: {
+        totalUsers,
+        activeDevelopers,
+        projectOwners,
+        matchRate: 78, // TODO: Calculate from project matches
+        avgRating: parseFloat(avgRating),
+        revenue,
+        monthlyGrowth: parseFloat(monthlyGrowth),
+        userRetention: parseFloat(userRetention),
+        systemUptime,
+        activeSessions,
+        flaggedContent,
+        pendingModeration,
+        resolvedIssues,
+        bannedUsers,
+        suspendedAccounts,
+      },
+      charts: {
+        usersByMonth,
+      },
+      moderation: {
+        flaggedUsers: 8, // TODO: Get from flagged_content where type = 'user'
+        flaggedProjects: 12, // TODO: Get from flagged_content where type = 'project'
+        flaggedMessages: 5, // TODO: Get from flagged_content where type = 'message'
+        pendingReviews: pendingModeration,
+        resolvedToday: 23, // TODO: Get from moderation where resolved_at = today
+        escalationRate: 5.2, // TODO: Calculate escalation rate
+        avgResponseTime: "2.3 hours", // TODO: Calculate average response time
+        moderatorActivity: 89, // TODO: Calculate moderator activity percentage
+      },
+      systemHealth: {
+        serverUptime: systemUptime,
+        responseTime: 245, // TODO: Get from system monitoring
+        cpuUsage: 45, // TODO: Get from system monitoring
+        memoryUsage: 68, // TODO: Get from system monitoring
+        diskUsage: 34, // TODO: Get from system monitoring
+        networkLatency: 12, // TODO: Get from system monitoring
+        errorRate: 0.1, // TODO: Get from system monitoring
+        activeConnections: activeSessions,
+      },
+    };
+  }
 }
 
 module.exports = {

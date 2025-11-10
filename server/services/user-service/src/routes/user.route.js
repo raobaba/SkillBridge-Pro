@@ -55,6 +55,7 @@ userRouter.delete("/:userId/roles/:role", authenticate, requireRole(['admin']), 
 userRouter.get("/:userId/roles", authenticate, requireRole(['admin']), userController.getUserRoles);
 userRouter.get("/:userId/with-roles", authenticate, requireRole(['admin']), userController.getUserWithRoles);
 userRouter.get("/roles/stats", authenticate, requireRole(['admin']), userController.getRoleStats);
+userRouter.get("/admin/analytics", authenticate, requireRole(['admin']), userController.getAdminAnalytics);
 
 // Developer Dashboard / Gamification
 userRouter.get("/developer/stats", authenticate, userController.getDeveloperStats);

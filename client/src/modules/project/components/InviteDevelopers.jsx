@@ -83,13 +83,30 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedExperience, selectedLocation, dispatch]);
 
+  // Helper function to parse skills from various formats
+  const parseSkills = (skills) => {
+    if (!skills) return [];
+    try {
+      if (typeof skills === 'string') {
+        const parsed = JSON.parse(skills);
+        return Array.isArray(parsed) ? parsed : [];
+      } else if (Array.isArray(skills)) {
+        return skills;
+      } else if (typeof skills === 'object') {
+        return Object.keys(skills);
+      }
+    } catch (e) {
+      console.log('Error parsing skills:', e);
+    }
+    return [];
+  };
+
   const allSkills = useMemo(() => {
     const skillsSet = new Set();
     if (developers && Array.isArray(developers)) {
       developers.forEach(dev => {
-        if (dev.skills && Array.isArray(dev.skills)) {
-          dev.skills.forEach(skill => skillsSet.add(skill));
-        }
+        const skills = parseSkills(dev.skills);
+        skills.forEach(skill => skillsSet.add(skill));
       });
     }
     return Array.from(skillsSet).sort();
@@ -101,10 +118,12 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
     }
     
     return developers.filter(dev => {
+      const devSkills = parseSkills(dev.skills);
+      
       const matchesSearch = dev.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            (dev.bio && dev.bio.toLowerCase().includes(searchQuery.toLowerCase())) ||
                            (dev.domainPreferences && dev.domainPreferences.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                           (dev.skills && Array.isArray(dev.skills) && dev.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())));
+                           devSkills.some(skill => String(skill).toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesExperience = selectedExperience === 'all' || 
                                (dev.experience && dev.experience.toLowerCase() === selectedExperience.toLowerCase());
@@ -114,61 +133,177 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                              (selectedLocation !== 'remote' && dev.location && !dev.location.toLowerCase().includes('remote'));
       
       const matchesSkills = selectedSkills.length === 0 || 
-                           (dev.skills && Array.isArray(dev.skills) && selectedSkills.some(skill => dev.skills.includes(skill)));
+                           selectedSkills.some(skill => devSkills.includes(skill));
 
       return matchesSearch && matchesExperience && matchesLocation && matchesSkills;
     });
   }, [developers, searchQuery, selectedExperience, selectedLocation, selectedSkills]);
 
   const handleInviteDeveloper = (developer) => {
+    // Validate project is selected
     if (!currentProject) {
-      toast.error('No project selected');
+      toast.error('Please select a project first before inviting developers.');
+      setShowProjectSelector(true); // Show project selector to help user
       return;
     }
 
+    // Validate project has ID
+    if (!currentProject.id) {
+      toast.error('Selected project is invalid. Please select a valid project.');
+      console.error('Invalid project:', currentProject);
+      setShowProjectSelector(true);
+      return;
+    }
+
+    // Log developer data for debugging
+    console.log('Inviting developer:', {
+      id: developer.id,
+      userId: developer.userId,
+      email: developer.email,
+      emailAddress: developer.emailAddress,
+      name: developer.name,
+      allKeys: Object.keys(developer)
+    });
+
+    // Validate developer has email
+    const developerEmail = developer.email || developer.emailAddress;
+    if (!developerEmail) {
+      toast.error('Developer email is required. This developer does not have an email address.');
+      console.error('Developer missing email:', developer);
+      return;
+    }
+
+    // Parse skills using the helper function
+    const skillsArray = parseSkills(developer.skills);
+    const skillsText = skillsArray.length > 0 
+      ? skillsArray.slice(0, 5).map(s => String(s)).join(', ') 
+      : 'development';
+
     // Set default message
-    const defaultMessage = `Hi ${developer.name}, I'd like to invite you to join my project "${currentProject.title}". Your skills in ${developer.skills?.join(', ') || 'development'} would be a great fit for this project.`;
+    const defaultMessage = `Hi ${developer.name}, I'd like to invite you to join my project "${currentProject.title}". Your skills in ${skillsText} would be a great fit for this project.`;
     setCustomMessage(defaultMessage);
     setSelectedDeveloper(developer);
     setShowInviteModal(true);
   };
 
   const handleSendInvite = async () => {
-    if (!selectedDeveloper || !currentProject) {
-      toast.error('Missing required information');
+    // Validate project is selected
+    if (!currentProject) {
+      toast.error('Please select a project first before sending the invitation.');
+      setShowProjectSelector(true);
+      return;
+    }
+
+    // Validate project has ID
+    if (!currentProject.id) {
+      toast.error('Selected project is invalid. Please select a valid project.');
+      console.error('Invalid project:', currentProject);
+      setShowProjectSelector(true);
+      return;
+    }
+
+    // Validate developer is selected
+    if (!selectedDeveloper) {
+      toast.error('Please select a developer to invite.');
+      return;
+    }
+
+    // Validate required fields
+    const developerId = selectedDeveloper.id || selectedDeveloper.userId;
+    const developerEmail = selectedDeveloper.email || selectedDeveloper.emailAddress;
+    
+    if (!developerEmail) {
+      toast.error('Developer email is required. Please select a developer with a valid email address.');
+      console.error('Missing developer email:', selectedDeveloper);
       return;
     }
 
     try {
-      setInvitingDeveloper(selectedDeveloper.id);
+      setInvitingDeveloper(developerId);
       
       // Prepare invite data
       const inviteData = {
         projectId: currentProject.id,
-        invitedEmail: selectedDeveloper.email,
-        invitedUserId: selectedDeveloper.id, // Use developer ID if available
-        role: selectedDeveloper.domainPreferences || 'Developer',
+        invitedEmail: developerEmail,
+        invitedUserId: developerId || null, // Use developer ID if available
+        role: selectedDeveloper.domainPreferences || selectedDeveloper.role || 'Developer',
         message: customMessage.trim() || `Hi ${selectedDeveloper.name}, I'd like to invite you to join my project "${currentProject.title}".`
       };
+
+      console.log('Sending invite with data:', {
+        projectId: inviteData.projectId,
+        invitedEmail: inviteData.invitedEmail,
+        invitedUserId: inviteData.invitedUserId,
+        role: inviteData.role,
+        hasMessage: !!inviteData.message
+      });
 
       // Dispatch the createInvite action
       const result = await dispatch(createInvite(inviteData)).unwrap();
       
-      // If successful, update local state
-      setInvitedDevelopers(prev => new Set([...prev, selectedDeveloper.id]));
-      toast.success(`Invitation sent to ${selectedDeveloper.name}!`);
+      console.log('Invite result:', result);
       
-      if (onInviteSent) {
-        onInviteSent(selectedDeveloper);
-      }
+      // Check if the invite was successful
+      if (result && (result.success || result.invite || result.id)) {
+        // If successful, update local state
+        if (developerId) {
+          setInvitedDevelopers(prev => new Set([...prev, developerId]));
+        }
+        
+        toast.success(`Invitation sent to ${selectedDeveloper.name}!`);
+        
+        if (onInviteSent) {
+          onInviteSent(selectedDeveloper);
+        }
 
-      // Close modal and reset state
-      setShowInviteModal(false);
-      setSelectedDeveloper(null);
-      setCustomMessage('');
+        // Close modal and reset state
+        setShowInviteModal(false);
+        setSelectedDeveloper(null);
+        setCustomMessage('');
+      } else {
+        // Unexpected response structure
+        console.warn('Unexpected invite result structure:', result);
+        toast.error('Invitation sent, but received unexpected response. Please check if the invite was created.');
+        
+        // Still close modal and update state
+        if (developerId) {
+          setInvitedDevelopers(prev => new Set([...prev, developerId]));
+        }
+        setShowInviteModal(false);
+        setSelectedDeveloper(null);
+        setCustomMessage('');
+      }
     } catch (error) {
-      console.error('Invite error:', error);
-      toast.error(error?.message || 'Failed to send invitation');
+      console.error('Invite error - Full error object:', error);
+      console.error('Invite error - Error message:', error?.message);
+      console.error('Invite error - Error response:', error?.response);
+      console.error('Invite error - Error response data:', error?.response?.data);
+      
+      // Extract error message from various possible locations
+      let errorMessage = 'Failed to send invitation';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Show user-friendly error messages
+      if (errorMessage.includes('already exists')) {
+        errorMessage = 'An invitation has already been sent to this developer for this project.';
+      } else if (errorMessage.includes('not found')) {
+        errorMessage = 'Project not found. Please select a valid project.';
+      } else if (errorMessage.includes('permission') || errorMessage.includes('Access denied')) {
+        errorMessage = 'You do not have permission to invite developers to this project.';
+      } else if (errorMessage.includes('required')) {
+        errorMessage = `Missing required information: ${errorMessage}`;
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setInvitingDeveloper(null);
     }
@@ -500,24 +635,30 @@ const InviteDevelopers = ({ selectedProject, onClose, onInviteSent }) => {
                 {/* Skills */}
                 <div className="mb-3">
                   <div className="flex flex-wrap gap-1">
-                    {developer.skills && Array.isArray(developer.skills) ? (
-                      <>
-                        {developer.skills.slice(0, 3).map(skill => (
-                          <span key={skill} className="px-2 py-0.5 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">
-                            {skill}
-                          </span>
-                        ))}
-                        {developer.skills.length > 3 && (
-                          <span className="px-2 py-0.5 rounded-full text-xs text-gray-300 bg-white/10">
-                            +{developer.skills.length - 3}
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full text-xs text-gray-300 bg-white/10">
-                        Skills not specified
-                      </span>
-                    )}
+                    {(() => {
+                      const devSkills = parseSkills(developer.skills);
+                      if (devSkills.length > 0) {
+                        return (
+                          <>
+                            {devSkills.slice(0, 3).map((skill, idx) => (
+                              <span key={idx} className="px-2 py-0.5 rounded-full text-xs text-white bg-gradient-to-r from-blue-500 to-purple-500">
+                                {String(skill)}
+                              </span>
+                            ))}
+                            {devSkills.length > 3 && (
+                              <span className="px-2 py-0.5 rounded-full text-xs text-gray-300 bg-white/10">
+                                +{devSkills.length - 3}
+                              </span>
+                            )}
+                          </>
+                        );
+                      }
+                      return (
+                        <span className="px-2 py-0.5 rounded-full text-xs text-gray-300 bg-white/10">
+                          Skills not specified
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 

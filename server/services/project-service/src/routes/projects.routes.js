@@ -5,6 +5,7 @@ const {
   requireProjectOwner,
   requireDeveloper,
   requireProjectManager,
+  requireAdmin,
 } = require("shared/middleware/roleAuth.middleware");
 
 const projectRouter = express.Router();
@@ -121,6 +122,14 @@ projectRouter.get(
   projectController.getDeveloperAppliedProjects
 );
 
+// 👤 Developer tasks (tasks assigned to developer)
+projectRouter.get(
+  "/developer/tasks",
+  authenticate,
+  requireDeveloper,
+  projectController.getDeveloperTasks
+);
+
 // 📧 Invitation Management (Only project owners can send invites, developers can respond)
 projectRouter.post(
   "/invite",
@@ -220,6 +229,22 @@ projectRouter.get(
   // requireProjectOwner, // Temporarily disabled for testing
   projectController.getProjectOwnerStats
 );
+
+// Get active projects for project owner dashboard
+projectRouter.get(
+  "/owner/active-projects",
+  authenticate,
+  requireProjectOwner,
+  projectController.getActiveProjectsForOwner
+);
+
+// Get project categories with count and revenue for project owner
+projectRouter.get(
+  "/owner/categories",
+  authenticate,
+  requireProjectOwner,
+  projectController.getProjectCategoriesForOwner
+);
 projectRouter.get(
   "/owner/projects",
   authenticate,
@@ -250,6 +275,14 @@ projectRouter.get(
   "/owner/evaluation-history",
   authenticate,
   projectController.getEvaluationHistory
+);
+
+// Admin Analytics
+projectRouter.get(
+  "/admin/stats",
+  authenticate,
+  requireAdmin,
+  projectController.getAdminProjectStats
 );
 
 // Generic project by ID route - MUST be last to avoid conflicts with specific routes

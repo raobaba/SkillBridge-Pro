@@ -1,240 +1,365 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Button from '../../../components/Button';
 import {
   Bell,
   MessageSquare,
   Star,
-  Calendar,
   TrendingUp,
   Code,
   Users,
   Target,
   Award,
   Zap,
-  Search,
-  Filter,
   ChevronRight,
   Github,
   Linkedin,
   Database,
   Clock,
-  DollarSign,
-  MapPin,
-  Settings,
-  LogOut,
-  User,
   BookOpen,
   Activity,
   CheckCircle,
   AlertCircle,
-  Plus,
   Eye,
-  ThumbsUp,
   Briefcase,
-  BarChart3,
-  PieChart,
   TrendingDown,
   MessageCircle,
-  FileText,
-  ExternalLink,
-  Play,
-  Pause,
   CheckCircle2,
-  XCircle,
   Timer,
   Trophy,
   Flame,
   Brain,
   Rocket,
-  Shield,
-  Heart,
-  Sparkles,
+  ThumbsUp,
 } from "lucide-react";
-import { Layout } from "../../../components";
-import { useSelector } from "react-redux";
+import { Layout, CircularLoader } from "../../../components";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { 
+  getDeveloperStats, 
+  getDeveloperAchievements,
+} from "../../gamification/slice/gamificationSlice";
+import { 
+  getDeveloperAppliedProjects,
+  getProjectRecommendations,
+  getMyInvites,
+  respondInvite,
+  getDeveloperTasks
+} from "../../project/slice/projectSlice";
+import { 
+  getSyncStatus,
+  getIntegrations 
+} from "../../portfolioSync/slice/portfolioSyncSlice";
+import { 
+  getNotifications,
+  getUnreadCount,
+  markAsRead
+} from "../../notifications/slice/notificationSlice";
+import { toast } from "react-toastify";
+
 export default function DeveloperView() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  // Enhanced mock data for developer dashboard
-  const userStats = {
-    xp: 2850,
-    level: 7,
-    badges: 12,
-    projects: 8,
-    rating: 4.8,
-    matches: 15,
-    streak: 23,
-    weeklyGoal: 85,
-    totalEarnings: "$12,450",
-    responseRate: 94,
+  // Redux selectors
+  const developerStats = useSelector((state) => state.gamification?.stats);
+  const statsLoading = useSelector((state) => state.gamification?.statsLoading);
+  const achievements = useSelector((state) => state.gamification?.achievements || []);
+  const achievementsLoading = useSelector((state) => state.gamification?.achievementsLoading);
+  
+  const appliedProjectsData = useSelector((state) => state.project?.myApplications || []);
+  const appliedProjectsLoading = useSelector((state) => state.project?.loading);
+  
+  const developerTasks = useSelector((state) => state.project?.developerTasks || []);
+  const developerTasksLoading = useSelector((state) => state.project?.developerTasksLoading);
+  
+  const recommendations = useSelector((state) => state.project?.recommendations || []);
+  const recommendationsLoading = useSelector((state) => state.project?.recommendationsLoading);
+  
+  const myInvites = useSelector((state) => state.project?.myInvites || []);
+  const invitesLoading = useSelector((state) => state.project?.invitesLoading);
+  
+  const syncStatus = useSelector((state) => state.portfolioSync?.syncStatus);
+  const integrations = useSelector((state) => state.portfolioSync?.integrations || []);
+  const portfolioSyncLoading = useSelector((state) => state.portfolioSync?.loading);
+  
+  const notifications = useSelector((state) => state.notifications?.notifications || []);
+  const notificationsLoading = useSelector((state) => state.notifications?.loading);
+  const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
+
+  // Fetch all data on component mount
+  useEffect(() => {
+    // Fetch developer stats
+    dispatch(getDeveloperStats());
+    
+    // Fetch achievements
+    dispatch(getDeveloperAchievements());
+    
+    // Fetch applied projects
+    dispatch(getDeveloperAppliedProjects());
+    
+    // Fetch developer tasks
+    dispatch(getDeveloperTasks({ limit: 10 }));
+    
+    // Fetch project recommendations
+    dispatch(getProjectRecommendations(10));
+    
+    // Fetch invitations
+    dispatch(getMyInvites());
+    
+    // Fetch portfolio sync status
+    dispatch(getSyncStatus());
+    dispatch(getIntegrations());
+    
+    // Fetch notifications
+    dispatch(getNotifications({ limit: 6, offset: 0 }));
+    dispatch(getUnreadCount());
+  }, [dispatch]);
+
+  // Handler for responding to invites
+  const handleRespondInvite = async (inviteId, status) => {
+    try {
+      await dispatch(respondInvite({ inviteId, status })).unwrap();
+      toast.success(`Invitation ${status === 'accepted' ? 'accepted' : 'declined'} successfully`);
+      // Refresh invites
+      dispatch(getMyInvites());
+    } catch (error) {
+      toast.error(error?.message || `Failed to ${status} invitation`);
+    }
   };
 
-  const gamificationStats = {
-    currentStreak: 23,
-    longestStreak: 45,
-    weeklyGoal: 85,
-    monthlyGoal: 350,
-    achievements: [
-      { name: "Code Master", icon: Code, earned: true, date: "2024-01-15" },
-      { name: "Team Player", icon: Users, earned: true, date: "2024-01-20" },
-      { name: "Speed Demon", icon: Zap, earned: true, date: "2024-02-01" },
-      { name: "Problem Solver", icon: Brain, earned: false, progress: 75 },
-      { name: "Innovation Leader", icon: Rocket, earned: false, progress: 60 },
-    ],
+  // Transform API data to match UI structure
+  const userStats = useMemo(() => {
+    if (!developerStats) {
+      return {
+        xp: 0,
+        level: 1,
+        badges: 0,
+        projects: 0,
+        rating: 0,
+        matches: recommendations?.length || 0,
+        streak: 0,
+        weeklyGoal: 0,
+        totalEarnings: "$0",
+        responseRate: 0,
+      };
+    }
+    return {
+      xp: developerStats.xp || 0,
+      level: developerStats.level || 1,
+      badges: developerStats.badges || 0,
+      projects: developerStats.completedProjects || 0,
+      rating: developerStats.averageRating || 0,
+      matches: recommendations?.length || 0,
+      streak: developerStats.streak || 0,
+      weeklyGoal: 85, // This can be calculated or stored separately
+      totalEarnings: "$0", // This would come from a different API
+      responseRate: 94, // This would come from a different API
+    };
+  }, [developerStats, recommendations]);
+
+  // Map achievement icons
+  const achievementIconMap = {
+    "Star": Star,
+    "Flame": Flame,
+    "Target": Target,
+    "Zap": Zap,
+    "Award": Award,
+    "ThumbsUp": ThumbsUp,
+    "Code": Code,
+    "Users": Users,
+    "Brain": Brain,
+    "Rocket": Rocket,
   };
 
-  const recentProjects = [
-    {
-      id: 1,
-      title: "E-commerce Mobile App",
-      company: "TechStart Inc",
-      status: "In Progress",
-      progress: 75,
-      payment: "$2,500",
-      deadline: "2024-08-15",
-      skills: ["React Native", "Node.js", "MongoDB"],
-      priority: "high",
-      timeSpent: "32h",
-      estimatedTime: "40h",
-      applicationStatus: "accepted",
-    },
-    {
-      id: 2,
-      title: "AI Chat Bot Development",
-      company: "InnovateAI",
-      status: "Under Review",
-      progress: 100,
-      payment: "$1,800",
-      deadline: "2024-07-28",
-      skills: ["Python", "TensorFlow", "FastAPI"],
-      priority: "medium",
-      timeSpent: "28h",
-      estimatedTime: "30h",
-      applicationStatus: "completed",
-    },
-    {
-      id: 3,
-      title: "Open Source Library",
-      company: "Community Project",
-      status: "Active",
-      progress: 45,
-      payment: "Unpaid",
-      deadline: "2024-09-01",
-      skills: ["TypeScript", "React", "Jest"],
-      priority: "low",
-      timeSpent: "18h",
-      estimatedTime: "50h",
-      applicationStatus: "in_progress",
-    },
-  ];
+  const gamificationStats = useMemo(() => {
+    const stats = developerStats || {};
+    const transformedAchievements = (achievements || []).slice(0, 5).map((ach) => {
+      const IconComponent = achievementIconMap[ach.icon] || Award;
+      return {
+        name: ach.name,
+        icon: IconComponent,
+        earned: ach.unlocked || false,
+        date: ach.unlocked ? new Date().toISOString().split('T')[0] : undefined,
+        progress: ach.unlocked ? 100 : (ach.progress || 0),
+      };
+    });
+    
+    return {
+      currentStreak: stats.streak || 0,
+      longestStreak: stats.streak || 0, // TODO: Get from API
+      weeklyGoal: 85, // TODO: Get from API or calculate
+      monthlyGoal: 350, // TODO: Get from API or calculate
+      achievements: transformedAchievements.length > 0 
+        ? transformedAchievements 
+        : [
+            { name: "Code Master", icon: Code, earned: false, progress: 0 },
+            { name: "Team Player", icon: Users, earned: false, progress: 0 },
+            { name: "Speed Demon", icon: Zap, earned: false, progress: 0 },
+            { name: "Problem Solver", icon: Brain, earned: false, progress: 0 },
+            { name: "Innovation Leader", icon: Rocket, earned: false, progress: 0 },
+          ],
+    };
+  }, [developerStats, achievements]);
 
-  const activeTasks = [
-    {
-      id: 1,
-      title: "Implement user authentication",
-      project: "E-commerce Mobile App",
-      priority: "high",
-      dueDate: "2024-08-10",
-      estimatedTime: "4h",
-      status: "in_progress",
-    },
-    {
-      id: 2,
-      title: "Write unit tests for API endpoints",
-      project: "AI Chat Bot Development",
-      priority: "medium",
-      dueDate: "2024-08-12",
-      estimatedTime: "2h",
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Code review for pull request #45",
-      project: "Open Source Library",
-      priority: "low",
-      dueDate: "2024-08-15",
-      estimatedTime: "1h",
-      status: "pending",
-    },
-  ];
+  // Transform applied projects data
+  const recentProjects = useMemo(() => {
+    if (!appliedProjectsData || appliedProjectsData.length === 0) {
+      return [];
+    }
+    
+    // appliedProjectsData is an array of application objects from myApplications
+    // Each object has: { projectId, status, project: { ... }, ... }
+    const applications = Array.isArray(appliedProjectsData) 
+      ? appliedProjectsData 
+      : [];
+    
+    return applications.slice(0, 3).map((app) => {
+      // app.project contains the full project data
+      const project = app.project || {};
+      const skills = project.skills 
+        ? (Array.isArray(project.skills) ? project.skills : Object.keys(project.skills))
+        : [];
+      
+      // Format payment
+      const budgetMin = project.budgetMin || 0;
+      const budgetMax = project.budgetMax || 0;
+      const currency = project.currency || "$";
+      const payment = budgetMin && budgetMax 
+        ? `${currency}${budgetMin.toLocaleString()}-${currency}${budgetMax.toLocaleString()}`
+        : budgetMin 
+        ? `${currency}${budgetMin.toLocaleString()}`
+        : "Unpaid";
+      
+      // Map status
+      const statusMap = {
+        'active': 'Active',
+        'in_progress': 'In Progress',
+        'completed': 'Completed',
+        'pending': 'Under Review',
+        'accepted': 'In Progress',
+        'rejected': 'Under Review',
+      };
+      
+      return {
+        id: project.id || app.projectId,
+        title: project.title || 'Untitled Project',
+        company: project.company || project.ownerName || 'Unknown',
+        status: statusMap[project.status?.toLowerCase()] || statusMap[app.status?.toLowerCase()] || 'Active',
+        progress: 0, // TODO: Get from project updates or task completion
+        payment,
+        deadline: project.deadline || project.endDate || 'N/A',
+        skills: skills.slice(0, 3),
+        priority: project.priority || 'medium',
+        timeSpent: "0h", // TODO: Get from time tracking
+        estimatedTime: project.duration || "N/A",
+        applicationStatus: app.status || 'pending',
+      };
+    });
+  }, [appliedProjectsData]);
 
-  const matchedProjects = [
-    {
-      id: 1,
-      title: "Full Stack Web Application",
-      company: "StartupCorp",
-      match: 95,
-      payment: "$3,000",
-      duration: "6 weeks",
-      skills: ["React", "Node.js", "PostgreSQL"],
-      posted: "2 hours ago",
-      urgency: "high",
-      type: "full-time",
-      location: "Remote",
-      description: "Build a modern web application for managing customer relationships",
-    },
-    {
-      id: 2,
-      title: "Mobile Game Development",
-      company: "GameStudio",
-      match: 88,
-      payment: "$4,500",
-      duration: "10 weeks",
-      skills: ["Unity", "C#", "3D Modeling"],
-      posted: "5 hours ago",
-      urgency: "medium",
-      type: "contract",
-      location: "Hybrid",
-      description: "Create an engaging mobile game with multiplayer features",
-    },
-    {
-      id: 3,
-      title: "DevOps Infrastructure Setup",
-      company: "CloudTech",
-      match: 82,
-      payment: "$2,200",
-      duration: "4 weeks",
-      skills: ["AWS", "Docker", "Kubernetes"],
-      posted: "1 day ago",
-      urgency: "low",
-      type: "part-time",
-      location: "Remote",
-      description: "Set up and maintain cloud infrastructure for a growing startup",
-    },
-  ];
+  // Transform developer tasks
+  const activeTasks = useMemo(() => {
+    if (!developerTasks || developerTasks.length === 0) {
+      return [];
+    }
+    
+    return developerTasks.slice(0, 3).map((task) => ({
+      id: task.id,
+      title: task.title,
+      project: task.project || "Unknown Project",
+      priority: task.priority || "medium",
+      dueDate: task.dueDate || "N/A",
+      estimatedTime: task.estimatedTime || "N/A",
+      status: task.status === "todo" ? "pending" : task.status || "pending",
+    }));
+  }, [developerTasks]);
 
-  const invitations = [
-    {
-      id: 1,
-      from: "TechCorp Solutions",
-      project: "AI-Powered Analytics Dashboard",
-      message: "We'd love to have you join our team for this exciting project!",
-      sent: "1 hour ago",
-      status: "pending",
-      priority: "high",
-    },
-    {
-      id: 2,
-      from: "InnovateLab",
-      project: "Blockchain Integration",
-      message: "Your expertise in smart contracts would be perfect for this role.",
-      sent: "3 hours ago",
-      status: "pending",
-      priority: "medium",
-    },
-    {
-      id: 3,
-      from: "DataFlow Inc",
-      project: "Machine Learning Pipeline",
-      message: "We're impressed by your ML portfolio and would like to discuss collaboration.",
-      sent: "1 day ago",
-      status: "viewed",
-      priority: "low",
-    },
-  ];
+  // Transform project recommendations
+  const matchedProjects = useMemo(() => {
+    if (!recommendations || recommendations.length === 0) {
+      return [];
+    }
+    
+    const recs = Array.isArray(recommendations) 
+      ? recommendations 
+      : (recommendations.recommendations || recommendations.data || []);
+    
+    return recs.slice(0, 3).map((project) => {
+      const skills = project.skills 
+        ? (Array.isArray(project.skills) ? project.skills : Object.keys(project.skills))
+        : [];
+      
+      // Format payment
+      const budgetMin = project.budgetMin || 0;
+      const budgetMax = project.budgetMax || 0;
+      const currency = project.currency || "$";
+      const payment = budgetMin && budgetMax 
+        ? `${currency}${budgetMin.toLocaleString()}-${currency}${budgetMax.toLocaleString()}`
+        : budgetMin 
+        ? `${currency}${budgetMin.toLocaleString()}`
+        : "Unpaid";
+      
+      // Calculate time ago
+      const postedDate = project.createdAt ? new Date(project.createdAt) : new Date();
+      const hoursAgo = Math.floor((new Date() - postedDate) / (1000 * 60 * 60));
+      const posted = hoursAgo < 1 
+        ? "Just now" 
+        : hoursAgo < 24 
+        ? `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`
+        : `${Math.floor(hoursAgo / 24)} ${Math.floor(hoursAgo / 24) === 1 ? 'day' : 'days'} ago`;
+      
+      return {
+        id: project.id,
+        title: project.title || 'Untitled Project',
+        company: project.company || project.ownerName || 'Unknown',
+        match: project.matchScore || project.match || 0,
+        payment,
+        duration: project.duration || "N/A",
+        skills: skills.slice(0, 3),
+        posted,
+        urgency: project.priority || project.urgency || 'medium',
+        type: project.type || 'contract',
+        location: project.isRemote ? 'Remote' : (project.location || 'N/A'),
+        description: project.description || '',
+      };
+    });
+  }, [recommendations]);
+
+  // Transform invitations
+  const invitations = useMemo(() => {
+    if (!myInvites || myInvites.length === 0) {
+      return [];
+    }
+    
+    const invites = Array.isArray(myInvites) 
+      ? myInvites 
+      : (myInvites.invites || myInvites.data || []);
+    
+    return invites.slice(0, 3).map((invite) => {
+      // Calculate time ago
+      const sentDate = invite.createdAt || invite.sentAt || invite.invitedAt;
+      const date = sentDate ? new Date(sentDate) : new Date();
+      const hoursAgo = Math.floor((new Date() - date) / (1000 * 60 * 60));
+      const sent = hoursAgo < 1 
+        ? "Just now" 
+        : hoursAgo < 24 
+        ? `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`
+        : `${Math.floor(hoursAgo / 24)} ${Math.floor(hoursAgo / 24) === 1 ? 'day' : 'days'} ago`;
+      
+      return {
+        id: invite.id,
+        projectId: invite.projectId,
+        from: invite.projectOwnerName || invite.inviterName || invite.from || 'Unknown',
+        project: invite.projectTitle || invite.projectName || invite.project?.title || 'Project',
+        message: invite.message || invite.inviteMessage || "You've been invited to join this project!",
+        sent,
+        status: invite.status || invite.responseStatus || 'pending',
+        priority: invite.priority || 'medium',
+      };
+    });
+  }, [myInvites]);
 
   const skillGaps = [
     { skill: "Machine Learning", gap: 35, trend: "high" },
@@ -243,75 +368,171 @@ export default function DeveloperView() {
     { skill: "Mobile Development", gap: 15, trend: "low" },
   ];
 
-  const recentNotifications = [
-    {
-      id: 1,
-      type: "match",
-      title: "New Project Match",
-      message: "95% match found for Full Stack Developer position at StartupCorp",
-      time: "2 hours ago",
-      unread: true,
-      priority: "high",
-      action: "View Project",
-    },
-    {
-      id: 2,
-      type: "invitation",
-      title: "Project Invitation",
-      message: "TechCorp Solutions invited you to join their AI Analytics project",
-      time: "3 hours ago",
-      unread: true,
-      priority: "high",
-      action: "Respond",
-    },
-    {
-      id: 3,
-      type: "message",
-      title: "New Message",
-      message: "TechStart Inc sent you a message about the mobile app project",
-      time: "4 hours ago",
-      unread: true,
-      priority: "medium",
-      action: "Reply",
-    },
-    {
-      id: 4,
-      type: "task_reminder",
-      title: "Task Reminder",
-      message: "Don't forget: Code review for PR #45 is due tomorrow",
-      time: "6 hours ago",
-      unread: false,
-      priority: "medium",
-      action: "View Task",
-    },
-    {
-      id: 5,
-      type: "achievement",
-      title: "Badge Earned",
-      message: "Congratulations! You've earned the 'Code Mentor' badge",
-      time: "1 day ago",
-      unread: false,
-      priority: "low",
-      action: "View Badge",
-    },
-    {
-      id: 6,
-      type: "deadline",
-      title: "Deadline Approaching",
-      message: "E-commerce Mobile App deadline is in 3 days",
-      time: "2 days ago",
-      unread: false,
-      priority: "high",
-      action: "View Project",
-    },
-  ];
+  // Transform notifications
+  const recentNotifications = useMemo(() => {
+    if (!notifications || notifications.length === 0) {
+      return [];
+    }
+    
+    const notifs = Array.isArray(notifications) ? notifications : [];
+    
+    return notifs.slice(0, 6).map((notif) => {
+      // Calculate time ago
+      const createdAt = notif.createdAt ? new Date(notif.createdAt) : new Date();
+      const hoursAgo = Math.floor((new Date() - createdAt) / (1000 * 60 * 60));
+      const time = hoursAgo < 1 
+        ? "Just now" 
+        : hoursAgo < 24 
+        ? `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`
+        : `${Math.floor(hoursAgo / 24)} ${Math.floor(hoursAgo / 24) === 1 ? 'day' : 'days'} ago`;
+      
+      // Map action based on type
+      const actionMap = {
+        'Project Match': 'View Project',
+        'Application Update': 'View Application',
+        'Invitation': 'View Invitation',
+        'Task Deadline': 'View Task',
+        'Chat Message': 'View Messages',
+        'Career Opportunity': 'Explore Opportunity',
+        'match': 'View Project',
+        'invitation': 'View Invitation',
+        'message': 'View Messages',
+        'task_reminder': 'View Task',
+        'deadline': 'View Task',
+        'application': 'View Application',
+      };
+      
+      // Parse metadata if it's a string
+      let metadata = null;
+      if (notif.metadata) {
+        try {
+          metadata = typeof notif.metadata === 'string' 
+            ? JSON.parse(notif.metadata) 
+            : notif.metadata;
+        } catch (e) {
+          console.error('Error parsing notification metadata:', e);
+        }
+      }
+      
+      return {
+        id: notif.id,
+        type: notif.type || 'info',
+        title: notif.title || 'Notification',
+        message: notif.message || notif.body || '',
+        time,
+        unread: !notif.read,
+        priority: notif.priority || 'medium',
+        action: notif.action || actionMap[notif.type] || 'View',
+        actionUrl: notif.actionUrl || null,
+        metadata: metadata,
+        relatedEntityId: notif.relatedEntityId || null,
+        relatedEntityType: notif.relatedEntityType || null,
+      };
+    });
+  }, [notifications]);
 
-  const portfolioSync = {
-    github: { status: "synced", score: 87, lastSync: "2 hours ago", commits: 156, repos: 23 },
-    linkedin: { status: "synced", score: 92, lastSync: "1 day ago", connections: 450, endorsements: 89 },
-    stackoverflow: { status: "pending", score: 78, lastSync: "3 days ago", reputation: 1250, answers: 45 },
-    behance: { status: "synced", score: 95, lastSync: "1 week ago", projects: 8, views: 2340 },
+  // Handle notification click - navigate to appropriate page
+  const handleNotificationClick = (notification) => {
+    // Mark as read if unread
+    if (notification.unread) {
+      dispatch(markAsRead(notification.id));
+    }
+
+    // Use actionUrl if available
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+      return;
+    }
+
+    // Otherwise, construct URL based on notification type and metadata
+    const type = notification.type;
+    const metadata = notification.metadata || {};
+    const relatedEntityId = notification.relatedEntityId;
+
+    // Map notification types to routes
+    // Chat messages → Chat page
+    if (type === 'Chat Message' || type === 'message' || notification.title?.includes('Message')) {
+      navigate('/chat');
+    } 
+    // Task deadlines → Project page (tasks are project-related)
+    else if (type === 'Task Deadline' || type === 'task_reminder' || type === 'deadline' || notification.title?.includes('Deadline')) {
+      navigate('/project');
+    } 
+    // Application updates → Project applications tab
+    else if (type === 'Application Update' || type === 'application' || notification.title?.includes('Application')) {
+      navigate('/project?tab=applications');
+    } 
+    // Invitations → Dashboard (invitations section)
+    else if (type === 'Invitation' || type === 'invitation' || notification.title?.includes('Invited')) {
+      navigate('/dashboard');
+    } 
+    // Project matches and career opportunities → Project discover tab
+    else if (type === 'Project Match' || type === 'match' || type === 'Career Opportunity' || 
+             notification.title?.includes('Project Match') || notification.title?.includes('Opportunity')) {
+      navigate('/project?tab=discover');
+    } 
+    // Default → Project page
+    else {
+      navigate('/project');
+    }
   };
+
+  // Transform portfolio sync data
+  const portfolioSync = useMemo(() => {
+    const defaultSync = {
+      github: { status: "not_connected", score: 0, lastSync: "Never", commits: 0, repos: 0 },
+      linkedin: { status: "not_connected", score: 0, lastSync: "Never", connections: 0, endorsements: 0 },
+      stackoverflow: { status: "not_connected", score: 0, lastSync: "Never", reputation: 0, answers: 0 },
+      behance: { status: "not_connected", score: 0, lastSync: "Never", projects: 0, views: 0 },
+    };
+    
+    if (!integrations || integrations.length === 0) {
+      return defaultSync;
+    }
+    
+    const ints = Array.isArray(integrations) ? integrations : (integrations.data || []);
+    
+    ints.forEach((integration) => {
+      const platform = integration.platform?.toLowerCase();
+      const lastSync = integration.lastSync 
+        ? (() => {
+            const date = new Date(integration.lastSync);
+            const hoursAgo = Math.floor((new Date() - date) / (1000 * 60 * 60));
+            if (hoursAgo < 24) return `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`;
+            if (hoursAgo < 168) return `${Math.floor(hoursAgo / 24)} ${Math.floor(hoursAgo / 24) === 1 ? 'day' : 'days'} ago`;
+            return `${Math.floor(hoursAgo / 168)} ${Math.floor(hoursAgo / 168) === 1 ? 'week' : 'weeks'} ago`;
+          })()
+        : "Never";
+      
+      if (platform === 'github') {
+        defaultSync.github = {
+          status: "synced",
+          score: integration.score || syncStatus?.overallScore || 0,
+          lastSync,
+          commits: integration.commits || 0,
+          repos: integration.repos || 0,
+        };
+      } else if (platform === 'linkedin') {
+        defaultSync.linkedin = {
+          status: "synced",
+          score: integration.score || 0,
+          lastSync,
+          connections: integration.connections || 0,
+          endorsements: integration.endorsements || 0,
+        };
+      } else if (platform === 'stackoverflow') {
+        defaultSync.stackoverflow = {
+          status: integration.status || "pending",
+          score: integration.score || 0,
+          lastSync,
+          reputation: integration.reputation || 0,
+          answers: integration.answers || 0,
+        };
+      }
+    });
+    
+    return defaultSync;
+  }, [integrations, syncStatus]);
 
   const quickAccessLinks = [
     { name: "AI Career Tools", icon: Brain, color: "blue", description: "AI-powered career guidance", path: "/ai-career" },
@@ -430,7 +651,7 @@ export default function DeveloperView() {
                 <p className='text-2xl font-bold text-orange-400'>
                   {userStats.rating}
                 </p>
-                <p className='text-xs text-gray-500'>Based on 24 reviews</p>
+                <p className='text-xs text-gray-500'>Based on {developerStats?.totalRatings || 0} reviews</p>
               </div>
               <Star className='w-8 h-8 text-orange-400 fill-current group-hover:animate-pulse' />
             </div>
@@ -469,7 +690,14 @@ export default function DeveloperView() {
                 </Button>
               </div>
               <div className='space-y-3'>
-                {activeTasks.map((task) => (
+                {developerTasksLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : activeTasks.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No active tasks found</p>
+                ) : (
+                  activeTasks.map((task) => (
                   <div
                     key={task.id}
                     className='bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-all'
@@ -489,9 +717,10 @@ export default function DeveloperView() {
                         </span>
                         <span className={`px-2 py-1 rounded text-xs ${
                           task.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
+                          task.status === 'review' ? 'bg-purple-500/20 text-purple-400' :
                           'bg-gray-500/20 text-gray-400'
                         }`}>
-                          {task.status.replace('_', ' ')}
+                          {task.status === 'todo' ? 'pending' : task.status.replace('_', ' ')}
                         </span>
                       </div>
                     </div>
@@ -499,7 +728,7 @@ export default function DeveloperView() {
                       <div className='flex items-center gap-4'>
                         <span className='flex items-center gap-1'>
                           <Clock className='w-4 h-4' />
-                          Due: {task.dueDate}
+                          {task.dueDate && task.dueDate !== 'N/A' ? `Due: ${task.dueDate}` : 'No due date'}
                         </span>
                         <span className='flex items-center gap-1'>
                           <Timer className='w-4 h-4' />
@@ -507,13 +736,15 @@ export default function DeveloperView() {
                         </span>
                       </div>
                       <Button 
+                        onClick={() => navigate(`/project/${task.projectId}`)}
                         className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
                       >
-                        {task.status === 'in_progress' ? 'Continue' : 'Start'}
+                        {task.status === 'in_progress' ? 'Continue' : task.status === 'review' ? 'Review' : 'Start'}
                       </Button>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -533,7 +764,14 @@ export default function DeveloperView() {
                 </Button>
               </div>
               <div className='space-y-3'>
-                {invitations.map((invitation) => (
+                {invitesLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : invitations.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No invitations found</p>
+                ) : (
+                  invitations.map((invitation) => (
                   <div
                     key={invitation.id}
                     className={`bg-white/5 border rounded-lg p-4 hover:border-white/20 transition-all ${
@@ -563,19 +801,24 @@ export default function DeveloperView() {
                       <span className='text-gray-400 text-sm'>{invitation.sent}</span>
                       <div className='flex gap-2'>
                         <Button 
+                          onClick={() => handleRespondInvite(invitation.id, 'accepted')}
                           className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'
+                          disabled={invitation.status !== 'pending'}
                         >
                           Accept
                         </Button>
                         <Button 
+                          onClick={() => handleRespondInvite(invitation.id, 'declined')}
                           className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'
+                          disabled={invitation.status !== 'pending'}
                         >
                           Decline
                         </Button>
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -591,7 +834,14 @@ export default function DeveloperView() {
                 </Button>
               </div>
               <div className='space-y-4'>
-                {recentProjects.map((project) => (
+                {appliedProjectsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : recentProjects.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No projects found</p>
+                ) : (
+                  recentProjects.map((project) => (
                   <div
                     key={project.id}
                     className='bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-all'
@@ -665,7 +915,8 @@ export default function DeveloperView() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -681,7 +932,14 @@ export default function DeveloperView() {
                 </Button>
               </div>
               <div className='space-y-4'>
-                {matchedProjects.map((project) => (
+                {recommendationsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : matchedProjects.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No project recommendations found</p>
+                ) : (
+                  matchedProjects.map((project) => (
                   <div
                     key={project.id}
                     className='bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-all'
@@ -758,7 +1016,8 @@ export default function DeveloperView() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -900,6 +1159,7 @@ export default function DeveloperView() {
                 </div>
               </div>
               <Button 
+                onClick={() => navigate('/portfolio-sync')}
                 className='w-full mt-4 px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-lg text-sm transition-colors'
               >
                 Sync All Platforms
@@ -947,10 +1207,18 @@ export default function DeveloperView() {
                 Recent Notifications
               </h3>
               <div className='space-y-3'>
-                {recentNotifications.map((notification) => (
+                {notificationsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : recentNotifications.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4">No notifications found</p>
+                ) : (
+                  recentNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-3 rounded-lg transition-all hover:bg-gray-700/50 ${
+                    onClick={() => handleNotificationClick(notification)}
+                    className={`p-3 rounded-lg transition-all hover:bg-gray-700/50 cursor-pointer ${
                       notification.unread ? "bg-blue-500/10 border border-blue-500/20" : "bg-white/5"
                     }`}
                   >
@@ -977,6 +1245,10 @@ export default function DeveloperView() {
                           </p>
                           <Button 
                             variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleNotificationClick(notification);
+                            }}
                             className='text-xs text-blue-400 hover:text-blue-300'
                           >
                             {notification.action}
@@ -988,9 +1260,11 @@ export default function DeveloperView() {
                       )}
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
               <Button 
+                onClick={() => navigate('/notifications')}
                 className='w-full mt-4 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg text-sm transition-colors'
               >
                 View All Notifications

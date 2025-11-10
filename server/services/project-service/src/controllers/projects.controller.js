@@ -1,4 +1,4 @@
-const { ProjectModel } = require("../models");
+const { ProjectModel, ProjectTasksModel, ProjectTeamModel } = require("../models");
 const { FilterOptionsModel } = require("../models/filter-options.model");
 const { uploadFileToSupabase } = require("shared/utils/uploadFile.utils");
 const { supabase } = require("shared/utils/supabase.utils");
@@ -1582,6 +1582,54 @@ const getDeveloperAppliedProjects = async (req, res) => {
         message: "Failed to fetch applied projects", 
       error: error.message,
       });
+  }
+};
+
+// Get developer tasks (tasks assigned to the authenticated developer)
+const getDeveloperTasks = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+    
+    const { status, limit } = req.query;
+    
+    // Get tasks assigned to the developer
+    // If status is provided, filter by status; otherwise get active tasks (todo, in_progress, review)
+    const tasks = await ProjectTasksModel.getTasksByAssignee(Number(userId), {
+      status: status || null,
+      limit: limit ? Number(limit) : undefined,
+    });
+    
+    // Transform tasks to match frontend expectations
+    const transformedTasks = tasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description || "",
+      project: task.projectTitle || "Unknown Project",
+      projectId: task.projectId,
+      priority: task.priority || "medium",
+      status: task.status || "todo",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : null,
+      estimatedTime: "N/A", // TODO: Add estimated time field to tasks table
+      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+      completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+    }));
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Developer tasks retrieved successfully",
+      tasks: transformedTasks,
+      count: transformedTasks.length,
+    });
+  } catch (error) {
+    console.error("Get Developer Tasks Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch developer tasks",
+      error: error.message,
+    });
   }
 };
 
@@ -3414,6 +3462,30 @@ const getProjectOwnerStats = async (req, res) => {
   }
 };
 
+// Get admin project statistics
+const getAdminProjectStats = async (req, res) => {
+  try {
+    const { timeframe = '6m' } = req.query;
+    
+    const stats = await ProjectModel.getAdminProjectStats(timeframe);
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Admin project statistics retrieved successfully",
+      data: stats,
+    });
+  } catch (error) {
+    console.error("Get Admin Project Stats Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch admin project statistics",
+      error: error.message,
+    });
+  }
+};
+
 // Get project owner posted projects
 const getProjectOwnerProjects = async (req, res) => {
   try {
@@ -3794,6 +3866,248 @@ const getEvaluationHistory = async (req, res) => {
   }
 };
 
+// Get active projects for project owner dashboard
+const getActiveProjectsForOwner = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+
+    // Get all projects owned by the user (this includes skills and tags)
+    const allProjects = await ProjectModel.getProjectsByOwner(userId);
+    
+    // Filter to only active projects
+    const activeProjects = allProjects.filter(p => p.status === "active");
+
+    // Enrich each project with applicants count and other stats
+    const enrichedProjects = await Promise.all(
+      activeProjects.map(async (project) => {
+        try {
+          // Get applicants count
+          const applicants = await ProjectModel.getProjectApplicants(project.id);
+          const applicantsCount = applicants?.length || 0;
+
+          // Get team members count from project_team table
+          const teamMembers = await ProjectTeamModel.getTeamMembers(project.id);
+          const teamSize = teamMembers?.length || 0;
+
+          // Get project stats for progress and other calculations
+          const stats = await ProjectModel.getProjectStats(project.id);
+          
+          // Calculate progress - use project.progress if available, otherwise calculate based on time
+          let progress = project.progress || 0;
+          if (progress === 0 && project.deadline) {
+            // Calculate progress based on time elapsed vs total duration
+            const createdAt = new Date(project.createdAt);
+            const deadline = new Date(project.deadline);
+            const now = new Date();
+            const totalDuration = deadline - createdAt;
+            const elapsed = now - createdAt;
+            if (totalDuration > 0) {
+              progress = Math.min(95, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+            }
+          }
+
+          // Format budget
+          const budgetMin = project.budgetMin || 0;
+          const budgetMax = project.budgetMax || 0;
+          const budget = budgetMax > 0 
+            ? `$${budgetMin.toLocaleString()} - $${budgetMax.toLocaleString()}`
+            : (budgetMin > 0 ? `$${budgetMin.toLocaleString()}` : "Not specified");
+
+          // Calculate spent (for now, set to 0 - can be enhanced with expenses tracking)
+          // TODO: Implement expenses tracking to calculate actual spent amount
+          const spentFormatted = "$0";
+
+          // Format deadline
+          const deadline = project.deadline 
+            ? new Date(project.deadline).toISOString().split('T')[0]
+            : null;
+
+          // Get skills/tags (already included from getProjectsByOwner)
+          const skills = project.skills || [];
+          const tags = project.tags || [];
+          const skillsRequired = skills.length > 0 ? skills : (tags.length > 0 ? tags : []);
+
+          // Calculate estimated and completed hours
+          // estimatedHours can come from project.estimatedHours field if available
+          // duration is a text field, so we can't directly convert it
+          let estimatedHours = project.estimatedHours || 0;
+          
+          // Completed hours - set to 0 for now
+          // TODO: Implement time tracking to calculate actual completed hours
+          const completedHours = 0;
+
+          return {
+            id: project.id,
+            title: project.title,
+            client: project.company || "N/A",
+            status: project.status || "active",
+            progress: progress,
+            budget: budget,
+            spent: spentFormatted,
+            deadline: deadline,
+            skillsRequired: skillsRequired,
+            teamSize: teamSize,
+            applicants: applicantsCount,
+            priority: project.priority || "medium",
+            category: project.category || "Other",
+            startDate: project.startDate || project.createdAt
+              ? new Date(project.startDate || project.createdAt).toISOString().split('T')[0]
+              : null,
+            estimatedHours: estimatedHours,
+            completedHours: completedHours,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+          };
+        } catch (error) {
+          console.error(`Error enriching project ${project.id}:`, error);
+          // Return basic project data if enrichment fails
+          return {
+            id: project.id,
+            title: project.title,
+            client: project.company || "N/A",
+            status: project.status || "active",
+            progress: 0,
+            budget: project.budgetMin && project.budgetMax
+              ? `$${project.budgetMin.toLocaleString()} - $${project.budgetMax.toLocaleString()}`
+              : "Not specified",
+            spent: "$0",
+            deadline: project.deadline 
+              ? new Date(project.deadline).toISOString().split('T')[0]
+              : null,
+            skillsRequired: project.skills || project.tags || [],
+            teamSize: 0,
+            applicants: 0,
+            priority: project.priority || "medium",
+            category: project.category || "Other",
+            startDate: project.startDate || project.createdAt
+              ? new Date(project.startDate || project.createdAt).toISOString().split('T')[0]
+              : null,
+            estimatedHours: project.estimatedHours || (project.duration ? project.duration * 8 : 0),
+            completedHours: 0,
+            createdAt: project.createdAt,
+            updatedAt: project.updatedAt,
+          };
+        }
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Active projects retrieved successfully",
+      projects: enrichedProjects,
+      count: enrichedProjects.length,
+    });
+  } catch (error) {
+    console.error("Get Active Projects For Owner Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch active projects",
+      error: error.message,
+    });
+  }
+};
+
+// Get project categories with count and revenue for project owner
+const getProjectCategoriesForOwner = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return sendError(res, "Authentication required", 401);
+
+    // Get all projects owned by the user
+    const allProjects = await ProjectModel.getProjectsByOwner(userId);
+
+    // Aggregate projects by category
+    const categoryMap = {};
+    
+    allProjects.forEach(project => {
+      const category = project.category || "Other";
+      
+      if (!categoryMap[category]) {
+        categoryMap[category] = {
+          name: category,
+          count: 0,
+          totalRevenue: 0,
+          projects: [],
+        };
+      }
+      
+      categoryMap[category].count += 1;
+      categoryMap[category].projects.push(project);
+      
+      // Calculate revenue from budget
+      // Use budgetMax if available, otherwise budgetMin, otherwise 0
+      let projectRevenue = 0;
+      if (project.budgetMax && project.budgetMax > 0) {
+        projectRevenue = project.budgetMax;
+      } else if (project.budgetMin && project.budgetMin > 0) {
+        projectRevenue = project.budgetMin;
+      }
+      
+      categoryMap[category].totalRevenue += projectRevenue;
+    });
+
+    // Convert to array and format
+    const categories = Object.values(categoryMap)
+      .map(category => ({
+        name: category.name,
+        count: category.count,
+        revenue: category.totalRevenue > 0 
+          ? `$${category.totalRevenue.toLocaleString()}` 
+          : "$0",
+        totalRevenue: category.totalRevenue, // Keep numeric value for sorting
+        color: getCategoryColor(category.name),
+      }))
+      // Sort by count (descending), then by revenue (descending)
+      .sort((a, b) => {
+        if (b.count !== a.count) {
+          return b.count - a.count;
+        }
+        return b.totalRevenue - a.totalRevenue;
+      });
+
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Project categories retrieved successfully",
+      categories: categories,
+      count: categories.length,
+    });
+  } catch (error) {
+    console.error("Get Project Categories For Owner Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch project categories",
+      error: error.message,
+    });
+  }
+};
+
+// Helper function to assign color based on category name
+const getCategoryColor = (categoryName) => {
+  const categoryColors = {
+    "Web Development": "blue",
+    "Mobile Development": "green",
+    "AI/ML": "purple",
+    "DevOps": "orange",
+    "Data Science": "pink",
+    "Other": "gray",
+  };
+  
+  // Check for partial matches
+  const lowerName = (categoryName || "").toLowerCase();
+  if (lowerName.includes("web")) return "blue";
+  if (lowerName.includes("mobile")) return "green";
+  if (lowerName.includes("ai") || lowerName.includes("ml") || lowerName.includes("machine learning")) return "purple";
+  if (lowerName.includes("devops") || lowerName.includes("ops")) return "orange";
+  if (lowerName.includes("data") || lowerName.includes("science")) return "pink";
+  
+  return categoryColors[categoryName] || "gray";
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -3839,11 +4153,15 @@ module.exports = {
   getMyAppliedProjectIds,
   getMyApplicationsCount,
   getDeveloperAppliedProjects,
+  getDeveloperTasks,
   generateApplicantsReport,
   getProjectOwnerStats,
   getProjectOwnerProjects,
   getProjectOwnerReviews,
+  getActiveProjectsForOwner,
   getProjectOwnerDevelopers,
   getPendingEvaluations,
   getEvaluationHistory,
+  getProjectCategoriesForOwner,
+  getAdminProjectStats,
 };

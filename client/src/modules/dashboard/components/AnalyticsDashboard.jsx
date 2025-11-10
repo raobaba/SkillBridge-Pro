@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Button from '../../../components/Button';
 import {
   BarChart3,
@@ -39,74 +39,150 @@ import {
   Settings as SettingsIcon,
 } from "lucide-react";
 import Navbar from "../../../components/header";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { getAdminAnalytics } from "../slice/DashboardSlice";
+import { CircularLoader } from "../../../components";
 
 export default function AnalyticsDashboard() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const [selectedTimeframe, setSelectedTimeframe] = useState("6m");
 
-  // Enhanced admin analytics stats
-  const stats = {
-    totalUsers: 1_250,
-    activeDevelopers: 420,
-    projectOwners: 180,
-    projectsPosted: 600,
-    matchRate: 78, // in %
-    avgRating: 4.5,
-    revenue: "$58,000",
-    monthlyGrowth: 12.5,
-    userRetention: 85,
-    systemUptime: 99.9,
-    activeSessions: 342,
-    flaggedContent: 8,
-    pendingModeration: 15,
-    resolvedIssues: 45,
-    bannedUsers: 3,
-    suspendedAccounts: 7,
-  };
+  // Redux selectors for admin analytics
+  const adminAnalytics = useSelector((state) => state.dashboard?.adminAnalytics);
+  const analyticsLoading = useSelector((state) => state.dashboard?.loading || false);
+  const analyticsError = useSelector((state) => state.dashboard?.error);
 
-  const moderationStats = {
-    flaggedUsers: 8,
-    flaggedProjects: 12,
-    flaggedMessages: 5,
-    pendingReviews: 15,
-    resolvedToday: 23,
-    escalationRate: 5.2,
-    avgResponseTime: "2.3 hours",
-    moderatorActivity: 89,
-  };
+  // Fetch analytics on component mount and when timeframe changes
+  useEffect(() => {
+    dispatch(getAdminAnalytics(selectedTimeframe));
+  }, [dispatch, selectedTimeframe]);
 
-  const systemHealth = {
-    serverUptime: 99.9,
-    responseTime: 245,
-    cpuUsage: 45,
-    memoryUsage: 68,
-    diskUsage: 34,
-    networkLatency: 12,
-    errorRate: 0.1,
-    activeConnections: 1247,
-  };
+  // Transform analytics data from API
+  const stats = useMemo(() => {
+    if (!adminAnalytics?.stats) {
+      return {
+        totalUsers: 0,
+        activeDevelopers: 0,
+        projectOwners: 0,
+        projectsPosted: 0,
+        matchRate: 0,
+        avgRating: 0,
+        revenue: "$0",
+        monthlyGrowth: 0,
+        userRetention: 0,
+        systemUptime: 0,
+        activeSessions: 0,
+        flaggedContent: 0,
+        pendingModeration: 0,
+        resolvedIssues: 0,
+        bannedUsers: 0,
+        suspendedAccounts: 0,
+      };
+    }
 
-  // Chart data (mock)
-  const usersByMonth = [
-    { month: "Jan", count: 150 },
-    { month: "Feb", count: 200 },
-    { month: "Mar", count: 180 },
-    { month: "Apr", count: 220 },
-    { month: "May", count: 250 },
-    { month: "Jun", count: 300 },
-  ];
+    return {
+      totalUsers: adminAnalytics.stats.totalUsers || 0,
+      activeDevelopers: adminAnalytics.stats.activeDevelopers || 0,
+      projectOwners: adminAnalytics.stats.projectOwners || 0,
+      projectsPosted: adminAnalytics.projectStats?.totalProjects || adminAnalytics.projectStats?.projectsPosted || 0,
+      matchRate: adminAnalytics.stats.matchRate || 0,
+      avgRating: adminAnalytics.stats.avgRating || 0,
+      revenue: adminAnalytics.stats.revenue || "$0",
+      monthlyGrowth: adminAnalytics.stats.monthlyGrowth || 0,
+      userRetention: adminAnalytics.stats.userRetention || 0,
+      systemUptime: adminAnalytics.stats.systemUptime || 0,
+      activeSessions: adminAnalytics.stats.activeSessions || 0,
+      flaggedContent: adminAnalytics.stats.flaggedContent || 0,
+      pendingModeration: adminAnalytics.stats.pendingModeration || 0,
+      resolvedIssues: adminAnalytics.stats.resolvedIssues || 0,
+      bannedUsers: adminAnalytics.stats.bannedUsers || 0,
+      suspendedAccounts: adminAnalytics.stats.suspendedAccounts || 0,
+    };
+  }, [adminAnalytics]);
 
-  const projectsByDomain = [
-    { domain: "Web Dev", count: 240 },
-    { domain: "Mobile Dev", count: 180 },
-    { domain: "ML/AI", count: 120 },
-    { domain: "DevOps", count: 60 },
-  ];
+  const moderationStats = useMemo(() => {
+    if (!adminAnalytics?.moderation) {
+      return {
+        flaggedUsers: 0,
+        flaggedProjects: 0,
+        flaggedMessages: 0,
+        pendingReviews: 0,
+        resolvedToday: 0,
+        escalationRate: 0,
+        avgResponseTime: "0 hours",
+        moderatorActivity: 0,
+      };
+    }
+
+    return {
+      flaggedUsers: adminAnalytics.moderation.flaggedUsers || 0,
+      flaggedProjects: adminAnalytics.moderation.flaggedProjects || 0,
+      flaggedMessages: adminAnalytics.moderation.flaggedMessages || 0,
+      pendingReviews: adminAnalytics.moderation.pendingReviews || 0,
+      resolvedToday: adminAnalytics.moderation.resolvedToday || 0,
+      escalationRate: adminAnalytics.moderation.escalationRate || 0,
+      avgResponseTime: adminAnalytics.moderation.avgResponseTime || "0 hours",
+      moderatorActivity: adminAnalytics.moderation.moderatorActivity || 0,
+    };
+  }, [adminAnalytics]);
+
+  const systemHealth = useMemo(() => {
+    if (!adminAnalytics?.systemHealth) {
+      return {
+        serverUptime: 0,
+        responseTime: 0,
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        networkLatency: 0,
+        errorRate: 0,
+        activeConnections: 0,
+      };
+    }
+
+    return {
+      serverUptime: adminAnalytics.systemHealth.serverUptime || 0,
+      responseTime: adminAnalytics.systemHealth.responseTime || 0,
+      cpuUsage: adminAnalytics.systemHealth.cpuUsage || 0,
+      memoryUsage: adminAnalytics.systemHealth.memoryUsage || 0,
+      diskUsage: adminAnalytics.systemHealth.diskUsage || 0,
+      networkLatency: adminAnalytics.systemHealth.networkLatency || 0,
+      errorRate: adminAnalytics.systemHealth.errorRate || 0,
+      activeConnections: adminAnalytics.systemHealth.activeConnections || 0,
+    };
+  }, [adminAnalytics]);
+
+  // Chart data from API
+  const usersByMonth = useMemo(() => {
+    if (!adminAnalytics?.charts?.usersByMonth || adminAnalytics.charts.usersByMonth.length === 0) {
+      return [
+        { month: "Jan", count: 0 },
+        { month: "Feb", count: 0 },
+        { month: "Mar", count: 0 },
+        { month: "Apr", count: 0 },
+        { month: "May", count: 0 },
+        { month: "Jun", count: 0 },
+      ];
+    }
+    return adminAnalytics.charts.usersByMonth;
+  }, [adminAnalytics]);
+
+  const projectsByDomain = useMemo(() => {
+    if (!adminAnalytics?.projectStats?.projectsByDomain || adminAnalytics.projectStats.projectsByDomain.length === 0) {
+      return [
+        { domain: "Web Dev", count: 0 },
+        { domain: "Mobile Dev", count: 0 },
+        { domain: "ML/AI", count: 0 },
+        { domain: "DevOps", count: 0 },
+      ];
+    }
+    return adminAnalytics.projectStats.projectsByDomain;
+  }, [adminAnalytics]);
 
   const recentAlerts = [
     {
@@ -358,63 +434,74 @@ export default function AnalyticsDashboard() {
         </div>
 
         {/* Enhanced Stats Grid */}
-        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
-          {[
-            {
-              label: "Total Users",
-              value: stats.totalUsers.toLocaleString(),
-              icon: Users,
-              color: "text-blue-400",
-              bg: "bg-blue-500/20",
-              change: "+12%",
-              subtitle: `${stats.activeDevelopers} active`,
-            },
-            {
-              label: "Project Owners",
-              value: stats.projectOwners,
-              icon: Building,
-              color: "text-green-400",
-              bg: "bg-green-500/20",
-              change: "+8%",
-              subtitle: "Active owners",
-            },
-            {
-              label: "Projects Posted",
-              value: stats.projectsPosted,
-              icon: Briefcase,
-              color: "text-purple-400",
-              bg: "bg-purple-500/20",
-              change: "+15%",
-              subtitle: "This month",
-            },
-            {
-              label: "Match Rate",
-              value: `${stats.matchRate}%`,
-              icon: Target,
-              color: "text-pink-400",
-              bg: "bg-pink-500/20",
-              change: "-2%",
-              subtitle: "Success rate",
-            },
-            {
-              label: "Flagged Content",
-              value: stats.flaggedContent,
-              icon: Flag,
-              color: "text-red-400",
-              bg: "bg-red-500/20",
-              change: "+3",
-              subtitle: "Needs review",
-            },
-            {
-              label: "Revenue",
-              value: stats.revenue,
-              icon: DollarSign,
-              color: "text-yellow-400",
-              bg: "bg-yellow-500/20",
-              change: "+23%",
-              subtitle: "This month",
-            },
-          ].map((item, idx) => (
+        {analyticsLoading ? (
+          <div className="flex justify-center py-12">
+            <CircularLoader />
+          </div>
+        ) : analyticsError ? (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
+            <p className="text-red-400">Error loading analytics: {analyticsError}</p>
+          </div>
+        ) : (
+          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
+            {[
+              {
+                label: "Total Users",
+                value: stats.totalUsers.toLocaleString(),
+                icon: Users,
+                color: "text-blue-400",
+                bg: "bg-blue-500/20",
+                change: stats.monthlyGrowth >= 0 ? `+${stats.monthlyGrowth.toFixed(1)}%` : `${stats.monthlyGrowth.toFixed(1)}%`,
+                subtitle: `${stats.activeDevelopers} active`,
+              },
+              {
+                label: "Project Owners",
+                value: stats.projectOwners,
+                icon: Building,
+                color: "text-green-400",
+                bg: "bg-green-500/20",
+                change: "+0%",
+                subtitle: "Active owners",
+              },
+              {
+                label: "Projects Posted",
+                value: stats.projectsPosted,
+                icon: Briefcase,
+                color: "text-purple-400",
+                bg: "bg-purple-500/20",
+                change: adminAnalytics?.projectStats?.monthlyGrowth >= 0 
+                  ? `+${adminAnalytics.projectStats.monthlyGrowth.toFixed(1)}%` 
+                  : `${adminAnalytics?.projectStats?.monthlyGrowth?.toFixed(1) || 0}%`,
+                subtitle: "Total projects",
+              },
+              {
+                label: "Match Rate",
+                value: `${stats.matchRate}%`,
+                icon: Target,
+                color: "text-pink-400",
+                bg: "bg-pink-500/20",
+                change: "0%",
+                subtitle: "Success rate",
+              },
+              {
+                label: "Flagged Content",
+                value: stats.flaggedContent,
+                icon: Flag,
+                color: "text-red-400",
+                bg: "bg-red-500/20",
+                change: "+0",
+                subtitle: "Needs review",
+              },
+              {
+                label: "Revenue",
+                value: stats.revenue,
+                icon: DollarSign,
+                color: "text-yellow-400",
+                bg: "bg-yellow-500/20",
+                change: "+0%",
+                subtitle: "This month",
+              },
+            ].map((item, idx) => (
             <div
               key={idx}
               className='group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all hover:bg-gray-700/50 cursor-pointer'
@@ -441,7 +528,8 @@ export default function AnalyticsDashboard() {
               <p className='text-xs text-gray-500 mt-1'>{item.subtitle}</p>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Charts */}
         <div className='grid lg:grid-cols-2 gap-8'>
@@ -456,15 +544,22 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
             <div className='w-full h-48 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg flex items-end justify-center space-x-2 p-4'>
-              {usersByMonth.map((month, idx) => (
-                <div key={idx} className='flex flex-col items-center space-y-2'>
-                  <div
-                    className='w-8 bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg transition-all hover:from-blue-400 hover:to-purple-400'
-                    style={{ height: `${(month.count / 300) * 100}%` }}
-                  ></div>
-                  <span className='text-xs text-gray-400'>{month.month}</span>
-                </div>
-              ))}
+              {usersByMonth.length > 0 ? (
+                usersByMonth.map((month, idx) => {
+                  const maxCount = Math.max(...usersByMonth.map(m => m.count), 1);
+                  return (
+                    <div key={idx} className='flex flex-col items-center space-y-2'>
+                      <div
+                        className='w-8 bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg transition-all hover:from-blue-400 hover:to-purple-400'
+                        style={{ height: `${(month.count / maxCount) * 100}%` }}
+                      ></div>
+                      <span className='text-xs text-gray-400'>{month.month}</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-gray-400 text-sm">No data available</p>
+              )}
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-6 hover:border-white/20 transition-all'>
@@ -473,26 +568,33 @@ export default function AnalyticsDashboard() {
               <Eye className='w-5 h-5 text-gray-400 hover:text-white cursor-pointer' />
             </div>
             <div className='w-full h-48 bg-gradient-to-br from-green-500/10 to-blue-500/10 rounded-lg flex items-center justify-center'>
-              <div className='grid grid-cols-2 gap-4 w-full p-4'>
-                {projectsByDomain.map((domain, idx) => (
-                  <div key={idx} className='bg-white/10 rounded-lg p-3'>
-                    <div className='flex items-center justify-between mb-1'>
-                      <span className='text-sm font-medium'>
-                        {domain.domain}
-                      </span>
-                      <span className='text-xs text-gray-400'>
-                        {domain.count}
-                      </span>
-                    </div>
-                    <div className='w-full bg-gray-700 rounded-full h-2'>
-                      <div
-                        className='bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all'
-                        style={{ width: `${(domain.count / 240) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {projectsByDomain.length > 0 ? (
+                <div className='grid grid-cols-2 gap-4 w-full p-4'>
+                  {projectsByDomain.map((domain, idx) => {
+                    const maxCount = Math.max(...projectsByDomain.map(d => d.count), 1);
+                    return (
+                      <div key={idx} className='bg-white/10 rounded-lg p-3'>
+                        <div className='flex items-center justify-between mb-1'>
+                          <span className='text-sm font-medium'>
+                            {domain.domain}
+                          </span>
+                          <span className='text-xs text-gray-400'>
+                            {domain.count}
+                          </span>
+                        </div>
+                        <div className='w-full bg-gray-700 rounded-full h-2'>
+                          <div
+                            className='bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all'
+                            style={{ width: `${(domain.count / maxCount) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-400 text-sm">No data available</p>
+              )}
             </div>
           </div>
         </div>

@@ -49,7 +49,10 @@ import {
   getMyAppliedProjectIdsApi,
   getMyApplicationsCountApi,
   getDeveloperAppliedProjectsApi,
+  getDeveloperTasksApi,
   generateApplicantsReportApi,
+  getActiveProjectsForOwnerApi,
+  getProjectCategoriesForOwnerApi,
 } from "./projectAction";
 
 // Initial state
@@ -80,6 +83,18 @@ const initialState = {
   appliedProjectsStatusMap: {}, // Map of projectId -> status from /api/v1/projects/applications/my/ids
   myApplications: [],
   myApplicationsCount: 0,
+  
+  // Developer tasks
+  developerTasks: [],
+  developerTasksLoading: false,
+  
+  // Active projects for project owner
+  activeProjects: [],
+  activeProjectsLoading: false,
+  
+  // Project categories for project owner
+  projectCategories: [],
+  projectCategoriesLoading: false,
   
   // Loading states
   loading: false,
@@ -354,6 +369,21 @@ export const getDeveloperAppliedProjects = createAsyncThunk(
   }
 );
 
+// Get developer tasks
+export const getDeveloperTasks = createAsyncThunk(
+  "project/getDeveloperTasks",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await getDeveloperTasksApi(params);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch developer tasks" }
+      );
+    }
+  }
+);
+
 // Generate applicants report
 export const generateApplicantsReport = createAsyncThunk(
   "project/generateApplicantsReport",
@@ -369,17 +399,90 @@ export const generateApplicantsReport = createAsyncThunk(
   }
 );
 
+// Get active projects for project owner
+export const getActiveProjectsForOwner = createAsyncThunk(
+  "project/getActiveProjectsForOwner",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getActiveProjectsForOwnerApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch active projects" }
+      );
+    }
+  }
+);
+
+// Get project categories for project owner
+export const getProjectCategoriesForOwner = createAsyncThunk(
+  "project/getProjectCategoriesForOwner",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getProjectCategoriesForOwnerApi();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error?.response?.data || { message: "Failed to fetch project categories" }
+      );
+    }
+  }
+);
+
 // Invitation Management
 export const createInvite = createAsyncThunk(
   "project/createInvite",
   async (data, { rejectWithValue }) => {
     try {
+      console.log('createInvite thunk - Sending invite data:', data);
       const response = await createInviteApi(data);
-      return response.data;
+      console.log('createInvite thunk - Full response:', response);
+      console.log('createInvite thunk - Response data:', response.data);
+      console.log('createInvite thunk - Response status:', response.status);
+      
+      // Handle different response structures
+      // Axios wraps the response in response.data
+      if (response && response.data) {
+        // Check if response.data has the expected structure
+        if (response.data.success || response.data.invite) {
+          return response.data;
+        }
+        // If response.data is the invite object directly
+        if (response.data.id || response.data.projectId) {
+          return {
+            success: true,
+            message: "Invite created",
+            invite: response.data
+          };
+        }
+        return response.data;
+      }
+      
+      // Fallback: return the response as-is
+      console.warn('createInvite thunk - Unexpected response structure:', response);
+      return response;
     } catch (error) {
-      return rejectWithValue(
-        error?.response?.data || { message: "Invite creation failed" }
-      );
+      console.error('createInvite thunk - Error details:', {
+        message: error?.message,
+        response: error?.response,
+        responseData: error?.response?.data,
+        responseStatus: error?.response?.status,
+        responseStatusText: error?.response?.statusText,
+        fullError: error
+      });
+      
+      // Extract error message from various possible locations
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error ||
+                          error?.message || 
+                          "Invite creation failed";
+      
+      const errorData = error?.response?.data || { 
+        message: errorMessage,
+        status: error?.response?.status || 500
+      };
+      
+      return rejectWithValue(errorData);
     }
   }
 );
@@ -2027,6 +2130,60 @@ const projectSlice = createSlice({
         state.loading = false;
         state.error = action.payload.message || 'Failed to fetch applied projects';
         state.lastAction = 'getDeveloperAppliedProjects.rejected';
+      })
+
+      // Get Developer Tasks
+      .addCase(getDeveloperTasks.pending, (state) => {
+        state.developerTasksLoading = true;
+        state.error = null;
+        state.lastAction = 'getDeveloperTasks.pending';
+      })
+      .addCase(getDeveloperTasks.fulfilled, (state, action) => {
+        state.developerTasksLoading = false;
+        state.developerTasks = action.payload.tasks || [];
+        state.error = null;
+        state.lastAction = 'getDeveloperTasks.fulfilled';
+      })
+      .addCase(getDeveloperTasks.rejected, (state, action) => {
+        state.developerTasksLoading = false;
+        state.error = action.payload.message || 'Failed to fetch developer tasks';
+        state.lastAction = 'getDeveloperTasks.rejected';
+      })
+
+      // Get active projects for project owner
+      .addCase(getActiveProjectsForOwner.pending, (state) => {
+        state.activeProjectsLoading = true;
+        state.error = null;
+        state.lastAction = 'getActiveProjectsForOwner.pending';
+      })
+      .addCase(getActiveProjectsForOwner.fulfilled, (state, action) => {
+        state.activeProjectsLoading = false;
+        state.activeProjects = action.payload.projects || [];
+        state.error = null;
+        state.lastAction = 'getActiveProjectsForOwner.fulfilled';
+      })
+      .addCase(getActiveProjectsForOwner.rejected, (state, action) => {
+        state.activeProjectsLoading = false;
+        state.error = action.payload.message || 'Failed to fetch active projects';
+        state.lastAction = 'getActiveProjectsForOwner.rejected';
+      })
+
+      // Get project categories for project owner
+      .addCase(getProjectCategoriesForOwner.pending, (state) => {
+        state.projectCategoriesLoading = true;
+        state.error = null;
+        state.lastAction = 'getProjectCategoriesForOwner.pending';
+      })
+      .addCase(getProjectCategoriesForOwner.fulfilled, (state, action) => {
+        state.projectCategoriesLoading = false;
+        state.projectCategories = action.payload.categories || [];
+        state.error = null;
+        state.lastAction = 'getProjectCategoriesForOwner.fulfilled';
+      })
+      .addCase(getProjectCategoriesForOwner.rejected, (state, action) => {
+        state.projectCategoriesLoading = false;
+        state.error = action.payload.message || 'Failed to fetch project categories';
+        state.lastAction = 'getProjectCategoriesForOwner.rejected';
       })
 
       // Generate applicants report

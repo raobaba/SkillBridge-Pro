@@ -1,8 +1,9 @@
 const { pgTable, serial, text, integer, timestamp, boolean } = require("drizzle-orm/pg-core");
-const { eq, and } = require("drizzle-orm");
+const { eq, and, desc, or, asc, sql } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 const { projectMilestonesTable } = require("./project-milestones.model");
+const { projectsTable } = require("./projects.model");
 
 // Project Tasks table
 const projectTasksTable = pgTable("project_tasks", {
@@ -44,12 +45,100 @@ class ProjectTasksModel {
       .orderBy(projectTasksTable.createdAt);
   }
 
-  static async getTasksByAssignee(assignedTo) {
-    return await db
-      .select()
+  static async getTasksByAssignee(assignedTo, options = {}) {
+    const { status, limit } = options;
+    
+    // Build conditions
+    const conditions = [
+      eq(projectTasksTable.assignedTo, assignedTo),
+      eq(projectsTable.isDeleted, false), // Exclude tasks from deleted projects
+    ];
+    
+    // Filter by status if provided (exclude completed and cancelled for active tasks)
+    if (status) {
+      conditions.push(eq(projectTasksTable.status, status));
+    } else {
+      // By default, exclude completed and cancelled tasks
+      conditions.push(
+        or(
+          eq(projectTasksTable.status, "todo"),
+          eq(projectTasksTable.status, "in_progress"),
+          eq(projectTasksTable.status, "review")
+        )
+      );
+    }
+    
+    let query = db
+      .select({
+        id: projectTasksTable.id,
+        projectId: projectTasksTable.projectId,
+        milestoneId: projectTasksTable.milestoneId,
+        assignedTo: projectTasksTable.assignedTo,
+        title: projectTasksTable.title,
+        description: projectTasksTable.description,
+        priority: projectTasksTable.priority,
+        status: projectTasksTable.status,
+        dueDate: projectTasksTable.dueDate,
+        completedAt: projectTasksTable.completedAt,
+        createdAt: projectTasksTable.createdAt,
+        // Project information
+        projectTitle: projectsTable.title,
+        projectStatus: projectsTable.status,
+      })
       .from(projectTasksTable)
-      .where(eq(projectTasksTable.assignedTo, assignedTo))
-      .orderBy(projectTasksTable.createdAt);
+      .innerJoin(projectsTable, eq(projectTasksTable.projectId, projectsTable.id))
+      .where(and(...conditions))
+      .orderBy(
+        asc(projectTasksTable.dueDate), // Closest due dates first (NULLs last in PostgreSQL)
+        desc(projectTasksTable.createdAt) // Newest tasks first if same due date
+      );
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+  
+  // Get all tasks for assignee (including completed)
+  static async getAllTasksByAssignee(assignedTo, options = {}) {
+    const { limit } = options;
+    
+    let query = db
+      .select({
+        id: projectTasksTable.id,
+        projectId: projectTasksTable.projectId,
+        milestoneId: projectTasksTable.milestoneId,
+        assignedTo: projectTasksTable.assignedTo,
+        title: projectTasksTable.title,
+        description: projectTasksTable.description,
+        priority: projectTasksTable.priority,
+        status: projectTasksTable.status,
+        dueDate: projectTasksTable.dueDate,
+        completedAt: projectTasksTable.completedAt,
+        createdAt: projectTasksTable.createdAt,
+        // Project information
+        projectTitle: projectsTable.title,
+        projectStatus: projectsTable.status,
+      })
+      .from(projectTasksTable)
+      .innerJoin(projectsTable, eq(projectTasksTable.projectId, projectsTable.id))
+      .where(
+        and(
+          eq(projectTasksTable.assignedTo, assignedTo),
+          eq(projectsTable.isDeleted, false) // Exclude tasks from deleted projects
+        )
+      )
+      .orderBy(
+        asc(projectTasksTable.dueDate), // Closest due dates first (NULLs last in PostgreSQL)
+        desc(projectTasksTable.createdAt) // Newest tasks first if same due date
+      );
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
   }
 
   static async getTaskById(taskId) {
