@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import Button from '../../../components/Button';
+import { CircularLoader as Loader } from '../../../components';
 import { toast } from 'react-toastify';
 import { 
   Star, Users, MessageSquare, ThumbsUp, Award, Clock, 
@@ -29,9 +30,6 @@ const ProjectOwnerDashboard = ({ user }) => {
   } = useSelector((state) => state.gamification || {});
 
   const [selectedTab, setSelectedTab] = useState("evaluation");
-  const [pendingEvaluations, setPendingEvaluations] = useState([]);
-  const [evaluationHistory, setEvaluationHistory] = useState([]);
-  const [endorsementHistory, setEndorsementHistory] = useState([]);
 
   const [evaluationForm, setEvaluationForm] = useState({
     projectId: null,
@@ -65,29 +63,49 @@ const ProjectOwnerDashboard = ({ user }) => {
 
   // Load data on mount and tab changes
   useEffect(() => {
-    if (user?.role === 'project-owner') {
+    if (user?.role === 'project-owner' || user?.roles?.includes('project-owner')) {
       dispatch(getPendingEvaluations());
-      if (selectedTab === 'history') {
+      if (selectedTab === 'history' || selectedTab === 'endorsements' || selectedTab === 'analytics') {
         dispatch(getEvaluationHistory());
       }
       if (selectedTab === 'analytics') {
         dispatch(getProjectOwnerStats());
       }
     }
-  }, [dispatch, user?.role, selectedTab]);
+  }, [dispatch, user?.role, user?.roles, selectedTab]);
 
-  // Update local state from Redux
-  useEffect(() => {
-    if (Array.isArray(pendingEvaluationsFromRedux)) {
-      setPendingEvaluations(pendingEvaluationsFromRedux);
-    }
+  // Use Redux state directly with useMemo for safe array handling
+  const pendingEvaluations = useMemo(() => {
+    return Array.isArray(pendingEvaluationsFromRedux) ? pendingEvaluationsFromRedux : [];
   }, [pendingEvaluationsFromRedux]);
 
-  useEffect(() => {
-    if (Array.isArray(evaluationHistoryFromRedux)) {
-      setEvaluationHistory(evaluationHistoryFromRedux);
-    }
+  const evaluationHistory = useMemo(() => {
+    return Array.isArray(evaluationHistoryFromRedux) ? evaluationHistoryFromRedux : [];
   }, [evaluationHistoryFromRedux]);
+
+  // Extract endorsements from evaluation history dynamically
+  const endorsementHistory = useMemo(() => {
+    const endorsements = [];
+    evaluationHistory.forEach((evaluation) => {
+      // Check if evaluation has endorseSkills (from metadata or categories)
+      const skills = evaluation.endorseSkills || evaluation.categories?.endorsedSkills || [];
+      if (Array.isArray(skills) && skills.length > 0) {
+        skills.forEach((skill) => {
+          endorsements.push({
+            id: `endorsement-${evaluation.id}-${skill}`,
+            skill: typeof skill === 'string' ? skill : skill.name || 'Unknown Skill',
+            developer: evaluation.developer || 'Unknown Developer',
+            developerId: evaluation.developerId,
+            message: evaluation.review || `Endorsed for ${skill}`,
+            date: evaluation.date || evaluation.createdAt || new Date().toISOString(),
+            projectName: evaluation.projectName,
+          });
+        });
+      }
+    });
+    // Sort by date (most recent first)
+    return endorsements.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [evaluationHistory]);
 
   // Show error toasts
   useEffect(() => {
@@ -181,7 +199,7 @@ const ProjectOwnerDashboard = ({ user }) => {
     if (pendingEvaluationsLoading) {
       return (
         <div className="flex items-center justify-center py-12">
-          <div className="text-white">Loading pending evaluations...</div>
+          <Loader />
         </div>
       );
     }
@@ -218,11 +236,33 @@ const ProjectOwnerDashboard = ({ user }) => {
                         <span>Duration: {project.projectDuration}</span>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {(Array.isArray(project.skills) ? project.skills : []).map(skill => (
-                          <span key={skill} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
-                            {skill}
-                          </span>
-                        ))}
+                        {(() => {
+                          // Parse skills: can be string, array, or object
+                          let skillsArray = [];
+                          if (project.skills) {
+                            try {
+                              if (typeof project.skills === 'string') {
+                                skillsArray = JSON.parse(project.skills);
+                              } else if (Array.isArray(project.skills)) {
+                                skillsArray = project.skills;
+                              } else if (typeof project.skills === 'object') {
+                                skillsArray = Object.keys(project.skills);
+                              }
+                              if (!Array.isArray(skillsArray)) {
+                                skillsArray = [];
+                              }
+                            } catch (e) {
+                              skillsArray = [];
+                            }
+                          }
+                          return skillsArray.length > 0 ? (
+                            skillsArray.map(skill => (
+                              <span key={skill} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
+                                {String(skill).trim()}
+                              </span>
+                            ))
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                     <Button
@@ -375,7 +415,7 @@ const ProjectOwnerDashboard = ({ user }) => {
     if (evaluationHistoryLoading) {
       return (
         <div className="flex items-center justify-center py-12">
-          <div className="text-white">Loading evaluation history...</div>
+          <Loader />
         </div>
       );
     }
@@ -487,16 +527,22 @@ const ProjectOwnerDashboard = ({ user }) => {
     if (projectOwnerStatsLoading) {
       return (
         <div className="flex items-center justify-center py-12">
-          <div className="text-white">Loading analytics...</div>
+          <Loader />
         </div>
       );
     }
 
+    // Use stats from API, fallback to calculated values
     const stats = projectOwnerStats || {};
     const totalEvaluations = evaluationHistory.length || stats.totalEvaluations || 0;
-    const averageRating = stats.averageRating || (evaluationHistory.length > 0 
+    
+    // Calculate average rating from evaluation history or use stats
+    const calculatedAvgRating = evaluationHistory.length > 0 
       ? (evaluationHistory.reduce((sum, e) => sum + (e.rating || 0), 0) / evaluationHistory.length).toFixed(1)
-      : '0.0');
+      : '0.0';
+    const averageRating = stats.averageRating || calculatedAvgRating;
+    
+    // Endorsements given from extracted endorsement history
     const endorsementsGiven = endorsementHistory.length || stats.endorsementsGiven || 0;
 
     return (

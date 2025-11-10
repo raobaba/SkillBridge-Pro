@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Flag,
+  Trophy,
   PieChart as PieChartIcon,
   DollarSign as DollarSignIcon,
   Calendar as CalendarIcon,
@@ -331,6 +332,7 @@ export default function AnalyticsDashboard() {
 
   const quickAccessLinks = [
     { name: "User Management", icon: Users, color: "blue", description: "Manage users & permissions", path: "/user-management" },
+    { name: "Gamification", icon: Trophy, color: "yellow", description: "Manage gamification system", path: "/gamification" },
     { name: "Content Moderation", icon: Shield, color: "red", description: "Review flagged content", path: "/moderation" },
     { name: "System Monitoring", icon: Server, color: "green", description: "Monitor system health", path: "/system-monitoring" },
     { name: "Analytics & Reports", icon: BarChart3, color: "purple", description: "View detailed analytics", path: "/analytics" },

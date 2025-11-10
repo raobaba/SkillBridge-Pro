@@ -285,6 +285,44 @@ projectRouter.get(
   projectController.getAdminProjectStats
 );
 
+// Admin Gamification
+projectRouter.get(
+  "/admin/gamification/stats",
+  authenticate,
+  requireAdmin,
+  projectController.getAdminGamificationStats
+);
+projectRouter.get(
+  "/admin/gamification/flagged-reviews",
+  authenticate,
+  requireAdmin,
+  projectController.getFlaggedReviews
+);
+projectRouter.put(
+  "/admin/gamification/reviews/:reviewId/moderate",
+  authenticate,
+  requireAdmin,
+  projectController.moderateReview
+);
+projectRouter.get(
+  "/admin/gamification/pending-verifications",
+  authenticate,
+  requireAdmin,
+  projectController.getPendingVerifications
+);
+projectRouter.put(
+  "/admin/gamification/verifications/:itemId/verify",
+  authenticate,
+  requireAdmin,
+  projectController.verifyItem
+);
+projectRouter.get(
+  "/admin/gamification/leaderboard/project-owners",
+  authenticate,
+  requireAdmin,
+  projectController.getProjectOwnerLeaderboard
+);
+
 // Generic project by ID route - MUST be last to avoid conflicts with specific routes
 projectRouter.get("/:id", projectController.getProject); // Public - anyone can view project details
 

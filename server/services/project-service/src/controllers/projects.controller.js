@@ -3717,11 +3717,8 @@ const getPendingEvaluations = async (req, res) => {
           // Skip if this applicant (developer) has already been reviewed for this project
           // Note: reviewerId in reviews is the developer who was reviewed
           if (!reviewedUserIds.has(applicant.userId)) {
-            // Get developer details
-            const {
-              UserModel,
-            } = require("../../user-service/src/models/user.model");
-            const developer = await UserModel.getUserById(applicant.userId);
+            // Get developer details using direct SQL query
+            const developer = await getUserById(applicant.userId);
             
             if (developer) {
               // Calculate project duration
@@ -3802,10 +3799,8 @@ const getEvaluationHistory = async (req, res) => {
         // Get developer info for each review
         for (const review of reviews) {
           try {
-            const {
-              UserModel,
-            } = require("../../user-service/src/models/user.model");
-            const developer = await UserModel.getUserById(review.reviewerId);
+            // Get developer info using direct SQL query
+            const developer = await getUserById(review.reviewerId);
             const applicant = await ProjectModel.getApplicantByProjectAndUser(
               project.id,
               review.reviewerId
@@ -4108,6 +4103,445 @@ const getCategoryColor = (categoryName) => {
   return categoryColors[categoryName] || "gray";
 };
 
+// ============================================
+// ADMIN GAMIFICATION APIs
+// ============================================
+
+// Helper function to get user by ID using direct SQL query
+// This is used instead of importing UserModel from user-service
+// since services are separate and share the same database
+const getUserById = async (userId) => {
+  try {
+    const userQuery = await db.execute(sql`
+      SELECT id, name, email, role, avatar_url as "avatarUrl"
+      FROM users 
+      WHERE id = ${userId} AND is_deleted = false
+    `);
+    
+    if (userQuery.rows && userQuery.rows.length > 0) {
+      return userQuery.rows[0];
+    }
+    
+    return null;
+  } catch (error) {
+    console.error("Error fetching user by ID:", error.message);
+    return null;
+  }
+};
+
+// Get flagged reviews for admin moderation
+const getFlaggedReviews = async (req, res) => {
+  try {
+    const { status } = req.query; // 'pending', 'approved', 'rejected', or 'all'
+    
+    // Get all reviews
+    const allReviewsResult = await db.execute(sql`
+      SELECT 
+        pr.id,
+        pr.project_id as "projectId",
+        pr.reviewer_id as "reviewerId",
+        pr.rating,
+        pr.comment as review,
+        pr.created_at as "createdAt",
+        p.title as "projectName",
+        p.owner_id as "projectOwnerId"
+      FROM project_reviews pr
+      INNER JOIN projects p ON pr.project_id = p.id
+      WHERE p.is_deleted = false
+      ORDER BY pr.created_at DESC
+      LIMIT 100
+    `);
+    
+    // For now, flag reviews based on patterns (suspicious ratings, short comments, etc.)
+    // In production, this would check a flagged_reviews table
+    const flaggedReviews = [];
+    
+    for (const review of allReviewsResult.rows) {
+      let isFlagged = false;
+      let flagReason = "";
+      let evidence = [];
+      
+      // Check for suspicious patterns
+      if (review.rating === 5 && (!review.review || review.review.length < 10)) {
+        isFlagged = true;
+        flagReason = "Suspicious rating pattern";
+        evidence.push("Perfect rating with minimal comment");
+      } else if (review.rating === 1 && (!review.review || review.review.length < 10)) {
+        isFlagged = true;
+        flagReason = "Suspicious rating pattern";
+        evidence.push("Low rating with minimal comment");
+      } else if (review.review && (
+        review.review.toLowerCase().includes("fake") ||
+        review.review.toLowerCase().includes("terrible") ||
+        review.review.toLowerCase().includes("waste of time")
+      )) {
+        isFlagged = true;
+        flagReason = "Inappropriate language";
+        evidence.push("Contains potentially inappropriate language");
+      }
+      
+      if (isFlagged) {
+        // Get developer and reviewer info using direct SQL queries
+        const project = await ProjectModel.getProjectById(review.projectId);
+        const reviewer = await getUserById(review.reviewerId);
+        
+        // Get developer from project applicants
+        const applicants = await ProjectModel.getProjectApplicants(review.projectId);
+        const developer = applicants.length > 0 
+          ? await getUserById(applicants[0].userId)
+          : null;
+        
+        flaggedReviews.push({
+          id: review.id,
+          projectId: review.projectId,
+          projectName: project?.title || "Unknown Project",
+          developer: developer?.name || developer?.email || "Unknown Developer",
+          reviewer: reviewer?.name || reviewer?.email || "Anonymous User",
+          rating: review.rating,
+          review: review.review || "",
+          flagReason,
+          flaggedBy: "System",
+          flaggedDate: review.createdAt ? new Date(review.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+          status: "pending", // Default to pending for flagged reviews
+          evidence,
+        });
+      }
+    }
+    
+    // Filter by status if provided
+    let filteredReviews = flaggedReviews;
+    if (status && status !== 'all') {
+      filteredReviews = flaggedReviews.filter(r => r.status === status);
+    }
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Flagged reviews retrieved successfully",
+      data: filteredReviews,
+    });
+  } catch (error) {
+    console.error("Get Flagged Reviews Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch flagged reviews",
+      error: error.message,
+    });
+  }
+};
+
+// Moderate a review (approve/reject)
+const moderateReview = async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const { action } = req.body; // 'approved' or 'rejected'
+    
+    if (!['approved', 'rejected'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Invalid action. Must be 'approved' or 'rejected'",
+      });
+    }
+    
+    // In production, this would update a flagged_reviews table
+    // For now, we'll just return success
+    // TODO: Implement actual moderation table
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: `Review ${action} successfully`,
+      data: { reviewId, status: action },
+    });
+  } catch (error) {
+    console.error("Moderate Review Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to moderate review",
+      error: error.message,
+    });
+  }
+};
+
+// Get pending verifications (endorsements/achievements)
+const getPendingVerifications = async (req, res) => {
+  try {
+    // For now, return empty array as endorsements/achievements verification table doesn't exist
+    // TODO: Implement endorsements and achievements verification table
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Pending verifications retrieved successfully",
+      data: [],
+    });
+  } catch (error) {
+    console.error("Get Pending Verifications Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch pending verifications",
+      error: error.message,
+    });
+  }
+};
+
+// Verify an item (endorsement/achievement)
+const verifyItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const { action } = req.body; // 'verified' or 'rejected'
+    
+    if (!['verified', 'rejected'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        status: 400,
+        message: "Invalid action. Must be 'verified' or 'rejected'",
+      });
+    }
+    
+    // TODO: Implement actual verification table update
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: `Item ${action} successfully`,
+      data: { itemId, status: action },
+    });
+  } catch (error) {
+    console.error("Verify Item Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to verify item",
+      error: error.message,
+    });
+  }
+};
+
+// Get project owner leaderboard
+const getProjectOwnerLeaderboard = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    
+    // Get all project owners
+    const projectOwnersResult = await db.execute(sql`
+      SELECT 
+        u.id,
+        u.name,
+        u.email,
+        u.avatar_url as "avatarUrl"
+      FROM users u
+      WHERE u.is_deleted = false
+      AND (u.role = 'project-owner' OR u.roles::text LIKE '%project-owner%')
+    `);
+    
+    // Get evaluation stats for each project owner
+    const leaderboard = await Promise.all(
+      projectOwnersResult.rows.map(async (owner) => {
+        try {
+          const ownedProjects = await ProjectModel.getProjectsByOwner(owner.id);
+          
+          // Get all reviews for owned projects
+          let totalEvaluations = 0;
+          let totalRating = 0;
+          
+          for (const project of ownedProjects) {
+            const reviews = await ProjectModel.getProjectReviews(project.id);
+            totalEvaluations += reviews.length;
+            totalRating += reviews.reduce((sum, r) => sum + (r.rating || 0), 0);
+          }
+          
+          const averageRating = totalEvaluations > 0 
+            ? (totalRating / totalEvaluations).toFixed(1)
+            : 0;
+          
+          return {
+            rank: 0, // Will be set after sorting
+            name: owner.name || owner.email,
+            email: owner.email,
+            avatarUrl: owner.avatarUrl,
+            evaluations: totalEvaluations,
+            averageRating: parseFloat(averageRating),
+            verified: false, // TODO: Add verification status
+          };
+        } catch (error) {
+          console.error(`Error processing owner ${owner.id}:`, error);
+          return null;
+        }
+      })
+    );
+    
+    // Filter out nulls and sort by evaluations (descending), then by average rating
+    const sorted = leaderboard
+      .filter(owner => owner !== null)
+      .sort((a, b) => {
+        if (b.evaluations !== a.evaluations) {
+          return b.evaluations - a.evaluations;
+        }
+        return b.averageRating - a.averageRating;
+      })
+      .slice(0, limit)
+      .map((owner, index) => ({
+        ...owner,
+        rank: index + 1,
+      }));
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Project owner leaderboard retrieved successfully",
+      data: sorted,
+    });
+  } catch (error) {
+    console.error("Get Project Owner Leaderboard Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch project owner leaderboard",
+      error: error.message,
+    });
+  }
+};
+
+// Get admin gamification stats
+const getAdminGamificationStats = async (req, res) => {
+  try {
+    // Get total reviews
+    const totalReviewsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM project_reviews pr
+      INNER JOIN projects p ON pr.project_id = p.id
+      WHERE p.is_deleted = false
+    `);
+    const totalReviews = Number(totalReviewsResult.rows[0]?.count || 0);
+    
+    // Get flagged reviews count (simplified - count suspicious reviews)
+    const flaggedReviewsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM project_reviews pr
+      INNER JOIN projects p ON pr.project_id = p.id
+      WHERE p.is_deleted = false
+      AND (
+        (pr.rating = 5 AND (pr.comment IS NULL OR LENGTH(pr.comment) < 10))
+        OR (pr.rating = 1 AND (pr.comment IS NULL OR LENGTH(pr.comment) < 10))
+      )
+    `);
+    const flaggedReviews = Number(flaggedReviewsResult.rows[0]?.count || 0);
+    
+    // Get average rating
+    const avgRatingResult = await db.execute(sql`
+      SELECT COALESCE(AVG(pr.rating), 0) as avg_rating
+      FROM project_reviews pr
+      INNER JOIN projects p ON pr.project_id = p.id
+      WHERE p.is_deleted = false
+    `);
+    const averageRating = Number(avgRatingResult.rows[0]?.avg_rating || 0).toFixed(1);
+    
+    // Get total users
+    const totalUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+    `);
+    const totalUsers = Number(totalUsersResult.rows[0]?.count || 0);
+    
+    // Get pending verifications (placeholder)
+    const pendingVerifications = 0; // TODO: Get from verifications table
+    
+    // Get total endorsements (placeholder)
+    const totalEndorsements = 0; // TODO: Get from endorsements table
+    
+    // Get active projects
+    const activeProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false AND status = 'active'
+    `);
+    const activeProjects = Number(activeProjectsResult.rows[0]?.count || 0);
+    
+    // Get completed projects
+    const completedProjectsResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM projects
+      WHERE is_deleted = false AND status = 'completed'
+    `);
+    const completedProjects = Number(completedProjectsResult.rows[0]?.count || 0);
+    
+    // Get rating distribution
+    const ratingDistributionResult = await db.execute(sql`
+      SELECT 
+        pr.rating,
+        COUNT(*) as count
+      FROM project_reviews pr
+      INNER JOIN projects p ON pr.project_id = p.id
+      WHERE p.is_deleted = false
+      GROUP BY pr.rating
+      ORDER BY pr.rating DESC
+    `);
+    
+    const ratingDistribution = {};
+    ratingDistributionResult.rows.forEach(row => {
+      ratingDistribution[row.rating] = Number(row.count || 0);
+    });
+    
+    // Get user growth (last month vs previous month)
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const previousMonth = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    
+    const thisMonthUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+      AND created_at >= ${thisMonth}
+      AND created_at < ${now}
+    `);
+    const thisMonthUsers = Number(thisMonthUsersResult.rows[0]?.count || 0);
+    
+    const lastMonthUsersResult = await db.execute(sql`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_deleted = false
+      AND created_at >= ${previousMonth}
+      AND created_at < ${lastMonth}
+    `);
+    const lastMonthUsers = Number(lastMonthUsersResult.rows[0]?.count || 0);
+    
+    const monthlyGrowth = lastMonthUsers > 0 
+      ? (((thisMonthUsers - lastMonthUsers) / lastMonthUsers) * 100).toFixed(1)
+      : (thisMonthUsers > 0 ? 100 : 0);
+    
+    return res.status(200).json({
+      success: true,
+      status: 200,
+      message: "Admin gamification stats retrieved successfully",
+      data: {
+        totalUsers,
+        totalReviews,
+        flaggedReviews,
+        pendingVerifications,
+        averageRating: parseFloat(averageRating),
+        totalEndorsements,
+        activeProjects,
+        completedProjects,
+        ratingDistribution,
+        monthlyGrowth: parseFloat(monthlyGrowth),
+      },
+    });
+  } catch (error) {
+    console.error("Get Admin Gamification Stats Error:", error);
+    return res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to fetch admin gamification stats",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createProject,
   getProject,
@@ -4164,4 +4598,10 @@ module.exports = {
   getEvaluationHistory,
   getProjectCategoriesForOwner,
   getAdminProjectStats,
+  getFlaggedReviews,
+  moderateReview,
+  getPendingVerifications,
+  verifyItem,
+  getProjectOwnerLeaderboard,
+  getAdminGamificationStats,
 };

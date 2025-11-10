@@ -100,7 +100,7 @@ export const navigationConfig = {
       path: "/gamification",
       icon: Trophy,
       description: "Track achievements",
-      roles: ["developer", "project-owner"],
+      roles: ["developer", "project-owner", "admin"],
       showInSidebar: true,
       showInUserDropdown: true,
       showInMobileNav: false,
@@ -192,6 +192,13 @@ export const navigationConfig = {
         icon: BarChart3,
         color: "blue",
         description: "System overview",
+      },
+      {
+        label: "Gamification",
+        path: "/gamification",
+        icon: Trophy,
+        color: "yellow",
+        description: "Manage gamification system",
       },
       {
         label: "User Management",

@@ -824,23 +824,80 @@ class UserModel {
 
   /**
    * Get reviews received by a developer
-   * Currently returns reviews for projects where developer was accepted
-   * Note: This requires access to project-service tables, which may need to be accessed via a different approach
+   * Fetches reviews from project_reviews table for projects where developer was accepted
    */
   static async getDeveloperReviews(userId, limit = 10) {
-    // TODO: This requires cross-service database access
-    // For now, return empty array - this should be implemented via an API call to project-service
-    // or via a shared database connection
-    return [];
+    const { sql } = require("drizzle-orm");
+    
+    try {
+      // Get reviews for projects where the developer was accepted
+      // Join project_reviews with project_applicants to get reviews for accepted developers
+      const reviewsResult = await db.execute(sql`
+        SELECT 
+          pr.id,
+          pr.project_id as "projectId",
+          pr.reviewer_id as "reviewerId",
+          pr.rating,
+          pr.comment as review,
+          pr.created_at as date,
+          p.title as "projectName",
+          u.name as reviewer,
+          u.email as "reviewerEmail",
+          u.avatar_url as "reviewerAvatar"
+        FROM project_reviews pr
+        INNER JOIN project_applicants pa ON pr.project_id = pa.project_id
+        INNER JOIN projects p ON pr.project_id = p.id
+        INNER JOIN users u ON pr.reviewer_id = u.id
+        WHERE pa.user_id = ${userId}
+        AND pa.status = 'accepted'
+        AND p.is_deleted = false
+        ORDER BY pr.created_at DESC
+        LIMIT ${limit}
+      `);
+      
+      const reviews = reviewsResult.rows.map(row => ({
+        id: row.id,
+        projectId: row.projectId,
+        projectName: row.projectName || "Unknown Project",
+        reviewer: row.reviewer || "Anonymous",
+        reviewerEmail: row.reviewerEmail,
+        reviewerAvatar: row.reviewerAvatar,
+        rating: Number(row.rating) || 0,
+        review: row.review || "",
+        date: row.date ? new Date(row.date).toISOString() : new Date().toISOString(),
+        categories: {
+          quality: Number(row.rating) || 0,
+          communication: Number(row.rating) || 0,
+          timeliness: Number(row.rating) || 0,
+          professionalism: Number(row.rating) || 0,
+          overall: Number(row.rating) || 0,
+        },
+      }));
+      
+      return reviews;
+    } catch (error) {
+      console.error("Error fetching developer reviews:", error);
+      return [];
+    }
   }
 
   /**
    * Get endorsements for a developer
-   * TODO: Create endorsements table if it doesn't exist
+   * For now, returns empty array as endorsements table doesn't exist yet
+   * TODO: Create endorsements table if needed
    */
   static async getDeveloperEndorsements(userId, limit = 10) {
     // TODO: Implement endorsements table and query
     // For now, return empty array
+    // Endorsements could be stored in a separate table like:
+    // CREATE TABLE endorsements (
+    //   id SERIAL PRIMARY KEY,
+    //   developer_id INTEGER REFERENCES users(id),
+    //   endorser_id INTEGER REFERENCES users(id),
+    //   skill TEXT,
+    //   message TEXT,
+    //   created_at TIMESTAMP
+    // );
     return [];
   }
 

@@ -1,89 +1,47 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
 import Button from '../../../components/Button';
+import { CircularLoader as Loader } from '../../../components';
+import { toast } from 'react-toastify';
 import { 
   Shield, AlertTriangle, CheckCircle, XCircle, Eye, 
   Users, BarChart3, TrendingUp, Filter, Search, 
   Crown, Award, Star, MessageSquare, ThumbsUp,
   Settings, Trash2, RefreshCw, Download, Upload
 } from "lucide-react";
+import {
+  getFlaggedReviews,
+  moderateReview,
+  getPendingVerifications,
+  verifyItem,
+  getProjectOwnerLeaderboard,
+  getAdminGamificationStats,
+  getLeaderboard,
+} from "../slice/gamificationSlice";
 
 const AdminDashboard = ({ user }) => {
+  const dispatch = useDispatch();
   const [selectedTab, setSelectedTab] = useState("moderation");
-  const [flaggedReviews, setFlaggedReviews] = useState([
-    {
-      id: 1,
-      projectName: "E-commerce Platform",
-      developer: "Alice Johnson",
-      reviewer: "Mike Smith",
-      rating: 5,
-      review: "This is clearly fake! No way this developer is that good.",
-      flagReason: "Suspicious rating pattern",
-      flaggedBy: "System",
-      flaggedDate: "2024-01-15",
-      status: "pending",
-      evidence: ["Multiple 5-star ratings in short time", "Similar review patterns"]
-    },
-    {
-      id: 2,
-      projectName: "Mobile App",
-      developer: "John Doe",
-      reviewer: "Anonymous User",
-      rating: 1,
-      review: "Terrible developer, waste of time.",
-      flagReason: "Inappropriate language",
-      flaggedBy: "User Report",
-      flaggedDate: "2024-01-14",
-      status: "pending",
-      evidence: ["Contains inappropriate language", "Unconstructive feedback"]
-    }
-  ]);
-
-  const [pendingVerifications, setPendingVerifications] = useState([
-    {
-      id: 1,
-      type: "endorsement",
-      developer: "Sarah Wilson",
-      endorser: "David Chen",
-      skill: "React.js",
-      message: "Excellent React developer with deep understanding of hooks and state management.",
-      submittedDate: "2024-01-15",
-      status: "pending"
-    },
-    {
-      id: 2,
-      type: "achievement",
-      developer: "Mike Johnson",
-      achievement: "Level 20 Master",
-      description: "Reached level 20 with exceptional performance",
-      submittedDate: "2024-01-14",
-      status: "pending"
-    }
-  ]);
-
-  const [systemStats, setSystemStats] = useState({
-    totalUsers: 1250,
-    totalReviews: 3450,
-    flaggedReviews: 23,
-    pendingVerifications: 15,
-    averageRating: 4.2,
-    totalEndorsements: 890,
-    activeProjects: 156,
-    completedProjects: 2340
-  });
-
-  const [leaderboardData, setLeaderboardData] = useState({
-    developers: [
-      { rank: 1, name: "Alice Johnson", xp: 4200, level: 15, reputation: 95, verified: true },
-      { rank: 2, name: "Mike Chen", xp: 3800, level: 14, reputation: 88, verified: true },
-      { rank: 3, name: "Sarah Wilson", xp: 3500, level: 13, reputation: 85, verified: false }
-    ],
-    projectOwners: [
-      { rank: 1, name: "David Lee", evaluations: 45, averageRating: 4.5, verified: true },
-      { rank: 2, name: "Lisa Park", evaluations: 38, averageRating: 4.3, verified: true },
-      { rank: 3, name: "Tom Brown", evaluations: 32, averageRating: 4.1, verified: false }
-    ]
-  });
+  const [filterStatus, setFilterStatus] = useState("all");
+  
+  // Redux state
+  const gamificationState = useSelector((state) => state.gamification) || {};
+  const {
+    flaggedReviews: flaggedReviewsFromRedux,
+    pendingVerifications: pendingVerificationsFromRedux,
+    projectOwnerLeaderboard,
+    adminGamificationStats,
+    leaderboard: developerLeaderboard,
+    flaggedReviewsLoading,
+    pendingVerificationsLoading,
+    projectOwnerLeaderboardLoading,
+    adminGamificationStatsLoading,
+    leaderboardLoading,
+    moderatingReview,
+    verifyingItem,
+    error,
+  } = gamificationState;
 
   const tabs = [
     { id: "moderation", label: "Moderation", icon: Shield },
@@ -93,49 +51,139 @@ const AdminDashboard = ({ user }) => {
     { id: "settings", label: "Settings", icon: Settings }
   ];
 
-  const handleModerateReview = (reviewId, action) => {
-    setFlaggedReviews(prev => 
-      prev.map(review => 
-        review.id === reviewId 
-          ? { ...review, status: action }
-          : review
-      )
-    );
+  // Load data on mount and tab changes
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.roles?.includes('admin')) {
+      if (selectedTab === 'moderation') {
+        dispatch(getFlaggedReviews(filterStatus));
+      }
+      if (selectedTab === 'verification') {
+        dispatch(getPendingVerifications());
+      }
+      if (selectedTab === 'leaderboards') {
+        dispatch(getLeaderboard(10));
+        dispatch(getProjectOwnerLeaderboard(10));
+      }
+      if (selectedTab === 'analytics') {
+        dispatch(getAdminGamificationStats());
+      }
+    }
+  }, [dispatch, user?.role, user?.roles, selectedTab, filterStatus]);
+
+  // Use Redux state with useMemo for safe array handling
+  const flaggedReviews = useMemo(() => {
+    return Array.isArray(flaggedReviewsFromRedux) ? flaggedReviewsFromRedux : [];
+  }, [flaggedReviewsFromRedux]);
+
+  const pendingVerifications = useMemo(() => {
+    return Array.isArray(pendingVerificationsFromRedux) ? pendingVerificationsFromRedux : [];
+  }, [pendingVerificationsFromRedux]);
+
+  const developerLeaderboardData = useMemo(() => {
+    return Array.isArray(developerLeaderboard) ? developerLeaderboard : [];
+  }, [developerLeaderboard]);
+
+  const projectOwnerLeaderboardData = useMemo(() => {
+    return Array.isArray(projectOwnerLeaderboard) ? projectOwnerLeaderboard : [];
+  }, [projectOwnerLeaderboard]);
+
+  // System stats from API
+  const systemStats = useMemo(() => {
+    const stats = adminGamificationStats || {};
+    return {
+      totalUsers: stats.totalUsers || 0,
+      totalReviews: stats.totalReviews || 0,
+      flaggedReviews: stats.flaggedReviews || 0,
+      pendingVerifications: stats.pendingVerifications || 0,
+      averageRating: stats.averageRating || 0,
+      totalEndorsements: stats.totalEndorsements || 0,
+      activeProjects: stats.activeProjects || 0,
+      completedProjects: stats.completedProjects || 0,
+    };
+  }, [adminGamificationStats]);
+
+  // Rating distribution from API
+  const ratingDistribution = useMemo(() => {
+    const stats = adminGamificationStats || {};
+    return stats.ratingDistribution || {};
+  }, [adminGamificationStats]);
+
+  // Monthly growth from API
+  const monthlyGrowth = useMemo(() => {
+    const stats = adminGamificationStats || {};
+    return stats.monthlyGrowth || 0;
+  }, [adminGamificationStats]);
+
+  // Show error toasts
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+    }
+  }, [error]);
+
+  const handleModerateReview = async (reviewId, action) => {
+    try {
+      await dispatch(moderateReview({ reviewId, action })).unwrap();
+      toast.success(`Review ${action} successfully`);
+      // Refresh flagged reviews
+      dispatch(getFlaggedReviews(filterStatus));
+    } catch (error) {
+      toast.error(error?.message || "Failed to moderate review");
+    }
   };
 
-  const handleVerifyItem = (itemId, action) => {
-    setPendingVerifications(prev => 
-      prev.map(item => 
-        item.id === itemId 
-          ? { ...item, status: action }
-          : item
-      )
-    );
+  const handleVerifyItem = async (itemId, action) => {
+    try {
+      await dispatch(verifyItem({ itemId, action })).unwrap();
+      toast.success(`Item ${action} successfully`);
+      // Refresh pending verifications
+      dispatch(getPendingVerifications());
+    } catch (error) {
+      toast.error(error?.message || "Failed to verify item");
+    }
   };
 
-  const renderModerationTab = () => (
-    <div className="space-y-6">
-      {/* Flagged Reviews */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-white">Flagged Reviews</h3>
-          <div className="flex items-center space-x-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm">
-              <option>All</option>
-              <option>Pending</option>
-              <option>Approved</option>
-              <option>Rejected</option>
-            </select>
-          </div>
+  const renderModerationTab = () => {
+    if (flaggedReviewsLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader />
         </div>
-        
-        <div className="space-y-4">
-          {flaggedReviews.map((review, index) => (
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Flagged Reviews */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Flagged Reviews</h3>
+            <div className="flex items-center space-x-2">
+              <Filter className="w-4 h-4 text-gray-400" />
+              <select 
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm"
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="space-y-4">
+            {flaggedReviews.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>No flagged reviews at this time.</p>
+              </div>
+            ) : (
+              flaggedReviews.map((review, index) => (
             <motion.div
               key={review.id}
               initial={{ opacity: 0, x: -20 }}
@@ -171,7 +219,7 @@ const AdminDashboard = ({ user }) => {
               <div className="mb-3">
                 <div className="text-sm font-medium text-red-400 mb-1">Flag Reason: {review.flagReason}</div>
                 <div className="text-xs text-gray-400">
-                  Evidence: {review.evidence.join(", ")}
+                  Evidence: {Array.isArray(review.evidence) ? review.evidence.join(", ") : (review.evidence || "No evidence")}
                 </div>
               </div>
               
@@ -179,14 +227,16 @@ const AdminDashboard = ({ user }) => {
                 <div className="flex space-x-2">
                   <Button
                     onClick={() => handleModerateReview(review.id, "approved")}
-                    className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+                    disabled={moderatingReview}
+                    className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors disabled:opacity-50"
                   >
                     <CheckCircle className="w-4 h-4 inline mr-1" />
                     Approve
                   </Button>
                   <Button
                     onClick={() => handleModerateReview(review.id, "rejected")}
-                    className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
+                    disabled={moderatingReview}
+                    className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
                   >
                     <XCircle className="w-4 h-4 inline mr-1" />
                     Reject
@@ -208,22 +258,38 @@ const AdminDashboard = ({ user }) => {
                 </div>
               )}
             </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
+              ))
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
 
-  const renderVerificationTab = () => (
-    <div className="space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-      >
-        <h3 className="text-xl font-bold text-white mb-4">Pending Verifications</h3>
-        <div className="space-y-4">
-          {pendingVerifications.map((item, index) => (
+  const renderVerificationTab = () => {
+    if (pendingVerificationsLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+        >
+          <h3 className="text-xl font-bold text-white mb-4">Pending Verifications</h3>
+          <div className="space-y-4">
+            {pendingVerifications.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>No pending verifications at this time.</p>
+              </div>
+            ) : (
+              pendingVerifications.map((item, index) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 20 }}
@@ -264,14 +330,16 @@ const AdminDashboard = ({ user }) => {
                 <div className="flex space-x-2">
                   <Button
                     onClick={() => handleVerifyItem(item.id, "verified")}
-                    className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+                    disabled={verifyingItem}
+                    className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors disabled:opacity-50"
                   >
                     <CheckCircle className="w-4 h-4 inline mr-1" />
                     Verify
                   </Button>
                   <Button
                     onClick={() => handleVerifyItem(item.id, "rejected")}
-                    className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
+                    disabled={verifyingItem}
+                    className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors disabled:opacity-50"
                   >
                     <XCircle className="w-4 h-4 inline mr-1" />
                     Reject
@@ -293,40 +361,57 @@ const AdminDashboard = ({ user }) => {
                 </div>
               )}
             </motion.div>
-          ))}
-        </div>
-      </motion.div>
-    </div>
-  );
-
-  const renderLeaderboardsTab = () => (
-    <div className="space-y-6">
-      {/* Developer Leaderboard */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-      >
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-white">Developer Leaderboard</h3>
-          <div className="flex space-x-2">
-            <Button 
-              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4 inline mr-1" />
-              Refresh
-            </Button>
-            <Button 
-              className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
-            >
-              <Download className="w-4 h-4 inline mr-1" />
-              Export
-            </Button>
+              ))
+            )}
           </div>
+        </motion.div>
+      </div>
+    );
+  };
+
+  const renderLeaderboardsTab = () => {
+    if (leaderboardLoading || projectOwnerLeaderboardLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader />
         </div>
-        
-        <div className="space-y-3">
-          {leaderboardData.developers.map((developer, index) => (
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Developer Leaderboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Developer Leaderboard</h3>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={() => dispatch(getLeaderboard(10))}
+                className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+              >
+                <RefreshCw className="w-4 h-4 inline mr-1" />
+                Refresh
+              </Button>
+              <Button 
+                className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600 transition-colors"
+              >
+                <Download className="w-4 h-4 inline mr-1" />
+                Export
+              </Button>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            {developerLeaderboardData.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>No leaderboard data available.</p>
+              </div>
+            ) : (
+              developerLeaderboardData.map((developer, index) => (
             <div
               key={developer.rank}
               className="flex items-center justify-between p-3 rounded-lg bg-white/5"
@@ -344,24 +429,39 @@ const AdminDashboard = ({ user }) => {
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-white">{developer.xp.toLocaleString()} XP</div>
-                <div className="text-sm text-gray-300">Rep: {developer.reputation}</div>
+                <div className="font-bold text-white">{(developer.xp || 0).toLocaleString()} XP</div>
+                <div className="text-sm text-gray-300">Level {developer.level || 1}</div>
               </div>
             </div>
-          ))}
-        </div>
-      </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
 
-      {/* Project Owner Leaderboard */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-      >
-        <h3 className="text-xl font-bold text-white mb-4">Project Owner Leaderboard</h3>
-        <div className="space-y-3">
-          {leaderboardData.projectOwners.map((owner, index) => (
+        {/* Project Owner Leaderboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-bold text-white">Project Owner Leaderboard</h3>
+            <Button 
+              onClick={() => dispatch(getProjectOwnerLeaderboard(10))}
+              className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 inline mr-1" />
+              Refresh
+            </Button>
+          </div>
+          <div className="space-y-3">
+            {projectOwnerLeaderboardData.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <p>No project owner leaderboard data available.</p>
+              </div>
+            ) : (
+              projectOwnerLeaderboardData.map((owner, index) => (
             <div
               key={owner.rank}
               className="flex items-center justify-between p-3 rounded-lg bg-white/5"
@@ -383,100 +483,123 @@ const AdminDashboard = ({ user }) => {
                 <div className="text-sm text-gray-300">Avg Rating</div>
               </div>
             </div>
-          ))}
+              ))
+            )}
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
+  const renderAnalyticsTab = () => {
+    if (adminGamificationStatsLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader />
         </div>
-      </motion.div>
-    </div>
-  );
+      );
+    }
 
-  const renderAnalyticsTab = () => (
-    <div className="space-y-6">
-      {/* System Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
-        >
-          <div className="text-3xl font-bold text-white mb-2">{systemStats.totalUsers.toLocaleString()}</div>
-          <div className="text-gray-300">Total Users</div>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
-        >
-          <div className="text-3xl font-bold text-white mb-2">{systemStats.totalReviews.toLocaleString()}</div>
-          <div className="text-gray-300">Total Reviews</div>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
-        >
-          <div className="text-3xl font-bold text-white mb-2">{systemStats.flaggedReviews}</div>
-          <div className="text-gray-300">Flagged Reviews</div>
-        </motion.div>
-        
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
-        >
-          <div className="text-3xl font-bold text-white mb-2">{systemStats.averageRating}</div>
-          <div className="text-gray-300">Avg Rating</div>
-        </motion.div>
-      </div>
+    // Calculate total reviews for percentage calculation
+    const totalReviewsForDistribution = Object.values(ratingDistribution).reduce((sum, count) => sum + count, 0);
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-        >
-          <h3 className="text-xl font-bold text-white mb-4">Rating Distribution</h3>
-          <div className="space-y-3">
-            {[5, 4, 3, 2, 1].map(rating => (
-              <div key={rating} className="flex items-center space-x-3">
-                <span className="text-white w-8">{rating}★</span>
-                <div className="flex-1 bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-yellow-400 h-2 rounded-full"
-                    style={{ width: `${Math.random() * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-gray-300 text-sm">{Math.floor(Math.random() * 100)}</span>
-              </div>
-            ))}
-          </div>
-        </motion.div>
+    return (
+      <div className="space-y-6">
+        {/* System Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
+          >
+            <div className="text-3xl font-bold text-white mb-2">{systemStats.totalUsers.toLocaleString()}</div>
+            <div className="text-gray-300">Total Users</div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
+          >
+            <div className="text-3xl font-bold text-white mb-2">{systemStats.totalReviews.toLocaleString()}</div>
+            <div className="text-gray-300">Total Reviews</div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
+          >
+            <div className="text-3xl font-bold text-white mb-2">{systemStats.flaggedReviews}</div>
+            <div className="text-gray-300">Flagged Reviews</div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 text-center"
+          >
+            <div className="text-3xl font-bold text-white mb-2">{systemStats.averageRating}</div>
+            <div className="text-gray-300">Avg Rating</div>
+          </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
-        >
-          <h3 className="text-xl font-bold text-white mb-4">User Growth</h3>
-          <div className="text-center">
-            <div className="text-4xl font-bold text-white mb-2">+12%</div>
-            <div className="text-gray-300">This Month</div>
-            <div className="text-sm text-green-400 mt-2">
-              <TrendingUp className="w-4 h-4 inline mr-1" />
-              Growing steadily
+        {/* Charts */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">Rating Distribution</h3>
+            <div className="space-y-3">
+              {[5, 4, 3, 2, 1].map(rating => {
+                const count = ratingDistribution[rating] || 0;
+                const percentage = totalReviewsForDistribution > 0 
+                  ? (count / totalReviewsForDistribution) * 100 
+                  : 0;
+                return (
+                  <div key={rating} className="flex items-center space-x-3">
+                    <span className="text-white w-8">{rating}★</span>
+                    <div className="flex-1 bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-yellow-400 h-2 rounded-full transition-all"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-gray-300 text-sm">{count}</span>
+                  </div>
+                );
+              })}
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+          >
+            <h3 className="text-xl font-bold text-white mb-4">User Growth</h3>
+            <div className="text-center">
+              <div className="text-4xl font-bold text-white mb-2">
+                {monthlyGrowth > 0 ? '+' : ''}{monthlyGrowth}%
+              </div>
+              <div className="text-gray-300">This Month</div>
+              <div className={`text-sm mt-2 ${monthlyGrowth > 0 ? 'text-green-400' : monthlyGrowth < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                <TrendingUp className="w-4 h-4 inline mr-1" />
+                {monthlyGrowth > 0 ? 'Growing steadily' : monthlyGrowth < 0 ? 'Declining' : 'No change'}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderSettingsTab = () => (
     <div className="space-y-6">

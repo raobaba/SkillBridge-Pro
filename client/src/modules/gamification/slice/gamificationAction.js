@@ -46,3 +46,34 @@ export const submitEvaluationApi = async (evaluationData) => {
   const url = `api/v1/projects/reviews`;
   return await fetchFromApiServer("POST", url, evaluationData);
 };
+
+// Admin Gamification APIs
+export const getFlaggedReviewsApi = async (status = 'all') => {
+  const url = `api/v1/projects/admin/gamification/flagged-reviews${status !== 'all' ? `?status=${status}` : ''}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const moderateReviewApi = async (reviewId, action) => {
+  const url = `api/v1/projects/admin/gamification/reviews/${reviewId}/moderate`;
+  return await fetchFromApiServer("PUT", url, { action });
+};
+
+export const getPendingVerificationsApi = async () => {
+  const url = `api/v1/projects/admin/gamification/pending-verifications`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const verifyItemApi = async (itemId, action) => {
+  const url = `api/v1/projects/admin/gamification/verifications/${itemId}/verify`;
+  return await fetchFromApiServer("PUT", url, { action });
+};
+
+export const getProjectOwnerLeaderboardApi = async (limit = 10) => {
+  const url = `api/v1/projects/admin/gamification/leaderboard/project-owners?limit=${limit}`;
+  return await fetchFromApiServer("GET", url);
+};
+
+export const getAdminGamificationStatsApi = async () => {
+  const url = `api/v1/projects/admin/gamification/stats`;
+  return await fetchFromApiServer("GET", url);
+};

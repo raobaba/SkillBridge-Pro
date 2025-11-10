@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { motion } from "framer-motion";
 import { 
@@ -13,6 +13,7 @@ import {
   getLeaderboard,
   getDeveloperAchievements,
 } from "../slice/gamificationSlice";
+import { CircularLoader as Loader } from "../../../components";
 
 // Icon mapping for achievements
 const iconMap = {
@@ -42,12 +43,6 @@ const DeveloperDashboard = ({ user }) => {
     leaderboardLoading,
     achievementsLoading,
   } = gamificationState;
-  
-  // Ensure all data is always an array to prevent map errors
-  const safeAchievementsData = Array.isArray(achievementsData) ? achievementsData : [];
-  const safeRecentReviews = Array.isArray(recentReviews) ? recentReviews : [];
-  const safeRecentEndorsements = Array.isArray(recentEndorsements) ? recentEndorsements : [];
-  const safeLeaderboard = Array.isArray(leaderboard) ? leaderboard : [];
 
   // Default stats if not loaded
   const defaultStats = {
@@ -66,7 +61,88 @@ const DeveloperDashboard = ({ user }) => {
     totalRatings: 0,
   };
 
-  const stats = userStats || defaultStats;
+  // Extract data from API response structure
+  // Redux slice already extracts data from API response
+  const stats = useMemo(() => {
+    if (!userStats || typeof userStats !== 'object') return defaultStats;
+    return {
+      xp: userStats.xp || 0,
+      level: userStats.level || 1,
+      totalXP: userStats.totalXP || userStats.xp || 0,
+      weeklyXP: userStats.weeklyXP || 0,
+      dailyXP: userStats.dailyXP || 0,
+      streak: userStats.streak || 0,
+      reputation: userStats.reputation || 0,
+      badges: userStats.badges || 0,
+      achievements: userStats.achievements || 0,
+      endorsements: userStats.endorsements || 0,
+      completedProjects: userStats.completedProjects || 0,
+      averageRating: userStats.averageRating || 0,
+      totalRatings: userStats.totalRatings || 0,
+    };
+  }, [userStats]);
+
+  // Ensure all data is always an array to prevent map errors
+  // Redux slice already extracts data from API response
+  const safeAchievementsData = useMemo(() => {
+    return Array.isArray(achievementsData) ? achievementsData : [];
+  }, [achievementsData]);
+
+  const safeRecentReviews = useMemo(() => {
+    return Array.isArray(recentReviews) ? recentReviews : [];
+  }, [recentReviews]);
+
+  const safeRecentEndorsements = useMemo(() => {
+    return Array.isArray(recentEndorsements) ? recentEndorsements : [];
+  }, [recentEndorsements]);
+
+  const safeLeaderboard = useMemo(() => {
+    return Array.isArray(leaderboard) ? leaderboard : [];
+  }, [leaderboard]);
+
+  // Generate recent activity from actual data
+  const recentActivity = useMemo(() => {
+    const activities = [];
+    
+    // Add recent reviews
+    safeRecentReviews.slice(0, 2).forEach((review) => {
+      activities.push({
+        id: `review-${review.id}`,
+        type: 'review',
+        icon: Star,
+        iconColor: 'text-yellow-400',
+        message: `Received ${review.rating}-star review for "${review.projectName || 'project'}"`,
+        time: review.date ? new Date(review.date).toLocaleDateString() : 'Recently',
+      });
+    });
+
+    // Add recent endorsements
+    safeRecentEndorsements.slice(0, 2).forEach((endorsement) => {
+      activities.push({
+        id: `endorsement-${endorsement.id}`,
+        type: 'endorsement',
+        icon: ThumbsUp,
+        iconColor: 'text-blue-400',
+        message: `Received endorsement for ${endorsement.skill || 'skills'}`,
+        time: endorsement.date ? new Date(endorsement.date).toLocaleDateString() : 'Recently',
+      });
+    });
+
+    // Add achievements
+    safeAchievementsData.filter(a => a.unlocked).slice(0, 2).forEach((achievement) => {
+      activities.push({
+        id: `achievement-${achievement.id}`,
+        type: 'achievement',
+        icon: Trophy,
+        iconColor: 'text-green-400',
+        message: `Achieved "${achievement.name}" badge (+${achievement.xp} XP)`,
+        time: 'Recently',
+      });
+    });
+
+    // Sort by time (most recent first) and limit to 3
+    return activities.slice(0, 3);
+  }, [safeRecentReviews, safeRecentEndorsements, safeAchievementsData]);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -123,6 +199,14 @@ const DeveloperDashboard = ({ user }) => {
   }));
 
   const renderOverview = () => {
+    if (statsLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
       {/* XP Progress */}
@@ -219,26 +303,39 @@ const DeveloperDashboard = ({ user }) => {
         className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
       >
         <h3 className="text-xl font-bold text-white mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 text-sm">
-            <CheckCircle className="w-4 h-4 text-green-400" />
-            <span className="text-gray-300">Completed project "E-commerce Platform" (+200 XP)</span>
+        {recentActivity.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-gray-400 text-sm">No recent activity</p>
+            <p className="text-gray-500 text-xs mt-1">Complete projects to see activity here</p>
           </div>
-          <div className="flex items-center space-x-3 text-sm">
-            <ThumbsUp className="w-4 h-4 text-blue-400" />
-            <span className="text-gray-300">Received endorsement for React.js</span>
+        ) : (
+          <div className="space-y-3">
+            {recentActivity.map((activity) => {
+              const IconComponent = activity.icon;
+              return (
+                <div key={activity.id} className="flex items-center space-x-3 text-sm">
+                  <IconComponent className={`w-4 h-4 ${activity.iconColor}`} />
+                  <span className="text-gray-300">{activity.message}</span>
+                  <span className="text-gray-500 text-xs ml-auto">{activity.time}</span>
+                </div>
+              );
+            })}
           </div>
-          <div className="flex items-center space-x-3 text-sm">
-            <Star className="w-4 h-4 text-yellow-400" />
-            <span className="text-gray-300">Achieved "Quality Expert" badge</span>
-          </div>
-        </div>
+        )}
       </motion.div>
       </div>
     );
   };
 
   const renderAchievements = () => {
+    if (achievementsLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -271,6 +368,14 @@ const DeveloperDashboard = ({ user }) => {
   };
 
   const renderReviews = () => {
+    if (reviewsLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
     if (safeRecentReviews.length === 0) {
       return (
         <div className="text-center py-12">
@@ -338,6 +443,14 @@ const DeveloperDashboard = ({ user }) => {
   };
 
   const renderEndorsements = () => {
+    if (endorsementsLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
     if (safeRecentEndorsements.length === 0) {
       return (
         <div className="text-center py-12">
@@ -378,6 +491,14 @@ const DeveloperDashboard = ({ user }) => {
   };
 
   const renderLeaderboard = () => {
+    if (leaderboardLoading) {
+      return (
+        <div className="flex justify-center items-center py-12">
+          <Loader />
+        </div>
+      );
+    }
+
     const currentUserId = user?.id || user?.userId;
     const leaderboardData = safeLeaderboard.map((developer, index) => ({
       rank: index + 1,
