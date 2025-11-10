@@ -586,7 +586,30 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
     Object.entries(dataset.applicantsByProject).forEach(([projectId, applicants]) => {
       const project = dataset.projects.find(p => p.id == projectId);
       applicants.forEach(applicant => {
-        const skills = applicant.skills ? JSON.parse(applicant.skills).join('; ') : '';
+        // Handle skills: can be string, array, object, or null/undefined
+        let skillsArray = [];
+        if (applicant.skills) {
+          try {
+            if (typeof applicant.skills === 'string') {
+              // Try to parse as JSON string
+              skillsArray = JSON.parse(applicant.skills);
+            } else if (Array.isArray(applicant.skills)) {
+              // Already an array
+              skillsArray = applicant.skills;
+            } else if (typeof applicant.skills === 'object') {
+              // If it's an object, extract keys or values
+              skillsArray = Object.keys(applicant.skills);
+            }
+            // Ensure it's an array
+            if (!Array.isArray(skillsArray)) {
+              skillsArray = [];
+            }
+          } catch (e) {
+            console.log('Error parsing applicant skills for CSV:', e);
+            skillsArray = [];
+          }
+        }
+        const skillsString = skillsArray.map(skill => String(skill).trim()).filter(s => s).join('; ');
         const row = [
           projectId,
           `"${(project?.title || '').replace(/"/g, '""')}"`,
@@ -596,7 +619,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
           applicant.appliedAt || '',
           applicant.experience || '',
           applicant.location || '',
-          `"${skills.replace(/"/g, '""')}"`
+          `"${skillsString.replace(/"/g, '""')}"`
         ];
         csvSections.push(row.join(','));
       });
