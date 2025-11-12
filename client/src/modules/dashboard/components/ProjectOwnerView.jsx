@@ -21,9 +21,8 @@ import {
   DollarSign as DollarSignIcon,
   Calendar as CalendarIcon,
   Clock as ClockIcon,
-
   Eye as EyeIcon,
-
+  CheckSquare,
 } from "lucide-react";
 import { Layout, CircularLoader } from "../../../components";
 import { useSelector, useDispatch } from "react-redux";
@@ -34,12 +33,14 @@ import {
   markAsRead
 } from "../../notifications/slice/notificationSlice";
 import { getActiveProjectsForOwner, listProjects, listApplicants, getProjectCategoriesForOwner } from "../../project/slice/projectSlice";
+import CollaborationTab from "./CollaborationTab";
 
 export default function ProjectOwnerView() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
 
   // Redux selectors for notifications
   const notifications = useSelector((state) => state.notifications?.notifications || []);
@@ -108,33 +109,211 @@ export default function ProjectOwnerView() {
     fetchApplicants();
   }, [projects, dispatch]);
 
-  // Enhanced mock data for Project Owner dashboard
-  const ownerStats = {
-    activeProjects: 10,
-    completedProjects: 24,
-    teamMembers: 12,
-    totalBudget: "$125,000",
-    rating: 4.6,
-    openPositions: 7,
-    totalApplicants: 45,
-    pendingReviews: 8,
-    monthlyRevenue: "$18,500",
-    projectSuccessRate: 92,
-    avgProjectDuration: "6.2 weeks",
-    activeHires: 5,
-  };
+  // Calculate dynamic stats from fetched data
+  const ownerStats = useMemo(() => {
+    // Calculate active projects count
+    const activeProjectsCount = activeProjectsData?.length || 0;
+    
+    // Count high priority active projects
+    const highPriorityCount = activeProjectsData?.filter(p => p.priority === 'high').length || 0;
+    
+    // Calculate total applicants from all projects
+    const allApplicants = Object.values(projectApplicants).flat();
+    const totalApplicantsCount = allApplicants.length;
+    
+    // Count pending applicants (status: 'applied', 'pending')
+    const pendingApplicantsCount = allApplicants.filter(a => 
+      a.status === 'applied' || a.status === 'pending'
+    ).length;
+    
+    // Calculate team members (accepted applicants across all projects)
+    const acceptedApplicants = allApplicants.filter(a => 
+      a.status === 'accepted' || a.status === 'hired'
+    );
+    const teamMembersCount = new Set(acceptedApplicants.map(a => a.userId || a.id)).size;
+    const activeHiresCount = acceptedApplicants.length;
+    
+    // Calculate total budget from all projects
+    let totalBudgetAmount = 0;
+    let totalSpentAmount = 0;
+    
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        // Use budgetMax if available, otherwise budgetMin, otherwise 0
+        const budgetMax = project.budgetMax || 0;
+        const budgetMin = project.budgetMin || 0;
+        const projectBudget = budgetMax > 0 ? budgetMax : (budgetMin > 0 ? budgetMin : 0);
+        totalBudgetAmount += projectBudget;
+        
+        // TODO: Calculate actual spent from expenses tracking
+        // For now, estimate spent as 80% of budget for completed projects
+        if (project.status === 'completed' && projectBudget > 0) {
+          totalSpentAmount += projectBudget * 0.8;
+        }
+      });
+    }
+    
+    const remainingBudgetAmount = totalBudgetAmount - totalSpentAmount;
+    const totalBudgetFormatted = totalBudgetAmount > 0 
+      ? `$${totalBudgetAmount.toLocaleString()}` 
+      : "$0";
+    const remainingBudgetFormatted = remainingBudgetAmount > 0
+      ? `$${Math.round(remainingBudgetAmount).toLocaleString()}`
+      : "$0";
+    
+    // Calculate success rate (completed projects / total projects)
+    const totalProjectsCount = projects?.length || 0;
+    const completedProjectsCount = projects?.filter(p => p.status === 'completed').length || 0;
+    const successRate = totalProjectsCount > 0
+      ? Math.round((completedProjectsCount / totalProjectsCount) * 100)
+      : 0;
+    
+    // Calculate average project duration (from completed projects)
+    let totalDurationWeeks = 0;
+    let completedWithDates = 0;
+    
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        if (project.status === 'completed' && project.startDate && project.deadline) {
+          const start = new Date(project.startDate);
+          const end = new Date(project.deadline);
+          const weeks = (end - start) / (1000 * 60 * 60 * 24 * 7);
+          if (weeks > 0) {
+            totalDurationWeeks += weeks;
+            completedWithDates++;
+          }
+        }
+      });
+    }
+    
+    const avgDurationWeeks = completedWithDates > 0 
+      ? (totalDurationWeeks / completedWithDates).toFixed(1)
+      : "0";
+    const avgProjectDuration = `${avgDurationWeeks} weeks`;
+    
+    // Calculate open positions (active projects with available slots)
+    let openPositionsCount = 0;
+    let urgentPositionsCount = 0;
+    
+    if (activeProjectsData && activeProjectsData.length > 0) {
+      activeProjectsData.forEach(project => {
+        const maxApplicants = project.maxApplicants || 0;
+        const currentApplicants = project.applicants || 0;
+        
+        if (maxApplicants === 0 || currentApplicants < maxApplicants) {
+          openPositionsCount++;
+        }
+        
+        if (project.isUrgent || project.priority === 'high') {
+          urgentPositionsCount++;
+        }
+      });
+    }
+    
+    // Calculate monthly revenue (from completed projects this month)
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    let monthlyRevenueAmount = 0;
+    
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        if (project.status === 'completed') {
+          const completedDate = project.updatedAt ? new Date(project.updatedAt) : null;
+          if (completedDate && 
+              completedDate.getMonth() === currentMonth && 
+              completedDate.getFullYear() === currentYear) {
+            const budgetMax = project.budgetMax || 0;
+            const budgetMin = project.budgetMin || 0;
+            const projectBudget = budgetMax > 0 ? budgetMax : (budgetMin > 0 ? budgetMin : 0);
+            monthlyRevenueAmount += projectBudget * 0.8; // Estimate 80% of budget as revenue
+          }
+        }
+      });
+    }
+    
+    const monthlyRevenueFormatted = monthlyRevenueAmount > 0
+      ? `$${Math.round(monthlyRevenueAmount).toLocaleString()}`
+      : "$0";
+    
+    return {
+      activeProjects: activeProjectsCount,
+      completedProjects: completedProjectsCount,
+      teamMembers: teamMembersCount,
+      totalBudget: totalBudgetFormatted,
+      rating: 4.6, // TODO: Calculate from project reviews
+      openPositions: openPositionsCount,
+      totalApplicants: totalApplicantsCount,
+      pendingReviews: pendingApplicantsCount,
+      monthlyRevenue: monthlyRevenueFormatted,
+      projectSuccessRate: successRate,
+      avgProjectDuration: avgProjectDuration,
+      activeHires: activeHiresCount,
+      highPriorityCount: highPriorityCount,
+      urgentPositionsCount: urgentPositionsCount,
+      remainingBudget: remainingBudgetFormatted,
+    };
+  }, [activeProjectsData, projects, projectApplicants]);
 
-  const projectManagementStats = {
-    totalProjects: 34,
-    inProgress: 10,
-    completed: 24,
-    onHold: 2,
-    cancelled: 1,
-    totalSpent: "$98,500",
-    remainingBudget: "$26,500",
-    avgProjectValue: "$3,676",
-    topPerformingProject: "E-commerce Platform",
-  };
+  const projectManagementStats = useMemo(() => {
+    const totalProjects = projects?.length || 0;
+    const inProgress = projects?.filter(p => p.status === 'active').length || 0;
+    const completed = projects?.filter(p => p.status === 'completed').length || 0;
+    const onHold = projects?.filter(p => p.status === 'paused' || p.status === 'on_hold').length || 0;
+    const cancelled = projects?.filter(p => p.status === 'cancelled').length || 0;
+    
+    // Calculate total spent (estimate from completed projects)
+    let totalSpentAmount = 0;
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        if (project.status === 'completed') {
+          const budgetMax = project.budgetMax || 0;
+          const budgetMin = project.budgetMin || 0;
+          const projectBudget = budgetMax > 0 ? budgetMax : (budgetMin > 0 ? budgetMin : 0);
+          totalSpentAmount += projectBudget * 0.8; // Estimate 80% spent
+        }
+      });
+    }
+    
+    const totalSpentFormatted = totalSpentAmount > 0
+      ? `$${Math.round(totalSpentAmount).toLocaleString()}`
+      : "$0";
+    
+    const remainingBudget = ownerStats.remainingBudget || "$0";
+    
+    // Calculate average project value
+    let totalBudget = 0;
+    if (projects && projects.length > 0) {
+      projects.forEach(project => {
+        const budgetMax = project.budgetMax || 0;
+        const budgetMin = project.budgetMin || 0;
+        const projectBudget = budgetMax > 0 ? budgetMax : (budgetMin > 0 ? budgetMin : 0);
+        totalBudget += projectBudget;
+      });
+    }
+    
+    const avgProjectValue = totalProjects > 0
+      ? `$${Math.round(totalBudget / totalProjects).toLocaleString()}`
+      : "$0";
+    
+    // Get top performing project (highest rated or most applicants)
+    const topProject = projects?.reduce((top, project) => {
+      const topScore = (top.ratingAvg || 0) * 10 + (top.applicantsCount || 0);
+      const currentScore = (project.ratingAvg || 0) * 10 + (project.applicantsCount || 0);
+      return currentScore > topScore ? project : top;
+    }, projects?.[0] || {});
+    
+    return {
+      totalProjects,
+      inProgress,
+      completed,
+      onHold,
+      cancelled,
+      totalSpent: totalSpentFormatted,
+      remainingBudget: remainingBudget.replace('$', ''),
+      avgProjectValue,
+      topPerformingProject: topProject?.title || "N/A",
+    };
+  }, [projects, ownerStats.remainingBudget]);
 
 
   // Transform active projects data from API to match UI structure
@@ -302,47 +481,115 @@ export default function ProjectOwnerView() {
     });
   }, [projectApplicants, projects]);
 
-  const teamMembers = [
-    {
-      id: 1,
-      name: "Alice Johnson",
-      role: "Frontend Developer",
-      skills: ["React", "TypeScript", "CSS"],
-      avatar: "https://randomuser.me/api/portraits/women/44.jpg",
-      status: "online",
-      currentProject: "Next Gen Web Platform",
-      hoursThisWeek: 32,
-      rating: 4.8,
-      joinedDate: "2024-01-15",
-      hourlyRate: "$45",
-    },
-    {
-      id: 2,
-      name: "Mark Wilson",
-      role: "Backend Developer",
-      skills: ["Node.js", "Express", "MongoDB"],
-      avatar: "https://randomuser.me/api/portraits/men/46.jpg",
-      status: "away",
-      currentProject: "AI Customer Support Bot",
-      hoursThisWeek: 28,
-      rating: 4.9,
-      joinedDate: "2024-02-01",
-      hourlyRate: "$50",
-    },
-    {
-      id: 3,
-      name: "Sophie Lee",
-      role: "QA Engineer",
-      skills: ["Automation", "Selenium", "Jest"],
-      avatar: "https://randomuser.me/api/portraits/women/48.jpg",
-      status: "online",
-      currentProject: "Mobile Banking App",
-      hoursThisWeek: 25,
-      rating: 4.7,
-      joinedDate: "2024-03-10",
-      hourlyRate: "$40",
-    },
-  ];
+  // Transform team members from shortlisted/accepted/hired applicants
+  const teamMembers = useMemo(() => {
+    if (!projectApplicants || Object.keys(projectApplicants).length === 0) {
+      return [];
+    }
+
+    // Create a map of projectId -> project title for quick lookup
+    const projectTitleMap = {};
+    projects.forEach(project => {
+      projectTitleMap[project.id] = project.title;
+    });
+
+    // Flatten all applicants from all projects and filter for team members
+    const allApplicants = [];
+    Object.entries(projectApplicants).forEach(([projectId, applicants]) => {
+      applicants.forEach(applicant => {
+        allApplicants.push({
+          ...applicant,
+          projectId: Number(projectId),
+          projectTitle: projectTitleMap[Number(projectId)] || "Unknown Project",
+        });
+      });
+    });
+
+    // Filter for shortlisted, accepted, or hired applicants
+    const teamMemberApplicants = allApplicants.filter(applicant => {
+      const status = applicant.status?.toLowerCase();
+      return status === 'shortlisted' || status === 'accepted' || status === 'hired';
+    });
+
+    // Remove duplicates by userId (in case same person is in multiple projects)
+    const uniqueTeamMembers = [];
+    const seenUserIds = new Set();
+    
+    teamMemberApplicants.forEach(applicant => {
+      const userId = applicant.userId || applicant.id;
+      if (!seenUserIds.has(userId)) {
+        seenUserIds.add(userId);
+        uniqueTeamMembers.push(applicant);
+      }
+    });
+
+    // Transform to UI format
+    return uniqueTeamMembers.map((applicant, index) => {
+      // Parse skills (can be string, array, or object)
+      let skillsArray = [];
+      if (applicant.skills) {
+        try {
+          if (typeof applicant.skills === 'string') {
+            skillsArray = JSON.parse(applicant.skills);
+          } else if (Array.isArray(applicant.skills)) {
+            skillsArray = applicant.skills;
+          } else if (typeof applicant.skills === 'object') {
+            skillsArray = Object.keys(applicant.skills);
+          }
+          if (!Array.isArray(skillsArray)) {
+            skillsArray = [];
+          }
+        } catch (e) {
+          skillsArray = [];
+        }
+      }
+
+      // Get role from applicant data or default
+      const role = applicant.roleNeeded || applicant.role || "Developer";
+
+      // Get rating
+      const rating = applicant.rating || 0;
+
+      // Format hourly rate (if available)
+      const hourlyRate = applicant.hourlyRate || "$0";
+      const hourlyRateFormatted = typeof hourlyRate === 'string' && hourlyRate.startsWith('$') 
+        ? hourlyRate 
+        : `$${hourlyRate}`;
+
+      // Format joined date (use appliedAt or updatedAt)
+      const joinedDate = applicant.appliedAt || applicant.updatedAt || new Date();
+      const joinedDateFormatted = new Date(joinedDate).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+
+      // Get current project (most recent project for this team member)
+      const currentProject = applicant.projectTitle || "Unknown Project";
+
+      // Default status to "online" (can be enhanced later with actual online status)
+      const status = "online";
+
+      // Default hours this week (can be enhanced later with actual time tracking)
+      const hoursThisWeek = 0;
+
+      return {
+        id: applicant.id || applicant.userId || index,
+        name: applicant.name || "Unknown",
+        role: role,
+        skills: skillsArray.slice(0, 5), // Limit to 5 skills
+        avatar: applicant.avatarUrl || null,
+        status: status,
+        currentProject: currentProject,
+        hoursThisWeek: hoursThisWeek,
+        rating: rating > 0 ? parseFloat(rating.toFixed(1)) : 0,
+        joinedDate: joinedDateFormatted,
+        hourlyRate: hourlyRateFormatted,
+        userId: applicant.userId,
+        projectId: applicant.projectId,
+      };
+    });
+  }, [projectApplicants, projects]);
 
   // Transform project categories data from API to match UI structure
   const projectCategories = useMemo(() => {
@@ -524,8 +771,88 @@ export default function ProjectOwnerView() {
     }
   };
 
+  // Mock tasks data (will be replaced with API data later)
+  const [tasks, setTasks] = useState([
+    {
+      id: 1,
+      projectId: 1,
+      projectName: "E-commerce Platform",
+      title: "Setup Database Schema",
+      description: "Create database tables for products, users, orders, and cart",
+      status: "in-progress",
+      priority: "high",
+      assignedTo: { id: 1, name: "John Doe", avatar: null },
+      dueDate: "2024-12-25",
+      estimatedHours: 8,
+      createdAt: "2024-12-20",
+      submissions: [],
+    },
+    {
+      id: 2,
+      projectId: 1,
+      projectName: "E-commerce Platform",
+      title: "Implement User Authentication",
+      description: "Create login, register, and password reset functionality",
+      status: "under-review",
+      priority: "high",
+      assignedTo: { id: 2, name: "Jane Smith", avatar: null },
+      dueDate: "2024-12-28",
+      estimatedHours: 12,
+      createdAt: "2024-12-21",
+      submissions: [{
+        id: 1,
+        submittedBy: { id: 2, name: "Jane Smith" },
+        submittedAt: "2024-12-22",
+        type: "pull-request",
+        link: "https://github.com/project/pr/123",
+        files: [],
+        notes: "Implemented JWT authentication with refresh tokens",
+      }],
+    },
+  ]);
+
   return (
     <Layout isSearchBar={true}>
+        {/* Tab Navigation */}
+        <div className='mb-6 border-b border-white/10'>
+          <div className='flex space-x-8'>
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`pb-4 px-1 border-b-2 transition-colors ${
+                activeTab === "overview"
+                  ? "border-blue-400 text-blue-400"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
+              }`}
+            >
+              <div className='flex items-center gap-2'>
+                <BarChart3 className='w-5 h-5' />
+                <span className='font-medium'>Overview</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("collaboration")}
+              className={`pb-4 px-1 border-b-2 transition-colors ${
+                activeTab === "collaboration"
+                  ? "border-blue-400 text-blue-400"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
+              }`}
+            >
+              <div className='flex items-center gap-2'>
+                <CheckSquare className='w-5 h-5' />
+                <span className='font-medium'>Collaboration</span>
+                {tasks.filter(t => t.status === "under-review").length > 0 && (
+                  <span className='ml-2 px-2 py-0.5 bg-purple-500 text-white text-xs rounded-full'>
+                    {tasks.filter(t => t.status === "under-review").length}
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Overview Tab Content */}
+        {activeTab === "overview" && (
+          <>
         {/* Enhanced Welcome Section */}
         <div className='mb-8'>
           <div className="flex items-center justify-between">
@@ -563,7 +890,7 @@ export default function ProjectOwnerView() {
                 <p className='text-2xl font-bold text-blue-400'>
                   {ownerStats.activeProjects}
                 </p>
-                <p className='text-xs text-gray-500'>3 high priority</p>
+                <p className='text-xs text-gray-500'>{ownerStats.highPriorityCount || 0} high priority</p>
               </div>
               <Briefcase className='w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform' />
             </div>
@@ -599,7 +926,7 @@ export default function ProjectOwnerView() {
                 <p className='text-2xl font-bold text-green-400'>
                   {ownerStats.totalBudget}
                 </p>
-                <p className='text-xs text-gray-500'>${projectManagementStats.remainingBudget} remaining</p>
+                <p className='text-xs text-gray-500'>{ownerStats.remainingBudget} remaining</p>
               </div>
               <DollarSign className='w-8 h-8 text-green-400 group-hover:scale-110 transition-transform' />
             </div>
@@ -623,7 +950,7 @@ export default function ProjectOwnerView() {
                 <p className='text-2xl font-bold text-pink-400'>
                   {ownerStats.openPositions}
                 </p>
-                <p className='text-xs text-gray-500'>Urgent: 2</p>
+                <p className='text-xs text-gray-500'>Urgent: {ownerStats.urgentPositionsCount || 0}</p>
               </div>
               <Target className='w-8 h-8 text-pink-400 group-hover:scale-110 transition-transform' />
             </div>
@@ -890,64 +1217,103 @@ export default function ProjectOwnerView() {
                 </Button>
               </div>
               <div className='space-y-4'>
-                {teamMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className='flex items-center space-x-4 bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-all'
-                  >
-                    <div className='relative'>
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className='w-12 h-12 rounded-full object-cover'
-                      />
-                      <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-900 ${
-                        member.status === 'online' ? 'bg-green-500' :
-                        member.status === 'away' ? 'bg-yellow-500' :
-                        'bg-gray-500'
-                      }`}></div>
-                    </div>
+                {recentApplicantsLoading || projectsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <CircularLoader />
+                  </div>
+                ) : teamMembers.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">No team members found. Shortlist applicants to add them to your team.</p>
+                ) : (
+                  teamMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className='flex items-center space-x-4 bg-white/5 border border-white/10 rounded-lg p-4 hover:border-white/20 transition-all'
+                    >
+                      <div className='relative'>
+                        {member.avatar ? (
+                          <>
+                            <img
+                              src={member.avatar}
+                              alt={member.name}
+                              className='w-12 h-12 rounded-full object-cover border-2 border-white/20'
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                const fallback = e.target.nextElementSibling;
+                                if (fallback) fallback.style.display = 'flex';
+                              }}
+                            />
+                            <div 
+                              className='w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full items-center justify-center text-white font-bold hidden border-2 border-white/20'
+                              style={{ display: 'none' }}
+                            >
+                              {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                            </div>
+                          </>
+                        ) : (
+                          <div className='w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold border-2 border-white/20'>
+                            {member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-900 ${
+                          member.status === 'online' ? 'bg-green-500' :
+                          member.status === 'away' ? 'bg-yellow-500' :
+                          'bg-gray-500'
+                        }`}></div>
+                      </div>
                     <div className='flex-1'>
                       <div className='flex items-center justify-between mb-1'>
                         <h3 className='font-semibold'>{member.name}</h3>
                         <div className='flex items-center gap-2'>
-                          <span className='text-sm text-gray-400'>⭐ {member.rating}</span>
-                          <span className='text-sm text-green-400'>{member.hourlyRate}/hr</span>
+                          {member.rating > 0 && (
+                            <span className='text-sm text-gray-400'>⭐ {member.rating}</span>
+                          )}
+                          {member.hourlyRate && member.hourlyRate !== "$0" && (
+                            <span className='text-sm text-green-400'>{member.hourlyRate}/hr</span>
+                          )}
                         </div>
                       </div>
                       <p className='text-gray-400 text-sm mb-1'>{member.role}</p>
                       <p className='text-gray-300 text-xs mb-2'>Working on: {member.currentProject}</p>
                       <div className='flex items-center justify-between'>
                         <div className='flex flex-wrap gap-1'>
-                          {member.skills.map((skill, i) => (
-                            <span
-                              key={i}
-                              className='px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs'
-                            >
-                              {skill}
-                            </span>
-                          ))}
+                          {member.skills && member.skills.length > 0 ? (
+                            member.skills.map((skill, i) => (
+                              <span
+                                key={i}
+                                className='px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs'
+                              >
+                                {skill}
+                              </span>
+                            ))
+                          ) : (
+                            <span className='text-xs text-gray-500'>No skills specified</span>
+                          )}
                         </div>
                         <div className='text-right text-xs text-gray-400'>
-                          <div>{member.hoursThisWeek}h this week</div>
+                          {member.hoursThisWeek > 0 && (
+                            <div>{member.hoursThisWeek}h this week</div>
+                          )}
                           <div>Joined {member.joinedDate}</div>
                         </div>
                       </div>
                     </div>
                     <div className='flex flex-col gap-2'>
                       <Button 
+                        onClick={() => navigate(`/chat?userId=${member.userId}`)}
                         className='px-3 py-1 bg-blue-500 hover:bg-blue-600 rounded text-sm transition-colors'
                       >
                         Message
                       </Button>
                       <Button 
+                        onClick={() => navigate(`/profile/${member.userId}`)}
                         className='px-3 py-1 bg-gray-500 hover:bg-gray-600 rounded text-sm transition-colors'
                       >
                         View Profile
                       </Button>
                     </div>
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -1131,6 +1497,30 @@ export default function ProjectOwnerView() {
             </div>
           </div>
         </div>
+        </>
+        )}
+
+        {/* Collaboration Tab Content */}
+        {activeTab === "collaboration" && (
+          <CollaborationTab
+            tasks={tasks}
+            projects={projects}
+            teamMembers={teamMembers}
+            onTaskCreate={(taskData) => {
+              // TODO: Handle task creation
+              console.log("Create task:", taskData);
+            }}
+            onTaskUpdate={(taskData) => {
+              // TODO: Handle task update
+              console.log("Update task:", taskData);
+            }}
+            onReviewSubmit={(action, comments) => {
+              // TODO: Handle review submission
+              console.log("Review action:", action, comments);
+            }}
+            navigate={navigate}
+          />
+        )}
     </Layout>
   );
 }

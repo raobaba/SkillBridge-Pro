@@ -69,6 +69,7 @@ const projectsTable = pgTable("projects", {
   benefits: text("benefits"),
   company: text("company"),
   website: text("website"),
+  repositoryUrl: text("repository_url"), // GitHub/GitLab repository URL for cloning
   featuredUntil: timestamp("featured_until"),
   isUrgent: boolean("is_urgent").default(false),
   isFeatured: boolean("is_featured").default(false),

@@ -30,6 +30,21 @@ import {
   Brain,
   Rocket,
   ThumbsUp,
+  CheckSquare,
+  FileText,
+  GitBranch,
+  Upload,
+  XCircle,
+  Edit,
+  Filter,
+  Search,
+  Calendar,
+  Send,
+  Link as LinkIcon,
+  BarChart3,
+  Play,
+  Pause,
+  CheckCircle2 as CheckCircleIcon,
 } from "lucide-react";
 import { Layout, CircularLoader } from "../../../components";
 import { useSelector, useDispatch } from "react-redux";
@@ -55,12 +70,15 @@ import {
   markAsRead
 } from "../../notifications/slice/notificationSlice";
 import { toast } from "react-toastify";
+import MyTasksTab from "./MyTasksTab";
+import RepositoryAccess from "./RepositoryAccess";
 
 export default function DeveloperView() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
 
   // Redux selectors
   const developerStats = useSelector((state) => state.gamification?.stats);
@@ -255,6 +273,7 @@ export default function DeveloperView() {
         timeSpent: "0h", // TODO: Get from time tracking
         estimatedTime: project.duration || "N/A",
         applicationStatus: app.status || 'pending',
+        repositoryUrl: project.repositoryUrl || project.repository_url || null,
       };
     });
   }, [appliedProjectsData]);
@@ -564,8 +583,80 @@ export default function DeveloperView() {
     return "text-gray-400";
   };
 
+  // Mock assigned tasks data (will be replaced with API data later)
+  const [assignedTasks, setAssignedTasks] = useState([
+    {
+      id: 1,
+      projectId: 1,
+      projectName: "E-commerce Platform",
+      title: "Setup Database Schema",
+      description: "Create database tables for products, users, orders, and cart",
+      status: "in-progress",
+      priority: "high",
+      assignedTo: { id: user?.id, name: user?.name },
+      dueDate: "2024-12-25",
+      estimatedHours: 8,
+      createdAt: "2024-12-20",
+      repositoryUrl: "https://github.com/project/repo",
+    },
+    {
+      id: 2,
+      projectId: 1,
+      projectName: "E-commerce Platform",
+      title: "Implement User Authentication",
+      description: "Create login, register, and password reset functionality",
+      status: "assigned",
+      priority: "high",
+      assignedTo: { id: user?.id, name: user?.name },
+      dueDate: "2024-12-28",
+      estimatedHours: 12,
+      createdAt: "2024-12-21",
+      repositoryUrl: "https://github.com/project/repo",
+    },
+  ]);
+
   return (
     <Layout isSearchBar={true}>
+        {/* Tab Navigation */}
+        <div className='mb-6 border-b border-white/10'>
+          <div className='flex space-x-8'>
+            <button
+              onClick={() => setActiveTab("overview")}
+              className={`pb-4 px-1 border-b-2 transition-colors ${
+                activeTab === "overview"
+                  ? "border-blue-400 text-blue-400"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
+              }`}
+            >
+              <div className='flex items-center gap-2'>
+                <BarChart3 className='w-5 h-5' />
+                <span className='font-medium'>Overview</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab("collaboration")}
+              className={`pb-4 px-1 border-b-2 transition-colors ${
+                activeTab === "collaboration"
+                  ? "border-blue-400 text-blue-400"
+                  : "border-transparent text-gray-400 hover:text-gray-300"
+              }`}
+            >
+              <div className='flex items-center gap-2'>
+                <CheckSquare className='w-5 h-5' />
+                <span className='font-medium'>My Tasks</span>
+                {assignedTasks.filter(t => t.status === "assigned" || t.status === "in-progress").length > 0 && (
+                  <span className='ml-2 px-2 py-0.5 bg-blue-500 text-white text-xs rounded-full'>
+                    {assignedTasks.filter(t => t.status === "assigned" || t.status === "in-progress").length}
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Overview Tab Content */}
+        {activeTab === "overview" && (
+          <>
         {/* Enhanced Welcome Section */}
         <div className='mb-8'>
           <div className="flex items-center justify-between">
@@ -1319,6 +1410,61 @@ export default function DeveloperView() {
             ))}
           </div>
         </div>
+
+            {/* Repository Access Section */}
+            {recentProjects.filter(p => 
+              (p.applicationStatus?.toLowerCase() === 'accepted' || 
+               p.applicationStatus?.toLowerCase() === 'shortlisted' ||
+               p.applicationStatus?.toLowerCase() === 'hired') &&
+              (p.repositoryUrl)
+            ).length > 0 && (
+              <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
+                <div className='flex items-center justify-between mb-6'>
+                  <h2 className='text-xl font-semibold flex items-center gap-2'>
+                    <GitBranch className='w-5 h-5 text-blue-400' />
+                    Repository Access
+                  </h2>
+                </div>
+                <div className='space-y-4'>
+                  {recentProjects
+                    .filter(p => 
+                      (p.applicationStatus?.toLowerCase() === 'accepted' || 
+                       p.applicationStatus?.toLowerCase() === 'shortlisted' ||
+                       p.applicationStatus?.toLowerCase() === 'hired') &&
+                      (p.repositoryUrl)
+                    )
+                    .map((project) => (
+                      <RepositoryAccess
+                        key={project.id}
+                        project={project}
+                        applicationStatus={project.applicationStatus}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
+        </>
+        )}
+
+        {/* Collaboration Tab Content */}
+        {activeTab === "collaboration" && (
+          <MyTasksTab
+            assignedTasks={assignedTasks}
+            appliedProjects={appliedProjectsData}
+            onTaskStart={(task) => {
+              // TODO: Handle start task
+              setAssignedTasks(prev => prev.map(t => 
+                t.id === task.id ? { ...t, status: "in-progress" } : t
+              ));
+            }}
+            onTaskSubmit={(task) => {
+              // TODO: Handle task submission
+              setAssignedTasks(prev => prev.map(t => 
+                t.id === task.id ? { ...t, status: "under-review" } : t
+              ));
+            }}
+          />
+        )}
     </Layout>
   );
 }

@@ -73,6 +73,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
     benefits: "",
     company: "",
     website: "",
+    repositoryUrl: "",
     contactEmail: "",
     contactPhone: "",
     attachments: [],
@@ -269,6 +270,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
         benefits: formData.benefits,
         company: formData.company,
         website: formData.website,
+        repositoryUrl: formData.repositoryUrl,
         maxApplicants: formData.maxApplicants ? parseInt(formData.maxApplicants) : null,
         language: formData.language,
         timezone: formData.timezone,
@@ -307,6 +309,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
         benefits: "",
         company: "",
         website: "",
+        repositoryUrl: "",
         contactEmail: "",
         contactPhone: "",
         attachments: [],
@@ -411,6 +414,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
       benefits: p.benefits || "",
       company: p.company || "",
       website: p.website || "",
+      repositoryUrl: p.repositoryUrl || p.repository_url || "",
       maxApplicants: (typeof p.maxApplicants === 'number' ? String(p.maxApplicants) : (p.maxApplicants || "")),
       language: p.language || prev.language,
       timezone: p.timezone || "",
@@ -569,6 +573,24 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                       placeholder="https://yourcompany.com"
                       type="url"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      label="Repository URL"
+                      name="repositoryUrl"
+                      value={formData.repositoryUrl}
+                      onChange={handleChange}
+                      placeholder="https://github.com/username/project-name"
+                      type="url"
+                      leftIcon={Link}
+                    />
+                    <div className="flex items-end">
+                      <div className="text-sm text-gray-400">
+                        <p className="mb-1">💡 Tip: Add your GitHub/GitLab repository URL</p>
+                        <p className="text-xs">Developers will be able to clone this after being accepted</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
