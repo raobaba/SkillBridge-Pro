@@ -1587,42 +1587,118 @@ const getDeveloperAppliedProjects = async (req, res) => {
   }
 };
 
-// Get developer tasks (tasks assigned to the authenticated developer)
+// Get developer tasks (tasks assigned to the authenticated developer) - Enhanced version
 const getDeveloperTasks = async (req, res) => {
   try {
-    const userId = req.user?.userId;
+    const userId = req.user?.userId || req.user?.id;
     if (!userId) return sendError(res, "Authentication required", 401);
     
-    const { status, limit } = req.query;
+    const { status, limit, projectId, search, sortBy, sortOrder } = req.query;
     
     // Get tasks assigned to the developer
-    // If status is provided, filter by status; otherwise get active tasks (todo, in_progress, review)
-    const tasks = await ProjectTasksModel.getTasksByAssignee(Number(userId), {
-      status: status || null,
+    // If status is provided, filter by status; otherwise get all tasks
+    const tasks = await ProjectTasksModel.getAllTasksByAssignee(Number(userId), {
       limit: limit ? Number(limit) : undefined,
     });
     
-    // Transform tasks to match frontend expectations
-    const transformedTasks = tasks.map((task) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description || "",
-      project: task.projectTitle || "Unknown Project",
-      projectId: task.projectId,
-      priority: task.priority || "medium",
-      status: task.status || "todo",
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : null,
-      estimatedTime: "N/A", // TODO: Add estimated time field to tasks table
-      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
-      completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
-    }));
+    // Filter by status if provided
+    let filteredTasks = tasks;
+    if (status && status !== "all") {
+      filteredTasks = tasks.filter(t => t.status === status);
+    }
+    
+    // Filter by project if provided
+    if (projectId) {
+      filteredTasks = filteredTasks.filter(t => t.projectId === Number(projectId));
+    }
+    
+    // Filter by search if provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      filteredTasks = filteredTasks.filter(t =>
+        t.title?.toLowerCase().includes(searchLower) ||
+        t.description?.toLowerCase().includes(searchLower) ||
+        t.projectTitle?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    // Sort tasks
+    filteredTasks = [...filteredTasks].sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case "dueDate":
+          aValue = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+          bValue = b.dueDate ? new Date(b.dueDate).getTime() : 0;
+          break;
+        case "priority":
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          aValue = priorityOrder[a.priority] || 0;
+          bValue = priorityOrder[b.priority] || 0;
+          break;
+        case "status":
+          const statusOrder = { "assigned": 4, "in-progress": 3, "under-review": 2, "completed": 1 };
+          aValue = statusOrder[a.status] || 0;
+          bValue = statusOrder[b.status] || 0;
+          break;
+        default:
+          aValue = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          bValue = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      }
+      
+      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+    });
+    
+    // Get additional data for each task
+    const { TaskTimeTrackingModel } = require("../models/task-time-tracking.model");
+    const { TaskSubmissionsModel } = require("../models/task-submissions.model");
+    const { TaskCommentsModel } = require("../models/task-comments.model");
+    const { ProjectModel } = require("../models");
+    
+    const enhancedTasks = await Promise.all(
+      filteredTasks.map(async (task) => {
+        // Get time tracking for this task
+        const timeTracking = await TaskTimeTrackingModel.getTimeTrackingByTaskId(task.id);
+        const totalTime = await TaskTimeTrackingModel.getTotalTimeForTask(task.id, Number(userId));
+        const activeTimer = await TaskTimeTrackingModel.getActiveTracking(Number(userId));
+        
+        // Get submissions
+        const submissions = await TaskSubmissionsModel.getSubmissionsByTaskId(task.id);
+        const pendingSubmissions = submissions.filter(s => s.status === "pending");
+        
+        // Get comments count
+        const commentsCount = await TaskCommentsModel.getCommentCount(task.id);
+        
+        // Get project repository URL
+        const project = await ProjectModel.getProjectById(task.projectId);
+        
+        return {
+          id: task.id,
+          title: task.title,
+          description: task.description || "",
+          projectName: task.projectTitle || "Unknown Project",
+          projectId: task.projectId,
+          priority: task.priority || "medium",
+          status: task.status === "todo" ? "assigned" : task.status === "in_progress" ? "in-progress" : task.status === "review" ? "under-review" : task.status || "assigned",
+          dueDate: task.dueDate ? new Date(task.dueDate).toISOString() : null,
+          estimatedHours: task.estimatedHours || 0,
+          repositoryUrl: project?.repositoryUrl || null,
+          createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+          completedAt: task.completedAt ? new Date(task.completedAt).toISOString() : null,
+          timeTracked: totalTime || 0,
+          activeTimer: activeTimer && activeTimer.taskId === task.id ? activeTimer : null,
+          submissions: pendingSubmissions,
+          commentsCount,
+        };
+      })
+    );
     
     return res.status(200).json({
       success: true,
       status: 200,
       message: "Developer tasks retrieved successfully",
-      tasks: transformedTasks,
-      count: transformedTasks.length,
+      developerTasks: enhancedTasks,
+      count: enhancedTasks.length,
     });
   } catch (error) {
     console.error("Get Developer Tasks Error:", error);

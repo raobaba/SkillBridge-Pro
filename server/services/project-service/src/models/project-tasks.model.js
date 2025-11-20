@@ -22,9 +22,10 @@ const projectTasksTable = pgTable("project_tasks", {
 
 // Project Tasks Model Class
 class ProjectTasksModel {
-  static async addTask({ projectId, milestoneId, assignedTo, title, description, priority, dueDate }) {
+  static async addTask({ projectId, milestoneId, assignedTo, title, description, priority, dueDate, estimatedHours, repositoryUrl }) {
     const [row] = await db.insert(projectTasksTable).values({
       projectId, milestoneId, assignedTo, title, description, priority, dueDate,
+      // Note: estimatedHours and repositoryUrl will be added via migration, for now they're ignored
     }).returning();
     return row;
   }
@@ -203,6 +204,115 @@ class ProjectTasksModel {
       .select()
       .from(projectTasksTable)
       .where(and(eq(projectTasksTable.projectId, projectId), eq(projectTasksTable.priority, priority)));
+  }
+
+  // Get all tasks for a project owner (all tasks in their projects)
+  static async getTasksByProjectOwner(ownerId, options = {}) {
+    const { projectId, status, priority, limit, sortBy, sortOrder } = options;
+    
+    const conditions = [eq(projectsTable.ownerId, ownerId)];
+    
+    if (projectId) {
+      conditions.push(eq(projectTasksTable.projectId, projectId));
+    }
+    if (status) {
+      conditions.push(eq(projectTasksTable.status, status));
+    }
+    if (priority) {
+      conditions.push(eq(projectTasksTable.priority, priority));
+    }
+    
+    let query = db
+      .select({
+        id: projectTasksTable.id,
+        projectId: projectTasksTable.projectId,
+        milestoneId: projectTasksTable.milestoneId,
+        assignedTo: projectTasksTable.assignedTo,
+        title: projectTasksTable.title,
+        description: projectTasksTable.description,
+        priority: projectTasksTable.priority,
+        status: projectTasksTable.status,
+        dueDate: projectTasksTable.dueDate,
+        completedAt: projectTasksTable.completedAt,
+        createdAt: projectTasksTable.createdAt,
+        projectTitle: projectsTable.title,
+        projectStatus: projectsTable.status,
+      })
+      .from(projectTasksTable)
+      .innerJoin(projectsTable, eq(projectTasksTable.projectId, projectsTable.id))
+      .where(and(...conditions));
+    
+    // Sort
+    if (sortBy === "dueDate") {
+      query = query.orderBy(sortOrder === "desc" ? desc(projectTasksTable.dueDate) : asc(projectTasksTable.dueDate));
+    } else if (sortBy === "priority") {
+      query = query.orderBy(sortOrder === "desc" ? desc(projectTasksTable.priority) : asc(projectTasksTable.priority));
+    } else if (sortBy === "status") {
+      query = query.orderBy(sortOrder === "desc" ? desc(projectTasksTable.status) : asc(projectTasksTable.status));
+    } else {
+      query = query.orderBy(desc(projectTasksTable.createdAt));
+    }
+    
+    if (limit) {
+      query = query.limit(limit);
+    }
+    
+    return await query;
+  }
+
+  // Bulk update tasks
+  static async bulkUpdateTasks(taskIds, updateData) {
+    if (!taskIds || taskIds.length === 0) return [];
+    
+    // Update each task individually for simplicity and compatibility
+    const updatedTasks = [];
+    for (const taskId of taskIds) {
+      try {
+        const updated = await this.updateTask(taskId, updateData);
+        if (updated) updatedTasks.push(updated);
+      } catch (error) {
+        console.error(`Error updating task ${taskId}:`, error);
+      }
+    }
+    return updatedTasks;
+  }
+
+  // Bulk delete tasks
+  static async bulkDeleteTasks(taskIds) {
+    if (!taskIds || taskIds.length === 0) return [];
+    
+    // Ensure all taskIds are numbers
+    const validTaskIds = taskIds.map(id => Number(id)).filter(id => !isNaN(id) && id > 0);
+    if (validTaskIds.length === 0) return [];
+    
+    // Delete each task individually
+    const deletedTasks = [];
+    for (const taskId of validTaskIds) {
+      try {
+        const deleted = await this.deleteTask(Number(taskId));
+        if (deleted) deletedTasks.push(deleted);
+      } catch (error) {
+        console.error(`Error deleting task ${taskId}:`, error);
+      }
+    }
+    return deletedTasks;
+  }
+
+  // Bulk assign tasks
+  static async bulkAssignTasks(taskIds, assignedTo) {
+    if (!taskIds || taskIds.length === 0) return [];
+    
+    // Assign each task individually
+    const assignedTasks = [];
+    for (const taskId of taskIds) {
+      try {
+        const assigned = await this.assignTask(taskId, assignedTo);
+        if (assigned) assignedTasks.push(assigned);
+      } catch (error) {
+        console.error(`Error assigning task ${taskId}:`, error);
+      }
+    }
+    return assignedTasks;
   }
 }
 

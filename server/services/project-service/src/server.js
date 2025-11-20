@@ -8,6 +8,7 @@ const errorMiddleware = require("shared/middleware/error.middleware");
 const logger = require("shared/utils/logger.utils");
 const { initializeDatabase } = require("./config/database");
 const projectRouter = require("./routes/projects.routes");
+const tasksRouter = require("./routes/tasks.routes");
 const aiRouter = require("./routes/ai.routes");
 
 const app = express();
@@ -36,6 +37,7 @@ app.use(logger.dev, logger.combined);
 
 // 📂 Route Mounting
 app.use("/api/v1/projects", projectRouter);
+app.use("/api/v1/tasks", tasksRouter);
 app.use("/api/v1/ai", aiRouter);
 
 // ⚠️ Error Middleware

@@ -60,6 +60,17 @@ import {
   respondInvite,
   getDeveloperTasks
 } from "../../project/slice/projectSlice";
+import {
+  startTask,
+  submitTask,
+  startTimer,
+  stopTimer,
+  stopActiveTimer,
+  getUserTimeTracking,
+  getDeveloperPerformanceStats,
+  addTaskComment,
+  getTaskComments,
+} from "../slice/taskSlice";
 import { 
   getSyncStatus,
   getIntegrations 
@@ -92,6 +103,12 @@ export default function DeveloperView() {
   const developerTasks = useSelector((state) => state.project?.developerTasks || []);
   const developerTasksLoading = useSelector((state) => state.project?.developerTasksLoading);
   
+  // Task-related Redux selectors
+  const activeTimer = useSelector((state) => state.task?.activeTimer);
+  const userTimeTracking = useSelector((state) => state.task?.userTimeTracking || []);
+  const performanceStats = useSelector((state) => state.task?.performanceStats);
+  const taskComments = useSelector((state) => state.task?.taskComments || {});
+  
   const recommendations = useSelector((state) => state.project?.recommendations || []);
   const recommendationsLoading = useSelector((state) => state.project?.recommendationsLoading);
   
@@ -117,8 +134,14 @@ export default function DeveloperView() {
     // Fetch applied projects
     dispatch(getDeveloperAppliedProjects());
     
-    // Fetch developer tasks
-    dispatch(getDeveloperTasks({ limit: 10 }));
+    // Fetch developer tasks (no limit to show all assigned tasks)
+    dispatch(getDeveloperTasks());
+    
+    // Fetch user time tracking
+    dispatch(getUserTimeTracking());
+    
+    // Fetch performance stats
+    dispatch(getDeveloperPerformanceStats());
     
     // Fetch project recommendations
     dispatch(getProjectRecommendations(10));
@@ -135,6 +158,13 @@ export default function DeveloperView() {
     dispatch(getUnreadCount());
   }, [dispatch]);
 
+  // Refresh developer tasks when switching to My Tasks tab
+  useEffect(() => {
+    if (activeTab === "collaboration") {
+      dispatch(getDeveloperTasks());
+    }
+  }, [activeTab, dispatch]);
+
   // Handler for responding to invites
   const handleRespondInvite = async (inviteId, status) => {
     try {
@@ -144,6 +174,95 @@ export default function DeveloperView() {
       dispatch(getMyInvites());
     } catch (error) {
       toast.error(error?.message || `Failed to ${status} invitation`);
+    }
+  };
+
+  // Transform developerTasks to assignedTasks format
+  const assignedTasks = useMemo(() => {
+    if (!developerTasks || developerTasks.length === 0) {
+      return [];
+    }
+    return developerTasks.map(task => {
+      // Ensure status is mapped correctly (API returns "assigned" but might also return "todo")
+      let status = task.status || "assigned";
+      if (status === "todo") {
+        status = "assigned";
+      }
+      
+      return {
+        id: task.id,
+        title: task.title,
+        description: task.description || "",
+        projectName: task.projectName || task.project || "Unknown Project",
+        projectId: task.projectId,
+        priority: task.priority || "medium",
+        status: status,
+        dueDate: task.dueDate,
+        estimatedHours: task.estimatedHours || 0,
+        repositoryUrl: task.repositoryUrl || null,
+        createdAt: task.createdAt,
+        completedAt: task.completedAt,
+        timeTracked: task.timeTracked || 0,
+        activeTimer: task.activeTimer,
+        submissions: task.submissions || [],
+        commentsCount: task.commentsCount || 0,
+      };
+    });
+  }, [developerTasks]);
+
+  // Task handlers
+  const handleTaskStart = async (task) => {
+    try {
+      await dispatch(startTask(task.id)).unwrap();
+      dispatch(getDeveloperTasks()); // Refresh tasks
+    } catch (error) {
+      toast.error(error?.message || "Failed to start task");
+    }
+  };
+
+  const handleTaskSubmit = async (task, submissionData) => {
+    try {
+      await dispatch(submitTask({ taskId: task.id, data: submissionData })).unwrap();
+      dispatch(getDeveloperTasks()); // Refresh tasks
+      toast.success("Work submitted successfully");
+    } catch (error) {
+      toast.error(error?.message || "Failed to submit work");
+    }
+  };
+
+  const handleStartTimer = async (taskId, description = "") => {
+    try {
+      await dispatch(startTimer({ taskId, data: { description } })).unwrap();
+      dispatch(getUserTimeTracking()); // Refresh time tracking
+    } catch (error) {
+      toast.error(error?.message || "Failed to start timer");
+    }
+  };
+
+  const handleStopTimer = async (taskId) => {
+    try {
+      await dispatch(stopTimer(taskId)).unwrap();
+      dispatch(getUserTimeTracking()); // Refresh time tracking
+    } catch (error) {
+      toast.error(error?.message || "Failed to stop timer");
+    }
+  };
+
+  const handleStopActiveTimer = async () => {
+    try {
+      await dispatch(stopActiveTimer()).unwrap();
+      dispatch(getUserTimeTracking()); // Refresh time tracking
+    } catch (error) {
+      toast.error(error?.message || "Failed to stop timer");
+    }
+  };
+
+  const handleAddComment = async (taskId, comment) => {
+    try {
+      await dispatch(addTaskComment({ taskId, data: { comment } })).unwrap();
+      dispatch(getTaskComments(taskId)); // Refresh comments
+    } catch (error) {
+      toast.error(error?.message || "Failed to add comment");
     }
   };
 
@@ -582,38 +701,6 @@ export default function DeveloperView() {
     if (match >= 70) return "text-yellow-400";
     return "text-gray-400";
   };
-
-  // Mock assigned tasks data (will be replaced with API data later)
-  const [assignedTasks, setAssignedTasks] = useState([
-    {
-      id: 1,
-      projectId: 1,
-      projectName: "E-commerce Platform",
-      title: "Setup Database Schema",
-      description: "Create database tables for products, users, orders, and cart",
-      status: "in-progress",
-      priority: "high",
-      assignedTo: { id: user?.id, name: user?.name },
-      dueDate: "2024-12-25",
-      estimatedHours: 8,
-      createdAt: "2024-12-20",
-      repositoryUrl: "https://github.com/project/repo",
-    },
-    {
-      id: 2,
-      projectId: 1,
-      projectName: "E-commerce Platform",
-      title: "Implement User Authentication",
-      description: "Create login, register, and password reset functionality",
-      status: "assigned",
-      priority: "high",
-      assignedTo: { id: user?.id, name: user?.name },
-      dueDate: "2024-12-28",
-      estimatedHours: 12,
-      createdAt: "2024-12-21",
-      repositoryUrl: "https://github.com/project/repo",
-    },
-  ]);
 
   return (
     <Layout isSearchBar={true}>
@@ -1451,18 +1538,17 @@ export default function DeveloperView() {
           <MyTasksTab
             assignedTasks={assignedTasks}
             appliedProjects={appliedProjectsData}
-            onTaskStart={(task) => {
-              // TODO: Handle start task
-              setAssignedTasks(prev => prev.map(t => 
-                t.id === task.id ? { ...t, status: "in-progress" } : t
-              ));
-            }}
-            onTaskSubmit={(task) => {
-              // TODO: Handle task submission
-              setAssignedTasks(prev => prev.map(t => 
-                t.id === task.id ? { ...t, status: "under-review" } : t
-              ));
-            }}
+            onTaskStart={handleTaskStart}
+            onTaskSubmit={handleTaskSubmit}
+            onStartTimer={handleStartTimer}
+            onStopTimer={handleStopTimer}
+            onStopActiveTimer={handleStopActiveTimer}
+            onAddComment={handleAddComment}
+            userRole={user?.role || "developer"}
+            activeTimer={activeTimer}
+            performanceStats={performanceStats}
+            taskComments={taskComments}
+            tasksLoading={developerTasksLoading}
           />
         )}
     </Layout>

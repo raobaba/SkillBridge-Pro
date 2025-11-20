@@ -1,5 +1,6 @@
 const express = require("express");
 const projectController = require("../controllers/projects.controller");
+const tasksController = require("../controllers/tasks.controller");
 const authenticate = require("shared/middleware/auth.middleware");
 const {
   requireProjectOwner,
@@ -122,12 +123,20 @@ projectRouter.get(
   projectController.getDeveloperAppliedProjects
 );
 
-// 👤 Developer tasks (tasks assigned to developer)
+// 👤 Developer tasks (tasks assigned to developer) - Enhanced version
 projectRouter.get(
   "/developer/tasks",
   authenticate,
   requireDeveloper,
   projectController.getDeveloperTasks
+);
+
+// 📋 Project Owner Tasks (all tasks in their projects)
+projectRouter.get(
+  "/owner/tasks",
+  authenticate,
+  requireProjectOwner,
+  tasksController.getProjectOwnerTasks
 );
 
 // 📧 Invitation Management (Only project owners can send invites, developers can respond)

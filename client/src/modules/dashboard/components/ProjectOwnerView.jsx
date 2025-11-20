@@ -33,6 +33,17 @@ import {
   markAsRead
 } from "../../notifications/slice/notificationSlice";
 import { getActiveProjectsForOwner, listProjects, listApplicants, getProjectCategoriesForOwner } from "../../project/slice/projectSlice";
+import { 
+  getProjectOwnerTasks, 
+  createTask, 
+  updateTask, 
+  deleteTask,
+  reviewSubmission,
+  getCollaborationStats,
+  bulkUpdateTasks,
+  bulkDeleteTasks,
+  bulkAssignTasks,
+} from "../slice/taskSlice";
 import CollaborationTab from "./CollaborationTab";
 
 export default function ProjectOwnerView() {
@@ -60,6 +71,11 @@ export default function ProjectOwnerView() {
   const projectCategoriesData = useSelector((state) => state.project?.projectCategories || []);
   const projectCategoriesLoading = useSelector((state) => state.project?.projectCategoriesLoading || false);
 
+  // Redux selectors for tasks
+  const tasks = useSelector((state) => state.task?.tasks || []);
+  const tasksLoading = useSelector((state) => state.task?.tasksLoading || false);
+  const collaborationStats = useSelector((state) => state.task?.collaborationStats);
+
   // State for storing applicants by project
   const [projectApplicants, setProjectApplicants] = useState({});
   const [recentApplicantsLoading, setRecentApplicantsLoading] = useState(false);
@@ -76,6 +92,12 @@ export default function ProjectOwnerView() {
     if (ownerId) {
       dispatch(listProjects({ ownerId }));
     }
+    
+    // Fetch tasks for project owner
+    dispatch(getProjectOwnerTasks());
+    
+    // Fetch collaboration stats
+    dispatch(getCollaborationStats());
   }, [dispatch, user?.id, user?.userId]);
 
   // Fetch applicants for all projects when projects are loaded
@@ -771,45 +793,64 @@ export default function ProjectOwnerView() {
     }
   };
 
-  // Mock tasks data (will be replaced with API data later)
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      projectId: 1,
-      projectName: "E-commerce Platform",
-      title: "Setup Database Schema",
-      description: "Create database tables for products, users, orders, and cart",
-      status: "in-progress",
-      priority: "high",
-      assignedTo: { id: 1, name: "John Doe", avatar: null },
-      dueDate: "2024-12-25",
-      estimatedHours: 8,
-      createdAt: "2024-12-20",
-      submissions: [],
-    },
-    {
-      id: 2,
-      projectId: 1,
-      projectName: "E-commerce Platform",
-      title: "Implement User Authentication",
-      description: "Create login, register, and password reset functionality",
-      status: "under-review",
-      priority: "high",
-      assignedTo: { id: 2, name: "Jane Smith", avatar: null },
-      dueDate: "2024-12-28",
-      estimatedHours: 12,
-      createdAt: "2024-12-21",
-      submissions: [{
-        id: 1,
-        submittedBy: { id: 2, name: "Jane Smith" },
-        submittedAt: "2024-12-22",
-        type: "pull-request",
-        link: "https://github.com/project/pr/123",
-        files: [],
-        notes: "Implemented JWT authentication with refresh tokens",
-      }],
-    },
-  ]);
+  // Task handlers
+  const handleTaskCreate = async (taskData) => {
+    try {
+      const result = await dispatch(createTask(taskData)).unwrap();
+      // Task is already added to state by createTask.fulfilled
+      // Add a small delay before refreshing to ensure server has indexed the new task
+      setTimeout(() => {
+        dispatch(getProjectOwnerTasks()); // Refresh tasks to get latest from server
+      }, 500);
+    } catch (error) {
+      console.error("Failed to create task:", error);
+    }
+  };
+
+  const handleTaskUpdate = async (taskData) => {
+    try {
+      await dispatch(updateTask({ taskId: taskData.id, data: taskData })).unwrap();
+      dispatch(getProjectOwnerTasks()); // Refresh tasks
+    } catch (error) {
+      console.error("Failed to update task:", error);
+    }
+  };
+
+  const handleTaskDelete = async (taskId) => {
+    try {
+      await dispatch(deleteTask(taskId)).unwrap();
+      dispatch(getProjectOwnerTasks()); // Refresh tasks
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
+  };
+
+  const handleReviewSubmit = async (submissionId, action, comments) => {
+    try {
+      await dispatch(reviewSubmission({ 
+        submissionId, 
+        data: { status: action, reviewComments: comments } 
+      })).unwrap();
+      dispatch(getProjectOwnerTasks()); // Refresh tasks
+    } catch (error) {
+      console.error("Failed to review submission:", error);
+    }
+  };
+
+  const handleBulkAction = async (action, taskIds, additionalData = {}) => {
+    try {
+      if (action === "archive") {
+        await dispatch(bulkUpdateTasks({ taskIds, updateData: { status: "cancelled" } })).unwrap();
+      } else if (action === "delete") {
+        await dispatch(bulkDeleteTasks({ taskIds })).unwrap();
+      } else if (action === "assign") {
+        await dispatch(bulkAssignTasks({ taskIds, assignedTo: additionalData.assignedTo })).unwrap();
+      }
+      dispatch(getProjectOwnerTasks()); // Refresh tasks
+    } catch (error) {
+      console.error("Failed to perform bulk action:", error);
+    }
+  };
 
   return (
     <Layout isSearchBar={true}>
@@ -1506,19 +1547,15 @@ export default function ProjectOwnerView() {
             tasks={tasks}
             projects={projects}
             teamMembers={teamMembers}
-            onTaskCreate={(taskData) => {
-              // TODO: Handle task creation
-              console.log("Create task:", taskData);
-            }}
-            onTaskUpdate={(taskData) => {
-              // TODO: Handle task update
-              console.log("Update task:", taskData);
-            }}
-            onReviewSubmit={(action, comments) => {
-              // TODO: Handle review submission
-              console.log("Review action:", action, comments);
-            }}
+            onTaskCreate={handleTaskCreate}
+            onTaskUpdate={handleTaskUpdate}
+            onTaskDelete={handleTaskDelete}
+            onReviewSubmit={handleReviewSubmit}
+            onBulkAction={handleBulkAction}
             navigate={navigate}
+            userRole={user?.role || "project-owner"}
+            tasksLoading={tasksLoading}
+            collaborationStats={collaborationStats}
           />
         )}
     </Layout>

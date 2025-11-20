@@ -1,0 +1,1726 @@
+openapi: 3.0.0
+info:
+  title: Task Collaboration API
+  description: |
+    API for task management, collaboration, time tracking, and analytics with role-based access control.
+    
+    **Features:**
+    - Task CRUD operations (Project Owners)
+    - Bulk task operations (update, delete, assign)
+    - Work submissions and reviews (Developers submit, Project Owners review)
+    - Task comments and discussions
+    - Time tracking for developers
+    - Collaboration analytics for project owners
+    - Performance metrics for developers
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3002
+    description: Local Project Service Server
+  - url: https://api.skillbridge.pro
+    description: Production Server
+
+tags:
+  - name: "📋 TASK SERVICE - CRUD"
+    description: Task creation, reading, updating, and deletion
+  - name: "📋 TASK SERVICE - Bulk Operations"
+    description: Bulk task management operations
+  - name: "📋 TASK SERVICE - Submissions"
+    description: Work submissions and reviews
+  - name: "📋 TASK SERVICE - Comments"
+    description: Task comments and discussions
+  - name: "📋 TASK SERVICE - Time Tracking"
+    description: Time tracking for developers
+  - name: "📋 TASK SERVICE - Analytics"
+    description: Collaboration and performance analytics
+
+paths:
+  /api/v1/tasks:
+    post:
+      summary: Create a new task
+      description: |
+        Create a new task in a project. Only project owners can create tasks.
+        The task can be assigned to a developer or left unassigned.
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+            example:
+              projectId: 1
+              milestoneId: 5
+              assignedTo: 10
+              title: "Implement User Authentication"
+              description: "Create JWT-based authentication system with login and registration"
+              priority: "high"
+              dueDate: "2024-12-25T23:59:59Z"
+              estimatedHours: 8
+              repositoryUrl: "https://github.com/project/repo"
+      responses:
+        "201":
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+              example:
+                success: true
+                status: 201
+                message: "Task created successfully"
+                data:
+                  id: 1
+                  projectId: 1
+                  milestoneId: 5
+                  assignedTo:
+                    id: 10
+                    name: "John Doe"
+                  title: "Implement User Authentication"
+                  description: "Create JWT-based authentication system with login and registration"
+                  priority: "high"
+                  status: "open"
+                  dueDate: "2024-12-25T23:59:59Z"
+                  completedAt: null
+                  createdAt: "2024-01-15T10:30:00Z"
+                  estimatedHours: 8
+                  repositoryUrl: "https://github.com/project/repo"
+                  projectTitle: "E-commerce Platform"
+                  projectName: "E-commerce Platform"
+                  submissions: []
+                  submissionsCount: 0
+                  pendingReviewSubmissions: 0
+        "400":
+          description: Bad request - missing required fields
+          content:
+            application/json:
+              example:
+                success: false
+                status: 400
+                message: "projectId and title are required"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                success: false
+                status: 401
+                message: "Authentication required"
+        "403":
+          description: Forbidden - not a project owner
+          content:
+            application/json:
+              example:
+                success: false
+                status: 403
+                message: "You can only create tasks for your own projects"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              example:
+                success: false
+                status: 404
+                message: "Project not found"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                success: false
+                status: 500
+                message: "Failed to create task"
+                error: "Database connection error"
+
+  /api/v1/tasks/owner:
+    get:
+      summary: Get tasks for project owner
+      description: |
+        Get all tasks in projects owned by the authenticated user.
+        Supports filtering, sorting, and searching.
+        Returns tasks with formatted status (open, in-progress, under-review, completed, on-hold).
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          description: Filter by project ID
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: Filter by task status (backend format: todo, in_progress, review, completed, cancelled)
+          schema:
+            type: string
+            enum: [todo, in_progress, review, completed, cancelled]
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: search
+          in: query
+          description: Search in title, description, or project name
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [dueDate, priority, status, createdAt]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TasksListResponse"
+              example:
+                success: true
+                status: 200
+                message: "Tasks retrieved successfully"
+                tasks:
+                  - id: 1
+                    projectId: 1
+                    milestoneId: 5
+                    assignedTo:
+                      id: 10
+                      name: "John Doe"
+                    title: "Implement User Authentication"
+                    description: "Create JWT-based authentication system"
+                    priority: "high"
+                    status: "open"
+                    dueDate: "2024-12-25T23:59:59Z"
+                    completedAt: null
+                    createdAt: "2024-01-15T10:30:00Z"
+                    estimatedHours: 8
+                    projectTitle: "E-commerce Platform"
+                    projectName: "E-commerce Platform"
+                    submissions: []
+                    submissionsCount: 0
+                    pendingReviewSubmissions: 0
+                  - id: 2
+                    projectId: 1
+                    milestoneId: null
+                    assignedTo:
+                      id: 11
+                      name: "Jane Smith"
+                    title: "Setup Database Schema"
+                    description: "Design and implement database structure"
+                    priority: "medium"
+                    status: "in-progress"
+                    dueDate: "2024-12-20T23:59:59Z"
+                    completedAt: null
+                    createdAt: "2024-01-10T08:00:00Z"
+                    estimatedHours: 12
+                    projectTitle: "E-commerce Platform"
+                    projectName: "E-commerce Platform"
+                    submissions: []
+                    submissionsCount: 0
+                    pendingReviewSubmissions: 0
+                count: 2
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              example:
+                success: false
+                status: 401
+                message: "Authentication required"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                success: false
+                status: 500
+                message: "Failed to fetch tasks"
+                error: "Database query error"
+
+  /api/v1/tasks/{taskId}:
+    get:
+      summary: Get task by ID
+      description: |
+        Get detailed task information including submissions, comments, and time tracking.
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskDetailResponse"
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+    put:
+      summary: Update task
+      description: |
+        Update task details. Only project owners can update tasks.
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+            example:
+              title: "Updated Task Title"
+              description: "Updated description"
+              priority: "medium"
+              dueDate: "2024-12-30T23:59:59Z"
+              assignedTo: 12
+              status: "in_progress"
+      responses:
+        "200":
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete task
+      description: |
+        Delete a task. Only project owners can delete tasks.
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Forbidden
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/start:
+    post:
+      summary: Start task
+      description: |
+        Mark a task as in-progress. Only the assigned developer can start a task.
+      tags:
+        - "📋 TASK SERVICE - CRUD"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task started successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "403":
+          description: Forbidden - not assigned to this task
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/bulk/update:
+    put:
+      summary: Bulk update tasks
+      description: |
+        Update multiple tasks at once. Only project owners can perform bulk operations.
+      tags:
+        - "📋 TASK SERVICE - Bulk Operations"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkUpdateRequest"
+            example:
+              taskIds: [1, 2, 3, 4]
+              updateData:
+                status: "completed"
+                priority: "low"
+      responses:
+        "200":
+          description: Tasks updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkOperationResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/bulk/delete:
+    delete:
+      summary: Bulk delete tasks
+      description: |
+        Delete multiple tasks at once. Only project owners can perform bulk operations.
+      tags:
+        - "📋 TASK SERVICE - Bulk Operations"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteRequest"
+            example:
+              taskIds: [1, 2, 3]
+      responses:
+        "200":
+          description: Tasks deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkOperationResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/bulk/assign:
+    post:
+      summary: Bulk assign tasks
+      description: |
+        Assign multiple tasks to a developer. Only project owners can perform bulk operations.
+      tags:
+        - "📋 TASK SERVICE - Bulk Operations"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkAssignRequest"
+            example:
+              taskIds: [1, 2, 3]
+              assignedTo: 10
+      responses:
+        "200":
+          description: Tasks assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkOperationResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/submit:
+    post:
+      summary: Submit work for review
+      description: |
+        Submit completed work for review. Only the assigned developer can submit work.
+        Automatically changes task status to "review".
+      tags:
+        - "📋 TASK SERVICE - Submissions"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskSubmissionRequest"
+            example:
+              type: "pull-request"
+              link: "https://github.com/project/repo/pull/123"
+              files:
+                - name: "auth.js"
+                  url: "https://storage.example.com/files/auth.js"
+                  size: 2048
+              notes: "Implemented JWT authentication with refresh tokens"
+      responses:
+        "201":
+          description: Work submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden - not assigned to this task
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/submissions/{submissionId}/review:
+    put:
+      summary: Review submission
+      description: |
+        Review a work submission. Only project owners can review submissions.
+        Status options: "approved", "rejected", "changes-requested"
+      tags:
+        - "📋 TASK SERVICE - Submissions"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          description: Submission ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmissionReviewRequest"
+            example:
+              status: "approved"
+              reviewComments: "Great work! The implementation looks solid."
+      responses:
+        "200":
+          description: Submission reviewed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden
+        "404":
+          description: Submission not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/submissions:
+    get:
+      summary: Get task submissions
+      description: |
+        Get all submissions for a task.
+      tags:
+        - "📋 TASK SERVICE - Submissions"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submissions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmissionsListResponse"
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/comments:
+    post:
+      summary: Add comment to task
+      description: |
+        Add a comment to a task. Any authenticated user can comment.
+      tags:
+        - "📋 TASK SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCommentRequest"
+            example:
+              comment: "What's the deadline for this task?"
+              parentCommentId: null
+      responses:
+        "201":
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommentResponse"
+        "400":
+          description: Bad request
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+    get:
+      summary: Get task comments
+      description: |
+        Get all comments for a task.
+      tags:
+        - "📋 TASK SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommentsListResponse"
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/comments/{commentId}:
+    put:
+      summary: Update comment
+      description: |
+        Update a comment. Only the comment owner can update it.
+      tags:
+        - "📋 TASK SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCommentUpdateRequest"
+            example:
+              comment: "Updated comment text"
+      responses:
+        "200":
+          description: Comment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskCommentResponse"
+        "400":
+          description: Bad request
+        "403":
+          description: Forbidden - not your comment
+        "404":
+          description: Comment not found
+        "500":
+          description: Internal server error
+
+    delete:
+      summary: Delete comment
+      description: |
+        Delete a comment. Only the comment owner can delete it.
+      tags:
+        - "📋 TASK SERVICE - Comments"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          description: Comment ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Comment deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "403":
+          description: Forbidden - not your comment
+        "404":
+          description: Comment not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/timer/start:
+    post:
+      summary: Start time tracking timer
+      description: |
+        Start a timer to track time spent on a task.
+        Stops any existing active timer for the user.
+        Only the assigned developer can start a timer.
+      tags:
+        - "📋 TASK SERVICE - Time Tracking"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimerStartRequest"
+            example:
+              description: "Working on authentication implementation"
+      responses:
+        "201":
+          description: Timer started successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeTrackingResponse"
+        "403":
+          description: Forbidden - not assigned to this task
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/timer/{trackingId}/stop:
+    post:
+      summary: Stop time tracking timer
+      description: |
+        Stop a specific time tracking session.
+      tags:
+        - "📋 TASK SERVICE - Time Tracking"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: trackingId
+          in: path
+          required: true
+          description: Time tracking ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Timer stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeTrackingResponse"
+        "403":
+          description: Forbidden - not your timer
+        "404":
+          description: Time tracking not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/timer/stop-active:
+    post:
+      summary: Stop active timer
+      description: |
+        Stop the currently active timer for the authenticated user.
+      tags:
+        - "📋 TASK SERVICE - Time Tracking"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Active timer stopped successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeTrackingResponse"
+        "404":
+          description: No active timer found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/{taskId}/time-tracking:
+    get:
+      summary: Get time tracking for task
+      description: |
+        Get all time tracking records for a specific task.
+      tags:
+        - "📋 TASK SERVICE - Time Tracking"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Time tracking retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeTrackingListResponse"
+        "404":
+          description: Task not found
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/time-tracking/my:
+    get:
+      summary: Get user time tracking
+      description: |
+        Get time tracking records for the authenticated developer.
+      tags:
+        - "📋 TASK SERVICE - Time Tracking"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: query
+          description: Filter by task ID
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+        - name: startDate
+          in: query
+          description: Filter from date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: endDate
+          in: query
+          description: Filter to date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Time tracking retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserTimeTrackingResponse"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/analytics/collaboration:
+    get:
+      summary: Get collaboration analytics
+      description: |
+        Get collaboration statistics for project owner's projects.
+        Includes task counts, completion rates, pending reviews, etc.
+      tags:
+        - "📋 TASK SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          description: Filter by project ID
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollaborationStatsResponse"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/tasks/analytics/performance:
+    get:
+      summary: Get developer performance stats
+      description: |
+        Get performance metrics for the authenticated developer.
+        Includes completion rate, on-time rate, productivity score, etc.
+      tags:
+        - "📋 TASK SERVICE - Analytics"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Performance stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PerformanceStatsResponse"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+
+  schemas:
+    TaskCreate:
+      type: object
+      required:
+        - projectId
+        - title
+      properties:
+        projectId:
+          type: integer
+          description: Project ID
+          example: 1
+        milestoneId:
+          type: integer
+          description: Milestone ID (optional)
+          example: 5
+        assignedTo:
+          type: integer
+          description: User ID of assigned developer (optional)
+          example: 10
+        title:
+          type: string
+          description: Task title
+          example: "Implement User Authentication"
+        description:
+          type: string
+          description: Task description
+          example: "Create JWT-based authentication system"
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          default: medium
+          example: high
+        dueDate:
+          type: string
+          format: date-time
+          description: Task due date
+          example: "2024-12-25T23:59:59Z"
+        estimatedHours:
+          type: integer
+          description: Estimated hours to complete
+          example: 8
+        repositoryUrl:
+          type: string
+          format: uri
+          description: Repository URL for the task
+          example: "https://github.com/project/repo"
+
+    TaskUpdate:
+      type: object
+      description: |
+        Update task fields. Status should be in backend format (todo, in_progress, review, completed, cancelled).
+        The API will return the task with frontend-formatted status.
+      properties:
+        title:
+          type: string
+          example: "Updated Task Title"
+        description:
+          type: string
+          nullable: true
+          example: "Updated description"
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          example: medium
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-12-30T23:59:59Z"
+        assignedTo:
+          type: integer
+          nullable: true
+          description: User ID to assign task to, or null to unassign
+          example: 12
+        status:
+          type: string
+          description: Backend status format (will be mapped to frontend format in response)
+          enum: [todo, in_progress, review, completed, cancelled]
+          example: in_progress
+        milestoneId:
+          type: integer
+          nullable: true
+          example: 5
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        projectId:
+          type: integer
+          example: 1
+        milestoneId:
+          type: integer
+          nullable: true
+          example: 5
+        assignedTo:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+              example: 10
+            name:
+              type: string
+              example: "John Doe"
+        title:
+          type: string
+          example: "Implement User Authentication"
+        description:
+          type: string
+          nullable: true
+          example: "Create JWT-based authentication system"
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          default: medium
+          example: high
+        status:
+          type: string
+          description: |
+            Frontend formatted status:
+            - "open" (from backend "todo")
+            - "in-progress" (from backend "in_progress")
+            - "under-review" (from backend "review")
+            - "completed" (from backend "completed")
+            - "on-hold" (from backend "cancelled")
+          enum: [open, in-progress, under-review, completed, on-hold]
+          example: in-progress
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-12-25T23:59:59Z"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T10:30:00Z"
+        estimatedHours:
+          type: integer
+          nullable: true
+          example: 8
+        repositoryUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://github.com/project/repo"
+        projectTitle:
+          type: string
+          description: Project title from project table
+          example: "E-commerce Platform"
+        projectName:
+          type: string
+          description: Project name (same as projectTitle, for frontend compatibility)
+          example: "E-commerce Platform"
+        submissions:
+          type: array
+          description: Pending submissions for review
+          items:
+            $ref: "#/components/schemas/TaskSubmission"
+          example: []
+        submissionsCount:
+          type: integer
+          description: Total number of submissions
+          example: 0
+        pendingReviewSubmissions:
+          type: integer
+          description: Number of pending submissions awaiting review
+          example: 0
+
+    TaskResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Task created successfully"
+        data:
+          $ref: "#/components/schemas/Task"
+
+    TaskDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: object
+          allOf:
+            - $ref: "#/components/schemas/Task"
+            - type: object
+              properties:
+                submissions:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TaskSubmission"
+                comments:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TaskComment"
+                timeTracking:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/TimeTracking"
+                projectName:
+                  type: string
+                  example: "E-commerce Platform"
+
+    TasksListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Tasks retrieved successfully"
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        count:
+          type: integer
+          example: 10
+
+    BulkUpdateRequest:
+      type: object
+      required:
+        - taskIds
+        - updateData
+      properties:
+        taskIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3, 4]
+        updateData:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [todo, in_progress, review, completed, cancelled]
+            priority:
+              type: string
+              enum: [low, medium, high, urgent]
+            assignedTo:
+              type: integer
+          example:
+            status: completed
+            priority: low
+
+    BulkDeleteRequest:
+      type: object
+      required:
+        - taskIds
+      properties:
+        taskIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+
+    BulkAssignRequest:
+      type: object
+      required:
+        - taskIds
+        - assignedTo
+      properties:
+        taskIds:
+          type: array
+          items:
+            type: integer
+          example: [1, 2, 3]
+        assignedTo:
+          type: integer
+          example: 10
+
+    BulkOperationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Tasks updated successfully"
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        count:
+          type: integer
+          example: 3
+
+    TaskSubmissionRequest:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [pull-request, file-upload, link]
+          example: pull-request
+        link:
+          type: string
+          format: uri
+          example: "https://github.com/project/repo/pull/123"
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "auth.js"
+              url:
+                type: string
+                format: uri
+                example: "https://storage.example.com/files/auth.js"
+              size:
+                type: integer
+                example: 2048
+        notes:
+          type: string
+          example: "Implemented JWT authentication with refresh tokens"
+
+    TaskSubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        taskId:
+          type: integer
+          example: 1
+        submittedBy:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 10
+            name:
+              type: string
+              example: "John Doe"
+            email:
+              type: string
+              example: "john@example.com"
+        type:
+          type: string
+          enum: [pull-request, file-upload, link]
+          example: pull-request
+        link:
+          type: string
+          format: uri
+          example: "https://github.com/project/repo/pull/123"
+        files:
+          type: array
+          items:
+            type: object
+        notes:
+          type: string
+          example: "Implemented JWT authentication"
+        status:
+          type: string
+          enum: [pending, approved, rejected, changes-requested]
+          example: pending
+        reviewedBy:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        reviewComments:
+          type: string
+          nullable: true
+          example: "Great work!"
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+        submittedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    SubmissionReviewRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [approved, rejected, changes-requested]
+          example: approved
+        reviewComments:
+          type: string
+          example: "Great work! The implementation looks solid."
+
+    SubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Work submitted successfully"
+        data:
+          $ref: "#/components/schemas/TaskSubmission"
+
+    SubmissionsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskSubmission"
+        count:
+          type: integer
+          example: 2
+
+    TaskCommentRequest:
+      type: object
+      required:
+        - comment
+      properties:
+        comment:
+          type: string
+          example: "What's the deadline for this task?"
+        parentCommentId:
+          type: integer
+          nullable: true
+          description: ID of parent comment for replies
+          example: null
+
+    TaskCommentUpdateRequest:
+      type: object
+      required:
+        - comment
+      properties:
+        comment:
+          type: string
+          example: "Updated comment text"
+
+    TaskComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        taskId:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 10
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 10
+            name:
+              type: string
+              example: "John Doe"
+            email:
+              type: string
+              example: "john@example.com"
+        comment:
+          type: string
+          example: "What's the deadline for this task?"
+        parentCommentId:
+          type: integer
+          nullable: true
+          example: null
+        isEdited:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+
+    TaskCommentResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Comment added successfully"
+        data:
+          $ref: "#/components/schemas/TaskComment"
+
+    TaskCommentsListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaskComment"
+        count:
+          type: integer
+          example: 5
+
+    TimerStartRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          example: "Working on authentication implementation"
+
+    TimeTracking:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        taskId:
+          type: integer
+          example: 1
+        userId:
+          type: integer
+          example: 10
+        startTime:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-01-15T12:30:00Z"
+        duration:
+          type: integer
+          description: Duration in milliseconds
+          example: 7200000
+        description:
+          type: string
+          example: "Working on authentication"
+        isActive:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T12:30:00Z"
+
+    TimeTrackingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 201
+        message:
+          type: string
+          example: "Timer started successfully"
+        data:
+          $ref: "#/components/schemas/TimeTracking"
+
+    TimeTrackingListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeTracking"
+        totalTime:
+          type: integer
+          description: Total time in milliseconds
+          example: 7200000
+        count:
+          type: integer
+          example: 3
+
+    UserTimeTrackingResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeTracking"
+        activeTimer:
+          type: object
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TimeTracking"
+            - type: object
+              properties:
+                taskId:
+                  type: integer
+        totalTime:
+          type: integer
+          description: Total time in milliseconds
+          example: 86400000
+        count:
+          type: integer
+          example: 10
+
+    CollaborationStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            totalTasks:
+              type: integer
+              example: 10
+            completedTasks:
+              type: integer
+              example: 5
+            inProgressTasks:
+              type: integer
+              example: 3
+            underReviewTasks:
+              type: integer
+              example: 2
+            pendingReviewSubmissions:
+              type: integer
+              example: 3
+            activeTeamMembers:
+              type: integer
+              example: 4
+            overdueTasks:
+              type: integer
+              example: 1
+            completionRate:
+              type: integer
+              description: Completion rate as percentage
+              example: 50
+
+    PerformanceStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        data:
+          type: object
+          properties:
+            totalTasks:
+              type: integer
+              example: 10
+            completedTasks:
+              type: integer
+              example: 7
+            inProgressTasks:
+              type: integer
+              example: 2
+            completionRate:
+              type: integer
+              description: Completion rate as percentage
+              example: 70
+            onTimeRate:
+              type: integer
+              description: On-time completion rate as percentage
+              example: 85
+            totalTimeTracked:
+              type: integer
+              description: Total time tracked in milliseconds
+              example: 86400000
+            avgTaskTime:
+              type: integer
+              description: Average time per task in milliseconds
+              example: 12342857
+            productivityScore:
+              type: integer
+              description: Productivity score out of 100
+              example: 85
+            activeTimer:
+              type: integer
+              nullable: true
+              description: Task ID of active timer, or null
+              example: null
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        status:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "Operation completed successfully"
+

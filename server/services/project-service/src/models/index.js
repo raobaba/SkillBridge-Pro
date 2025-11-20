@@ -15,6 +15,9 @@ const { projectNotificationsTable, ProjectNotificationsModel } = require("./proj
 const { projectCommentsTable, ProjectCommentsModel } = require("./project-comments.model");
 const { projectMilestonesTable, ProjectMilestonesModel } = require("./project-milestones.model");
 const { projectTasksTable, ProjectTasksModel } = require("./project-tasks.model");
+const { taskSubmissionsTable, TaskSubmissionsModel } = require("./task-submissions.model");
+const { taskCommentsTable, TaskCommentsModel } = require("./task-comments.model");
+const { taskTimeTrackingTable, TaskTimeTrackingModel } = require("./task-time-tracking.model");
 const { projectFavoritesTable, ProjectFavoritesModel } = require("./project-favorites.model");
 const { projectSavesTable, ProjectSavesModel } = require("./project-saves.model");
 
@@ -115,6 +118,9 @@ module.exports = {
   projectCommentsTable,
   projectMilestonesTable,
   projectTasksTable,
+  taskSubmissionsTable,
+  taskCommentsTable,
+  taskTimeTrackingTable,
   projectFavoritesTable,
   projectSavesTable,
   
@@ -135,6 +141,9 @@ module.exports = {
   ProjectCommentsModel,
   ProjectMilestonesModel,
   ProjectTasksModel,
+  TaskSubmissionsModel,
+  TaskCommentsModel,
+  TaskTimeTrackingModel,
   ProjectFavoritesModel,
   ProjectSavesModel,
   

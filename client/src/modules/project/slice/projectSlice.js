@@ -375,7 +375,9 @@ export const getDeveloperTasks = createAsyncThunk(
   async (params = {}, { rejectWithValue }) => {
     try {
       const response = await getDeveloperTasksApi(params);
-      return response.data;
+      // Handle response structure: response.data contains the API response
+      // API returns: { success: true, developerTasks: [...], count: ... }
+      return response.data || response;
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to fetch developer tasks" }
@@ -2140,7 +2142,8 @@ const projectSlice = createSlice({
       })
       .addCase(getDeveloperTasks.fulfilled, (state, action) => {
         state.developerTasksLoading = false;
-        state.developerTasks = action.payload.tasks || [];
+        // Handle both response formats: developerTasks or tasks
+        state.developerTasks = action.payload.developerTasks || action.payload.tasks || action.payload.data || [];
         state.error = null;
         state.lastAction = 'getDeveloperTasks.fulfilled';
       })

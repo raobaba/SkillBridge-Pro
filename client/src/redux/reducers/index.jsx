@@ -9,6 +9,7 @@ import chatReducer from "../../modules/chat/slice/chatSlice";
 import notificationReducer from "../../modules/notifications/slice/notificationSlice";
 import portfolioSyncReducer from "../../modules/portfolioSync/slice/portfolioSyncSlice";
 import dashboardReducer from "../../modules/dashboard/slice/DashboardSlice";
+import taskReducer from "../../modules/dashboard/slice/taskSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
@@ -20,6 +21,7 @@ const appReducer = combineReducers({
   notifications: notificationReducer,
   portfolioSync: portfolioSyncReducer,
   dashboard: dashboardReducer,
+  task: taskReducer,
 });
 
 export const rootReducer = (state, action) => {

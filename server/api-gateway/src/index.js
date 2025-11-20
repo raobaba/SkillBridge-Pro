@@ -42,6 +42,16 @@ try {
   // chat swagger not present yet; proceed without it
 }
 
+// Optional: tasks swagger (if present)
+let tasksSwagger = { servers: [], tags: [], paths: {}, components: {} };
+try {
+  tasksSwagger = YAML.load(
+    path.join(__dirname, "swagger", "tasks.swagger.yaml")
+  );
+} catch (e) {
+  // tasks swagger not present yet; proceed without it
+}
+
 // Combine Swagger docs
 const combinedSwagger = {
   openapi: "3.0.0",
@@ -50,20 +60,22 @@ const combinedSwagger = {
     version: "1.0.0",
     description: "Unified API documentation for all microservices",
   },
-  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers, ...(settingsSwagger.servers || []), ...(chatSwagger.servers || [])],
+  servers: [...apiGatewaySwagger.servers, ...userSwagger.servers, ...projectSwagger.servers, ...(settingsSwagger.servers || []), ...(chatSwagger.servers || []), ...(tasksSwagger.servers || [])],
   tags: [
     ...(apiGatewaySwagger.tags || []),
     ...(userSwagger.tags || []),
     ...(projectSwagger.tags || []),
     ...(settingsSwagger.tags || []),
-    ...(chatSwagger.tags || [])
+    ...(chatSwagger.tags || []),
+    ...(tasksSwagger.tags || [])
   ],
   paths: { 
     ...apiGatewaySwagger.paths, 
     ...userSwagger.paths, 
     ...projectSwagger.paths,
     ...(settingsSwagger.paths || {}),
-    ...(chatSwagger.paths || {})
+    ...(chatSwagger.paths || {}),
+    ...(tasksSwagger.paths || {})
   },
   components: {
     schemas: {
@@ -72,6 +84,7 @@ const combinedSwagger = {
       ...(projectSwagger.components?.schemas || {}),
       ...(settingsSwagger.components?.schemas || {}),
       ...(chatSwagger.components?.schemas || {}),
+      ...(tasksSwagger.components?.schemas || {}),
     },
     securitySchemes: {
       ...(apiGatewaySwagger.components?.securitySchemes || {}),
@@ -79,6 +92,7 @@ const combinedSwagger = {
       ...(projectSwagger.components?.securitySchemes || {}),
       ...(settingsSwagger.components?.securitySchemes || {}),
       ...(chatSwagger.components?.securitySchemes || {}),
+      ...(tasksSwagger.components?.securitySchemes || {}),
     },
   },
   security: [{ bearerAuth: [] }],
@@ -145,6 +159,27 @@ app.use(
 
 app.use(
   "/api/v1/projects",
+  proxy(API_PROJECT_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      // Forward all headers including Authorization
+      proxyReqOpts.headers = { ...proxyReqOpts.headers, ...srcReq.headers };
+      return proxyReqOpts;
+    },
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+// Tasks routes (also handled by project-service)
+app.use(
+  "/api/v1/tasks",
   proxy(API_PROJECT_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,
     limit: "50mb",
