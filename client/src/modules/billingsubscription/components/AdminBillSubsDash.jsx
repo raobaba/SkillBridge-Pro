@@ -409,9 +409,11 @@ const AdminBillSubsDash = ({ data }) => {
                 </h3>
               </div>
               <div className='text-2xl font-bold text-white mb-2'>
-                {formatCurrency(12500)}
+                {formatCurrency(adminData.monthlyRecurringRevenue || 0)}
               </div>
-              <p className='text-sm text-gray-300'>+12% from last month</p>
+              <p className='text-sm text-gray-300'>
+                {adminData.revenueGrowth ? `+${adminData.revenueGrowth}% from last month` : 'No data available'}
+              </p>
             </div>
 
             <div className='bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10'>
@@ -423,8 +425,13 @@ const AdminBillSubsDash = ({ data }) => {
                   New Subscriptions
                 </h3>
               </div>
-              <div className='text-2xl font-bold text-white mb-2'>45</div>
-              <p className='text-sm text-gray-300'>This month</p>
+              <div className='text-2xl font-bold text-white mb-2'>
+                {adminData.subscriptionBreakdown ? 
+                  Object.values(adminData.subscriptionBreakdown).reduce((sum, count) => sum + (count || 0), 0) : 
+                  0
+                }
+              </div>
+              <p className='text-sm text-gray-300'>Active subscriptions</p>
             </div>
 
             <div className='bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10'>
@@ -433,11 +440,13 @@ const AdminBillSubsDash = ({ data }) => {
                   <CreditCard className='w-4 h-4 text-yellow-400' />
                 </div>
                 <h3 className='text-lg font-semibold text-white'>
-                  Payment Success Rate
+                  Average Revenue Per User
                 </h3>
               </div>
-              <div className='text-2xl font-bold text-white mb-2'>98.5%</div>
-              <p className='text-sm text-gray-300'>Last 30 days</p>
+              <div className='text-2xl font-bold text-white mb-2'>
+                {formatCurrency(adminData.averageRevenuePerUser || 0)}
+              </div>
+              <p className='text-sm text-gray-300'>Per active subscription</p>
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ const BillingSubscription = () => {
     }
   }, [user?.role, dispatch, userRole]);
 
-  // Prepare data for components from Redux state
+  // Prepare data for components from Redux state only - no static fallback
   const currentData = {
     subscription: billingState.currentSubscription || {},
     billingHistory: billingState.billingHistory || [],
@@ -39,168 +39,11 @@ const BillingSubscription = () => {
     }),
   };
 
-  // Fallback static data if Redux state is empty (for initial load)
-  const fallbackData = {
-    developer: {
-      subscription: {
-        plan: "free",
-        status: "active",
-        aiCredits: 100,
-        enhancedTools: false,
-        matchmakingBoost: false,
-        nextBillingDate: null,
-        autoRenew: false,
-      },
-      billingHistory: [
-        {
-          id: 1,
-          date: "2025-01-01",
-          amount: "$0.00",
-          status: "Free Plan",
-          description: "Free Tier",
-        },
-      ],
-      paymentMethods: [],
-    },
-    project_owner: {
-      subscription: {
-        plan: "premium",
-        status: "active",
-        aiCredits: 1000,
-        enhancedTools: true,
-        matchmakingBoost: true,
-        projectVisibility: "premium",
-        nextBillingDate: "2025-02-01",
-        autoRenew: true,
-      },
-      billingHistory: [
-        {
-          id: 1,
-          date: "2025-01-01",
-          amount: "$29.99",
-          status: "Paid",
-          description: "Premium Plan",
-        },
-        {
-          id: 2,
-          date: "2024-12-01",
-          amount: "$29.99",
-          status: "Paid",
-          description: "Premium Plan",
-        },
-        {
-          id: 3,
-          date: "2024-11-01",
-          amount: "$15.00",
-          status: "Paid",
-          description: "Project Boost",
-        },
-      ],
-      paymentMethods: [
-        {
-          id: 1,
-          type: "Credit Card",
-          last4: "4242",
-          default: true,
-          brand: "Visa",
-        },
-        {
-          id: 2,
-          type: "PayPal",
-          email: "owner@example.com",
-          default: false,
-          brand: "PayPal",
-        },
-      ],
-      projectListings: [
-        {
-          id: 1,
-          name: "E-commerce Platform",
-          visibility: "premium",
-          boosted: true,
-          boostExpires: "2025-02-15",
-        },
-        { id: 2, name: "Mobile App", visibility: "standard", boosted: false },
-        {
-          id: 3,
-          name: "Web Dashboard",
-          visibility: "premium",
-          boosted: true,
-          boostExpires: "2025-01-30",
-        },
-      ],
-    },
-    admin: {
-      subscription: {
-        plan: "admin",
-        status: "active",
-        aiCredits: 9999,
-        enhancedTools: true,
-        matchmakingBoost: true,
-        projectVisibility: "admin",
-        nextBillingDate: null,
-        autoRenew: false,
-      },
-      billingHistory: [],
-      paymentMethods: [],
-      adminStats: {
-        totalRevenue: 125000,
-        activeSubscriptions: 1250,
-        pendingPayments: 15,
-        disputes: 3,
-        suspendedAccounts: 2,
-      },
-      disputes: [
-        {
-          id: 1,
-          userId: "user123",
-          amount: 29.99,
-          reason: "Service not as described",
-          status: "pending",
-          date: "2025-01-20",
-        },
-        {
-          id: 2,
-          userId: "user456",
-          amount: 99.99,
-          reason: "Billing error",
-          status: "resolved",
-          date: "2025-01-18",
-        },
-        {
-          id: 3,
-          userId: "user789",
-          amount: 15.0,
-          reason: "Unauthorized charge",
-          status: "investigating",
-          date: "2025-01-19",
-        },
-      ],
-      suspendedAccounts: [
-        {
-          id: 1,
-          userId: "user999",
-          reason: "Unpaid dues",
-          suspendedAt: "2025-01-15",
-          amount: 89.97,
-        },
-        {
-          id: 2,
-          userId: "user888",
-          reason: "Fraudulent activity",
-          suspendedAt: "2025-01-10",
-          amount: 0,
-        },
-      ],
-    },
-  };
-
-  // Use Redux data if available and not empty, otherwise use fallback
-  const hasReduxData = billingState.currentSubscription && Object.keys(billingState.currentSubscription).length > 0;
-  const displayData = hasReduxData ? currentData : (fallbackData[roleKey] || fallbackData.developer);
+  // Use Redux data only - no static fallback
+  const displayData = currentData;
 
   const renderRoleSpecificContent = () => {
-    if (billingState.loading) {
+    if (billingState.loading && !billingState.currentSubscription) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
           <CircularLoader />

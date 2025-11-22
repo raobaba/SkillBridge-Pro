@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Star, Check, Zap, Crown, Building2 } from "lucide-react";
 import { Button } from "../../../components";
 import { getSubscriptionPlans, purchaseSubscription } from "../slice/billingSlice";
-import { SUBSCRIPTION_PLANS } from "../slice/billingAction";
 
 const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const dispatch = useDispatch();
@@ -13,13 +12,13 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const loading = billingState.loading || false;
 
   useEffect(() => {
-    if (subscriptionPlans.length === 0) {
+    if (subscriptionPlans.length === 0 && !loading) {
       dispatch(getSubscriptionPlans());
     }
-  }, [dispatch, subscriptionPlans.length]);
+  }, [dispatch, subscriptionPlans.length, loading]);
 
-  // Use API plans if available, otherwise fallback to static plans
-  const plansData = subscriptionPlans.length > 0 ? subscriptionPlans : SUBSCRIPTION_PLANS;
+  // Use API plans only - no static fallback
+  const plansData = subscriptionPlans;
 
   const plans = plansData.map((plan) => ({
     id: plan.id,
@@ -73,7 +72,16 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
 
       {/* Plans Grid */}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan, idx) => (
+        {loading ? (
+          <div className="col-span-3 flex justify-center py-12">
+            <p className="text-gray-400">Loading subscription plans...</p>
+          </div>
+        ) : plansData.length === 0 ? (
+          <div className="col-span-3 text-center py-12">
+            <p className="text-gray-400">No subscription plans available at this time</p>
+          </div>
+        ) : (
+          plans.map((plan, idx) => (
           <div
             key={plan.id}
             className={`group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.05] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden min-h-[400px] ${
@@ -158,7 +166,7 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Footer */}

@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Button from '../../../components/Button';
-import { getBillingData, cancelSubscription, purchaseSubscription } from "../slice/billingSlice";
+import { getBillingData, cancelSubscription, purchaseSubscription, getSubscriptionPlans } from "../slice/billingSlice";
 import { 
   Zap, 
   Brain, 
@@ -24,12 +24,16 @@ const DeveloperBillSubsDash = ({ data }) => {
   const subscription = billingState.currentSubscription || data?.subscription || {};
   const billingHistory = billingState.billingHistory || data?.billingHistory || [];
   const paymentMethods = billingState.paymentMethods || data?.paymentMethods || [];
+  const subscriptionPlans = billingState.subscriptionPlans || [];
 
   useEffect(() => {
     if (!billingState.currentSubscription || Object.keys(billingState.currentSubscription).length === 0) {
       dispatch(getBillingData());
     }
-  }, [dispatch, billingState.currentSubscription]);
+    if (subscriptionPlans.length === 0) {
+      dispatch(getSubscriptionPlans());
+    }
+  }, [dispatch, billingState.currentSubscription, subscriptionPlans.length]);
 
   const handleCancelSubscription = async () => {
     if (window.confirm('Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.')) {
@@ -164,93 +168,66 @@ const DeveloperBillSubsDash = ({ data }) => {
         </div>
       </div>
 
-      {/* Upgrade Options */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
-              <Star className="w-5 h-5 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Upgrade Your Plan</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-lg flex items-center justify-center">
-                  <Target className="w-4 h-4 text-blue-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">Pro Plan</h3>
+      {/* Upgrade Options - Show only paid plans (exclude free plan) */}
+      {subscriptionPlans.length > 0 && subscriptionPlans.filter(plan => plan.name.toLowerCase() !== 'free').length > 0 && (
+        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                <Star className="w-5 h-5 text-white" />
               </div>
-              <div className="text-2xl font-bold text-white mb-2">$29.99<span className="text-sm text-gray-300">/month</span></div>
-              <ul className="space-y-2 text-sm text-gray-300 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  1000 AI Credits
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Enhanced AI Tools
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Matchmaking Boost
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Priority Support
-                </li>
-              </ul>
-              <Button 
-                className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
-                onClick={() => handleUpgrade(2)}
-                disabled={billingState.loading}
-              >
-                {billingState.loading ? 'Processing...' : 'Upgrade Now'}
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
+              <h2 className="text-2xl font-bold text-white">Upgrade Your Plan</h2>
             </div>
 
-            <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-emerald-500/50 transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-teal-600/20 rounded-lg flex items-center justify-center">
-                  <Users className="w-4 h-4 text-emerald-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-white">Enterprise</h3>
-              </div>
-              <div className="text-2xl font-bold text-white mb-2">$99.99<span className="text-sm text-gray-300">/month</span></div>
-              <ul className="space-y-2 text-sm text-gray-300 mb-6">
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Unlimited AI Credits
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  All Enhanced Tools
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  Maximum Matchmaking Boost
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  24/7 Dedicated Support
-                </li>
-              </ul>
-              <Button 
-                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2"
-                onClick={() => handleUpgrade(3)}
-                disabled={billingState.loading}
-              >
-                {billingState.loading ? 'Processing...' : 'Upgrade Now'}
-                <ArrowUpRight className="w-4 h-4" />
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {subscriptionPlans
+                .filter(plan => plan.name.toLowerCase() !== 'free')
+                .map((plan) => {
+                  const isCurrentPlan = subscription.plan?.toLowerCase() === plan.name.toLowerCase();
+                  return (
+                    <div
+                      key={plan.id}
+                      className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-lg flex items-center justify-center">
+                          {plan.name.toLowerCase() === 'pro' ? (
+                            <Target className="w-4 h-4 text-blue-400" />
+                          ) : (
+                            <Users className="w-4 h-4 text-emerald-400" />
+                          )}
+                        </div>
+                        <h3 className="text-lg font-semibold text-white">{plan.name} Plan</h3>
+                      </div>
+                      <div className="text-2xl font-bold text-white mb-2">
+                        ${plan.price}
+                        <span className="text-sm text-gray-300">/{plan.period}</span>
+                      </div>
+                      <ul className="space-y-2 text-sm text-gray-300 mb-6">
+                        {plan.features && plan.features.slice(0, 4).map((feature, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                      <Button 
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleUpgrade(plan.id)}
+                        disabled={billingState.loading || isCurrentPlan}
+                      >
+                        {billingState.loading ? 'Processing...' : isCurrentPlan ? 'Current Plan' : 'Upgrade Now'}
+                        {!isCurrentPlan && <ArrowUpRight className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Billing History */}
       <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
