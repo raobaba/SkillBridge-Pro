@@ -242,6 +242,37 @@ const getPlatformInsights = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get admin career dashboard (for admins)
+ * GET /api/v1/ai-career/admin/dashboard
+ */
+const getAdminCareerDashboard = asyncHandler(async (req, res) => {
+  // Check if user is admin
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin access required'
+    });
+  }
+
+  try {
+    const { timeframe = '6m' } = req.query;
+    const authToken = req.headers.authorization; // Pass auth token to service
+    const dashboard = await aiCareerService.getAdminCareerDashboard(timeframe, authToken);
+    
+    res.status(200).json({
+      success: true,
+      data: dashboard
+    });
+  } catch (error) {
+    console.error('Get admin career dashboard error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get admin career dashboard'
+    });
+  }
+});
+
+/**
  * Analyze team skills (for project owners)
  * GET /api/v1/ai-career/team-analysis?projectId=123
  */
@@ -280,6 +311,7 @@ module.exports = {
   optimizeProject,
   getSkillTrends,
   getPlatformInsights,
+  getAdminCareerDashboard,
   analyzeTeam,
 };
 

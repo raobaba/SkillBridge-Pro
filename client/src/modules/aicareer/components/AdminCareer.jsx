@@ -1,77 +1,26 @@
 // AdminCareer.jsx
-import React from "react";
-import { Button } from "../../../components";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { Button, CircularLoader } from "../../../components";
+import { getAdminCareerDashboard } from "../slice/aiCareerSlice";
 
 const AdminCareer = () => {
-  const metrics = [
-    {
-      id: 1,
-      title: "Platform Growth",
-      value: "2,847",
-      change: "+12%",
-      trend: "up",
-      icon: "📈",
-      description: "Total active users this month",
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      id: 2,
-      title: "Project Success Rate",
-      value: "87%",
-      change: "+5%",
-      trend: "up",
-      icon: "🎯",
-      description: "Projects completed successfully",
-      color: "from-blue-500 to-indigo-500"
-    },
-    {
-      id: 3,
-      title: "Developer Satisfaction",
-      value: "4.6/5",
-      change: "+0.2",
-      trend: "up",
-      icon: "⭐",
-      description: "Average developer rating",
-      color: "from-yellow-500 to-orange-500"
-    },
-    {
-      id: 4,
-      title: "Revenue Growth",
-      value: "$45,230",
-      change: "+15%",
-      trend: "up",
-      icon: "💰",
-      description: "Monthly recurring revenue",
-      color: "from-purple-500 to-pink-500"
-    }
-  ];
+  const dispatch = useDispatch();
+  
+  // Get data from Redux - all from single API endpoint
+  const adminCareerDashboard = useSelector((state) => state.aiCareer?.adminCareerDashboard);
+  const adminCareerDashboardLoading = useSelector((state) => state.aiCareer?.adminCareerDashboardLoading || false);
 
-  const insights = [
-    {
-      id: 1,
-      title: "Skill Demand Surge",
-      description: "React and Node.js skills are in highest demand, with 40% increase in project postings",
-      impact: "High",
-      recommendation: "Consider promoting React/Node.js learning resources",
-      icon: "🚀"
-    },
-    {
-      id: 2,
-      title: "Geographic Expansion",
-      description: "Remote work projects increased by 60%, indicating global talent access",
-      impact: "Medium",
-      recommendation: "Enhance remote collaboration tools",
-      icon: "🌍"
-    },
-    {
-      id: 3,
-      title: "Developer Retention",
-      description: "Developer retention rate improved by 25% after implementing better matching",
-      impact: "High",
-      recommendation: "Continue improving AI matching algorithms",
-      icon: "👥"
+  // Fetch data on component mount
+  useEffect(() => {
+    if (!adminCareerDashboard && !adminCareerDashboardLoading) {
+      dispatch(getAdminCareerDashboard('6m'));
     }
-  ];
+  }, [dispatch, adminCareerDashboard, adminCareerDashboardLoading]);
+
+  // Get metrics and insights directly from API response
+  const metrics = adminCareerDashboard?.metrics || [];
+  const insights = adminCareerDashboard?.insights || [];
 
   const getTrendColor = (trend) => {
     return trend === "up" ? "text-green-400" : "text-red-400";
@@ -108,7 +57,16 @@ const AdminCareer = () => {
 
       {/* Metrics Grid */}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric, idx) => (
+        {adminCareerDashboardLoading ? (
+          <div className="col-span-4 flex justify-center py-12">
+            <CircularLoader />
+          </div>
+        ) : metrics.length === 0 ? (
+          <div className="col-span-4 text-center py-12">
+            <p className="text-gray-400">No metrics available at this time</p>
+          </div>
+        ) : (
+          metrics.map((metric, idx) => (
           <div
             key={metric.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -147,14 +105,22 @@ const AdminCareer = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Insights Section */}
       <div className="relative z-10">
         <h3 className="text-xl font-semibold text-white mb-6">Key Insights & Recommendations</h3>
-        <div className="space-y-4">
-          {insights.map((insight, idx) => (
+        {adminCareerDashboardLoading ? (
+          <div className="flex justify-center py-12">
+            <CircularLoader />
+          </div>
+        ) : insights.length === 0 ? (
+          <p className="text-gray-400 text-center py-8">No insights available at this time</p>
+        ) : (
+          <div className="space-y-4">
+            {insights.map((insight, idx) => (
             <div
               key={insight.id}
               className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -209,8 +175,9 @@ const AdminCareer = () => {
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Footer with action button */}

@@ -185,6 +185,187 @@ class AICareerService {
   }
 
   /**
+   * Get admin career dashboard data (metrics and insights)
+   * Combines admin analytics, platform insights, and skill trends
+   */
+  async getAdminCareerDashboard(timeframe = '6m', authToken = null) {
+    try {
+      const axios = require('axios');
+      const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:3000';
+      
+      // Get platform insights and skill trends from our own service
+      const platformInsights = await this.getPlatformInsights();
+      const skillTrends = await this.getSkillTrends();
+      
+      // Get project stats from database
+      const { ProjectsModel } = require('../models/projects.model');
+      const projectStats = await ProjectsModel.getAdminProjectStats(timeframe);
+      
+      // Fetch admin analytics from user-service via API gateway
+      let adminAnalytics = null;
+      let metrics = [];
+      
+      try {
+        if (authToken) {
+          const adminAnalyticsResponse = await axios.get(
+            `${API_GATEWAY_URL}/api/v1/user/admin/analytics?timeframe=${timeframe}`,
+            {
+              headers: {
+                Authorization: authToken,
+              },
+              timeout: 10000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+          
+          if (adminAnalyticsResponse.status === 200 && adminAnalyticsResponse.data?.success) {
+            adminAnalytics = adminAnalyticsResponse.data.data;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to fetch admin analytics from user-service:', error.message);
+      }
+      
+      // Build metrics from admin analytics and project stats
+      if (adminAnalytics?.stats) {
+        const stats = adminAnalytics.stats;
+        const successRate = projectStats.totalProjects > 0
+          ? Math.round((projectStats.completedProjects / projectStats.totalProjects) * 100)
+          : 0;
+        
+        metrics = [
+          {
+            id: 1,
+            title: "Platform Growth",
+            value: stats.totalUsers?.toLocaleString() || "0",
+            change: stats.monthlyGrowth >= 0 ? `+${stats.monthlyGrowth}%` : `${stats.monthlyGrowth}%`,
+            trend: stats.monthlyGrowth >= 0 ? "up" : "down",
+            icon: "📈",
+            description: "Total active users this month",
+            color: "from-green-500 to-emerald-500"
+          },
+          {
+            id: 2,
+            title: "Project Success Rate",
+            value: `${successRate}%`,
+            change: "+0%",
+            trend: "up",
+            icon: "🎯",
+            description: "Projects completed successfully",
+            color: "from-blue-500 to-indigo-500"
+          },
+          {
+            id: 3,
+            title: "Developer Satisfaction",
+            value: `${stats.avgRating || 0}/5`,
+            change: "+0",
+            trend: "up",
+            icon: "⭐",
+            description: "Average developer rating",
+            color: "from-yellow-500 to-orange-500"
+          },
+          {
+            id: 4,
+            title: "Revenue Growth",
+            value: stats.revenue || "$0",
+            change: stats.monthlyGrowth >= 0 ? `+${stats.monthlyGrowth}%` : `${stats.monthlyGrowth}%`,
+            trend: stats.monthlyGrowth >= 0 ? "up" : "down",
+            icon: "💰",
+            description: "Monthly recurring revenue",
+            color: "from-purple-500 to-pink-500"
+          }
+        ];
+      } else {
+        // Fallback: build metrics from project stats only
+        const successRate = projectStats.totalProjects > 0
+          ? Math.round((projectStats.completedProjects / projectStats.totalProjects) * 100)
+          : 0;
+        
+        metrics = [
+          {
+            id: 1,
+            title: "Platform Growth",
+            value: "0",
+            change: "+0%",
+            trend: "up",
+            icon: "📈",
+            description: "Total active users this month",
+            color: "from-green-500 to-emerald-500"
+          },
+          {
+            id: 2,
+            title: "Project Success Rate",
+            value: `${successRate}%`,
+            change: "+0%",
+            trend: "up",
+            icon: "🎯",
+            description: "Projects completed successfully",
+            color: "from-blue-500 to-indigo-500"
+          },
+          {
+            id: 3,
+            title: "Developer Satisfaction",
+            value: "0/5",
+            change: "+0",
+            trend: "up",
+            icon: "⭐",
+            description: "Average developer rating",
+            color: "from-yellow-500 to-orange-500"
+          },
+          {
+            id: 4,
+            title: "Revenue Growth",
+            value: "$0",
+            change: "+0%",
+            trend: "up",
+            icon: "💰",
+            description: "Monthly recurring revenue",
+            color: "from-purple-500 to-pink-500"
+          }
+        ];
+      }
+      
+      // Build insights array from platform insights and skill trends
+      const insights = [];
+      
+      // Add platform insights first
+      if (platformInsights && platformInsights.length > 0) {
+        insights.push(...platformInsights.slice(0, 3).map(insight => ({
+          id: insight.id,
+          title: insight.title || "Platform Insight",
+          description: insight.description || "No description available",
+          impact: insight.impact || "Medium",
+          recommendation: insight.recommendation || "Review this insight",
+          icon: insight.icon || "📊"
+        })));
+      }
+      
+      // Add skill trends as insights if we don't have enough platform insights
+      if (insights.length < 3 && skillTrends && skillTrends.length > 0) {
+        const remaining = 3 - insights.length;
+        skillTrends.slice(0, remaining).forEach((trend, index) => {
+          insights.push({
+            id: `trend-${trend.id || index}`,
+            title: `Skill Trend: ${trend.skill || 'Unknown'}`,
+            description: `Demand for ${trend.skill || 'this skill'} is ${trend.growth || 'increasing'}`,
+            impact: trend.impact || "Medium",
+            recommendation: trend.recommendation || "Monitor this trend closely",
+            icon: trend.icon || "📊"
+          });
+        });
+      }
+      
+      return {
+        metrics,
+        insights
+      };
+    } catch (error) {
+      console.error('Error getting admin career dashboard:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Analyze team skills (for project owners)
    */
   async analyzeTeam(projectOwnerId, projectId = null, teamData = {}) {

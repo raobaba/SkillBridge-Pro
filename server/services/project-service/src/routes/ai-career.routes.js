@@ -20,6 +20,7 @@ aiCareerRouter.get("/team-analysis", aiCareerController.analyzeTeam);
 // Admin endpoints
 aiCareerRouter.get("/skill-trends", aiCareerController.getSkillTrends);
 aiCareerRouter.get("/platform-insights", aiCareerController.getPlatformInsights);
+aiCareerRouter.get("/admin/dashboard", aiCareerController.getAdminCareerDashboard);
 
 module.exports = aiCareerRouter;
 

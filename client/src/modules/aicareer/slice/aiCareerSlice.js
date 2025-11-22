@@ -8,6 +8,7 @@ import {
   getSkillTrendsApi,
   getPlatformInsightsApi,
   analyzeTeamApi,
+  getAdminCareerDashboardApi,
 } from "./aiCareerAction";
 
 // Initial state
@@ -43,6 +44,10 @@ const initialState = {
   // Team Analysis
   teamAnalysis: [],
   teamAnalysisLoading: false,
+  
+  // Admin Career Dashboard
+  adminCareerDashboard: null,
+  adminCareerDashboardLoading: false,
   
   // General loading and error states
   loading: false,
@@ -161,6 +166,20 @@ export const analyzeTeam = createAsyncThunk(
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to analyze team",
+      });
+    }
+  }
+);
+
+export const getAdminCareerDashboard = createAsyncThunk(
+  "aiCareer/getAdminCareerDashboard",
+  async (timeframe = '6m', { rejectWithValue }) => {
+    try {
+      const response = await getAdminCareerDashboardApi(timeframe);
+      return response?.data?.data || response?.data || { metrics: [], insights: [] };
+    } catch (error) {
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message || "Failed to fetch admin career dashboard",
       });
     }
   }
@@ -322,6 +341,24 @@ const aiCareerSlice = createSlice({
         state.teamAnalysisLoading = false;
         state.loading = false;
         state.error = action.payload?.message || "Failed to analyze team";
+      })
+      
+      // Get Admin Career Dashboard
+      .addCase(getAdminCareerDashboard.pending, (state) => {
+        state.adminCareerDashboardLoading = true;
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAdminCareerDashboard.fulfilled, (state, action) => {
+        state.adminCareerDashboardLoading = false;
+        state.loading = false;
+        state.adminCareerDashboard = action.payload || { metrics: [], insights: [] };
+        state.error = null;
+      })
+      .addCase(getAdminCareerDashboard.rejected, (state, action) => {
+        state.adminCareerDashboardLoading = false;
+        state.loading = false;
+        state.error = action.payload?.message || "Failed to fetch admin career dashboard";
       });
   },
 });

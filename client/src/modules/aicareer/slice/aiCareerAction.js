@@ -77,3 +77,11 @@ export const analyzeTeamApi = async (projectId = null, teamData = {}) => {
   const url = `api/v1/ai-career/team-analysis${queryParams}`;
   return await fetchFromApiServer("GET", url);
 };
+
+/**
+ * Get admin career dashboard (metrics and insights)
+ */
+export const getAdminCareerDashboardApi = async (timeframe = '6m') => {
+  const url = `api/v1/ai-career/admin/dashboard?timeframe=${timeframe}`;
+  return await fetchFromApiServer("GET", url);
+};
