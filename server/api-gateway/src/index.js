@@ -219,6 +219,26 @@ app.use(
 );
 
 app.use(
+  "/api/v1/ai-career",
+  proxy(API_PROJECT_URL, {
+    proxyReqPathResolver: (req) => req.originalUrl,
+    limit: "50mb",
+    parseReqBody: true,
+    proxyReqBodyDecorator: (bodyContent, srcReq) => bodyContent,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      // Forward all headers including Authorization
+      proxyReqOpts.headers = { ...proxyReqOpts.headers, ...srcReq.headers };
+      return proxyReqOpts;
+    },
+    userResDecorator: async (proxyRes, proxyResData) =>
+      proxyResData.toString("utf8"),
+    onError: (err, req, res) => {
+      res.status(500).json({ message: "Proxy error", error: err.message });
+    },
+  })
+);
+
+app.use(
   "/api/v1/settings",
   proxy(API_SETTINGS_URL, {
     proxyReqPathResolver: (req) => req.originalUrl,

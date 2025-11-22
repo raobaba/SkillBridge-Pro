@@ -13,7 +13,7 @@ import {
   getSkillScores,
   clearError,
 } from "../slice/portfolioSyncSlice";
-import { Badge, Button, CircularLoader } from "../../../components";
+import { Badge, Button } from "../../../components";
 import { getToken } from "../../../services/utils";
 import { 
   Github, 
@@ -528,14 +528,6 @@ const DeveloperPortfolioSync = ({ user }) => {
 
   const connectedCount = Object.values(integrations).filter(integration => integration.connected).length;
   const totalIntegrations = Object.keys(integrations).length;
-
-  if (loading && !syncStatus) {
-    return (
-      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
-        <CircularLoader />
-      </div>
-    );
-  }
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>

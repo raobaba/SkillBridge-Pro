@@ -20,6 +20,24 @@ const { taskCommentsTable, TaskCommentsModel } = require("./task-comments.model"
 const { taskTimeTrackingTable, TaskTimeTrackingModel } = require("./task-time-tracking.model");
 const { projectFavoritesTable, ProjectFavoritesModel } = require("./project-favorites.model");
 const { projectSavesTable, ProjectSavesModel } = require("./project-saves.model");
+const {
+  careerRecommendationsTable,
+  resumeSuggestionsTable,
+  skillGapsTable,
+  developerMatchesTable,
+  projectOptimizationsTable,
+  skillTrendsTable,
+  platformInsightsTable,
+  teamAnalysisTable,
+  CareerRecommendationsModel,
+  ResumeSuggestionsModel,
+  SkillGapsModel,
+  DeveloperMatchesModel,
+  ProjectOptimizationsModel,
+  SkillTrendsModel,
+  PlatformInsightsModel,
+  TeamAnalysisModel,
+} = require("./ai-career.model");
 
 // Legacy ProjectModel for backward compatibility
 const ProjectModel = {
@@ -123,6 +141,14 @@ module.exports = {
   taskTimeTrackingTable,
   projectFavoritesTable,
   projectSavesTable,
+  careerRecommendationsTable,
+  resumeSuggestionsTable,
+  skillGapsTable,
+  developerMatchesTable,
+  projectOptimizationsTable,
+  skillTrendsTable,
+  platformInsightsTable,
+  teamAnalysisTable,
   
   // Model Classes (for business logic)
   ProjectsModel,
@@ -146,6 +172,14 @@ module.exports = {
   TaskTimeTrackingModel,
   ProjectFavoritesModel,
   ProjectSavesModel,
+  CareerRecommendationsModel,
+  ResumeSuggestionsModel,
+  SkillGapsModel,
+  DeveloperMatchesModel,
+  ProjectOptimizationsModel,
+  SkillTrendsModel,
+  PlatformInsightsModel,
+  TeamAnalysisModel,
   
   // Legacy Model (for backward compatibility with existing controllers)
   ProjectModel,

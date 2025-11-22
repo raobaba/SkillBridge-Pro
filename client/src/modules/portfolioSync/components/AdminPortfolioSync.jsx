@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Badge, Button, CircularLoader } from "../../../components";
+import { Badge, Button } from "../../../components";
 import { getDevelopersWithPortfolioData } from "../slice/portfolioSyncSlice";
 import { 
   Github, 
@@ -226,15 +226,6 @@ const AdminPortfolioSync = ({ user }) => {
       )
     );
   };
-
-  // Loading state
-  if (developersLoading) {
-    return (
-      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center'>
-        <CircularLoader />
-      </div>
-    );
-  }
 
   const renderOverview = () => (
     <div className="space-y-6">

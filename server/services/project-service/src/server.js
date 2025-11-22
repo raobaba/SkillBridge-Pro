@@ -10,6 +10,7 @@ const { initializeDatabase } = require("./config/database");
 const projectRouter = require("./routes/projects.routes");
 const tasksRouter = require("./routes/tasks.routes");
 const aiRouter = require("./routes/ai.routes");
+const aiCareerRouter = require("./routes/ai-career.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3002;
@@ -39,6 +40,7 @@ app.use(logger.dev, logger.combined);
 app.use("/api/v1/projects", projectRouter);
 app.use("/api/v1/tasks", tasksRouter);
 app.use("/api/v1/ai", aiRouter);
+app.use("/api/v1/ai-career", aiCareerRouter);
 
 // ⚠️ Error Middleware
 app.use(errorMiddleware);
