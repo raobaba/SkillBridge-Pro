@@ -324,18 +324,25 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
         <div>
           <h3 className="text-lg font-semibold text-white mb-4">Recent Projects</h3>
           <div className="space-y-3">
-            {developer.portfolio.projects.map((project, index) => (
-              <div key={index} className="bg-white/5 rounded-lg p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-white font-medium">{project.name}</span>
-                  <div className="flex items-center gap-1">
-                    <Star className="w-3 h-3 text-yellow-400" />
-                    <span className="text-xs text-gray-400">{project.stars}</span>
+            {developer.portfolio.projects && developer.portfolio.projects.length > 0 ? (
+              developer.portfolio.projects.map((project, index) => (
+                <div key={index} className="bg-white/5 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-white font-medium">{project.name}</span>
+                    <div className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-400" />
+                      <span className="text-xs text-gray-400">{project.stars}</span>
+                    </div>
                   </div>
+                  <p className="text-xs text-gray-400">{project.tech}</p>
                 </div>
-                <p className="text-xs text-gray-400">{project.tech}</p>
+              ))
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <p className="text-sm">No projects available</p>
+                <p className="text-xs mt-1">Portfolio data will appear after sync</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

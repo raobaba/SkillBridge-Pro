@@ -52,6 +52,9 @@ const AdminPortfolioSync = ({ user }) => {
   const { developers, developersLoading, error } = useSelector((state) => state.portfolioSync);
   const [activeTab, setActiveTab] = useState("overview");
   const [avatarErrors, setAvatarErrors] = useState({});
+  // TODO: flaggedAccounts should come from API endpoint for admin moderation
+  // For now, using empty array - would be populated from API like:
+  // const { flaggedAccounts } = useSelector((state) => state.portfolioSync?.adminData || { flaggedAccounts: [] });
   const [flaggedAccounts, setFlaggedAccounts] = useState([]);
 
   // Fetch developers with portfolio sync data
@@ -105,9 +108,9 @@ const AdminPortfolioSync = ({ user }) => {
   const integrationHealth = useMemo(() => {
     if (!developers || developers.length === 0) {
       return [
-        { name: "GitHub", status: "healthy", uptime: 100, users: 0, errors: 0, lastCheck: new Date().toISOString() },
-        { name: "LinkedIn", status: "healthy", uptime: 100, users: 0, errors: 0, lastCheck: new Date().toISOString() },
-        { name: "StackOverflow", status: "healthy", uptime: 100, users: 0, errors: 0, lastCheck: new Date().toISOString() }
+        { name: "GitHub", status: "warning", uptime: 0, users: 0, errors: 0, lastCheck: new Date().toISOString() },
+        { name: "LinkedIn", status: "warning", uptime: 0, users: 0, errors: 0, lastCheck: new Date().toISOString() },
+        { name: "StackOverflow", status: "warning", uptime: 0, users: 0, errors: 0, lastCheck: new Date().toISOString() }
       ];
     }
 
@@ -115,29 +118,43 @@ const AdminPortfolioSync = ({ user }) => {
     const linkedinUsers = developers.filter(dev => dev.linkedin.connected).length;
     const stackoverflowUsers = developers.filter(dev => dev.stackoverflow.connected).length;
 
+    // Calculate uptime based on connection rate (percentage of users with connections)
+    const totalUsers = developers.length;
+    const githubUptime = totalUsers > 0 ? Math.round((githubUsers / totalUsers) * 100) : 0;
+    const linkedinUptime = totalUsers > 0 ? Math.round((linkedinUsers / totalUsers) * 100) : 0;
+    const stackoverflowUptime = totalUsers > 0 ? Math.round((stackoverflowUsers / totalUsers) * 100) : 0;
+
+    // Determine status based on uptime and user count
+    const getStatus = (users, uptime) => {
+      if (users === 0) return "warning";
+      if (uptime >= 50) return "healthy";
+      if (uptime >= 25) return "warning";
+      return "error";
+    };
+
     return [
       {
         name: "GitHub",
-        status: githubUsers > 0 ? "healthy" : "warning",
-        uptime: 99.9,
+        status: getStatus(githubUsers, githubUptime),
+        uptime: githubUptime,
         users: githubUsers,
-        errors: 0,
+        errors: 0, // Would come from API in production
         lastCheck: new Date().toISOString()
       },
       {
         name: "LinkedIn",
-        status: linkedinUsers > 0 ? "healthy" : "warning",
-        uptime: 99.7,
+        status: getStatus(linkedinUsers, linkedinUptime),
+        uptime: linkedinUptime,
         users: linkedinUsers,
-        errors: 0,
+        errors: 0, // Would come from API in production
         lastCheck: new Date().toISOString()
       },
       {
         name: "StackOverflow",
-        status: stackoverflowUsers > 0 ? "healthy" : "warning",
-        uptime: 97.2,
+        status: getStatus(stackoverflowUsers, stackoverflowUptime),
+        uptime: stackoverflowUptime,
         users: stackoverflowUsers,
-        errors: 0,
+        errors: 0, // Would come from API in production
         lastCheck: new Date().toISOString()
       }
     ];
@@ -164,8 +181,11 @@ const AdminPortfolioSync = ({ user }) => {
     const trends = Object.entries(skillCounts)
       .map(([skill, count]) => {
         const supply = Math.round((count / totalDevelopers) * 100);
-        // Simulate demand (in real app, this would come from job market data)
-        const demand = Math.min(100, supply + Math.floor(Math.random() * 20) - 10);
+        // Calculate demand based on skill score (if available) or use supply as baseline
+        // In production, this would come from job market data API
+        // For now, use a simple calculation: demand is slightly higher than supply for popular skills
+        const baseDemand = supply > 30 ? supply + 10 : supply > 15 ? supply + 5 : supply;
+        const demand = Math.min(100, baseDemand);
         const trend = demand > supply ? "up" : demand < supply ? "down" : "stable";
         
         return { skill, demand, supply, trend };
