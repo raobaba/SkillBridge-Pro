@@ -930,6 +930,33 @@ class UserModel {
     const stats = await this.getDeveloperStats(userId);
     if (!stats) return [];
 
+    // Helper function to determine rarity based on XP
+    const getRarity = (xp) => {
+      if (xp < 300) return "common";
+      if (xp < 700) return "rare";
+      if (xp < 1200) return "epic";
+      return "legendary";
+    };
+
+    // Helper function to get color gradient based on rarity
+    const getColorGradient = (rarity) => {
+      const colors = {
+        common: "from-yellow-400 via-orange-500 to-red-500",
+        rare: "from-blue-500 via-purple-500 to-pink-500",
+        epic: "from-green-400 via-blue-500 to-purple-600",
+        legendary: "from-orange-400 via-red-500 to-pink-500",
+      };
+      return colors[rarity] || colors.common;
+    };
+
+    // Helper function to get unlocked date (if unlocked, use current date as approximation)
+    const getUnlockedDate = (unlocked) => {
+      if (!unlocked) return null;
+      // In a real scenario, you'd track when each achievement was unlocked
+      // For now, we'll return null and let frontend handle it
+      return null;
+    };
+
     const achievements = [
       {
         id: 1,
@@ -938,6 +965,10 @@ class UserModel {
         icon: "Star",
         unlocked: stats.completedProjects >= 1,
         xp: 100,
+        points: 100,
+        rarity: getRarity(100),
+        color: getColorGradient(getRarity(100)),
+        unlockedDate: getUnlockedDate(stats.completedProjects >= 1),
       },
       {
         id: 2,
@@ -946,6 +977,10 @@ class UserModel {
         icon: "Flame",
         unlocked: stats.streak >= 7,
         xp: 200,
+        points: 200,
+        rarity: getRarity(200),
+        color: getColorGradient(getRarity(200)),
+        unlockedDate: getUnlockedDate(stats.streak >= 7),
       },
       {
         id: 3,
@@ -954,6 +989,10 @@ class UserModel {
         icon: "Target",
         unlocked: stats.level >= 10,
         xp: 500,
+        points: 500,
+        rarity: getRarity(500),
+        color: getColorGradient(getRarity(500)),
+        unlockedDate: getUnlockedDate(stats.level >= 10),
       },
       {
         id: 4,
@@ -962,6 +1001,10 @@ class UserModel {
         icon: "Zap",
         unlocked: stats.totalXP >= 10000,
         xp: 1000,
+        points: 1000,
+        rarity: getRarity(1000),
+        color: getColorGradient(getRarity(1000)),
+        unlockedDate: getUnlockedDate(stats.totalXP >= 10000),
       },
       {
         id: 5,
@@ -970,6 +1013,10 @@ class UserModel {
         icon: "Award",
         unlocked: stats.averageRating >= 4.5,
         xp: 800,
+        points: 800,
+        rarity: getRarity(800),
+        color: getColorGradient(getRarity(800)),
+        unlockedDate: getUnlockedDate(stats.averageRating >= 4.5),
       },
       {
         id: 6,
@@ -978,6 +1025,10 @@ class UserModel {
         icon: "ThumbsUp",
         unlocked: stats.endorsements >= 10,
         xp: 600,
+        points: 600,
+        rarity: getRarity(600),
+        color: getColorGradient(getRarity(600)),
+        unlockedDate: getUnlockedDate(stats.endorsements >= 10),
       },
     ];
 

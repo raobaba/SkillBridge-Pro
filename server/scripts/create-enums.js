@@ -87,6 +87,20 @@ async function createEnums() {
         values: ['status', 'priority', 'experience_level', 'work_arrangement', 'payment_term', 'currency', 'sort_option', 'skill', 'location', 'category', 'tag']
       },
       
+      // AI Career Enums (Project Service)
+      {
+        name: 'recommendation_type',
+        values: ['career_path', 'skill_development', 'project_match', 'learning_path']
+      },
+      {
+        name: 'priority_level',
+        values: ['low', 'medium', 'high', 'critical']
+      },
+      {
+        name: 'impact_level',
+        values: ['low', 'medium', 'high', 'critical']
+      },
+      
       // Chat Service Enums
       {
         name: 'conversation_type',

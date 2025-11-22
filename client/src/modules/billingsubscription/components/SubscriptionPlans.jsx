@@ -1,43 +1,47 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Star, Check, Zap, Crown, Building2 } from "lucide-react";
 import { Button } from "../../../components";
+import { getSubscriptionPlans, purchaseSubscription } from "../slice/billingSlice";
+import { SUBSCRIPTION_PLANS } from "../slice/billingAction";
 
 const SubscriptionPlans = ({ userRole = 'developer' }) => {
-  const plans = [
-    {
-      id: 1,
-      name: "Free",
-      price: "$0",
-      period: "month",
-      features: ["100 AI Credits", "Basic Tools", "Standard Matchmaking", "Community Support"],
-      icon: <Zap className="w-4 h-4" />,
-      popular: false,
-      color: "from-gray-500 to-gray-600",
-      current: userRole === 'developer'
-    },
-    {
-      id: 2,
-      name: "Pro",
-      price: "$29.99",
-      period: "month",
-      features: ["1000 AI Credits", "Enhanced AI Tools", "Matchmaking Boost", "Priority Support", "Project Visibility"],
-      icon: <Crown className="w-4 h-4" />,
-      popular: true,
-      color: "from-purple-500 to-pink-500",
-      current: userRole === 'project_owner'
-    },
-    {
-      id: 3,
-      name: "Enterprise",
-      price: "$99.99",
-      period: "month",
-      features: ["Unlimited AI Credits", "All Enhanced Tools", "Maximum Matchmaking Boost", "24/7 Support", "Custom Analytics"],
-      icon: <Building2 className="w-4 h-4" />,
-      popular: false,
-      color: "from-emerald-500 to-teal-500",
-      current: userRole === 'admin'
-    },
-  ];
+  const dispatch = useDispatch();
+  const billingState = useSelector((state) => state.billing || {});
+  const subscriptionPlans = billingState.subscriptionPlans || [];
+  const currentSubscription = billingState.currentSubscription || {};
+  const loading = billingState.loading || false;
+
+  useEffect(() => {
+    if (subscriptionPlans.length === 0) {
+      dispatch(getSubscriptionPlans());
+    }
+  }, [dispatch, subscriptionPlans.length]);
+
+  // Use API plans if available, otherwise fallback to static plans
+  const plansData = subscriptionPlans.length > 0 ? subscriptionPlans : SUBSCRIPTION_PLANS;
+
+  const plans = plansData.map((plan) => ({
+    id: plan.id,
+    name: plan.name,
+    price: `$${plan.price}`,
+    period: plan.period,
+    features: plan.features || [],
+    icon: plan.id === 1 ? <Zap className="w-4 h-4" /> : plan.id === 2 ? <Crown className="w-4 h-4" /> : <Building2 className="w-4 h-4" />,
+    popular: plan.popular || plan.id === 2,
+    color: plan.id === 1 ? "from-gray-500 to-gray-600" : plan.id === 2 ? "from-purple-500 to-pink-500" : "from-emerald-500 to-teal-500",
+    current: currentSubscription?.plan?.toLowerCase() === plan.name.toLowerCase(),
+  }));
+
+  const handlePurchase = async (planId) => {
+    try {
+      await dispatch(purchaseSubscription({ planId, paymentMethodId: null })).unwrap();
+      // Optionally show success message
+    } catch (error) {
+      console.error('Failed to purchase subscription:', error);
+      // Optionally show error message
+    }
+  };
 
   const getPlanIcon = (plan) => {
     return plan.icon;
@@ -48,7 +52,7 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
@@ -142,9 +146,10 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
                 className={`w-full px-6 py-3 rounded-lg bg-gradient-to-r ${getPlanColor(plan)} text-white font-semibold hover:opacity-90 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 group-hover:shadow-xl ${
                   plan.current ? 'opacity-75 cursor-not-allowed' : ''
                 }`}
-                disabled={plan.current}
+                disabled={plan.current || loading}
+                onClick={() => !plan.current && handlePurchase(plan.id)}
               >
-                {plan.current ? 'Current Plan' : plan.popular ? 'Get Started' : 'Choose Plan'}
+                {loading ? 'Processing...' : plan.current ? 'Current Plan' : plan.popular ? 'Get Started' : 'Choose Plan'}
               </Button>
             </div>
 

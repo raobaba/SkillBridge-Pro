@@ -6,38 +6,8 @@ import { Button } from "../../../components"
 const SkillGapAnalyzer = () => {
   const { skillGaps } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const gaps = skillGaps && skillGaps.length > 0
-    ? skillGaps
-    : [
-        { 
-          skill: "Docker", 
-          required: "Intermediate", 
-          current: "Beginner",
-          icon: "🐳",
-          category: "DevOps",
-          gapLevel: "High",
-          progress: 25
-        },
-        { 
-          skill: "AWS", 
-          required: "Intermediate", 
-          current: "Beginner",
-          icon: "☁️",
-          category: "Cloud",
-          gapLevel: "High",
-          progress: 30
-        },
-        { 
-          skill: "System Design", 
-          required: "Advanced", 
-          current: "Intermediate",
-          icon: "🏗️",
-          category: "Architecture",
-          gapLevel: "Medium",
-          progress: 60
-        },
-      ];
+  // Use Redux state - dynamic data from API
+  const gaps = skillGaps || [];
 
   const getGapLevelColor = (level) => {
     switch (level) {
@@ -88,7 +58,8 @@ const SkillGapAnalyzer = () => {
 
       {/* Skills Grid - Mobile First */}
       <div className="relative z-10 space-y-4 lg:hidden">
-        {gaps.map((gap, idx) => (
+        {gaps.length > 0 ? (
+          gaps.map((gap, idx) => (
           <div
             key={idx}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -159,7 +130,12 @@ const SkillGapAnalyzer = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No skill gaps identified yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Desktop Table View */}
@@ -179,7 +155,8 @@ const SkillGapAnalyzer = () => {
 
           {/* Table Body */}
           <div className="divide-y divide-white/10">
-            {gaps.map((gap, idx) => (
+            {gaps.length > 0 ? (
+              gaps.map((gap, idx) => (
               <div
                 key={idx}
                 className="group px-6 py-4 hover:bg-slate-800/30 transition-all duration-300 cursor-pointer"
@@ -246,7 +223,12 @@ const SkillGapAnalyzer = () => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <div className="px-6 py-12 text-center">
+                <p className="text-gray-400">No skill gaps identified yet. Check back soon!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

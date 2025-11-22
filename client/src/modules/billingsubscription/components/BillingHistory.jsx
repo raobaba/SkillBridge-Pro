@@ -2,22 +2,8 @@ import React from "react";
 import { Clock, Calendar, DollarSign, CheckCircle, XCircle } from "lucide-react";
 
 const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
-  // Default history based on role if none provided
-  const defaultHistory = {
-    developer: [
-      { id: 1, date: "2025-01-01", amount: "$0.00", status: "Free Plan", description: "Free Tier" },
-    ],
-    project_owner: [
-      { id: 1, date: "2025-01-01", amount: "$29.99", status: "Paid", description: "Premium Plan" },
-      { id: 2, date: "2024-12-01", amount: "$29.99", status: "Paid", description: "Premium Plan" },
-      { id: 3, date: "2024-11-01", amount: "$15.00", status: "Paid", description: "Project Boost" },
-    ],
-    admin: [
-      { id: 1, date: "2025-01-01", amount: "$0.00", status: "Admin Access", description: "Administrative Account" },
-    ],
-  };
-
-  const history = billingHistory.length > 0 ? billingHistory : defaultHistory[userRole] || defaultHistory.developer;
+  // Use billingHistory from props (which comes from Redux state)
+  const history = billingHistory && billingHistory.length > 0 ? billingHistory : [];
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -55,7 +41,7 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
@@ -76,7 +62,12 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
 
       {/* History List */}
       <div className="relative z-10 space-y-4">
-        {history.map((item, idx) => (
+        {history.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No billing history available</p>
+          </div>
+        ) : (
+          history.map((item, idx) => (
           <div
             key={item.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -146,7 +137,7 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Footer */}

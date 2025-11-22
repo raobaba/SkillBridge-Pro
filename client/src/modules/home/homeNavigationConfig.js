@@ -120,7 +120,7 @@ export const navigationConfig = {
       path: "/billing-subscription",
       icon: CreditCard,
       description: "Manage subscriptions",
-      roles: ["project-owner"],
+      roles: ["developer", "project-owner", "admin"],
       showInSidebar: true,
       showInUserDropdown: true,
       showInMobileNav: false,
@@ -160,6 +160,13 @@ export const navigationConfig = {
         icon: Trophy,
         color: "yellow",
         description: "Track your progress",
+      },
+      {
+        label: "Billing",
+        path: "/billing-subscription",
+        icon: CreditCard,
+        color: "blue",
+        description: "Manage subscriptions",
       },
     ],
     "project-owner": [

@@ -95,6 +95,7 @@ portfolioSyncRouter.post("/sync", authenticate, portfolioSyncController.triggerS
 portfolioSyncRouter.get("/history", authenticate, portfolioSyncController.getSyncHistory);
 portfolioSyncRouter.get("/data", authenticate, portfolioSyncController.getSyncData);
 portfolioSyncRouter.get("/skills", authenticate, portfolioSyncController.getSkillScores);
+portfolioSyncRouter.get("/developer/:developerId", authenticate, portfolioSyncController.getDeveloperPortfolioSyncData);
 
 module.exports = portfolioSyncRouter;
 

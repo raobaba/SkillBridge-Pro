@@ -1,93 +1,85 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Crown, Trophy, Medal, Award, Star, TrendingUp, Users, Calendar, Filter, Search, Zap, Target, Flame, Shield } from "lucide-react";
 import { motion } from "framer-motion";
+import { useDispatch, useSelector } from "react-redux";
+import { getLeaderboard, getProjectOwnerLeaderboard } from "../slice/gamificationSlice";
+import { CircularLoader } from "../../../components";
 
 const Leaderboards = ({ role = "developers", compact = false }) => {
+  const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const leaderboardData = [
-    { 
-      id: 1, 
-      name: "Alice Johnson", 
-      xp: 4200, 
-      level: 15,
-      avatar: "AJ",
-      badges: 8,
-      streak: 12,
-      rank: 1,
-      change: "+2",
-      category: "Coding",
-      joinDate: "2023-08-15",
-      lastActive: "2 hours ago",
-      achievements: ["Master Coder", "Speed Demon", "Team Player"],
-      isCurrentUser: false
-    },
-    { 
-      id: 2, 
-      name: "Rajan Patel", 
-      xp: 3800, 
-      level: 14,
-      avatar: "RP",
-      badges: 6,
-      streak: 8,
-      rank: 2,
-      change: "+1",
-      category: "Design",
-      joinDate: "2023-09-20",
-      lastActive: "1 hour ago",
-      achievements: ["Top Contributor", "Innovation Leader"],
-      isCurrentUser: true
-    },
-    { 
-      id: 3, 
-      name: "John Smith", 
-      xp: 3500, 
-      level: 13,
-      avatar: "JS",
-      badges: 5,
-      streak: 15,
-      rank: 3,
-      change: "-1",
-      category: "Marketing",
-      joinDate: "2023-07-10",
-      lastActive: "30 min ago",
-      achievements: ["Rising Star", "Streak Master"],
-      isCurrentUser: false
-    },
-    { 
-      id: 4, 
-      name: "Mia Chen", 
-      xp: 3200, 
-      level: 12,
-      avatar: "MC",
-      badges: 4,
-      streak: 6,
-      rank: 4,
-      change: "+3",
-      category: "Data Science",
-      joinDate: "2023-10-05",
-      lastActive: "4 hours ago",
-      achievements: ["Perfectionist"],
-      isCurrentUser: false
-    },
-    { 
-      id: 5, 
-      name: "Leo Rodriguez", 
-      xp: 2900, 
-      level: 11,
-      avatar: "LR",
-      badges: 3,
-      streak: 4,
-      rank: 5,
-      change: "-2",
-      category: "Product",
-      joinDate: "2023-11-12",
-      lastActive: "1 day ago",
-      achievements: ["Team Player"],
-      isCurrentUser: false
+  // Get leaderboard data from Redux
+  const gamificationState = useSelector((state) => state.gamification || {});
+  const leaderboardDataFromApi = role === "developers" 
+    ? (gamificationState.leaderboard || [])
+    : (gamificationState.projectOwnerLeaderboard || []);
+  const leaderboardLoading = role === "developers"
+    ? (gamificationState.leaderboardLoading || false)
+    : (gamificationState.projectOwnerLeaderboardLoading || false);
+  const currentUser = useSelector((state) => state.user?.user);
+
+  // Fetch leaderboard data on component mount
+  useEffect(() => {
+    if (role === "developers") {
+      if (leaderboardDataFromApi.length === 0 && !leaderboardLoading) {
+        dispatch(getLeaderboard(50)); // Fetch top 50
+      }
+    } else {
+      if (leaderboardDataFromApi.length === 0 && !leaderboardLoading) {
+        dispatch(getProjectOwnerLeaderboard(50)); // Fetch top 50
+      }
     }
-  ];
+  }, [dispatch, role, leaderboardDataFromApi.length, leaderboardLoading]);
+
+  // Transform API data to match component format
+  const leaderboardData = useMemo(() => {
+    if (!Array.isArray(leaderboardDataFromApi) || leaderboardDataFromApi.length === 0) {
+      return [];
+    }
+
+    return leaderboardDataFromApi.map((item, index) => {
+      // Determine if this is the current user
+      const isCurrentUser = currentUser && (
+        item.userId === currentUser.id || 
+        item.id === currentUser.id ||
+        item.email === currentUser.email
+      );
+
+      // Get initials for avatar
+      const name = item.name || item.userName || item.email || "User";
+      const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+
+      // Calculate rank change (if available from API)
+      const change = item.rankChange 
+        ? (item.rankChange > 0 ? `+${item.rankChange}` : `${item.rankChange}`)
+        : (index === 0 ? "+0" : "+0");
+
+      // Get category from skills or default
+      const category = item.category || item.primarySkill || "Coding";
+
+      // Get achievements array
+      const achievements = item.achievements || item.badges || [];
+
+      return {
+        id: item.id || item.userId || index,
+        name: name,
+        xp: item.xp || item.totalXP || 0,
+        level: item.level || 1,
+        avatar: initials,
+        badges: item.badgesCount || item.badges?.length || 0,
+        streak: item.streak || item.currentStreak || 0,
+        rank: item.rank || index + 1,
+        change: change,
+        category: category,
+        joinDate: item.joinDate || item.createdAt || "2023-01-01",
+        lastActive: item.lastActive || "Recently",
+        achievements: achievements,
+        isCurrentUser: isCurrentUser,
+      };
+    });
+  }, [leaderboardDataFromApi, currentUser]);
 
   const categories = [
     { key: "all", label: "All", icon: Users },
@@ -98,11 +90,13 @@ const Leaderboards = ({ role = "developers", compact = false }) => {
     { key: "product", label: "Product", icon: Shield }
   ];
 
-  const filteredData = leaderboardData.filter(item => {
-    const matchesCategory = selectedCategory === "all" || item.category.toLowerCase() === selectedCategory;
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredData = useMemo(() => {
+    return leaderboardData.filter(item => {
+      const matchesCategory = selectedCategory === "all" || item.category.toLowerCase() === selectedCategory;
+      const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [leaderboardData, selectedCategory, searchTerm]);
 
   const getRankIcon = (rank) => {
     switch (rank) {
@@ -120,11 +114,25 @@ const Leaderboards = ({ role = "developers", compact = false }) => {
   };
 
   if (compact) {
+    if (leaderboardLoading) {
+      return (
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+          <h3 className="text-lg font-bold text-white mb-3">Top {role === "developers" ? "Developers" : "Project Owners"}</h3>
+          <div className="flex justify-center py-4">
+            <CircularLoader />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
         <h3 className="text-lg font-bold text-white mb-3">Top {role === "developers" ? "Developers" : "Project Owners"}</h3>
-        <div className="space-y-2">
-          {filteredData.slice(0, 5).map((item, index) => (
+        {filteredData.length === 0 ? (
+          <p className="text-gray-400 text-center py-4">No leaderboard data available</p>
+        ) : (
+          <div className="space-y-2">
+            {filteredData.slice(0, 5).map((item, index) => (
             <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
               <div className="flex items-center space-x-3">
                 {getRankIcon(item.rank)}
@@ -138,8 +146,29 @@ const Leaderboards = ({ role = "developers", compact = false }) => {
                 <div className={`text-xs ${getChangeColor(item.change)}`}>{item.change}</div>
               </div>
             </div>
-          ))}
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (leaderboardLoading) {
+    return (
+      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+        <div className="flex justify-center py-12">
+          <CircularLoader />
         </div>
+      </div>
+    );
+  }
+
+  if (filteredData.length === 0) {
+    return (
+      <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+        <h3 className="text-2xl font-bold text-white mb-1">Leaderboard</h3>
+        <p className="text-gray-300 mb-6">Top {role === "developers" ? "Developers" : "Project Owners"}</p>
+        <p className="text-gray-400 text-center py-8">No leaderboard data available</p>
       </div>
     );
   }

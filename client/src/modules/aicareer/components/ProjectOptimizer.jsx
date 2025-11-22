@@ -6,50 +6,8 @@ import { Button } from "../../../components";
 const ProjectOptimizer = () => {
   const { projectOptimizations } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const optimizations = projectOptimizations && projectOptimizations.length > 0
-    ? projectOptimizations
-    : [
-    {
-      id: 1,
-      title: "Improve Project Description",
-      description: "Add more technical details and clear requirements",
-      impact: "High",
-      category: "Content",
-      icon: "📝",
-      suggestions: [
-        "Include specific technology stack requirements",
-        "Add project timeline and milestones",
-        "Specify budget range and payment terms"
-      ]
-    },
-    {
-      id: 2,
-      title: "Enhance Skill Requirements",
-      description: "Optimize skill tags for better developer matching",
-      impact: "Medium",
-      category: "Matching",
-      icon: "🎯",
-      suggestions: [
-        "Add complementary skills (React + TypeScript)",
-        "Include soft skills (communication, leadership)",
-        "Specify experience levels (Junior, Senior)"
-      ]
-    },
-    {
-      id: 3,
-      title: "Boost Project Visibility",
-      description: "Improve project discoverability and appeal",
-      impact: "High",
-      category: "Marketing",
-      icon: "📈",
-      suggestions: [
-        "Add compelling project summary",
-        "Include company background",
-        "Highlight unique project aspects"
-      ]
-    }
-  ];
+  // Use Redux state - dynamic data from API
+  const optimizations = projectOptimizations || [];
 
   const getImpactColor = (impact) => {
     switch (impact) {
@@ -91,7 +49,8 @@ const ProjectOptimizer = () => {
 
       {/* Optimizations List */}
       <div className="relative z-10 space-y-4">
-        {optimizations.map((optimization, idx) => (
+        {optimizations.length > 0 ? (
+          optimizations.map((optimization, idx) => (
           <div
             key={optimization.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -159,7 +118,12 @@ const ProjectOptimizer = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No project optimizations available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Footer with action button */}

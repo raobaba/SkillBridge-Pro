@@ -165,6 +165,18 @@ export default function DeveloperView() {
     }
   }, [activeTab, dispatch]);
 
+  // Auto-refresh data every 5 minutes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      dispatch(getDeveloperStats());
+      dispatch(getDeveloperTasks());
+      dispatch(getNotifications({ limit: 6, offset: 0 }));
+      dispatch(getUnreadCount());
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [dispatch]);
+
   // Handler for responding to invites
   const handleRespondInvite = async (inviteId, status) => {
     try {
@@ -323,11 +335,24 @@ export default function DeveloperView() {
       };
     });
     
+    // Calculate weekly goal based on weekly XP
+    const weeklyXP = stats.weeklyXP || 0;
+    const weeklyGoalTarget = 100; // Target XP per week
+    const weeklyGoal = Math.min(100, Math.round((weeklyXP / weeklyGoalTarget) * 100));
+    
+    // Calculate monthly goal based on monthly XP
+    const monthlyXP = stats.monthlyXP || (stats.totalXP || 0);
+    const monthlyGoalTarget = 400; // Target XP per month
+    const monthlyGoal = Math.min(100, Math.round((monthlyXP / monthlyGoalTarget) * 100));
+    
+    // Get longest streak from stats (if available) or use current streak
+    const longestStreak = stats.longestStreak || stats.streak || 0;
+    
     return {
       currentStreak: stats.streak || 0,
-      longestStreak: stats.streak || 0, // TODO: Get from API
-      weeklyGoal: 85, // TODO: Get from API or calculate
-      monthlyGoal: 350, // TODO: Get from API or calculate
+      longestStreak: longestStreak,
+      weeklyGoal: weeklyGoal,
+      monthlyGoal: monthlyGoal,
       achievements: transformedAchievements.length > 0 
         ? transformedAchievements 
         : [
@@ -379,23 +404,44 @@ export default function DeveloperView() {
         'rejected': 'Under Review',
       };
       
+      // Calculate progress from task completion if available
+      const projectTasks = developerTasks.filter(t => t.projectId === (project.id || app.projectId));
+      const completedTasks = projectTasks.filter(t => t.status === 'completed' || t.status === 'done').length;
+      const totalTasks = projectTasks.length;
+      const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : (project.progress || 0);
+      
+      // Calculate time spent from time tracking
+      const projectTimeTracking = userTimeTracking.filter(t => 
+        t.projectId === (project.id || app.projectId) || 
+        (t.task && projectTasks.some(pt => pt.id === t.task.id))
+      );
+      const totalTimeMs = projectTimeTracking.reduce((sum, tracking) => {
+        if (tracking.duration) return sum + tracking.duration;
+        if (tracking.startTime && tracking.endTime) {
+          return sum + (new Date(tracking.endTime) - new Date(tracking.startTime));
+        }
+        return sum;
+      }, 0);
+      const totalHours = Math.floor(totalTimeMs / (1000 * 60 * 60));
+      const timeSpent = totalHours > 0 ? `${totalHours}h` : "0h";
+      
       return {
         id: project.id || app.projectId,
         title: project.title || 'Untitled Project',
         company: project.company || project.ownerName || 'Unknown',
         status: statusMap[project.status?.toLowerCase()] || statusMap[app.status?.toLowerCase()] || 'Active',
-        progress: 0, // TODO: Get from project updates or task completion
+        progress: progress,
         payment,
         deadline: project.deadline || project.endDate || 'N/A',
         skills: skills.slice(0, 3),
         priority: project.priority || 'medium',
-        timeSpent: "0h", // TODO: Get from time tracking
+        timeSpent: timeSpent,
         estimatedTime: project.duration || "N/A",
         applicationStatus: app.status || 'pending',
         repositoryUrl: project.repositoryUrl || project.repository_url || null,
       };
     });
-  }, [appliedProjectsData]);
+  }, [appliedProjectsData, developerTasks, userTimeTracking]);
 
   // Transform developer tasks
   const activeTasks = useMemo(() => {

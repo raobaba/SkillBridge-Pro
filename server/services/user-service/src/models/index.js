@@ -7,6 +7,20 @@ const {
   syncHistoryTable,
   skillScoresTable,
 } = require("./portfolio-sync.model");
+const {
+  billingHistoryTable,
+  paymentMethodsTable,
+  invoicesTable,
+  disputesTable,
+  subscriptionPlansTable,
+  suspendedAccountsTable,
+  BillingHistoryModel,
+  PaymentMethodsModel,
+  InvoicesModel,
+  DisputesModel,
+  SubscriptionPlansModel,
+  SuspendedAccountsModel,
+} = require("./billing.model");
 
 module.exports = {
   userTable,
@@ -18,4 +32,16 @@ module.exports = {
   portfolioSyncDataTable,
   syncHistoryTable,
   skillScoresTable,
+  billingHistoryTable,
+  paymentMethodsTable,
+  invoicesTable,
+  disputesTable,
+  subscriptionPlansTable,
+  suspendedAccountsTable,
+  BillingHistoryModel,
+  PaymentMethodsModel,
+  InvoicesModel,
+  DisputesModel,
+  SubscriptionPlansModel,
+  SuspendedAccountsModel,
 };

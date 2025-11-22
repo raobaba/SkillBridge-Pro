@@ -1,12 +1,46 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Button from '../../../components/Button';
 import { CreditCard, Wallet, Shield, Star, Plus, Trash2, Edit } from "lucide-react";
+import { getPaymentMethods, deletePaymentMethod, setDefaultPaymentMethod } from "../slice/billingSlice";
 
-const PaymentMethods = () => {
-  const methods = [
-    { id: 1, type: "Credit Card", last4: "4242", default: true, brand: "Visa" },
-    { id: 2, type: "PayPal", email: "user@example.com", default: false, brand: "PayPal" },
-  ];
+const PaymentMethods = ({ userRole = 'developer', paymentMethods: propPaymentMethods = [] }) => {
+  const dispatch = useDispatch();
+  const { paymentMethods: reduxPaymentMethods, loading } = useSelector((state) => state.billing);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Use Redux state if available, otherwise use props
+  const methods = reduxPaymentMethods.length > 0 ? reduxPaymentMethods : propPaymentMethods;
+
+  useEffect(() => {
+    if (reduxPaymentMethods.length === 0) {
+      dispatch(getPaymentMethods());
+    }
+  }, [dispatch, reduxPaymentMethods.length]);
+
+  const handleDelete = async (methodId) => {
+    if (window.confirm('Are you sure you want to delete this payment method?')) {
+      try {
+        await dispatch(deletePaymentMethod(methodId)).unwrap();
+        // Refresh payment methods
+        dispatch(getPaymentMethods());
+      } catch (error) {
+        console.error('Failed to delete payment method:', error);
+        alert('Failed to delete payment method. Please try again.');
+      }
+    }
+  };
+
+  const handleSetDefault = async (methodId) => {
+    try {
+      await dispatch(setDefaultPaymentMethod(methodId)).unwrap();
+      // Refresh payment methods
+      dispatch(getPaymentMethods());
+    } catch (error) {
+      console.error('Failed to set default payment method:', error);
+      alert('Failed to set default payment method. Please try again.');
+    }
+  };
 
   const getPaymentIcon = (type) => {
     switch (type) {
@@ -42,7 +76,7 @@ const PaymentMethods = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+    <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
@@ -61,6 +95,7 @@ const PaymentMethods = () => {
           </div>
           <Button 
             className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2"
+            onClick={() => setShowAddModal(true)}
           >
             <Plus className="w-4 h-4" />
             Add Method
@@ -71,7 +106,19 @@ const PaymentMethods = () => {
 
       {/* Payment Methods List */}
       <div className="relative z-10 space-y-4">
-        {methods.map((method, idx) => (
+        {methods.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400 mb-4">No payment methods added yet</p>
+            <Button 
+              className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg"
+              onClick={() => setShowAddModal(true)}
+            >
+              <Plus className="w-4 h-4 inline mr-2" />
+              Add Your First Payment Method
+            </Button>
+          </div>
+        ) : (
+          methods.map((method, idx) => (
           <div
             key={method.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -131,15 +178,22 @@ const PaymentMethods = () => {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <Button 
-                      variant='ghost'
-                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                    >
-                      <Edit className='w-3 h-3 text-blue-400' />
-                    </Button>
+                    {!method.default && (
+                      <Button 
+                        variant='ghost'
+                        className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                        onClick={() => handleSetDefault(method.id)}
+                        title="Set as default"
+                      >
+                        <Star className='w-3 h-3 text-blue-400' />
+                      </Button>
+                    )}
                     <Button 
                       variant='ghost'
                       className='w-8 h-8 bg-gradient-to-br from-red-500/20 to-pink-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                      onClick={() => handleDelete(method.id)}
+                      disabled={loading}
+                      title="Delete payment method"
                     >
                       <Trash2 className='w-3 h-3 text-red-400' />
                     </Button>
@@ -153,7 +207,7 @@ const PaymentMethods = () => {
               </div>
             </div>
           </div>
-        ))}
+        )))}
       </div>
 
       {/* Footer */}

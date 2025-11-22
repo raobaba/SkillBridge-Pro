@@ -34,11 +34,17 @@ const getNotifications = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Notifications Error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      cause: error.cause?.message || error.cause,
+      stack: error.stack,
+    });
     return res.status(500).json({
       success: false,
       status: 500,
       message: "Failed to fetch notifications",
-      error: error.message,
+      error: error.cause?.message || error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };
@@ -63,11 +69,17 @@ const getUnreadCount = async (req, res) => {
     });
   } catch (error) {
     console.error("Get Unread Count Error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      cause: error.cause?.message || error.cause,
+      stack: error.stack,
+    });
     return res.status(500).json({
       success: false,
       status: 500,
       message: "Failed to fetch unread count",
-      error: error.message,
+      error: error.cause?.message || error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };

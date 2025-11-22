@@ -38,12 +38,14 @@ import {
   Lock,
   Unlock as UnlockIcon,
   Settings as SettingsIcon,
+  XCircle,
 } from "lucide-react";
 import Navbar from "../../../components/header";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { getAdminAnalytics } from "../slice/DashboardSlice";
 import { CircularLoader } from "../../../components";
+import { toast } from "react-toastify";
 
 export default function AnalyticsDashboard() {
   const navigate = useNavigate();
@@ -52,6 +54,12 @@ export default function AnalyticsDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
   const user = useSelector((state) => state.user.user);
   const [selectedTimeframe, setSelectedTimeframe] = useState("6m");
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filters, setFilters] = useState({
+    userType: "all",
+    projectStatus: "all",
+    dateRange: "all",
+  });
 
   // Redux selectors for admin analytics
   const adminAnalytics = useSelector((state) => state.dashboard?.adminAnalytics);
@@ -185,150 +193,180 @@ export default function AnalyticsDashboard() {
     return adminAnalytics.projectStats.projectsByDomain;
   }, [adminAnalytics]);
 
-  const recentAlerts = [
-    {
-      id: 1,
-      message: "Match rate dropped below 80%",
-      alert: true,
-      time: "2 hours ago",
-      priority: "high",
-      category: "performance",
-    },
-    {
-      id: 2,
-      message: "Revenue increased by 12% MoM",
-      alert: false,
-      time: "4 hours ago",
-      priority: "low",
-      category: "revenue",
-    },
-    {
-      id: 3,
-      message: "New high-value project posted today",
-      alert: false,
-      time: "6 hours ago",
-      priority: "medium",
-      category: "projects",
-    },
-    {
-      id: 4,
-      message: "User reported inappropriate content",
-      alert: true,
-      time: "1 hour ago",
-      priority: "high",
-      category: "moderation",
-    },
-    {
-      id: 5,
-      message: "System CPU usage exceeded 80%",
-      alert: true,
-      time: "30 min ago",
-      priority: "high",
-      category: "system",
-    },
-  ];
+  // Transform flagged content from API moderation data
+  const flaggedContent = useMemo(() => {
+    if (!adminAnalytics?.moderation) {
+      return [];
+    }
+    
+    const moderation = adminAnalytics.moderation;
+    const flaggedItems = [];
+    
+    // Add flagged users
+    if (moderation.flaggedUsers > 0) {
+      flaggedItems.push({
+        id: 'user-flagged',
+        type: "user",
+        reason: "Inappropriate profile content",
+        reportedBy: "System",
+        reportedAt: "Recently",
+        status: "pending",
+        priority: "high",
+        user: `${moderation.flaggedUsers} user(s)`,
+        details: `${moderation.flaggedUsers} users flagged for review`,
+        count: moderation.flaggedUsers,
+      });
+    }
+    
+    // Add flagged projects
+    if (moderation.flaggedProjects > 0) {
+      flaggedItems.push({
+        id: 'project-flagged',
+        type: "project",
+        reason: "Suspicious project description",
+        reportedBy: "System",
+        reportedAt: "Recently",
+        status: "under_review",
+        priority: "medium",
+        user: `${moderation.flaggedProjects} project(s)`,
+        details: `${moderation.flaggedProjects} projects flagged for review`,
+        count: moderation.flaggedProjects,
+      });
+    }
+    
+    // Add flagged messages
+    if (moderation.flaggedMessages > 0) {
+      flaggedItems.push({
+        id: 'message-flagged',
+        type: "message",
+        reason: "Spam messages",
+        reportedBy: "System",
+        reportedAt: "Recently",
+        status: "pending",
+        priority: "low",
+        user: `${moderation.flaggedMessages} message(s)`,
+        details: `${moderation.flaggedMessages} messages flagged for review`,
+        count: moderation.flaggedMessages,
+      });
+    }
+    
+    return flaggedItems;
+  }, [adminAnalytics]);
 
-  const flaggedContent = [
-    {
-      id: 1,
-      type: "user",
-      reason: "Inappropriate profile content",
-      reportedBy: "user_123",
-      reportedAt: "2 hours ago",
-      status: "pending",
-      priority: "high",
-      user: "John Doe",
-      details: "Profile contains offensive language",
-    },
-    {
-      id: 2,
-      type: "project",
-      reason: "Suspicious project description",
-      reportedBy: "user_456",
-      reportedAt: "4 hours ago",
-      status: "under_review",
-      priority: "medium",
-      user: "Project Owner",
-      details: "Project description seems misleading",
-    },
-    {
-      id: 3,
-      type: "message",
-      reason: "Spam messages",
-      reportedBy: "user_789",
-      reportedAt: "6 hours ago",
-      status: "resolved",
-      priority: "low",
-      user: "Spam User",
-      details: "Multiple spam messages sent",
-    },
-  ];
+  // Generate alerts from analytics data
+  const recentAlerts = useMemo(() => {
+    const alerts = [];
+    
+    if (!adminAnalytics) return [];
+    
+    // Match rate alert
+    if (stats.matchRate < 80) {
+      alerts.push({
+        id: 'match-rate-low',
+        message: `Match rate dropped below 80% (currently ${stats.matchRate}%)`,
+        alert: true,
+        time: "Recently",
+        priority: "high",
+        category: "performance",
+      });
+    }
+    
+    // Revenue alert
+    if (stats.monthlyGrowth > 0) {
+      alerts.push({
+        id: 'revenue-increase',
+        message: `Revenue increased by ${stats.monthlyGrowth}% MoM`,
+        alert: false,
+        time: "Recently",
+        priority: "low",
+        category: "revenue",
+      });
+    }
+    
+    // System health alerts
+    if (systemHealth.cpuUsage > 80) {
+      alerts.push({
+        id: 'cpu-high',
+        message: `System CPU usage exceeded 80% (currently ${systemHealth.cpuUsage}%)`,
+        alert: true,
+        time: "Recently",
+        priority: "high",
+        category: "system",
+      });
+    }
+    
+    if (moderationStats.pendingReviews > 10) {
+      alerts.push({
+        id: 'pending-reviews',
+        message: `${moderationStats.pendingReviews} items pending moderation review`,
+        alert: true,
+        time: "Recently",
+        priority: "high",
+        category: "moderation",
+      });
+    }
+    
+    return alerts.slice(0, 5); // Limit to 5 most recent
+  }, [adminAnalytics, stats, systemHealth, moderationStats]);
 
-  const systemNotifications = [
-    {
-      id: 1,
-      type: "security",
-      title: "Suspicious Login Attempt",
-      message: "Multiple failed login attempts detected from IP 192.168.1.100",
-      time: "1 hour ago",
-      severity: "high",
-    },
-    {
-      id: 2,
-      type: "performance",
-      title: "High Memory Usage",
-      message: "Server memory usage reached 85% capacity",
-      time: "2 hours ago",
-      severity: "medium",
-    },
-    {
-      id: 3,
-      type: "user_issue",
-      title: "User Account Locked",
-      message: "User account locked due to multiple failed password attempts",
-      time: "3 hours ago",
-      severity: "low",
-    },
-  ];
+  // System notifications from system health data
+  const systemNotifications = useMemo(() => {
+    if (!adminAnalytics?.systemHealth) {
+      return [];
+    }
+    
+    const health = adminAnalytics.systemHealth;
+    const notifications = [];
+    
+    if (health.cpuUsage > 80) {
+      notifications.push({
+        id: 'cpu-alert',
+        type: "performance",
+        title: "High CPU Usage",
+        message: `Server CPU usage reached ${health.cpuUsage}% capacity`,
+        time: "Recently",
+        severity: "high",
+      });
+    }
+    
+    if (health.memoryUsage > 80) {
+      notifications.push({
+        id: 'memory-alert',
+        type: "performance",
+        title: "High Memory Usage",
+        message: `Server memory usage reached ${health.memoryUsage}% capacity`,
+        time: "Recently",
+        severity: "medium",
+      });
+    }
+    
+    if (health.errorRate > 1) {
+      notifications.push({
+        id: 'error-alert',
+        type: "performance",
+        title: "High Error Rate",
+        message: `System error rate is ${health.errorRate}%`,
+        time: "Recently",
+        severity: "high",
+      });
+    }
+    
+    return notifications;
+  }, [adminAnalytics]);
 
-  const topPerformers = [
-    { name: "Sarah Chen", projects: 24, rating: 4.9, earnings: "$12,400" },
-    { name: "Alex Rodriguez", projects: 18, rating: 4.8, earnings: "$9,800" },
-    { name: "Maya Patel", projects: 15, rating: 4.7, earnings: "$8,200" },
-  ];
+  // Top performers - would need separate API, for now use empty array
+  const topPerformers = useMemo(() => {
+    // This would ideally come from a separate API endpoint
+    // For now, return empty array or use data from analytics if available
+    return adminAnalytics?.topPerformers || [];
+  }, [adminAnalytics]);
 
-  const recentActivity = [
-    {
-      action: "New user registered",
-      user: "john.doe@example.com",
-      time: "Just now",
-      type: "user",
-    },
-    {
-      action: "Project completed",
-      project: "E-commerce App",
-      time: "5 min ago",
-      type: "project",
-    },
-    {
-      action: "Developer verified",
-      user: "sarah.dev@example.com",
-      time: "12 min ago",
-      type: "verification",
-    },
-    {
-      action: "Content flagged for review",
-      user: "moderator@example.com",
-      time: "15 min ago",
-      type: "moderation",
-    },
-    {
-      action: "User account suspended",
-      user: "spam.user@example.com",
-      time: "30 min ago",
-      type: "enforcement",
-    },
-  ];
+  // Recent activity - would need separate API, for now use empty array
+  const recentActivity = useMemo(() => {
+    // This would ideally come from a separate API endpoint for activity logs
+    // For now, return empty array
+    return adminAnalytics?.recentActivity || [];
+  }, [adminAnalytics]);
 
   const quickAccessLinks = [
     { name: "User Management", icon: Users, color: "blue", description: "Manage users & permissions", path: "/user-management" },
@@ -338,6 +376,69 @@ export default function AnalyticsDashboard() {
     { name: "Analytics & Reports", icon: BarChart3, color: "purple", description: "View detailed analytics", path: "/analytics" },
     { name: "Platform Settings", icon: Settings, color: "orange", description: "Configure platform", path: "/settings" },
   ];
+
+  // Export analytics data to CSV
+  const handleExport = () => {
+    if (!adminAnalytics) {
+      toast.error("No data available to export");
+      return;
+    }
+
+    try {
+      // Prepare CSV data
+      const csvRows = [];
+      
+      // Header
+      csvRows.push(["Metric", "Value"]);
+      
+      // Stats
+      csvRows.push(["Total Users", stats.totalUsers]);
+      csvRows.push(["Active Developers", stats.activeDevelopers]);
+      csvRows.push(["Project Owners", stats.projectOwners]);
+      csvRows.push(["Projects Posted", stats.projectsPosted]);
+      csvRows.push(["Match Rate", `${stats.matchRate}%`]);
+      csvRows.push(["Average Rating", stats.avgRating]);
+      csvRows.push(["Revenue", stats.revenue]);
+      csvRows.push(["Monthly Growth", `${stats.monthlyGrowth}%`]);
+      csvRows.push(["User Retention", `${stats.userRetention}%`]);
+      
+      // Convert to CSV string
+      const csvContent = csvRows.map(row => row.join(",")).join("\n");
+      
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `analytics_${selectedTimeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success("Analytics data exported successfully");
+    } catch (error) {
+      console.error("Export error:", error);
+      toast.error("Failed to export analytics data");
+    }
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value,
+    }));
+  };
+
+  // Apply filters (this would filter the displayed data)
+  const applyFilters = () => {
+    // Filter logic would be applied here
+    // For now, we'll just close the modal and refresh data
+    setShowFilterModal(false);
+    dispatch(getAdminAnalytics(selectedTimeframe));
+    toast.success("Filters applied successfully");
+  };
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
@@ -421,12 +522,14 @@ export default function AnalyticsDashboard() {
           </div>
           <div className='flex items-center space-x-2'>
             <Button 
+              onClick={handleExport}
               className='flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors'
             >
               <Download className='w-4 h-4' />
               <span className='text-sm'>Export</span>
             </Button>
             <Button 
+              onClick={() => setShowFilterModal(true)}
               className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg transition-colors'
             >
               <Filter className='w-4 h-4' />

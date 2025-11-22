@@ -30,6 +30,8 @@
 
     "_comment_db_seed": "Populate database with initial/sample data",
     "db:seed": "node scripts/seed-database.js",
+    "db:seed:empty-tables": "node scripts/seed-empty-tables.js",
+    "db:check:empty-tables": "node scripts/check-empty-tables.js",
     "db:seed:user": "echo 'Use db:seed for comprehensive seeding'",
     "db:seed:project": "echo 'Use db:seed for comprehensive seeding'",
     

@@ -41,7 +41,10 @@ async function dropAllTables() {
       'conversation_type',
       'conversation_status',
       'notification_type',
-      'notification_priority'
+      'notification_priority',
+      'recommendation_type',
+      'priority_level',
+      'impact_level'
     ];
     
     for (const typeName of enumTypes) {

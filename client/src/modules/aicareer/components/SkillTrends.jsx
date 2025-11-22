@@ -6,83 +6,18 @@ import { Button } from "../../../components";
 const SkillTrends = () => {
   const { skillTrends } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const trends = skillTrends && skillTrends.length > 0
-    ? skillTrends
-    : [
-    {
-      id: 1,
-      skill: "React",
-      demand: 85,
-      growth: "+12%",
-      trend: "up",
-      icon: "⚛️",
-      category: "Frontend",
-      projects: 156,
-      developers: 234,
-      color: "from-blue-500 to-indigo-500"
-    },
-    {
-      id: 2,
-      skill: "Node.js",
-      demand: 78,
-      growth: "+8%",
-      trend: "up",
-      icon: "🟢",
-      category: "Backend",
-      projects: 142,
-      developers: 198,
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      id: 3,
-      skill: "Python",
-      demand: 72,
-      growth: "+15%",
-      trend: "up",
-      icon: "🐍",
-      category: "Backend",
-      projects: 128,
-      developers: 187,
-      color: "from-yellow-500 to-orange-500"
-    },
-    {
-      id: 4,
-      skill: "AWS",
-      demand: 68,
-      growth: "+20%",
-      trend: "up",
-      icon: "☁️",
-      category: "Cloud",
-      projects: 98,
-      developers: 145,
-      color: "from-orange-500 to-red-500"
-    },
-    {
-      id: 5,
-      skill: "Docker",
-      demand: 61,
-      growth: "+18%",
-      trend: "up",
-      icon: "🐳",
-      category: "DevOps",
-      projects: 87,
-      developers: 123,
-      color: "from-purple-500 to-pink-500"
-    },
-    {
-      id: 6,
-      skill: "TypeScript",
-      demand: 58,
-      growth: "+25%",
-      trend: "up",
-      icon: "📘",
-      category: "Frontend",
-      projects: 76,
-      developers: 98,
-      color: "from-indigo-500 to-purple-500"
-    }
-  ];
+  // Use Redux state - dynamic data from API
+  const trends = skillTrends || [];
+  
+  // Calculate dynamic summary stats from API data
+  const topTrendingCount = trends.length;
+  const averageGrowth = trends.length > 0 
+    ? Math.round(trends.reduce((sum, trend) => {
+        const growthValue = parseInt(trend.growth?.replace(/[^0-9]/g, '') || '0');
+        return sum + growthValue;
+      }, 0) / trends.length)
+    : 0;
+  const totalProjects = trends.reduce((sum, trend) => sum + (trend.projects || 0), 0);
 
   const getTrendColor = (trend) => {
     return trend === "up" ? "text-green-400" : "text-red-400";
@@ -120,7 +55,8 @@ const SkillTrends = () => {
 
       {/* Trends Grid */}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {trends.map((trend, idx) => (
+        {trends.length > 0 ? (
+          trends.map((trend, idx) => (
           <div
             key={trend.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -202,28 +138,33 @@ const SkillTrends = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-400">No skill trends available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
-      {/* Summary Stats */}
+      {/* Summary Stats - Dynamic */}
       <div className="relative z-10 mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-400 mb-2">6</div>
+            <div className="text-3xl font-bold text-blue-400 mb-2">{topTrendingCount}</div>
             <div className="text-sm text-gray-300">Top Trending Skills</div>
             <div className="text-xs text-gray-400 mt-1">Skills with highest growth</div>
           </div>
         </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-400 mb-2">+18%</div>
+            <div className="text-3xl font-bold text-green-400 mb-2">+{averageGrowth}%</div>
             <div className="text-sm text-gray-300">Average Growth</div>
             <div className="text-xs text-gray-400 mt-1">Across all skills</div>
           </div>
         </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-400 mb-2">687</div>
+            <div className="text-3xl font-bold text-purple-400 mb-2">{totalProjects}</div>
             <div className="text-sm text-gray-300">Total Projects</div>
             <div className="text-xs text-gray-400 mt-1">Using these skills</div>
           </div>

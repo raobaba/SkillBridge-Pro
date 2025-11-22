@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Button from '../../../components/Button';
+import { getBillingData, upgradeProjectVisibility, cancelSubscription } from "../slice/billingSlice";
 import {
   Building2,
   TrendingUp,
@@ -18,8 +20,43 @@ import {
 } from "lucide-react";
 
 const ProjectOwnBillSubsDash = ({ data }) => {
-  const { subscription, billingHistory, paymentMethods, projectListings } =
-    data;
+  const dispatch = useDispatch();
+  const billingState = useSelector((state) => state.billing);
+  
+  // Use Redux state if available, otherwise fallback to props
+  const subscription = billingState.currentSubscription || data?.subscription || {};
+  const billingHistory = billingState.billingHistory || data?.billingHistory || [];
+  const paymentMethods = billingState.paymentMethods || data?.paymentMethods || [];
+  const projectOwnerData = billingState.projectOwnerData || data?.projectOwnerData || {};
+  const projectListings = projectOwnerData.projectListings || data?.projectListings || [];
+
+  useEffect(() => {
+    if (!billingState.currentSubscription || Object.keys(billingState.currentSubscription).length === 0) {
+      dispatch(getBillingData());
+    }
+  }, [dispatch, billingState.currentSubscription]);
+
+  const handleUpgradeVisibility = async (projectId, visibilityType) => {
+    try {
+      await dispatch(upgradeProjectVisibility({ projectId, visibilityType })).unwrap();
+      // Refresh billing data to get updated boosted projects
+      dispatch(getBillingData());
+    } catch (error) {
+      console.error('Failed to upgrade project visibility:', error);
+      alert('Failed to upgrade project visibility. Please try again.');
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (window.confirm('Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.')) {
+      try {
+        await dispatch(cancelSubscription()).unwrap();
+      } catch (error) {
+        console.error('Failed to cancel subscription:', error);
+        alert('Failed to cancel subscription. Please try again.');
+      }
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -48,7 +85,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
   return (
     <div className='space-y-6'>
       {/* Current Subscription & Revenue Overview */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
         <div className='absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl'></div>
 
@@ -152,7 +189,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
       </div>
 
       {/* Project Listings Management */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>
@@ -174,7 +211,12 @@ const ProjectOwnBillSubsDash = ({ data }) => {
           </div>
 
           <div className='space-y-4'>
-            {projectListings?.map((project, idx) => (
+            {projectListings.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No projects available</p>
+              </div>
+            ) : (
+              projectListings.map((project, idx) => (
               <div
                 key={project.id}
                 className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
@@ -221,28 +263,27 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                   </div>
 
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                    <Button 
-                      variant='ghost'
-                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                    >
-                      <Settings className='w-3 h-3 text-blue-400' />
-                    </Button>
-                    <Button 
-                      variant='ghost'
-                      className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                    >
-                      <TrendingUp className='w-3 h-3 text-emerald-400' />
-                    </Button>
+                    {!project.boosted && (
+                      <Button 
+                        variant='ghost'
+                        className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                        onClick={() => handleUpgradeVisibility(project.id, 'premium')}
+                        disabled={billingState.loading}
+                        title="Boost project visibility"
+                      >
+                        <TrendingUp className='w-3 h-3 text-emerald-400' />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>
 
       {/* Payment Methods */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>
@@ -262,7 +303,12 @@ const ProjectOwnBillSubsDash = ({ data }) => {
           </div>
 
           <div className='space-y-4'>
-            {paymentMethods.map((method, idx) => (
+            {paymentMethods.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No payment methods added yet</p>
+              </div>
+            ) : (
+              paymentMethods.map((method, idx) => (
               <div
                 key={method.id}
                 className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
@@ -316,13 +362,14 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
 
       {/* Billing History */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>

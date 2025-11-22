@@ -6,56 +6,8 @@ import { Button } from "../../../components";
 const TeamAnalyzer = () => {
   const { teamAnalysis } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const teamGaps = teamAnalysis && teamAnalysis.length > 0
-    ? teamAnalysis
-    : [
-    {
-      id: 1,
-      skill: "Frontend Development",
-      current: 2,
-      needed: 3,
-      gap: 1,
-      priority: "High",
-      icon: "💻",
-      category: "Development",
-      suggestions: [
-        "Look for React/Next.js developers",
-        "Consider remote candidates",
-        "Post on specialized job boards"
-      ]
-    },
-    {
-      id: 2,
-      skill: "DevOps",
-      current: 0,
-      needed: 1,
-      gap: 1,
-      priority: "Critical",
-      icon: "⚙️",
-      category: "Infrastructure",
-      suggestions: [
-        "Hire senior DevOps engineer",
-        "Consider AWS/Docker specialists",
-        "Look for CI/CD experience"
-      ]
-    },
-    {
-      id: 3,
-      skill: "UI/UX Design",
-      current: 1,
-      needed: 2,
-      gap: 1,
-      priority: "Medium",
-      icon: "🎨",
-      category: "Design",
-      suggestions: [
-        "Find Figma/Adobe experts",
-        "Look for mobile design experience",
-        "Consider freelance designers"
-      ]
-    }
-  ];
+  // Use Redux state - dynamic data from API
+  const teamGaps = teamAnalysis || [];
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -98,7 +50,8 @@ const TeamAnalyzer = () => {
 
       {/* Team Gaps Analysis */}
       <div className="relative z-10 space-y-4">
-        {teamGaps.map((gap, idx) => (
+        {teamGaps.length > 0 ? (
+          teamGaps.map((gap, idx) => (
           <div
             key={gap.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -178,7 +131,12 @@ const TeamAnalyzer = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No team analysis available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Footer with action button */}

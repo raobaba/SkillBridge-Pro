@@ -6,32 +6,8 @@ import { Button } from "../../../components"
 const ResumeEnhancer = () => {
   const { resumeSuggestions } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const suggestions = resumeSuggestions && resumeSuggestions.length > 0
-    ? resumeSuggestions
-    : [
-        {
-          id: 1,
-          text: "Add more measurable achievements in your experience section.",
-          category: "Content",
-          priority: "High",
-          icon: "📊"
-        },
-        {
-          id: 2,
-          text: "Include technical keywords like React, Node.js, Docker.",
-          category: "Keywords",
-          priority: "Medium",
-          icon: "🔍"
-        },
-        {
-          id: 3,
-          text: "Tailor your resume summary to match job descriptions.",
-          category: "Customization",
-          priority: "High",
-          icon: "🎯"
-        },
-      ];
+  // Use Redux state - dynamic data from API
+  const suggestions = resumeSuggestions || [];
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -73,7 +49,8 @@ const ResumeEnhancer = () => {
 
       {/* Suggestions List */}
       <div className="relative z-10 space-y-4">
-        {suggestions.map((suggestion, idx) => (
+        {suggestions.length > 0 ? (
+          suggestions.map((suggestion, idx) => (
           <div
             key={suggestion.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -126,7 +103,12 @@ const ResumeEnhancer = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-400">No resume suggestions available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Footer with action button */}

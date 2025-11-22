@@ -7,7 +7,7 @@ const asyncHandler = awaitHandlerFactory;
  * GET /api/v1/ai-career/recommendations
  */
 const getCareerRecommendations = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const userData = {
     skills: req.user.skills || [],
     experience: req.user.experience || '',
@@ -36,7 +36,7 @@ const getCareerRecommendations = asyncHandler(async (req, res) => {
  * GET /api/v1/ai-career/resume-suggestions
  */
 const getResumeSuggestions = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const resumeData = {
     resume: req.body.resume || '',
     currentJob: req.body.currentJob || '',
@@ -64,7 +64,7 @@ const getResumeSuggestions = asyncHandler(async (req, res) => {
  * GET /api/v1/ai-career/skill-gaps
  */
 const analyzeSkillGap = asyncHandler(async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.userId;
   const userSkills = req.user.skills || {};
 
   try {
@@ -88,7 +88,7 @@ const analyzeSkillGap = asyncHandler(async (req, res) => {
  * GET /api/v1/ai-career/developer-matches?projectId=123
  */
 const matchDevelopers = asyncHandler(async (req, res) => {
-  const projectOwnerId = req.user.id;
+  const projectOwnerId = req.user.userId;
   const projectId = req.query.projectId ? parseInt(req.query.projectId) : null;
   
   let projectData = {};
@@ -132,7 +132,7 @@ const matchDevelopers = asyncHandler(async (req, res) => {
  * GET /api/v1/ai-career/project-optimizations?projectId=123
  */
 const optimizeProject = asyncHandler(async (req, res) => {
-  const projectOwnerId = req.user.id;
+  const projectOwnerId = req.user.userId;
   const projectId = req.query.projectId ? parseInt(req.query.projectId) : null;
 
   if (!projectId) {
@@ -246,7 +246,7 @@ const getPlatformInsights = asyncHandler(async (req, res) => {
  * GET /api/v1/ai-career/team-analysis?projectId=123
  */
 const analyzeTeam = asyncHandler(async (req, res) => {
-  const projectOwnerId = req.user.id;
+  const projectOwnerId = req.user.userId;
   const projectId = req.query.projectId ? parseInt(req.query.projectId) : null;
 
   // For GET requests, team data can be passed via query params or use defaults

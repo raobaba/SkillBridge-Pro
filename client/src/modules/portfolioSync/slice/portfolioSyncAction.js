@@ -67,21 +67,10 @@ export const getDevelopersApi = async (params = {}) => {
 
 // Get developer portfolio sync data (for project owners to view developers' data)
 export const getDeveloperPortfolioSyncDataApi = async (developerId) => {
-  // Note: This will need backend support to query other users' portfolio sync data
-  // For now, we'll return empty data structure
-  // TODO: Create backend endpoint for project owners to view developers' portfolio sync data
-  return {
-    data: {
-      success: true,
-      data: {
-        integrations: {
-          github: { connected: false, lastSync: null, dataCount: 0 },
-          stackoverflow: { connected: false, lastSync: null, dataCount: 0 },
-        },
-        overallScore: 0,
-        skills: {},
-      }
-    }
-  };
+  if (!developerId) {
+    throw new Error("Developer ID is required");
+  }
+  const url = `api/v1/user/portfolio-sync/developer/${developerId}`;
+  return await fetchFromApiServer("GET", url);
 };
 

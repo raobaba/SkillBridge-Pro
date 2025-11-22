@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Button from '../../../components/Button';
+import { getBillingData, getAdminDashboard, getDisputes, getSuspendedAccounts, resolveDispute, suspendAccount, unsuspendAccount } from "../slice/billingSlice";
 import {
   Shield,
   TrendingUp,
@@ -20,7 +22,67 @@ import {
 } from "lucide-react";
 
 const AdminBillSubsDash = ({ data }) => {
-  const { adminStats, disputes, suspendedAccounts } = data;
+  const dispatch = useDispatch();
+  const billingState = useSelector((state) => state.billing);
+  
+  // Use Redux state if available, otherwise fallback to props
+  const adminData = billingState.adminData || data?.adminData || {};
+  const adminStats = {
+    totalRevenue: adminData.totalRevenue || 0,
+    activeSubscriptions: adminData.activeSubscriptions || 0,
+    pendingPayments: adminData.pendingPayments || 0,
+    disputes: adminData.disputes?.length || 0,
+    suspendedAccounts: adminData.suspendedAccounts?.length || 0,
+  };
+  const disputes = adminData.disputes || data?.disputes || [];
+  const suspendedAccounts = adminData.suspendedAccounts || data?.suspendedAccounts || [];
+
+  useEffect(() => {
+    if (!billingState.adminData || Object.keys(billingState.adminData).length === 0) {
+      dispatch(getBillingData());
+      dispatch(getAdminDashboard());
+      dispatch(getDisputes());
+      dispatch(getSuspendedAccounts());
+    }
+  }, [dispatch, billingState.adminData]);
+
+  const handleResolveDispute = async (disputeId, resolution) => {
+    const resolutionText = prompt('Enter resolution notes:');
+    if (resolutionText) {
+      try {
+        await dispatch(resolveDispute({ disputeId, resolution: resolutionText })).unwrap();
+        dispatch(getDisputes()); // Refresh disputes
+      } catch (error) {
+        console.error('Failed to resolve dispute:', error);
+        alert('Failed to resolve dispute. Please try again.');
+      }
+    }
+  };
+
+  const handleSuspendAccount = async (userId, reason, amount) => {
+    const suspendData = {
+      userId,
+      reason: reason || 'Unpaid dues',
+      amount: amount || 0,
+    };
+    try {
+      await dispatch(suspendAccount(suspendData)).unwrap();
+      dispatch(getSuspendedAccounts()); // Refresh suspended accounts
+    } catch (error) {
+      console.error('Failed to suspend account:', error);
+      alert('Failed to suspend account. Please try again.');
+    }
+  };
+
+  const handleUnsuspendAccount = async (accountId) => {
+    try {
+      await dispatch(unsuspendAccount(accountId)).unwrap();
+      dispatch(getSuspendedAccounts()); // Refresh suspended accounts
+    } catch (error) {
+      console.error('Failed to unsuspend account:', error);
+      alert('Failed to unsuspend account. Please try again.');
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -68,7 +130,7 @@ const AdminBillSubsDash = ({ data }) => {
   return (
     <div className='space-y-6'>
       {/* Admin Overview Stats */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
         <div className='absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl'></div>
 
@@ -149,7 +211,7 @@ const AdminBillSubsDash = ({ data }) => {
       </div>
 
       {/* Disputes Management */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>
@@ -163,7 +225,12 @@ const AdminBillSubsDash = ({ data }) => {
           </div>
 
           <div className='space-y-4'>
-            {disputes?.map((dispute, idx) => (
+            {disputes.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No disputes found</p>
+              </div>
+            ) : (
+              disputes.map((dispute, idx) => (
               <div
                 key={dispute.id}
                 className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
@@ -219,29 +286,28 @@ const AdminBillSubsDash = ({ data }) => {
                     </div>
 
                     <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
-                      <Button 
-                        variant='ghost'
-                        className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                      >
-                        <Eye className='w-3 h-3 text-blue-400' />
-                      </Button>
-                      <Button 
-                        variant='ghost'
-                        className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                      >
-                        <Check className='w-3 h-3 text-emerald-400' />
-                      </Button>
+                      {dispute.status !== 'resolved' && (
+                        <Button 
+                          variant='ghost'
+                          className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                          onClick={() => handleResolveDispute(dispute.id)}
+                          disabled={billingState.loading}
+                          title="Resolve dispute"
+                        >
+                          <Check className='w-3 h-3 text-emerald-400' />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>
 
       {/* Suspended Accounts */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>
@@ -255,7 +321,12 @@ const AdminBillSubsDash = ({ data }) => {
           </div>
 
           <div className='space-y-4'>
-            {suspendedAccounts?.map((account, idx) => (
+            {suspendedAccounts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No suspended accounts</p>
+              </div>
+            ) : (
+              suspendedAccounts.map((account, idx) => (
               <div
                 key={account.id}
                 className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-red-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/20 cursor-pointer overflow-hidden'
@@ -300,26 +371,23 @@ const AdminBillSubsDash = ({ data }) => {
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
                     <Button 
                       variant='ghost'
-                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
-                    >
-                      <Eye className='w-3 h-3 text-blue-400' />
-                    </Button>
-                    <Button 
-                      variant='ghost'
                       className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                      onClick={() => handleUnsuspendAccount(account.id)}
+                      disabled={billingState.loading}
+                      title="Unsuspend account"
                     >
                       <Check className='w-3 h-3 text-emerald-400' />
                     </Button>
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>
 
       {/* Revenue Analytics */}
-      <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
+      <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden'>
         <div className='absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl'></div>
 
         <div className='relative z-10'>

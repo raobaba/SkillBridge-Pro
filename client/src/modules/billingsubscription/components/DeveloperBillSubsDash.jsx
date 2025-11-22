@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Button from '../../../components/Button';
+import { getBillingData, cancelSubscription, purchaseSubscription } from "../slice/billingSlice";
 import { 
   Zap, 
   Brain, 
@@ -15,7 +17,41 @@ import {
 } from "lucide-react";
 
 const DeveloperBillSubsDash = ({ data }) => {
-  const { subscription, billingHistory, paymentMethods } = data;
+  const dispatch = useDispatch();
+  const billingState = useSelector((state) => state.billing);
+  
+  // Use Redux state if available, otherwise fallback to props
+  const subscription = billingState.currentSubscription || data?.subscription || {};
+  const billingHistory = billingState.billingHistory || data?.billingHistory || [];
+  const paymentMethods = billingState.paymentMethods || data?.paymentMethods || [];
+
+  useEffect(() => {
+    if (!billingState.currentSubscription || Object.keys(billingState.currentSubscription).length === 0) {
+      dispatch(getBillingData());
+    }
+  }, [dispatch, billingState.currentSubscription]);
+
+  const handleCancelSubscription = async () => {
+    if (window.confirm('Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.')) {
+      try {
+        await dispatch(cancelSubscription()).unwrap();
+        // Optionally show success message
+      } catch (error) {
+        console.error('Failed to cancel subscription:', error);
+        alert('Failed to cancel subscription. Please try again.');
+      }
+    }
+  };
+
+  const handleUpgrade = async (planId) => {
+    try {
+      await dispatch(purchaseSubscription({ planId, paymentMethodId: null })).unwrap();
+      // Optionally show success message
+    } catch (error) {
+      console.error('Failed to purchase subscription:', error);
+      alert('Failed to purchase subscription. Please try again.');
+    }
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -30,7 +66,7 @@ const DeveloperBillSubsDash = ({ data }) => {
   return (
     <div className="space-y-6">
       {/* Current Subscription Status */}
-      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
         
@@ -129,7 +165,7 @@ const DeveloperBillSubsDash = ({ data }) => {
       </div>
 
       {/* Upgrade Options */}
-      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
         
         <div className="relative z-10">
@@ -169,8 +205,10 @@ const DeveloperBillSubsDash = ({ data }) => {
               </ul>
               <Button 
                 className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
+                onClick={() => handleUpgrade(2)}
+                disabled={billingState.loading}
               >
-                Upgrade Now
+                {billingState.loading ? 'Processing...' : 'Upgrade Now'}
                 <ArrowUpRight className="w-4 h-4" />
               </Button>
             </div>
@@ -203,8 +241,10 @@ const DeveloperBillSubsDash = ({ data }) => {
               </ul>
               <Button 
                 className="w-full px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2"
+                onClick={() => handleUpgrade(3)}
+                disabled={billingState.loading}
               >
-                Contact Sales
+                {billingState.loading ? 'Processing...' : 'Upgrade Now'}
                 <ArrowUpRight className="w-4 h-4" />
               </Button>
             </div>
@@ -213,7 +253,7 @@ const DeveloperBillSubsDash = ({ data }) => {
       </div>
 
       {/* Billing History */}
-      <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
+      <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/10 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-2xl"></div>
         
         <div className="relative z-10">
@@ -225,7 +265,12 @@ const DeveloperBillSubsDash = ({ data }) => {
           </div>
 
           <div className="space-y-4">
-            {billingHistory.map((item, idx) => (
+            {billingHistory.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No billing history available</p>
+              </div>
+            ) : (
+              billingHistory.map((item, idx) => (
               <div
                 key={item.id}
                 className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -279,7 +324,7 @@ const DeveloperBillSubsDash = ({ data }) => {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>

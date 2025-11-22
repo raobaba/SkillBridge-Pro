@@ -370,6 +370,43 @@ class PortfolioSyncModel {
     if (score >= 40) return "intermediate";
     return "beginner";
   }
+
+  // ========== Get Developer Portfolio Sync Data (for project owners) ==========
+  /**
+   * Get portfolio sync data for a specific developer
+   * This is used by project owners to view developers' portfolio sync data
+   */
+  static async getDeveloperPortfolioSyncData(developerId) {
+    // Get all integration tokens for the developer
+    const tokens = await this.getAllIntegrationTokens(developerId);
+
+    // Get last sync history for each platform
+    const syncHistory = await this.getSyncHistory(developerId, 50);
+    
+    // Get overall skill scores
+    const overallSkills = await this.getOverallSkillScore(developerId);
+
+    // Get sync data counts
+    const githubData = await this.getSyncData(developerId, "github");
+    const stackoverflowData = await this.getSyncData(developerId, "stackoverflow");
+
+    return {
+      integrations: {
+        github: {
+          connected: tokens.some((t) => t.platform === "github"),
+          lastSync: syncHistory.find((h) => h.platform === "github")?.completedAt || null,
+          dataCount: githubData.length,
+        },
+        stackoverflow: {
+          connected: tokens.some((t) => t.platform === "stackoverflow"),
+          lastSync: syncHistory.find((h) => h.platform === "stackoverflow")?.completedAt || null,
+          dataCount: stackoverflowData.length,
+        },
+      },
+      overallScore: overallSkills.overallScore,
+      skills: overallSkills.skills,
+    };
+  }
 }
 
 module.exports = {

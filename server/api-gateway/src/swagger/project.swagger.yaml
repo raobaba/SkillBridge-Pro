@@ -2403,6 +2403,477 @@ paths:
         "500":
           description: Internal server error
 
+  # AI Career Endpoints
+  /api/v1/ai-career/recommendations:
+    get:
+      summary: Get career recommendations for developers
+      description: Retrieve AI-powered career recommendations based on user's skills, experience, and profile
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Career recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                          example: "Senior Full-Stack Developer"
+                        match:
+                          type: string
+                          example: "92%"
+                        description:
+                          type: string
+                        icon:
+                          type: string
+                          example: "💻"
+                        skills:
+                          type: array
+                          items:
+                            type: string
+                        growth:
+                          type: string
+                          example: "+15%"
+                        salary:
+                          type: string
+                          example: "$90k - $130k"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/resume-suggestions:
+    get:
+      summary: Get resume enhancement suggestions
+      description: Retrieve AI-powered suggestions to improve your resume based on your profile and experience
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Resume suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        text:
+                          type: string
+                          example: "Add more specific metrics to your project descriptions"
+                        category:
+                          type: string
+                          example: "Content"
+                        priority:
+                          type: string
+                          enum: [low, medium, high]
+                          example: "high"
+                        icon:
+                          type: string
+                          example: "📝"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/skill-gaps:
+    get:
+      summary: Analyze skill gaps for developers
+      description: Get AI-powered analysis of skill gaps between your current skills and required skills for career advancement
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Skill gaps analyzed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        skill:
+                          type: string
+                          example: "Kubernetes"
+                        required:
+                          type: string
+                          example: "Advanced"
+                        current:
+                          type: string
+                          example: "Beginner"
+                        icon:
+                          type: string
+                          example: "☸️"
+                        category:
+                          type: string
+                          example: "DevOps"
+                        gapLevel:
+                          type: string
+                          enum: [Low, Medium, High]
+                          example: "High"
+                        progress:
+                          type: integer
+                          example: 25
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/developer-matches:
+    get:
+      summary: Match developers for a project (Project Owners)
+      description: Get AI-powered developer matches for your project based on skills, experience, and availability
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          description: Optional project ID to get matches for a specific project
+          required: false
+          schema:
+            type: integer
+            example: 123
+      responses:
+        "200":
+          description: Developer matches retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                          example: "Developer 1"
+                        skills:
+                          type: array
+                          items:
+                            type: string
+                        experience:
+                          type: string
+                          example: "5 years"
+                        match:
+                          type: integer
+                          example: 88
+                        availability:
+                          type: string
+                          example: "Available"
+                        rate:
+                          type: string
+                          example: "$75/hour"
+                        location:
+                          type: string
+                          example: "Remote"
+                        icon:
+                          type: string
+                          example: "👩‍💻"
+                        highlights:
+                          type: array
+                          items:
+                            type: string
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/project-optimizations:
+    get:
+      summary: Get project optimization suggestions (Project Owners)
+      description: Get AI-powered suggestions to optimize your project listing for better visibility and developer attraction
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          description: Project ID to get optimizations for
+          required: true
+          schema:
+            type: integer
+            example: 123
+      responses:
+        "200":
+          description: Project optimizations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                          example: "Improve Project Description"
+                        description:
+                          type: string
+                        impact:
+                          type: string
+                          enum: [low, medium, high]
+                          example: "high"
+                        category:
+                          type: string
+                          example: "Content"
+                        icon:
+                          type: string
+                          example: "✨"
+                        suggestions:
+                          type: array
+                          items:
+                            type: string
+        "400":
+          description: Bad request - Project ID is required
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - You do not have permission to optimize this project
+        "404":
+          description: Project not found
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/team-analysis:
+    get:
+      summary: Analyze team skills (Project Owners)
+      description: Get AI-powered analysis of your project team's skills and identify gaps or areas for improvement
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: query
+          description: Optional project ID to analyze team for a specific project
+          required: false
+          schema:
+            type: integer
+            example: 123
+        - name: currentTeam
+          in: query
+          description: JSON string of current team members (optional)
+          required: false
+          schema:
+            type: string
+        - name: requiredSkills
+          in: query
+          description: JSON string of required skills (optional)
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Team analysis retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        skill:
+                          type: string
+                          example: "Full-Stack Developer"
+                        currentCount:
+                          type: integer
+                          example: 1
+                        neededCount:
+                          type: integer
+                          example: 3
+                        gap:
+                          type: integer
+                          example: 2
+                        priority:
+                          type: string
+                          enum: [low, medium, high]
+                          example: "high"
+                        category:
+                          type: string
+                          example: "Development"
+                        icon:
+                          type: string
+                          example: "👥"
+                        suggestions:
+                          type: array
+                          items:
+                            type: string
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/skill-trends:
+    get:
+      summary: Get skill trends (Admin only)
+      description: Get AI-powered insights into skill trends, demand, and growth across the platform
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Skill trends retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        skill:
+                          type: string
+                          example: "React"
+                        demand:
+                          type: integer
+                          example: 95
+                        growth:
+                          type: string
+                          example: "+12%"
+                        trend:
+                          type: string
+                          enum: [up, down, stable]
+                          example: "up"
+                        category:
+                          type: string
+                          example: "Frontend"
+                        projectsCount:
+                          type: integer
+                          example: 45
+                        developersCount:
+                          type: integer
+                          example: 120
+                        icon:
+                          type: string
+                          example: "⚛️"
+                        color:
+                          type: string
+                          example: "text-blue-500"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
+  /api/v1/ai-career/platform-insights:
+    get:
+      summary: Get platform insights (Admin only)
+      description: Get AI-powered insights and analytics about platform usage, user behavior, and trends
+      tags:
+        - "🟢 PROJECT SERVICE - AI"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Platform insights retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                          example: "High Developer Demand"
+                        description:
+                          type: string
+                        impact:
+                          type: string
+                          enum: [low, medium, high]
+                          example: "high"
+                        recommendation:
+                          type: string
+                        category:
+                          type: string
+                          example: "User Behavior"
+                        icon:
+                          type: string
+                          example: "📊"
+                        metrics:
+                          type: object
+                          properties:
+                            activeProjects:
+                              type: integer
+                            developersAvailable:
+                              type: integer
+                            matchRate:
+                              type: integer
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - Admin access required
+        "500":
+          description: Internal server error
+
 components:
   securitySchemes:
     bearerAuth:

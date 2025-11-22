@@ -1,117 +1,84 @@
-import React, { useState } from "react";
-import { Medal, Star, Award, Trophy, Crown, Zap, Target, Flame, Shield, Rocket } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Medal, Star, Award, Trophy, Crown, Zap, Target, Flame, Shield, Rocket, ThumbsUp } from "lucide-react";
 import { motion } from "framer-motion";
+import { getDeveloperAchievements } from "../slice/gamificationSlice";
+import { CircularLoader } from "../../../components";
+
+// Icon mapping for achievements
+const iconMap = {
+  Star,
+  Flame,
+  Target,
+  Zap,
+  Award,
+  ThumbsUp,
+  Medal,
+  Shield,
+  Rocket,
+  Crown,
+  Trophy,
+};
 
 const Badges = ({ compact = false }) => {
+  const dispatch = useDispatch();
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  const badges = [
-    { 
-      id: 1, 
-      name: "Rising Star", 
-      icon: Star, 
-      color: "from-yellow-400 via-orange-500 to-red-500",
-      description: "First achievement unlocked",
-      points: 100,
-      rarity: "common",
-      unlocked: true,
-      unlockedDate: "2024-01-15"
-    },
-    { 
-      id: 2, 
-      name: "Top Contributor", 
-      icon: Medal, 
-      color: "from-blue-500 via-purple-500 to-pink-500",
-      description: "Active community member",
-      points: 500,
-      rarity: "rare",
-      unlocked: true,
-      unlockedDate: "2024-01-20"
-    },
-    { 
-      id: 3, 
-      name: "Master Coder", 
-      icon: Award, 
-      color: "from-green-400 via-blue-500 to-purple-600",
-      description: "Completed 50 coding challenges",
-      points: 1000,
-      rarity: "epic",
-      unlocked: true,
-      unlockedDate: "2024-02-01"
-    },
-    { 
-      id: 4, 
-      name: "Speed Demon", 
-      icon: Zap, 
-      color: "from-yellow-300 via-yellow-500 to-orange-500",
-      description: "Solved problems in record time",
-      points: 750,
-      rarity: "rare",
-      unlocked: false,
-      unlockedDate: null
-    },
-    { 
-      id: 5, 
-      name: "Perfectionist", 
-      icon: Target, 
-      color: "from-pink-400 via-red-500 to-purple-600",
-      description: "100% accuracy streak",
-      points: 1200,
-      rarity: "legendary",
-      unlocked: false,
-      unlockedDate: null
-    },
-    { 
-      id: 6, 
-      name: "Team Player", 
-      icon: Shield, 
-      color: "from-blue-400 via-indigo-500 to-purple-600",
-      description: "Helped 25+ team members",
-      points: 800,
-      rarity: "rare",
-      unlocked: true,
-      unlockedDate: "2024-01-25"
-    },
-    { 
-      id: 7, 
-      name: "Innovation Leader", 
-      icon: Rocket, 
-      color: "from-purple-400 via-pink-500 to-red-500",
-      description: "Led innovative projects",
-      points: 1500,
-      rarity: "epic",
-      unlocked: false,
-      unlockedDate: null
-    },
-    { 
-      id: 8, 
-      name: "Streak Master", 
-      icon: Flame, 
-      color: "from-orange-400 via-red-500 to-pink-500",
-      description: "Maintained 30-day streak",
-      points: 2000,
-      rarity: "legendary",
-      unlocked: false,
-      unlockedDate: null
+  // Get achievements from Redux state
+  const gamificationState = useSelector((state) => state.gamification || {});
+  const { achievements: achievementsData = [], achievementsLoading = false } = gamificationState;
+
+  // Fetch achievements on component mount
+  useEffect(() => {
+    if (achievementsData.length === 0 && !achievementsLoading) {
+      dispatch(getDeveloperAchievements());
     }
-  ];
+  }, [dispatch, achievementsData.length, achievementsLoading]);
 
-  const categories = [
-    { key: "all", label: "All", count: badges.length },
-    { key: "unlocked", label: "Unlocked", count: badges.filter(b => b.unlocked).length },
-    { key: "locked", label: "Locked", count: badges.filter(b => !b.unlocked).length },
-    { key: "common", label: "Common", count: badges.filter(b => b.rarity === "common").length },
-    { key: "rare", label: "Rare", count: badges.filter(b => b.rarity === "rare").length },
-    { key: "epic", label: "Epic", count: badges.filter(b => b.rarity === "epic").length },
-    { key: "legendary", label: "Legendary", count: badges.filter(b => b.rarity === "legendary").length }
-  ];
+  // Map backend achievements to frontend badge format
+  const badges = useMemo(() => {
+    if (!Array.isArray(achievementsData) || achievementsData.length === 0) {
+      return [];
+    }
 
-  const filteredBadges = badges.filter(badge => {
-    if (selectedCategory === "all") return true;
-    if (selectedCategory === "unlocked") return badge.unlocked;
-    if (selectedCategory === "locked") return !badge.unlocked;
-    return badge.rarity === selectedCategory;
-  });
+    return achievementsData.map((achievement) => {
+      const IconComponent = iconMap[achievement.icon] || Star;
+      
+      return {
+        id: achievement.id,
+        name: achievement.name,
+        icon: IconComponent,
+        color: achievement.color || "from-yellow-400 via-orange-500 to-red-500",
+        description: achievement.description,
+        points: achievement.points || achievement.xp || 0,
+        rarity: achievement.rarity || "common",
+        unlocked: achievement.unlocked || false,
+        unlockedDate: achievement.unlockedDate || null,
+      };
+    });
+  }, [achievementsData]);
+
+  // Use badges from API, or empty array if loading
+  const displayBadges = badges.length > 0 ? badges : [];
+
+  const categories = useMemo(() => [
+    { key: "all", label: "All", count: displayBadges.length },
+    { key: "unlocked", label: "Unlocked", count: displayBadges.filter(b => b.unlocked).length },
+    { key: "locked", label: "Locked", count: displayBadges.filter(b => !b.unlocked).length },
+    { key: "common", label: "Common", count: displayBadges.filter(b => b.rarity === "common").length },
+    { key: "rare", label: "Rare", count: displayBadges.filter(b => b.rarity === "rare").length },
+    { key: "epic", label: "Epic", count: displayBadges.filter(b => b.rarity === "epic").length },
+    { key: "legendary", label: "Legendary", count: displayBadges.filter(b => b.rarity === "legendary").length }
+  ], [displayBadges]);
+
+  const filteredBadges = useMemo(() => {
+    return displayBadges.filter(badge => {
+      if (selectedCategory === "all") return true;
+      if (selectedCategory === "unlocked") return badge.unlocked;
+      if (selectedCategory === "locked") return !badge.unlocked;
+      return badge.rarity === selectedCategory;
+    });
+  }, [displayBadges, selectedCategory]);
 
   const getRarityColor = (rarity) => {
     const colors = {
@@ -137,8 +104,15 @@ const Badges = ({ compact = false }) => {
     return (
       <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
         <h3 className="text-lg font-bold text-white mb-3">Recent Badges</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {badges.filter(b => b.unlocked).slice(0, 4).map((badge, index) => (
+        {achievementsLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <CircularLoader />
+          </div>
+        ) : displayBadges.length === 0 ? (
+          <div className="text-center text-gray-400 py-8">No badges available</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {displayBadges.filter(b => b.unlocked).slice(0, 4).map((badge, index) => (
             <div key={badge.id} className="text-center">
               <div className={`w-12 h-12 mx-auto mb-2 rounded-full bg-gradient-to-br ${badge.color} flex items-center justify-center`}>
                 <badge.icon className="w-6 h-6 text-white" />
@@ -147,8 +121,25 @@ const Badges = ({ compact = false }) => {
               <div className="text-xs text-gray-400">+{badge.points} XP</div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
+    );
+  }
+
+  // Show loading state
+  if (achievementsLoading && displayBadges.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20"
+      >
+        <div className="flex flex-col items-center justify-center py-12">
+          <CircularLoader />
+          <p className="text-gray-300 mt-4">Loading badges...</p>
+        </div>
+      </motion.div>
     );
   }
 
@@ -187,8 +178,9 @@ const Badges = ({ compact = false }) => {
       </div>
 
       {/* Badges Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredBadges.map((badge, index) => (
+      {displayBadges.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredBadges.map((badge, index) => (
           <motion.div
             key={badge.id}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -221,7 +213,7 @@ const Badges = ({ compact = false }) => {
                 <span className="text-xs text-gray-400">+{badge.points} XP</span>
                 {badge.unlocked ? (
                   <div className="text-xs text-green-400">
-                    ✓ {badge.unlockedDate}
+                    ✓ {badge.unlockedDate ? badge.unlockedDate : "Unlocked"}
                   </div>
                 ) : (
                   <div className="text-xs text-gray-500">
@@ -239,33 +231,47 @@ const Badges = ({ compact = false }) => {
             )}
           </motion.div>
         ))}
-      </div>
+        </div>
+      ) : null}
 
       {/* Stats */}
-      <div className="mt-6 pt-6 border-t border-white/10">
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-lg font-bold text-white">{badges.filter(b => b.unlocked).length}</div>
-            <div className="text-xs text-gray-300">Unlocked</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-white">{badges.filter(b => !b.unlocked).length}</div>
-            <div className="text-xs text-gray-300">Locked</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-white">
-              {badges.filter(b => b.unlocked).reduce((sum, b) => sum + b.points, 0)}
+      {displayBadges.length > 0 && (
+        <div className="mt-6 pt-6 border-t border-white/10">
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-lg font-bold text-white">{displayBadges.filter(b => b.unlocked).length}</div>
+              <div className="text-xs text-gray-300">Unlocked</div>
             </div>
-            <div className="text-xs text-gray-300">Total XP</div>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-white">
-              {Math.round((badges.filter(b => b.unlocked).length / badges.length) * 100)}%
+            <div>
+              <div className="text-lg font-bold text-white">{displayBadges.filter(b => !b.unlocked).length}</div>
+              <div className="text-xs text-gray-300">Locked</div>
             </div>
-            <div className="text-xs text-gray-300">Progress</div>
+            <div>
+              <div className="text-lg font-bold text-white">
+                {displayBadges.filter(b => b.unlocked).reduce((sum, b) => sum + b.points, 0)}
+              </div>
+              <div className="text-xs text-gray-300">Total XP</div>
+            </div>
+            <div>
+              <div className="text-lg font-bold text-white">
+                {displayBadges.length > 0 
+                  ? Math.round((displayBadges.filter(b => b.unlocked).length / displayBadges.length) * 100)
+                  : 0}%
+              </div>
+              <div className="text-xs text-gray-300">Progress</div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Empty state */}
+      {!achievementsLoading && displayBadges.length === 0 && (
+        <div className="text-center text-gray-400 py-12">
+          <Trophy className="w-16 h-16 mx-auto mb-4 opacity-50" />
+          <p className="text-lg">No badges available yet</p>
+          <p className="text-sm mt-2">Complete achievements to unlock badges!</p>
+        </div>
+      )}
     </motion.div>
   );
 };

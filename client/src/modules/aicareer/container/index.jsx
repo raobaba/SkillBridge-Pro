@@ -47,34 +47,18 @@ const AiCareer = () => {
 
     if (user.role === "developer") {
       // Load developer-specific data
-      if (!aiCareerState.careerRecommendations || aiCareerState.careerRecommendations.length === 0) {
-        dispatch(getCareerRecommendations());
-      }
-      if (!aiCareerState.resumeSuggestions || aiCareerState.resumeSuggestions.length === 0) {
-        dispatch(enhanceResume());
-      }
-      if (!aiCareerState.skillGaps || aiCareerState.skillGaps.length === 0) {
-        dispatch(analyzeSkillGap());
-      }
+      dispatch(getCareerRecommendations());
+      dispatch(enhanceResume());
+      dispatch(analyzeSkillGap());
     } else if (user.role === "project-owner") {
       // Load project owner-specific data
-      if (!aiCareerState.projectOptimizations || aiCareerState.projectOptimizations.length === 0) {
-        dispatch(optimizeProject());
-      }
-      if (!aiCareerState.teamAnalysis || aiCareerState.teamAnalysis.length === 0) {
-        dispatch(analyzeTeam());
-      }
-      if (!aiCareerState.developerMatches || aiCareerState.developerMatches.length === 0) {
-        dispatch(matchDevelopers());
-      }
+      dispatch(matchDevelopers());
+      dispatch(analyzeTeam());
+      // Note: optimizeProject requires projectId, will be called from component if needed
     } else if (user.role === "admin") {
       // Load admin-specific data
-      if (!aiCareerState.skillTrends || aiCareerState.skillTrends.length === 0) {
-        dispatch(getSkillTrends());
-      }
-      if (!aiCareerState.platformInsights || aiCareerState.platformInsights.length === 0) {
-        dispatch(getPlatformInsights());
-      }
+      dispatch(getSkillTrends());
+      dispatch(getPlatformInsights());
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role, dispatch]);

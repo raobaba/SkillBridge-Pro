@@ -6,95 +6,14 @@ import { Button } from "../../../components";
 const PlatformInsights = () => {
   const { platformInsights } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const insights = platformInsights && platformInsights.length > 0
-    ? platformInsights
-    : [
-    {
-      id: 1,
-      title: "User Engagement Patterns",
-      description: "Peak activity occurs between 9-11 AM and 2-4 PM, with 40% of users active during these hours",
-      impact: "High",
-      recommendation: "Schedule important announcements during peak hours",
-      icon: "⏰",
-      category: "User Behavior",
-      metrics: {
-        peakHours: "9-11 AM, 2-4 PM",
-        activeUsers: "40%",
-        engagement: "High"
-      }
-    },
-    {
-      id: 2,
-      title: "Project Completion Rates",
-      description: "Projects with detailed descriptions have 35% higher completion rates than vague ones",
-      impact: "Medium",
-      recommendation: "Encourage detailed project descriptions through UI prompts",
-      icon: "📋",
-      category: "Project Quality",
-      metrics: {
-        completionRate: "87%",
-        improvement: "+35%",
-        quality: "High"
-      }
-    },
-    {
-      id: 3,
-      title: "Developer Skill Gaps",
-      description: "Most common skill gaps are in DevOps (45%), Cloud platforms (38%), and AI/ML (42%)",
-      impact: "High",
-      recommendation: "Create targeted learning resources for these skill areas",
-      icon: "🎓",
-      category: "Skill Development",
-      metrics: {
-        devops: "45%",
-        cloud: "38%",
-        ai: "42%"
-      }
-    },
-    {
-      id: 4,
-      title: "Geographic Distribution",
-      description: "60% of projects are remote, with highest concentration in North America (45%) and Europe (30%)",
-      impact: "Medium",
-      recommendation: "Optimize matching algorithms for timezone differences in remote projects",
-      icon: "🌍",
-      category: "Geographic",
-      metrics: {
-        remote: "60%",
-        northAmerica: "45%",
-        europe: "30%"
-      }
-    },
-    {
-      id: 5,
-      title: "Payment Preferences",
-      description: "Hourly rates preferred by 65% of developers, while fixed-price projects have 20% higher satisfaction",
-      impact: "Medium",
-      recommendation: "Provide flexible payment options and educate on pricing strategies",
-      icon: "💳",
-      category: "Payment",
-      metrics: {
-        hourly: "65%",
-        satisfaction: "+20%",
-        preference: "Mixed"
-      }
-    },
-    {
-      id: 6,
-      title: "Platform Performance",
-      description: "Average page load time is 1.2s, with 99.9% uptime. Mobile usage increased by 25% this quarter",
-      impact: "High",
-      recommendation: "Continue mobile optimization and monitor performance metrics",
-      icon: "⚡",
-      category: "Performance",
-      metrics: {
-        loadTime: "1.2s",
-        uptime: "99.9%",
-        mobile: "+25%"
-      }
-    }
-  ];
+  // Use Redux state - dynamic data from API only
+  const insights = platformInsights || [];
+  
+  // Calculate dynamic summary stats from API data
+  const keyInsightsCount = insights.length;
+  const recommendationsCount = insights.filter(insight => insight.recommendation).length;
+  const highImpactCount = insights.filter(insight => insight.impact === 'high' || insight.impact === 'High').length;
+  const accuracyRate = insights.length > 0 ? Math.round((highImpactCount / insights.length) * 100) : 0;
 
   const getImpactColor = (impact) => {
     switch (impact) {
@@ -139,7 +58,8 @@ const PlatformInsights = () => {
 
       {/* Insights Grid */}
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {insights.map((insight, idx) => (
+        {insights.length > 0 ? (
+          insights.map((insight, idx) => (
           <div
             key={insight.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.01] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -210,24 +130,29 @@ const PlatformInsights = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-400">No platform insights available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
-      {/* Summary Actions */}
+      {/* Summary Actions - Dynamic Stats */}
       <div className="relative z-10 mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
-          <div className="text-2xl font-bold text-blue-400 mb-2">6</div>
+          <div className="text-2xl font-bold text-blue-400 mb-2">{keyInsightsCount}</div>
           <div className="text-sm text-gray-300">Key Insights</div>
           <div className="text-xs text-gray-400 mt-1">Identified this month</div>
         </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
-          <div className="text-2xl font-bold text-green-400 mb-2">12</div>
+          <div className="text-2xl font-bold text-green-400 mb-2">{recommendationsCount}</div>
           <div className="text-sm text-gray-300">Recommendations</div>
           <div className="text-xs text-gray-400 mt-1">Ready to implement</div>
         </div>
         <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 text-center">
-          <div className="text-2xl font-bold text-purple-400 mb-2">85%</div>
-          <div className="text-sm text-gray-300">Accuracy Rate</div>
+          <div className="text-2xl font-bold text-purple-400 mb-2">{accuracyRate}%</div>
+          <div className="text-sm text-gray-300">High Impact Rate</div>
           <div className="text-xs text-gray-400 mt-1">AI predictions</div>
         </div>
       </div>

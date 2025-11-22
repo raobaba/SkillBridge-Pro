@@ -4,6 +4,9 @@ import {
   getProjectOwnerProjectsApi,
   getProjectOwnerReviewsApi,
   getProjectOwnerDevelopersApi,
+  getAdminAnalyticsApi,
+  getAllUsersApi,
+  getDevelopersApi,
 } from './profileAction';
 
 // Re-export user profile functions from user slice
@@ -79,6 +82,43 @@ export const fetchProjectOwnerDevelopers = createAsyncThunk(
   }
 );
 
+// Admin Profile Async Thunks
+export const fetchAdminAnalytics = createAsyncThunk(
+  'profile/fetchAdminAnalytics',
+  async (timeframe = '6m', { rejectWithValue }) => {
+    try {
+      const response = await getAdminAnalyticsApi(timeframe);
+      return response?.data?.data || response?.data || {};
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch admin analytics');
+    }
+  }
+);
+
+export const fetchAllUsers = createAsyncThunk(
+  'profile/fetchAllUsers',
+  async ({ role = null, limit = 100 } = {}, { rejectWithValue }) => {
+    try {
+      const response = await getAllUsersApi(role, limit);
+      return response?.data?.data || response?.data || [];
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
+    }
+  }
+);
+
+export const fetchDevelopers = createAsyncThunk(
+  'profile/fetchDevelopers',
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      const response = await getDevelopersApi(filters);
+      return response?.data?.data || response?.data || [];
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch developers');
+    }
+  }
+);
+
 
 
 // Initial state
@@ -112,6 +152,25 @@ const initialState = {
     projects: null,
     reviews: null,
     developers: null
+  },
+
+  // Admin Profile Data
+  adminAnalytics: null,
+  allUsers: [],
+  developers: [],
+  
+  // Admin Loading States
+  adminLoading: {
+    analytics: false,
+    users: false,
+    developers: false,
+  },
+  
+  // Admin Error States
+  adminError: {
+    analytics: null,
+    users: null,
+    developers: null,
   },
 
 };
@@ -217,6 +276,51 @@ const profileSlice = createSlice({
       .addCase(fetchProjectOwnerDevelopers.rejected, (state, action) => {
         state.projectOwnerLoading.developers = false;
         state.projectOwnerError.developers = action.payload;
+      })
+      
+    // Fetch admin analytics
+    builder
+      .addCase(fetchAdminAnalytics.pending, (state) => {
+        state.adminLoading.analytics = true;
+        state.adminError.analytics = null;
+      })
+      .addCase(fetchAdminAnalytics.fulfilled, (state, action) => {
+        state.adminLoading.analytics = false;
+        state.adminAnalytics = action.payload;
+      })
+      .addCase(fetchAdminAnalytics.rejected, (state, action) => {
+        state.adminLoading.analytics = false;
+        state.adminError.analytics = action.payload;
+      })
+      
+    // Fetch all users
+    builder
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.adminLoading.users = true;
+        state.adminError.users = null;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.adminLoading.users = false;
+        state.allUsers = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.adminLoading.users = false;
+        state.adminError.users = action.payload;
+      })
+      
+    // Fetch developers
+    builder
+      .addCase(fetchDevelopers.pending, (state) => {
+        state.adminLoading.developers = true;
+        state.adminError.developers = null;
+      })
+      .addCase(fetchDevelopers.fulfilled, (state, action) => {
+        state.adminLoading.developers = false;
+        state.developers = Array.isArray(action.payload) ? action.payload : [];
+      })
+      .addCase(fetchDevelopers.rejected, (state, action) => {
+        state.adminLoading.developers = false;
+        state.adminError.developers = action.payload;
       })
       
   }

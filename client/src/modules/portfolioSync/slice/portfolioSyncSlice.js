@@ -199,18 +199,20 @@ export const getDevelopersWithPortfolioData = createAsyncThunk(
       const developersWithPortfolioData = await Promise.all(
         developersList.map(async (developer) => {
           try {
-            // Try to get portfolio sync data (will fail if not supported)
-            const portfolioData = await getDeveloperPortfolioSyncDataApi(developer.id);
+            // Try to get portfolio sync data from API
+            const portfolioDataResponse = await getDeveloperPortfolioSyncDataApi(developer.id);
+            const portfolioData = portfolioDataResponse?.data?.data || portfolioDataResponse?.data || null;
             
-            // Extract skills from developer's profile
-            // Backend returns skills as an object: {"Node.js": "Beginner", "Express.js": "Beginner", ...}
+            // Extract skills from portfolio sync data or developer's profile
             let topSkills = ["No skills data"];
-            if (developer.skills && typeof developer.skills === 'object') {
-              // Extract skill names from the skills object
+            if (portfolioData?.skills && Object.keys(portfolioData.skills).length > 0) {
+              // Use skills from portfolio sync data
+              topSkills = Object.keys(portfolioData.skills).slice(0, 4);
+            } else if (developer.skills && typeof developer.skills === 'object') {
+              // Fallback to developer's profile skills
               topSkills = Object.keys(developer.skills).slice(0, 4);
             } else if (developer.domainPreferences) {
-              // Fallback to domainPreferences if skills object is not available
-              // domainPreferences is a string like "Software Development, Data Science, AI/ML"
+              // Fallback to domainPreferences
               topSkills = developer.domainPreferences
                 .split(',')
                 .map(d => d.trim())
@@ -218,11 +220,26 @@ export const getDevelopersWithPortfolioData = createAsyncThunk(
                 .slice(0, 4);
             }
 
-            // Check if platforms are connected based on URL presence
-            const githubConnected = !!(developer.githubUrl && developer.githubUrl.trim());
+            // Get portfolio sync data from API response
+            const githubSyncData = portfolioData?.integrations?.github || {};
+            const stackoverflowSyncData = portfolioData?.integrations?.stackoverflow || {};
+            const overallScore = portfolioData?.overallScore || 0;
+
+            // Check if platforms are connected (from API or URL presence)
+            const githubConnected = githubSyncData.connected || !!(developer.githubUrl && developer.githubUrl.trim());
             const linkedinConnected = !!(developer.linkedinUrl && developer.linkedinUrl.trim());
-            const stackoverflowConnected = !!(developer.stackoverflowUrl && developer.stackoverflowUrl.trim());
+            const stackoverflowConnected = stackoverflowSyncData.connected || !!(developer.stackoverflowUrl && developer.stackoverflowUrl.trim());
             const portfolioConnected = !!(developer.portfolioUrl && developer.portfolioUrl.trim());
+
+            // Format last sync date
+            const formatLastSync = (dateString) => {
+              if (!dateString) return "Never";
+              const date = new Date(dateString);
+              const hoursAgo = Math.floor((new Date() - date) / (1000 * 60 * 60));
+              if (hoursAgo < 24) return `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`;
+              if (hoursAgo < 168) return `${Math.floor(hoursAgo / 24)} ${Math.floor(hoursAgo / 24) === 1 ? 'day' : 'days'} ago`;
+              return `${Math.floor(hoursAgo / 168)} ${Math.floor(hoursAgo / 168) === 1 ? 'week' : 'weeks'} ago`;
+            };
 
             // Transform to component format
             return {
@@ -230,17 +247,18 @@ export const getDevelopersWithPortfolioData = createAsyncThunk(
               name: developer.name || "Unknown",
               title: developer.bio || developer.domainPreferences || "Developer",
               location: developer.location || "Not specified",
-              rating: developer.portfolioScore || 0, // Use portfolioScore as rating
+              rating: overallScore || developer.portfolioScore || 0, // Use overallScore from portfolio sync
               experience: developer.experience || "Not specified",
               avatarUrl: developer.avatarUrl || null,
               skills: topSkills,
               github: {
                 connected: githubConnected,
                 url: developer.githubUrl || null,
-                projects: 0, // Will be populated when backend supports it
+                projects: githubSyncData.dataCount || 0,
                 commits: 0,
                 stars: 0,
-                skillScore: 0
+                skillScore: overallScore || 0,
+                lastSync: formatLastSync(githubSyncData.lastSync)
               },
               linkedin: {
                 connected: linkedinConnected,
@@ -251,9 +269,10 @@ export const getDevelopersWithPortfolioData = createAsyncThunk(
               stackoverflow: {
                 connected: stackoverflowConnected,
                 url: developer.stackoverflowUrl || null,
-                reputation: 0, // Will be populated when backend supports it
-                answers: 0,
-                skillScore: 0
+                reputation: 0,
+                answers: stackoverflowSyncData.dataCount || 0,
+                skillScore: overallScore || 0,
+                lastSync: formatLastSync(stackoverflowSyncData.lastSync)
               },
               portfolio: {
                 connected: portfolioConnected,

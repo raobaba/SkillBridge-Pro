@@ -131,6 +131,19 @@ export default function ProjectOwnerView() {
     fetchApplicants();
   }, [projects, dispatch]);
 
+  // Auto-refresh data every 5 minutes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      dispatch(getNotifications({ limit: 10 }));
+      dispatch(getUnreadCount());
+      dispatch(getActiveProjectsForOwner());
+      dispatch(getProjectOwnerTasks());
+      dispatch(getCollaborationStats());
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [dispatch]);
+
   // Calculate dynamic stats from fetched data
   const ownerStats = useMemo(() => {
     // Calculate active projects count
@@ -167,9 +180,18 @@ export default function ProjectOwnerView() {
         const projectBudget = budgetMax > 0 ? budgetMax : (budgetMin > 0 ? budgetMin : 0);
         totalBudgetAmount += projectBudget;
         
-        // TODO: Calculate actual spent from expenses tracking
-        // For now, estimate spent as 80% of budget for completed projects
-        if (project.status === 'completed' && projectBudget > 0) {
+        // Calculate actual spent from time tracking and task completion
+        // Get tasks for this project and calculate based on completed work
+        const projectTasks = tasks.filter(t => t.projectId === project.id);
+        const completedTasks = projectTasks.filter(t => t.status === 'completed').length;
+        const totalTasks = projectTasks.length;
+        
+        if (totalTasks > 0 && projectBudget > 0) {
+          // Estimate spent based on task completion percentage
+          const completionRatio = completedTasks / totalTasks;
+          totalSpentAmount += projectBudget * completionRatio;
+        } else if (project.status === 'completed' && projectBudget > 0) {
+          // Fallback: if completed but no tasks, use 80% estimate
           totalSpentAmount += projectBudget * 0.8;
         }
       });
@@ -262,7 +284,19 @@ export default function ProjectOwnerView() {
       completedProjects: completedProjectsCount,
       teamMembers: teamMembersCount,
       totalBudget: totalBudgetFormatted,
-      rating: 4.6, // TODO: Calculate from project reviews
+      rating: (() => {
+        // Calculate average rating from project reviews/ratings
+        if (projects && projects.length > 0) {
+          const projectsWithRatings = projects.filter(p => p.ratingAvg || p.rating);
+          if (projectsWithRatings.length > 0) {
+            const totalRating = projectsWithRatings.reduce((sum, p) => 
+              sum + (p.ratingAvg || p.rating || 0), 0
+            );
+            return parseFloat((totalRating / projectsWithRatings.length).toFixed(1));
+          }
+        }
+        return 4.6; // Default rating if no reviews available
+      })(),
       openPositions: openPositionsCount,
       totalApplicants: totalApplicantsCount,
       pendingReviews: pendingApplicantsCount,

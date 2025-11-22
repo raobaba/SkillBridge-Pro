@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import BillingHistory from "../components/BillingHistory";
 import PaymentMethods from "../components/PaymentMethods";
 import SubscriptionPlans from "../components/SubscriptionPlans";
@@ -7,15 +7,40 @@ import DeveloperBillSubsDash from "../components/DeveloperBillSubsDash";
 import ProjectOwnBillSubsDash from "../components/ProjectOwnBillSubsDash";
 import AdminBillSubsDash from "../components/AdminBillSubsDash";
 import Navbar from "../../../components/header";
-import { Footer } from "../../../components/Footer";
+import { Footer, CircularLoader } from "../../../components";
+import { getBillingData, setUserRole } from "../slice/billingSlice";
 
 const BillingSubscription = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
-  const [userRole, setUserRole] = useState("developer"); // 'developer', 'project_owner', 'admin'
+  const billingState = useSelector((state) => state.billing || {});
   const [currentView, setCurrentView] = useState("overview");
 
-  // Static data for different roles
-  const roleData = {
+  // Determine user role from Redux user state
+  const userRole = user?.role || 'developer';
+  const roleKey = userRole === 'project-owner' ? 'project_owner' : userRole;
+
+  // Initialize billing data when component mounts or user changes
+  useEffect(() => {
+    if (user?.role) {
+      dispatch(setUserRole(userRole));
+      dispatch(getBillingData());
+    }
+  }, [user?.role, dispatch, userRole]);
+
+  // Prepare data for components from Redux state
+  const currentData = {
+    subscription: billingState.currentSubscription || {},
+    billingHistory: billingState.billingHistory || [],
+    paymentMethods: billingState.paymentMethods || [],
+    ...(userRole === 'admin' && { adminData: billingState.adminData || {} }),
+    ...((userRole === 'project-owner' || userRole === 'project_owner') && { 
+      projectOwnerData: billingState.projectOwnerData || {} 
+    }),
+  };
+
+  // Fallback static data if Redux state is empty (for initial load)
+  const fallbackData = {
     developer: {
       subscription: {
         plan: "free",
@@ -170,22 +195,33 @@ const BillingSubscription = () => {
     },
   };
 
-  const currentData = roleData[userRole];
+  // Use Redux data if available and not empty, otherwise use fallback
+  const hasReduxData = billingState.currentSubscription && Object.keys(billingState.currentSubscription).length > 0;
+  const displayData = hasReduxData ? currentData : (fallbackData[roleKey] || fallbackData.developer);
 
   const renderRoleSpecificContent = () => {
-    switch (user?.role) {
+    if (billingState.loading) {
+      return (
+        <div className="flex justify-center items-center min-h-[400px]">
+          <CircularLoader />
+        </div>
+      );
+    }
+
+    switch (userRole) {
       case "developer":
-        return <DeveloperBillSubsDash data={currentData} />;
+        return <DeveloperBillSubsDash data={displayData} />;
       case "project-owner":
-        return <ProjectOwnBillSubsDash data={currentData} />;
+      case "project_owner":
+        return <ProjectOwnBillSubsDash data={displayData} />;
       case "admin":
-        return <AdminBillSubsDash data={currentData} />;
+        return <AdminBillSubsDash data={displayData} />;
       default:
         return (
           <>
-            <SubscriptionPlans />
-            <PaymentMethods />
-            <BillingHistory />
+            <SubscriptionPlans userRole={userRole} />
+            <PaymentMethods userRole={userRole} paymentMethods={displayData.paymentMethods || []} />
+            <BillingHistory userRole={userRole} billingHistory={displayData.billingHistory || []} />
           </>
         );
     }
@@ -194,43 +230,27 @@ const BillingSubscription = () => {
   return (
     <>
       <Navbar />
-      <div className='p-6 space-y-6'>
-        {/* Role Selector */}
-        <div className='bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-white/10'>
-          <div className='flex items-center justify-between mb-4'>
-            <h2 className='text-xl font-bold text-white'>
-              Billing & Subscription Dashboard
-            </h2>
-            <div className='flex gap-2'>
-              {["developer", "project_owner", "admin"].map((role) => (
-                <button
-                  key={role}
-                  onClick={() => setUserRole(role)}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                    userRole === role
-                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
-                      : "bg-black/20 text-gray-300 hover:bg-black/40 hover:text-white"
-                  }`}
-                >
-                  {role
-                    .replace("_", " ")
-                    .replace(/\b\w/g, (l) => l.toUpperCase())}
-                </button>
-              ))}
+      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+          <div className='space-y-6'>
+            {/* Header */}
+            <div className='bg-white/5 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-white/10'>
+              <div className='flex items-center justify-between mb-4'>
+                <div>
+                  <h2 className='text-2xl font-bold text-white'>
+                    Billing & Subscription Dashboard
+                  </h2>
+                </div>
+              </div>
             </div>
-          </div>
-          <p className='text-gray-300 text-sm'>
-            Current Role:{" "}
-            <span className='text-blue-400 font-semibold'>
-              {userRole
-                .replace("_", " ")
-                .replace(/\b\w/g, (l) => l.toUpperCase())}
-            </span>
-          </p>
-        </div>
 
-        {/* Role-specific content */}
-        {renderRoleSpecificContent()}
+            {/* Subscription Plans - Show for all users */}
+            <SubscriptionPlans userRole={userRole} />
+
+            {/* Role-specific content */}
+            {renderRoleSpecificContent()}
+          </div>
+        </div>
       </div>
       <Footer />
     </>

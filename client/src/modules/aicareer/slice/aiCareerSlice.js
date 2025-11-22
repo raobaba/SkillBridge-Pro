@@ -49,13 +49,14 @@ const initialState = {
   error: null,
 };
 
-// Async thunks - Using static data for now
+// Async thunks - Connected to Backend APIs
 export const getCareerRecommendations = createAsyncThunk(
   "aiCareer/getCareerRecommendations",
   async (_, { rejectWithValue }) => {
     try {
       const response = await getCareerRecommendationsApi();
-      return response?.data || response || [];
+      // API returns { success: true, data: [...] }
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to fetch career recommendations",
@@ -69,7 +70,7 @@ export const enhanceResume = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await enhanceResumeApi();
-      return response?.data || response || [];
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to enhance resume",
@@ -80,10 +81,10 @@ export const enhanceResume = createAsyncThunk(
 
 export const matchDevelopers = createAsyncThunk(
   "aiCareer/matchDevelopers",
-  async (_, { rejectWithValue }) => {
+  async (projectId = null, { rejectWithValue }) => {
     try {
-      const response = await matchDevelopersApi();
-      return response?.data || response || [];
+      const response = await matchDevelopersApi(projectId);
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to match developers",
@@ -94,10 +95,13 @@ export const matchDevelopers = createAsyncThunk(
 
 export const optimizeProject = createAsyncThunk(
   "aiCareer/optimizeProject",
-  async (_, { rejectWithValue }) => {
+  async (projectId, { rejectWithValue }) => {
     try {
-      const response = await optimizeProjectApi();
-      return response?.data || response || [];
+      if (!projectId) {
+        throw new Error('Project ID is required');
+      }
+      const response = await optimizeProjectApi(projectId);
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to optimize project",
@@ -111,7 +115,7 @@ export const analyzeSkillGap = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await analyzeSkillGapApi();
-      return response?.data || response || [];
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to analyze skill gap",
@@ -125,7 +129,7 @@ export const getSkillTrends = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getSkillTrendsApi();
-      return response?.data || response || [];
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to fetch skill trends",
@@ -139,7 +143,7 @@ export const getPlatformInsights = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getPlatformInsightsApi();
-      return response?.data || response || [];
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to fetch platform insights",
@@ -150,10 +154,10 @@ export const getPlatformInsights = createAsyncThunk(
 
 export const analyzeTeam = createAsyncThunk(
   "aiCareer/analyzeTeam",
-  async (_, { rejectWithValue }) => {
+  async ({ projectId = null, teamData = {} } = {}, { rejectWithValue }) => {
     try {
-      const response = await analyzeTeamApi();
-      return response?.data || response || [];
+      const response = await analyzeTeamApi(projectId, teamData);
+      return response?.data?.data || response?.data || [];
     } catch (error) {
       return rejectWithValue({
         message: error.response?.data?.message || error.message || "Failed to analyze team",

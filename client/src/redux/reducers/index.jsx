@@ -11,6 +11,7 @@ import portfolioSyncReducer from "../../modules/portfolioSync/slice/portfolioSyn
 import dashboardReducer from "../../modules/dashboard/slice/DashboardSlice";
 import taskReducer from "../../modules/dashboard/slice/taskSlice";
 import aiCareerReducer from "../../modules/aicareer/slice/aiCareerSlice";
+import billingReducer from "../../modules/billingsubscription/slice/billingSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
@@ -24,6 +25,7 @@ const appReducer = combineReducers({
   dashboard: dashboardReducer,
   task: taskReducer,
   aiCareer: aiCareerReducer,
+  billing: billingReducer,
 });
 
 export const rootReducer = (state, action) => {

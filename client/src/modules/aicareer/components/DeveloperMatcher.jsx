@@ -6,59 +6,20 @@ import { Button } from "../../../components";
 const DeveloperMatcher = () => {
   const { developerMatches } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const matches = developerMatches && developerMatches.length > 0
-    ? developerMatches
-    : [
-    {
-      id: 1,
-      name: "Sarah Johnson",
-      skills: ["React", "TypeScript", "Node.js"],
-      experience: "5 years",
-      match: 95,
-      availability: "Available",
-      rate: "$75/hour",
-      location: "Remote",
-      icon: "👩‍💻",
-      highlights: [
-        "Perfect skill match for your project",
-        "Available immediately",
-        "Strong portfolio in similar projects"
-      ]
-    },
-    {
-      id: 2,
-      name: "Mike Chen",
-      skills: ["Python", "Django", "AWS"],
-      experience: "7 years",
-      match: 88,
-      availability: "Available",
-      rate: "$85/hour",
-      location: "San Francisco",
-      icon: "👨‍💻",
-      highlights: [
-        "Senior-level expertise",
-        "Cloud architecture experience",
-        "Team leadership skills"
-      ]
-    },
-    {
-      id: 3,
-      name: "Alex Rodriguez",
-      skills: ["Vue.js", "PHP", "MySQL"],
-      experience: "3 years",
-      match: 82,
-      availability: "Part-time",
-      rate: "$60/hour",
-      location: "Remote",
-      icon: "👨‍💻",
-      highlights: [
-        "Good technical fit",
-        "Flexible schedule",
-        "Budget-friendly option"
-      ]
-    }
-  ];
+  // Use Redux state - dynamic data from API
+  // Transform API data to match component expectations
+  const matches = (developerMatches || []).map(match => ({
+    id: match.id,
+    name: match.name || `Developer ${match.developerId}`,
+    skills: match.skills || [],
+    experience: match.experience || "N/A",
+    match: typeof match.match === 'number' ? match.match : parseInt(match.match) || 0,
+    availability: match.availability || "Unknown",
+    rate: match.rate || "N/A",
+    location: match.location || "Remote",
+    icon: match.icon || "👩‍💻",
+    highlights: match.highlights || []
+  }));
 
   const getMatchColor = (match) => {
     if (match >= 90) return "from-green-500 to-emerald-500";
@@ -98,7 +59,8 @@ const DeveloperMatcher = () => {
 
       {/* Matches Grid */}
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {matches.map((match, idx) => (
+        {matches.length > 0 ? (
+          matches.map((match, idx) => (
           <div
             key={match.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -131,18 +93,20 @@ const DeveloperMatcher = () => {
               </div>
 
               {/* Skills */}
-              <div className="mb-4">
-                <div className="flex flex-wrap gap-2">
-                  {match.skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+              {match.skills && match.skills.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {match.skills.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-4">
@@ -159,17 +123,19 @@ const DeveloperMatcher = () => {
               </div>
 
               {/* Highlights */}
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-300">Why this match:</h4>
-                <ul className="space-y-1">
-                  {match.highlights.map((highlight, idx) => (
-                    <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
-                      <span className="text-green-400 mt-1">✓</span>
-                      {highlight}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {match.highlights && match.highlights.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-gray-300">Why this match:</h4>
+                  <ul className="space-y-1">
+                    {match.highlights.map((highlight, idx) => (
+                      <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
+                        <span className="text-green-400 mt-1">✓</span>
+                        {highlight}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Action buttons */}
               <div className="mt-4 flex gap-2">
@@ -191,7 +157,12 @@ const DeveloperMatcher = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-400">No developer matches available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Footer with action button */}

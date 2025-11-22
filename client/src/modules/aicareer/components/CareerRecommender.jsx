@@ -5,14 +5,8 @@ import { useSelector } from "react-redux";
 const CareerRecommender = () => {
   const { careerRecommendations } = useSelector((state) => state.aiCareer || {});
 
-  // Use Redux state or fallback to static data
-  const recommendations = careerRecommendations && careerRecommendations.length > 0 
-    ? careerRecommendations 
-    : [
-        { id: 1, title: "Frontend Developer", match: "92%", description: "Build user interfaces and experiences", icon: "💻" },
-        { id: 2, title: "Backend Engineer", match: "87%", description: "Design and develop server-side systems", icon: "⚙️" },
-        { id: 3, title: "Data Scientist", match: "80%", description: "Extract insights from complex data", icon: "📊" },
-      ];
+  // Use Redux state - dynamic data from API
+  const recommendations = careerRecommendations || [];
 
   const getMatchColor = (match) => {
     const percentage = parseInt(match);
@@ -44,7 +38,8 @@ const CareerRecommender = () => {
 
       {/* Recommendations Grid */}
       <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-        {recommendations.map((rec, index) => (
+        {recommendations.length > 0 ? (
+          recommendations.map((rec, index) => (
           <div
             key={rec.id}
             className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
@@ -104,7 +99,12 @@ const CareerRecommender = () => {
               </div>
             </div>
           </div>
-        ))}
+          ))
+        ) : (
+          <div className="col-span-full text-center py-12">
+            <p className="text-gray-400">No career recommendations available yet. Check back soon!</p>
+          </div>
+        )}
       </div>
 
       {/* Footer note */}

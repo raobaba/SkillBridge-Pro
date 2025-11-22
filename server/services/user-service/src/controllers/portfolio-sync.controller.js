@@ -355,6 +355,40 @@ const getSkillScores = async (req, res) => {
   }
 };
 
+// Get developer portfolio sync data (for project owners to view developers' data)
+const getDeveloperPortfolioSyncData = async (req, res) => {
+  try {
+    const requesterId = req.user?.userId || req.user?.id;
+    const requesterRole = req.user?.role;
+    const { developerId } = req.params;
+
+    if (!requesterId) {
+      return new ErrorHandler("User not authenticated", 401).sendError(res);
+    }
+
+    if (!developerId) {
+      return new ErrorHandler("Developer ID is required", 400).sendError(res);
+    }
+
+    // Check if requester is a project owner or admin
+    if (requesterRole !== "project-owner" && requesterRole !== "project_owner" && requesterRole !== "admin") {
+      return new ErrorHandler("Only project owners and admins can view developer portfolio sync data", 403).sendError(res);
+    }
+
+    // Get developer's portfolio sync data
+    const portfolioData = await PortfolioSyncModel.getDeveloperPortfolioSyncData(parseInt(developerId));
+
+    res.json({
+      success: true,
+      data: portfolioData,
+    });
+  } catch (error) {
+    logger.error(`Error in getDeveloperPortfolioSyncData: ${error.message}`, error.stack);
+    console.error("Portfolio Sync Error:", error.message, error.stack);
+    return new ErrorHandler(error.message || "Internal server error", 500).sendError(res);
+  }
+};
+
 module.exports = {
   getSyncStatus,
   getIntegrations,
@@ -365,5 +399,6 @@ module.exports = {
   getSyncHistory,
   getSyncData,
   getSkillScores,
+  getDeveloperPortfolioSyncData,
 };
 
