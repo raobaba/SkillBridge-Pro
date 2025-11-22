@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import Button from '../../../components/Button';
+import Button from "../../../components/Button";
 import {
   BarChart3,
   Users,
@@ -62,8 +62,12 @@ export default function AnalyticsDashboard() {
   });
 
   // Redux selectors for admin analytics
-  const adminAnalytics = useSelector((state) => state.dashboard?.adminAnalytics);
-  const analyticsLoading = useSelector((state) => state.dashboard?.loading || false);
+  const adminAnalytics = useSelector(
+    (state) => state.dashboard?.adminAnalytics
+  );
+  const analyticsLoading = useSelector(
+    (state) => state.dashboard?.loading || false
+  );
   const analyticsError = useSelector((state) => state.dashboard?.error);
 
   // Fetch analytics on component mount and when timeframe changes
@@ -98,7 +102,10 @@ export default function AnalyticsDashboard() {
       totalUsers: adminAnalytics.stats.totalUsers || 0,
       activeDevelopers: adminAnalytics.stats.activeDevelopers || 0,
       projectOwners: adminAnalytics.stats.projectOwners || 0,
-      projectsPosted: adminAnalytics.projectStats?.totalProjects || adminAnalytics.projectStats?.projectsPosted || 0,
+      projectsPosted:
+        adminAnalytics.projectStats?.totalProjects ||
+        adminAnalytics.projectStats?.projectsPosted ||
+        0,
       matchRate: adminAnalytics.stats.matchRate || 0,
       avgRating: adminAnalytics.stats.avgRating || 0,
       revenue: adminAnalytics.stats.revenue || "$0",
@@ -168,7 +175,10 @@ export default function AnalyticsDashboard() {
 
   // Chart data from API
   const usersByMonth = useMemo(() => {
-    if (!adminAnalytics?.charts?.usersByMonth || adminAnalytics.charts.usersByMonth.length === 0) {
+    if (
+      !adminAnalytics?.charts?.usersByMonth ||
+      adminAnalytics.charts.usersByMonth.length === 0
+    ) {
       return [
         { month: "Jan", count: 0 },
         { month: "Feb", count: 0 },
@@ -182,7 +192,10 @@ export default function AnalyticsDashboard() {
   }, [adminAnalytics]);
 
   const projectsByDomain = useMemo(() => {
-    if (!adminAnalytics?.projectStats?.projectsByDomain || adminAnalytics.projectStats.projectsByDomain.length === 0) {
+    if (
+      !adminAnalytics?.projectStats?.projectsByDomain ||
+      adminAnalytics.projectStats.projectsByDomain.length === 0
+    ) {
       return [
         { domain: "Web Dev", count: 0 },
         { domain: "Mobile Dev", count: 0 },
@@ -198,14 +211,14 @@ export default function AnalyticsDashboard() {
     if (!adminAnalytics?.moderation) {
       return [];
     }
-    
+
     const moderation = adminAnalytics.moderation;
     const flaggedItems = [];
-    
+
     // Add flagged users
     if (moderation.flaggedUsers > 0) {
       flaggedItems.push({
-        id: 'user-flagged',
+        id: "user-flagged",
         type: "user",
         reason: "Inappropriate profile content",
         reportedBy: "System",
@@ -217,11 +230,11 @@ export default function AnalyticsDashboard() {
         count: moderation.flaggedUsers,
       });
     }
-    
+
     // Add flagged projects
     if (moderation.flaggedProjects > 0) {
       flaggedItems.push({
-        id: 'project-flagged',
+        id: "project-flagged",
         type: "project",
         reason: "Suspicious project description",
         reportedBy: "System",
@@ -233,11 +246,11 @@ export default function AnalyticsDashboard() {
         count: moderation.flaggedProjects,
       });
     }
-    
+
     // Add flagged messages
     if (moderation.flaggedMessages > 0) {
       flaggedItems.push({
-        id: 'message-flagged',
+        id: "message-flagged",
         type: "message",
         reason: "Spam messages",
         reportedBy: "System",
@@ -249,20 +262,20 @@ export default function AnalyticsDashboard() {
         count: moderation.flaggedMessages,
       });
     }
-    
+
     return flaggedItems;
   }, [adminAnalytics]);
 
   // Generate alerts from analytics data
   const recentAlerts = useMemo(() => {
     const alerts = [];
-    
+
     if (!adminAnalytics) return [];
-    
+
     // Match rate alert
     if (stats.matchRate < 80) {
       alerts.push({
-        id: 'match-rate-low',
+        id: "match-rate-low",
         message: `Match rate dropped below 80% (currently ${stats.matchRate}%)`,
         alert: true,
         time: "Recently",
@@ -270,11 +283,11 @@ export default function AnalyticsDashboard() {
         category: "performance",
       });
     }
-    
+
     // Revenue alert
     if (stats.monthlyGrowth > 0) {
       alerts.push({
-        id: 'revenue-increase',
+        id: "revenue-increase",
         message: `Revenue increased by ${stats.monthlyGrowth}% MoM`,
         alert: false,
         time: "Recently",
@@ -282,11 +295,11 @@ export default function AnalyticsDashboard() {
         category: "revenue",
       });
     }
-    
+
     // System health alerts
     if (systemHealth.cpuUsage > 80) {
       alerts.push({
-        id: 'cpu-high',
+        id: "cpu-high",
         message: `System CPU usage exceeded 80% (currently ${systemHealth.cpuUsage}%)`,
         alert: true,
         time: "Recently",
@@ -294,10 +307,10 @@ export default function AnalyticsDashboard() {
         category: "system",
       });
     }
-    
+
     if (moderationStats.pendingReviews > 10) {
       alerts.push({
-        id: 'pending-reviews',
+        id: "pending-reviews",
         message: `${moderationStats.pendingReviews} items pending moderation review`,
         alert: true,
         time: "Recently",
@@ -305,7 +318,7 @@ export default function AnalyticsDashboard() {
         category: "moderation",
       });
     }
-    
+
     return alerts.slice(0, 5); // Limit to 5 most recent
   }, [adminAnalytics, stats, systemHealth, moderationStats]);
 
@@ -314,13 +327,13 @@ export default function AnalyticsDashboard() {
     if (!adminAnalytics?.systemHealth) {
       return [];
     }
-    
+
     const health = adminAnalytics.systemHealth;
     const notifications = [];
-    
+
     if (health.cpuUsage > 80) {
       notifications.push({
-        id: 'cpu-alert',
+        id: "cpu-alert",
         type: "performance",
         title: "High CPU Usage",
         message: `Server CPU usage reached ${health.cpuUsage}% capacity`,
@@ -328,10 +341,10 @@ export default function AnalyticsDashboard() {
         severity: "high",
       });
     }
-    
+
     if (health.memoryUsage > 80) {
       notifications.push({
-        id: 'memory-alert',
+        id: "memory-alert",
         type: "performance",
         title: "High Memory Usage",
         message: `Server memory usage reached ${health.memoryUsage}% capacity`,
@@ -339,10 +352,10 @@ export default function AnalyticsDashboard() {
         severity: "medium",
       });
     }
-    
+
     if (health.errorRate > 1) {
       notifications.push({
-        id: 'error-alert',
+        id: "error-alert",
         type: "performance",
         title: "High Error Rate",
         message: `System error rate is ${health.errorRate}%`,
@@ -350,7 +363,7 @@ export default function AnalyticsDashboard() {
         severity: "high",
       });
     }
-    
+
     return notifications;
   }, [adminAnalytics]);
 
@@ -368,13 +381,174 @@ export default function AnalyticsDashboard() {
     return adminAnalytics?.recentActivity || [];
   }, [adminAnalytics]);
 
+  // Dynamic system performance metrics from API
+  const systemPerformanceMetrics = useMemo(() => {
+    const metrics = [];
+
+    // Server Uptime
+    if (systemHealth.serverUptime !== undefined) {
+      metrics.push({
+        label: "Server Uptime",
+        value: `${systemHealth.serverUptime}%`,
+        color:
+          systemHealth.serverUptime >= 99
+            ? "text-green-400"
+            : systemHealth.serverUptime >= 95
+              ? "text-yellow-400"
+              : "text-red-400",
+        icon: CheckCircle,
+      });
+    }
+
+    // Response Time
+    if (systemHealth.responseTime !== undefined) {
+      metrics.push({
+        label: "Response Time",
+        value: `${systemHealth.responseTime}ms`,
+        color:
+          systemHealth.responseTime < 200
+            ? "text-green-400"
+            : systemHealth.responseTime < 500
+              ? "text-blue-400"
+              : "text-yellow-400",
+        icon: Clock,
+      });
+    }
+
+    // Active Sessions/Connections
+    const activeSessions =
+      systemHealth.activeConnections || stats.activeSessions || 0;
+    if (activeSessions !== undefined) {
+      metrics.push({
+        label: "Active Sessions",
+        value: activeSessions.toString(),
+        color: "text-yellow-400",
+        icon: Users,
+      });
+    }
+
+    // Error Rate
+    if (systemHealth.errorRate !== undefined) {
+      metrics.push({
+        label: "Error Rate",
+        value: `${systemHealth.errorRate}%`,
+        color:
+          systemHealth.errorRate > 1
+            ? "text-red-400"
+            : systemHealth.errorRate > 0.5
+              ? "text-yellow-400"
+              : "text-purple-400",
+        icon: AlertTriangle,
+      });
+    }
+
+    // CPU Usage (if available)
+    if (systemHealth.cpuUsage !== undefined) {
+      metrics.push({
+        label: "CPU Usage",
+        value: `${systemHealth.cpuUsage}%`,
+        color:
+          systemHealth.cpuUsage > 80
+            ? "text-red-400"
+            : systemHealth.cpuUsage > 60
+              ? "text-yellow-400"
+              : "text-green-400",
+        icon: Cpu,
+      });
+    }
+
+    // Memory Usage (if available)
+    if (systemHealth.memoryUsage !== undefined) {
+      metrics.push({
+        label: "Memory Usage",
+        value: `${systemHealth.memoryUsage}%`,
+        color:
+          systemHealth.memoryUsage > 80
+            ? "text-red-400"
+            : systemHealth.memoryUsage > 60
+              ? "text-yellow-400"
+              : "text-green-400",
+        icon: HardDrive,
+      });
+    }
+
+    // Network Latency (if available)
+    if (systemHealth.networkLatency !== undefined) {
+      metrics.push({
+        label: "Network Latency",
+        value: `${systemHealth.networkLatency}ms`,
+        color:
+          systemHealth.networkLatency < 50
+            ? "text-green-400"
+            : systemHealth.networkLatency < 100
+              ? "text-blue-400"
+              : "text-yellow-400",
+        icon: Wifi,
+      });
+    }
+
+    // Disk Usage (if available)
+    if (systemHealth.diskUsage !== undefined) {
+      metrics.push({
+        label: "Disk Usage",
+        value: `${systemHealth.diskUsage}%`,
+        color:
+          systemHealth.diskUsage > 80
+            ? "text-red-400"
+            : systemHealth.diskUsage > 60
+              ? "text-yellow-400"
+              : "text-purple-400",
+        icon: Database,
+      });
+    }
+
+    // Return first 4 metrics (or all if less than 4)
+    return metrics.slice(0, 4);
+  }, [systemHealth, stats]);
+
   const quickAccessLinks = [
-    { name: "User Management", icon: Users, color: "blue", description: "Manage users & permissions", path: "/user-management" },
-    { name: "Gamification", icon: Trophy, color: "yellow", description: "Manage gamification system", path: "/gamification" },
-    { name: "Content Moderation", icon: Shield, color: "red", description: "Review flagged content", path: "/moderation" },
-    { name: "System Monitoring", icon: Server, color: "green", description: "Monitor system health", path: "/system-monitoring" },
-    { name: "Analytics & Reports", icon: BarChart3, color: "purple", description: "View detailed analytics", path: "/analytics" },
-    { name: "Platform Settings", icon: Settings, color: "orange", description: "Configure platform", path: "/settings" },
+    {
+      name: "User Management",
+      icon: Users,
+      color: "blue",
+      description: "Manage users & permissions",
+      path: "/user-management",
+    },
+    {
+      name: "Gamification",
+      icon: Trophy,
+      color: "yellow",
+      description: "Manage gamification system",
+      path: "/gamification",
+    },
+    {
+      name: "Content Moderation",
+      icon: Shield,
+      color: "red",
+      description: "Review flagged content",
+      path: "/moderation",
+    },
+    {
+      name: "System Monitoring",
+      icon: Server,
+      color: "green",
+      description: "Monitor system health",
+      path: "/system-monitoring",
+    },
+    {
+      name: "Analytics & Reports",
+      icon: BarChart3,
+      color: "purple",
+      description: "View detailed analytics",
+      path: "/analytics",
+    },
+    {
+      name: "Platform Settings",
+      icon: Settings,
+      color: "orange",
+      description: "Configure platform",
+      path: "/settings",
+    },
   ];
 
   // Export analytics data to CSV
@@ -387,10 +561,10 @@ export default function AnalyticsDashboard() {
     try {
       // Prepare CSV data
       const csvRows = [];
-      
+
       // Header
       csvRows.push(["Metric", "Value"]);
-      
+
       // Stats
       csvRows.push(["Total Users", stats.totalUsers]);
       csvRows.push(["Active Developers", stats.activeDevelopers]);
@@ -401,21 +575,24 @@ export default function AnalyticsDashboard() {
       csvRows.push(["Revenue", stats.revenue]);
       csvRows.push(["Monthly Growth", `${stats.monthlyGrowth}%`]);
       csvRows.push(["User Retention", `${stats.userRetention}%`]);
-      
+
       // Convert to CSV string
-      const csvContent = csvRows.map(row => row.join(",")).join("\n");
-      
+      const csvContent = csvRows.map((row) => row.join(",")).join("\n");
+
       // Create blob and download
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.setAttribute("href", url);
-      link.setAttribute("download", `analytics_${selectedTimeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `analytics_${selectedTimeframe}_${new Date().toISOString().split("T")[0]}.csv`
+      );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       toast.success("Analytics data exported successfully");
     } catch (error) {
       console.error("Export error:", error);
@@ -425,7 +602,7 @@ export default function AnalyticsDashboard() {
 
   // Handle filter changes
   const handleFilterChange = (filterType, value) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [filterType]: value,
     }));
@@ -447,7 +624,7 @@ export default function AnalyticsDashboard() {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6'>
         {/* Enhanced Admin Header */}
         <div className='mb-6'>
-          <div className="flex items-center justify-between">
+          <div className='flex items-center justify-between'>
             <div>
               <h1 className='text-3xl font-bold mb-2 flex items-center gap-3'>
                 <Shield className='w-8 h-8 text-blue-400' />
@@ -457,18 +634,18 @@ export default function AnalyticsDashboard() {
                 System oversight, analytics, and moderation tools
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-400">System Health</p>
-                <p className="text-2xl font-bold text-green-400 flex items-center gap-2">
-                  <CheckCircle className="w-6 h-6" />
+            <div className='flex items-center gap-4'>
+              <div className='text-right'>
+                <p className='text-sm text-gray-400'>System Health</p>
+                <p className='text-2xl font-bold text-green-400 flex items-center gap-2'>
+                  <CheckCircle className='w-6 h-6' />
                   {systemHealth.serverUptime}%
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-400">Pending Moderation</p>
-                <p className="text-2xl font-bold text-red-400 flex items-center gap-2">
-                  <Flag className="w-6 h-6" />
+              <div className='text-right'>
+                <p className='text-sm text-gray-400'>Pending Moderation</p>
+                <p className='text-2xl font-bold text-red-400 flex items-center gap-2'>
+                  <Flag className='w-6 h-6' />
                   {moderationStats.pendingReviews}
                 </p>
               </div>
@@ -521,14 +698,14 @@ export default function AnalyticsDashboard() {
             </select>
           </div>
           <div className='flex items-center space-x-2'>
-            <Button 
+            <Button
               onClick={handleExport}
               className='flex items-center space-x-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 rounded-lg transition-colors'
             >
               <Download className='w-4 h-4' />
               <span className='text-sm'>Export</span>
             </Button>
-            <Button 
+            <Button
               onClick={() => setShowFilterModal(true)}
               className='flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-gray-600/50 rounded-lg transition-colors'
             >
@@ -540,12 +717,14 @@ export default function AnalyticsDashboard() {
 
         {/* Enhanced Stats Grid */}
         {analyticsLoading ? (
-          <div className="flex justify-center py-12">
+          <div className='flex justify-center py-12'>
             <CircularLoader />
           </div>
         ) : analyticsError ? (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center">
-            <p className="text-red-400">Error loading analytics: {analyticsError}</p>
+          <div className='bg-red-500/10 border border-red-500/20 rounded-xl p-6 text-center'>
+            <p className='text-red-400'>
+              Error loading analytics: {analyticsError}
+            </p>
           </div>
         ) : (
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
@@ -556,7 +735,10 @@ export default function AnalyticsDashboard() {
                 icon: Users,
                 color: "text-blue-400",
                 bg: "bg-blue-500/20",
-                change: stats.monthlyGrowth >= 0 ? `+${stats.monthlyGrowth.toFixed(1)}%` : `${stats.monthlyGrowth.toFixed(1)}%`,
+                change:
+                  stats.monthlyGrowth >= 0
+                    ? `+${stats.monthlyGrowth.toFixed(1)}%`
+                    : `${stats.monthlyGrowth.toFixed(1)}%`,
                 subtitle: `${stats.activeDevelopers} active`,
               },
               {
@@ -574,9 +756,10 @@ export default function AnalyticsDashboard() {
                 icon: Briefcase,
                 color: "text-purple-400",
                 bg: "bg-purple-500/20",
-                change: adminAnalytics?.projectStats?.monthlyGrowth >= 0 
-                  ? `+${adminAnalytics.projectStats.monthlyGrowth.toFixed(1)}%` 
-                  : `${adminAnalytics?.projectStats?.monthlyGrowth?.toFixed(1) || 0}%`,
+                change:
+                  adminAnalytics?.projectStats?.monthlyGrowth >= 0
+                    ? `+${adminAnalytics.projectStats.monthlyGrowth.toFixed(1)}%`
+                    : `${adminAnalytics?.projectStats?.monthlyGrowth?.toFixed(1) || 0}%`,
                 subtitle: "Total projects",
               },
               {
@@ -607,32 +790,34 @@ export default function AnalyticsDashboard() {
                 subtitle: "This month",
               },
             ].map((item, idx) => (
-            <div
-              key={idx}
-              className='group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all hover:bg-gray-700/50 cursor-pointer'
-            >
-              <div className='flex items-center justify-between mb-2'>
-                <div className={`p-2 rounded-lg ${item.bg}`}>
-                  <item.icon className={`w-5 h-5 ${item.color}`} />
+              <div
+                key={idx}
+                className='group bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all hover:bg-gray-700/50 cursor-pointer'
+              >
+                <div className='flex items-center justify-between mb-2'>
+                  <div className={`p-2 rounded-lg ${item.bg}`}>
+                    <item.icon className={`w-5 h-5 ${item.color}`} />
+                  </div>
+                  <div className='flex items-center space-x-1'>
+                    {item.change.startsWith("+") ? (
+                      <ArrowUp className='w-3 h-3 text-green-400' />
+                    ) : (
+                      <ArrowDown className='w-3 h-3 text-red-400' />
+                    )}
+                    <span
+                      className={`text-xs font-medium ${item.change.startsWith("+") ? "text-green-400" : "text-red-400"}`}
+                    >
+                      {item.change}
+                    </span>
+                  </div>
                 </div>
-                <div className='flex items-center space-x-1'>
-                  {item.change.startsWith("+") ? (
-                    <ArrowUp className='w-3 h-3 text-green-400' />
-                  ) : (
-                    <ArrowDown className='w-3 h-3 text-red-400' />
-                  )}
-                  <span
-                    className={`text-xs font-medium ${item.change.startsWith("+") ? "text-green-400" : "text-red-400"}`}
-                  >
-                    {item.change}
-                  </span>
-                </div>
+                <p className='text-gray-400 text-sm'>{item.label}</p>
+                <p className={`text-2xl font-bold ${item.color}`}>
+                  {item.value}
+                </p>
+                <p className='text-xs text-gray-500 mt-1'>{item.subtitle}</p>
               </div>
-              <p className='text-gray-400 text-sm'>{item.label}</p>
-              <p className={`text-2xl font-bold ${item.color}`}>{item.value}</p>
-              <p className='text-xs text-gray-500 mt-1'>{item.subtitle}</p>
-            </div>
-          ))}
+            ))}
           </div>
         )}
 
@@ -651,19 +836,27 @@ export default function AnalyticsDashboard() {
             <div className='w-full h-48 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg flex items-end justify-center space-x-2 p-4'>
               {usersByMonth.length > 0 ? (
                 usersByMonth.map((month, idx) => {
-                  const maxCount = Math.max(...usersByMonth.map(m => m.count), 1);
+                  const maxCount = Math.max(
+                    ...usersByMonth.map((m) => m.count),
+                    1
+                  );
                   return (
-                    <div key={idx} className='flex flex-col items-center space-y-2'>
+                    <div
+                      key={idx}
+                      className='flex flex-col items-center space-y-2'
+                    >
                       <div
                         className='w-8 bg-gradient-to-t from-blue-500 to-purple-500 rounded-t-lg transition-all hover:from-blue-400 hover:to-purple-400'
                         style={{ height: `${(month.count / maxCount) * 100}%` }}
                       ></div>
-                      <span className='text-xs text-gray-400'>{month.month}</span>
+                      <span className='text-xs text-gray-400'>
+                        {month.month}
+                      </span>
                     </div>
                   );
                 })
               ) : (
-                <p className="text-gray-400 text-sm">No data available</p>
+                <p className='text-gray-400 text-sm'>No data available</p>
               )}
             </div>
           </div>
@@ -676,7 +869,10 @@ export default function AnalyticsDashboard() {
               {projectsByDomain.length > 0 ? (
                 <div className='grid grid-cols-2 gap-4 w-full p-4'>
                   {projectsByDomain.map((domain, idx) => {
-                    const maxCount = Math.max(...projectsByDomain.map(d => d.count), 1);
+                    const maxCount = Math.max(
+                      ...projectsByDomain.map((d) => d.count),
+                      1
+                    );
                     return (
                       <div key={idx} className='bg-white/10 rounded-lg p-3'>
                         <div className='flex items-center justify-between mb-1'>
@@ -690,7 +886,9 @@ export default function AnalyticsDashboard() {
                         <div className='w-full bg-gray-700 rounded-full h-2'>
                           <div
                             className='bg-gradient-to-r from-green-400 to-blue-400 h-2 rounded-full transition-all'
-                            style={{ width: `${(domain.count / maxCount) * 100}%` }}
+                            style={{
+                              width: `${(domain.count / maxCount) * 100}%`,
+                            }}
                           ></div>
                         </div>
                       </div>
@@ -698,7 +896,7 @@ export default function AnalyticsDashboard() {
                   })}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm">No data available</p>
+                <p className='text-gray-400 text-sm'>No data available</p>
               )}
             </div>
           </div>
@@ -711,8 +909,8 @@ export default function AnalyticsDashboard() {
               <Flag className='w-6 h-6 text-red-400' />
               Flagged Content
             </h2>
-            <Button 
-              variant="ghost"
+            <Button
+              variant='ghost'
               className='text-blue-400 hover:text-blue-300 text-sm flex items-center'
             >
               View All <ChevronRight className='w-4 h-4 ml-1' />
@@ -728,33 +926,39 @@ export default function AnalyticsDashboard() {
                   <div className='flex-1'>
                     <div className='flex items-center gap-2 mb-1'>
                       <h3 className='font-semibold text-sm'>{item.reason}</h3>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        item.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                        item.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          item.priority === "high"
+                            ? "bg-red-500/20 text-red-400"
+                            : item.priority === "medium"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
                         {item.priority}
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                        item.status === 'under_review' ? 'bg-blue-500/20 text-blue-400' :
-                        'bg-green-500/20 text-green-400'
-                      }`}>
-                        {item.status.replace('_', ' ')}
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          item.status === "pending"
+                            ? "bg-yellow-500/20 text-yellow-400"
+                            : item.status === "under_review"
+                              ? "bg-blue-500/20 text-blue-400"
+                              : "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {item.status.replace("_", " ")}
                       </span>
                     </div>
                     <p className='text-gray-300 text-sm mb-1'>{item.details}</p>
-                    <p className='text-gray-400 text-xs'>Reported by: {item.reportedBy} • {item.reportedAt}</p>
+                    <p className='text-gray-400 text-xs'>
+                      Reported by: {item.reportedBy} • {item.reportedAt}
+                    </p>
                   </div>
                   <div className='flex gap-2'>
-                    <Button 
-                      className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'
-                    >
+                    <Button className='px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm transition-colors'>
                       Approve
                     </Button>
-                    <Button 
-                      className='px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm transition-colors'
-                    >
+                    <Button className='px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-sm transition-colors'>
                       Reject
                     </Button>
                   </div>
@@ -789,11 +993,15 @@ export default function AnalyticsDashboard() {
                       <span className='text-gray-300 text-sm'>
                         {alert.message}
                       </span>
-                      <span className={`px-1.5 py-0.5 rounded text-xs ${
-                        alert.priority === 'high' ? 'bg-red-500/20 text-red-400' :
-                        alert.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-xs ${
+                          alert.priority === "high"
+                            ? "bg-red-500/20 text-red-400"
+                            : alert.priority === "medium"
+                              ? "bg-yellow-500/20 text-yellow-400"
+                              : "bg-gray-500/20 text-gray-400"
+                        }`}
+                      >
                         {alert.priority}
                       </span>
                     </div>
@@ -879,7 +1087,9 @@ export default function AnalyticsDashboard() {
             </h3>
             <div className='flex items-center gap-2'>
               <div className='w-2 h-2 bg-green-400 rounded-full animate-pulse'></div>
-              <span className='text-sm text-green-400'>All Systems Operational</span>
+              <span className='text-sm text-green-400'>
+                All Systems Operational
+              </span>
             </div>
           </div>
           <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
@@ -888,28 +1098,36 @@ export default function AnalyticsDashboard() {
                 <Cpu className='w-6 h-6 text-blue-400' />
               </div>
               <p className='text-xs text-gray-400 mb-1'>CPU Usage</p>
-              <p className='text-lg font-bold text-blue-400'>{systemHealth.cpuUsage}%</p>
+              <p className='text-lg font-bold text-blue-400'>
+                {systemHealth.cpuUsage}%
+              </p>
             </div>
             <div className='text-center p-4 bg-white/5 rounded-lg'>
               <div className='flex items-center justify-center mb-2'>
                 <HardDrive className='w-6 h-6 text-green-400' />
               </div>
               <p className='text-xs text-gray-400 mb-1'>Memory</p>
-              <p className='text-lg font-bold text-green-400'>{systemHealth.memoryUsage}%</p>
+              <p className='text-lg font-bold text-green-400'>
+                {systemHealth.memoryUsage}%
+              </p>
             </div>
             <div className='text-center p-4 bg-white/5 rounded-lg'>
               <div className='flex items-center justify-center mb-2'>
                 <Database className='w-6 h-6 text-purple-400' />
               </div>
               <p className='text-xs text-gray-400 mb-1'>Disk Usage</p>
-              <p className='text-lg font-bold text-purple-400'>{systemHealth.diskUsage}%</p>
+              <p className='text-lg font-bold text-purple-400'>
+                {systemHealth.diskUsage}%
+              </p>
             </div>
             <div className='text-center p-4 bg-white/5 rounded-lg'>
               <div className='flex items-center justify-center mb-2'>
                 <Wifi className='w-6 h-6 text-yellow-400' />
               </div>
               <p className='text-xs text-gray-400 mb-1'>Response Time</p>
-              <p className='text-lg font-bold text-yellow-400'>{systemHealth.responseTime}ms</p>
+              <p className='text-lg font-bold text-yellow-400'>
+                {systemHealth.responseTime}ms
+              </p>
             </div>
           </div>
         </div>
@@ -928,37 +1146,59 @@ export default function AnalyticsDashboard() {
               <Button
                 key={index}
                 onClick={() => navigate(link.path)}
-                variant="ghost"
+                variant='ghost'
                 className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
-                  link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
-                  link.color === 'red' ? 'bg-red-500/20 hover:bg-red-500/30' :
-                  link.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
-                  link.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :
-                  link.color === 'yellow' ? 'bg-yellow-500/20 hover:bg-yellow-500/30' :
-                  link.color === 'pink' ? 'bg-pink-500/20 hover:bg-pink-500/30' :
-                  'bg-orange-500/20 hover:bg-orange-500/30'
+                  link.color === "blue"
+                    ? "bg-blue-500/20 hover:bg-blue-500/30"
+                    : link.color === "red"
+                      ? "bg-red-500/20 hover:bg-red-500/30"
+                      : link.color === "green"
+                        ? "bg-green-500/20 hover:bg-green-500/30"
+                        : link.color === "purple"
+                          ? "bg-purple-500/20 hover:bg-purple-500/30"
+                          : link.color === "yellow"
+                            ? "bg-yellow-500/20 hover:bg-yellow-500/30"
+                            : link.color === "pink"
+                              ? "bg-pink-500/20 hover:bg-pink-500/30"
+                              : "bg-orange-500/20 hover:bg-orange-500/30"
                 }`}
               >
-                <div className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
-                  link.color === 'blue' ? 'bg-blue-500/30' :
-                  link.color === 'red' ? 'bg-red-500/30' :
-                  link.color === 'green' ? 'bg-green-500/30' :
-                  link.color === 'purple' ? 'bg-purple-500/30' :
-                  link.color === 'yellow' ? 'bg-yellow-500/30' :
-                  'bg-orange-500/30'
-                }`}>
-                  <link.icon className={`w-6 h-6 ${
-                    link.color === 'blue' ? 'text-blue-400' :
-                    link.color === 'red' ? 'text-red-400' :
-                    link.color === 'green' ? 'text-green-400' :
-                    link.color === 'purple' ? 'text-purple-400' :
-                    link.color === 'yellow' ? 'text-yellow-400' :
-                    'text-orange-400'
-                  }`} />
+                <div
+                  className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
+                    link.color === "blue"
+                      ? "bg-blue-500/30"
+                      : link.color === "red"
+                        ? "bg-red-500/30"
+                        : link.color === "green"
+                          ? "bg-green-500/30"
+                          : link.color === "purple"
+                            ? "bg-purple-500/30"
+                            : link.color === "yellow"
+                              ? "bg-yellow-500/30"
+                              : "bg-orange-500/30"
+                  }`}
+                >
+                  <link.icon
+                    className={`w-6 h-6 ${
+                      link.color === "blue"
+                        ? "text-blue-400"
+                        : link.color === "red"
+                          ? "text-red-400"
+                          : link.color === "green"
+                            ? "text-green-400"
+                            : link.color === "purple"
+                              ? "text-purple-400"
+                              : link.color === "yellow"
+                                ? "text-yellow-400"
+                                : "text-orange-400"
+                    }`}
+                  />
                 </div>
                 <div className='text-center'>
                   <p className='text-sm font-medium text-white'>{link.name}</p>
-                  <p className='text-xs text-gray-400 mt-1'>{link.description}</p>
+                  <p className='text-xs text-gray-400 mt-1'>
+                    {link.description}
+                  </p>
                 </div>
               </Button>
             ))}
@@ -971,37 +1211,38 @@ export default function AnalyticsDashboard() {
             <h3 className='text-lg font-semibold'>System Performance</h3>
             <Globe className='w-5 h-5 text-blue-400' />
           </div>
-          <div className='grid grid-cols-4 gap-4'>
-            {[
-              {
-                label: "Server Uptime",
-                value: "99.9%",
-                color: "text-green-400",
-              },
-              {
-                label: "Response Time",
-                value: "245ms",
-                color: "text-blue-400",
-              },
-              {
-                label: "Active Sessions",
-                value: "342",
-                color: "text-yellow-400",
-              },
-              {
-                label: "Data Processed",
-                value: "1.2TB",
-                color: "text-purple-400",
-              },
-            ].map((metric, idx) => (
-              <div key={idx} className='text-center p-3 bg-white/5 rounded-lg'>
-                <p className='text-xs text-gray-400 mb-1'>{metric.label}</p>
-                <p className={`text-lg font-bold ${metric.color}`}>
-                  {metric.value}
-                </p>
-              </div>
-            ))}
-          </div>
+          {analyticsLoading ? (
+            <div className='flex justify-center py-8'>
+              <CircularLoader />
+            </div>
+          ) : systemPerformanceMetrics.length === 0 ? (
+            <div className='text-center py-8'>
+              <p className='text-gray-400 text-sm'>
+                No system performance data available
+              </p>
+            </div>
+          ) : (
+            <div
+              className={`grid grid-cols-2 ${systemPerformanceMetrics.length <= 2 ? "md:grid-cols-2" : systemPerformanceMetrics.length === 3 ? "md:grid-cols-3" : "md:grid-cols-4"} gap-4`}
+            >
+              {systemPerformanceMetrics.map((metric, idx) => (
+                <div
+                  key={idx}
+                  className='text-center p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors'
+                >
+                  <div className='flex items-center justify-center mb-2'>
+                    {metric.icon && (
+                      <metric.icon className={`w-5 h-5 ${metric.color}`} />
+                    )}
+                  </div>
+                  <p className='text-xs text-gray-400 mb-1'>{metric.label}</p>
+                  <p className={`text-lg font-bold ${metric.color}`}>
+                    {metric.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

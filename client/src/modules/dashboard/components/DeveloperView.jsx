@@ -80,6 +80,7 @@ import {
   getUnreadCount,
   markAsRead
 } from "../../notifications/slice/notificationSlice";
+import { analyzeSkillGap } from "../../aicareer/slice/aiCareerSlice";
 import { toast } from "react-toastify";
 import MyTasksTab from "./MyTasksTab";
 import RepositoryAccess from "./RepositoryAccess";
@@ -122,6 +123,9 @@ export default function DeveloperView() {
   const notifications = useSelector((state) => state.notifications?.notifications || []);
   const notificationsLoading = useSelector((state) => state.notifications?.loading);
   const unreadCount = useSelector((state) => state.notifications?.unreadCount || 0);
+  
+  const skillGapsData = useSelector((state) => state.aiCareer?.skillGaps || []);
+  const skillGapsLoading = useSelector((state) => state.aiCareer?.skillGapsLoading || false);
 
   // Fetch all data on component mount
   useEffect(() => {
@@ -156,6 +160,9 @@ export default function DeveloperView() {
     // Fetch notifications
     dispatch(getNotifications({ limit: 6, offset: 0 }));
     dispatch(getUnreadCount());
+    
+    // Fetch skill gaps for skill gap analysis
+    dispatch(analyzeSkillGap());
   }, [dispatch]);
 
   // Refresh developer tasks when switching to My Tasks tab
@@ -545,12 +552,30 @@ export default function DeveloperView() {
     });
   }, [myInvites]);
 
-  const skillGaps = [
-    { skill: "Machine Learning", gap: 35, trend: "high" },
-    { skill: "Cloud Architecture", gap: 28, trend: "medium" },
-    { skill: "Blockchain", gap: 45, trend: "high" },
-    { skill: "Mobile Development", gap: 15, trend: "low" },
-  ];
+  // Transform skill gaps from API data
+  const skillGaps = useMemo(() => {
+    if (!skillGapsData || skillGapsData.length === 0) {
+      return [];
+    }
+    
+    return skillGapsData.slice(0, 4).map((gap) => {
+      // Map gapLevel to trend
+      const trendMap = {
+        'High': 'high',
+        'Medium': 'medium',
+        'Low': 'low',
+        'high': 'high',
+        'medium': 'medium',
+        'low': 'low',
+      };
+      
+      return {
+        skill: gap.skill || 'Unknown Skill',
+        gap: gap.progress || 0, // Use progress as gap percentage
+        trend: trendMap[gap.gapLevel] || 'medium',
+      };
+    });
+  }, [skillGapsData]);
 
   // Transform notifications
   const recentNotifications = useMemo(() => {
@@ -827,7 +852,9 @@ export default function DeveloperView() {
                 <p className='text-2xl font-bold text-blue-400'>
                   {userStats.xp.toLocaleString()}
                 </p>
-                <p className='text-xs text-gray-500'>+150 this week</p>
+                <p className='text-xs text-gray-500'>
+                  {developerStats?.weeklyXP ? `+${developerStats.weeklyXP} this week` : 'Track your progress'}
+                </p>
               </div>
               <Zap className='w-8 h-8 text-blue-400 group-hover:animate-pulse' />
             </div>
@@ -839,7 +866,9 @@ export default function DeveloperView() {
                 <p className='text-2xl font-bold text-purple-400'>
                   {userStats.level}
                 </p>
-                <p className='text-xs text-gray-500'>150 XP to next</p>
+                <p className='text-xs text-gray-500'>
+                  {developerStats?.xpToNextLevel ? `${developerStats.xpToNextLevel} XP to next` : 'Level up!'}
+                </p>
               </div>
               <Award className='w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform' />
             </div>
@@ -851,7 +880,9 @@ export default function DeveloperView() {
                 <p className='text-2xl font-bold text-yellow-400'>
                   {userStats.badges}
                 </p>
-                <p className='text-xs text-gray-500'>2 new this month</p>
+                <p className='text-xs text-gray-500'>
+                  {developerStats?.monthlyBadges ? `${developerStats.monthlyBadges} new this month` : 'Earn badges'}
+                </p>
               </div>
               <Star className='w-8 h-8 text-yellow-400 group-hover:animate-spin' />
             </div>
@@ -863,7 +894,9 @@ export default function DeveloperView() {
                 <p className='text-2xl font-bold text-green-400'>
                   {userStats.projects}
                 </p>
-                <p className='text-xs text-gray-500'>3 in progress</p>
+                <p className='text-xs text-gray-500'>
+                  {recentProjects.filter(p => p.status === 'In Progress').length} in progress
+                </p>
               </div>
               <Briefcase className='w-8 h-8 text-green-400 group-hover:scale-110 transition-transform' />
             </div>
@@ -1394,7 +1427,14 @@ export default function DeveloperView() {
             <div className='bg-white/5 border border-white/10 rounded-xl p-6'>
               <h3 className='text-lg font-semibold mb-4'>Skill Gap Analysis</h3>
               <div className='space-y-3'>
-                {skillGaps.map((item, index) => (
+                {skillGapsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <CircularLoader />
+                  </div>
+                ) : skillGaps.length === 0 ? (
+                  <p className="text-gray-400 text-center py-4 text-sm">No skill gaps identified yet</p>
+                ) : (
+                  skillGaps.map((item, index) => (
                   <div
                     key={index}
                     className='flex items-center justify-between'
@@ -1415,9 +1455,10 @@ export default function DeveloperView() {
                       {item.gap}% gap
                     </span>
                   </div>
-                ))}
+                )))}
               </div>
               <Button 
+                onClick={() => navigate('/ai-career')}
                 className='w-full mt-4 px-4 py-2 bg-purple-500 hover:bg-purple-600 rounded-lg text-sm transition-colors'
               >
                 View Learning Paths
