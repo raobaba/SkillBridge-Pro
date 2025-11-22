@@ -164,7 +164,25 @@ const DeveloperNotifications = ({ user }) => {
     return date.toLocaleDateString();
   };
 
-  const tabs = ["All", "Project Match", "Application Update", "Invitation", "Task Deadline", "Chat Message", "Endorsement", "Review", "Career Opportunity"];
+  // Dynamically generate tabs from notification types in the data
+  const tabs = useMemo(() => {
+    const uniqueTypes = new Set();
+    notifications.forEach(notif => {
+      if (notif.type) {
+        uniqueTypes.add(notif.type);
+      }
+    });
+    
+    // Default tabs for developer (fallback if no notifications yet)
+    const defaultTabs = ["All", "Project Match", "Application Update", "Invitation", "Task Deadline", "Chat Message", "Endorsement", "Review", "Career Opportunity"];
+    
+    // If we have notifications, use their types, otherwise use defaults
+    if (uniqueTypes.size > 0) {
+      return ["All", ...Array.from(uniqueTypes).sort()];
+    }
+    
+    return defaultTabs;
+  }, [notifications]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">

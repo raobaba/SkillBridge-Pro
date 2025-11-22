@@ -165,7 +165,25 @@ const ProjectOwnerNotifications = ({ user }) => {
     return date.toLocaleDateString();
   };
 
-  const tabs = ["All", "New Applicant", "Recommended Developer", "Project Update", "Billing Reminder", "Chat Message", "Task Deadline", "Project Milestone", "Team Invitation", "Budget Alert"];
+  // Dynamically generate tabs from notification types in the data
+  const tabs = useMemo(() => {
+    const uniqueTypes = new Set();
+    notifications.forEach(notif => {
+      if (notif.type) {
+        uniqueTypes.add(notif.type);
+      }
+    });
+    
+    // Default tabs for project owner (fallback if no notifications yet)
+    const defaultTabs = ["All", "New Applicant", "Recommended Developer", "Project Update", "Billing Reminder", "Chat Message", "Task Deadline", "Project Milestone", "Team Invitation", "Budget Alert"];
+    
+    // If we have notifications, use their types, otherwise use defaults
+    if (uniqueTypes.size > 0) {
+      return ["All", ...Array.from(uniqueTypes).sort()];
+    }
+    
+    return defaultTabs;
+  }, [notifications]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white">
