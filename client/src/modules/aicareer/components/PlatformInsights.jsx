@@ -100,14 +100,16 @@ const PlatformInsights = () => {
                   </p>
 
                   {/* Metrics */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
-                    {Object.entries(insight.metrics).map(([key, value], idx) => (
-                      <div key={idx} className="text-center">
-                        <div className="text-sm font-bold text-blue-400">{value}</div>
-                        <div className="text-xs text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                      </div>
-                    ))}
-                  </div>
+                  {insight.metrics && Object.keys(insight.metrics).length > 0 && (
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {Object.entries(insight.metrics).map(([key, value], idx) => (
+                        <div key={idx} className="text-center">
+                          <div className="text-sm font-bold text-blue-400">{value}</div>
+                          <div className="text-xs text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Recommendation */}
                   <div className="bg-white/5 rounded-lg p-3 border border-white/10">

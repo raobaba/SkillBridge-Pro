@@ -22,6 +22,7 @@ import {
   getSkillTrends,
   getPlatformInsights,
   analyzeTeam,
+  getAdminCareerDashboard,
 } from "../slice/aiCareerSlice";
 
 const AiCareer = () => {
@@ -39,6 +40,7 @@ const AiCareer = () => {
     aiCareerState.skillTrendsLoading ||
     aiCareerState.platformInsightsLoading ||
     aiCareerState.teamAnalysisLoading ||
+    aiCareerState.adminCareerDashboardLoading ||
     aiCareerState.loading;
 
   // Load data based on user role
@@ -57,6 +59,7 @@ const AiCareer = () => {
       // Note: optimizeProject requires projectId, will be called from component if needed
     } else if (user.role === "admin") {
       // Load admin-specific data
+      dispatch(getAdminCareerDashboard('6m'));
       dispatch(getSkillTrends());
       dispatch(getPlatformInsights());
     }

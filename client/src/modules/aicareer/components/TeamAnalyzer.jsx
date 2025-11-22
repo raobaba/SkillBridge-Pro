@@ -104,17 +104,19 @@ const TeamAnalyzer = () => {
                   </div>
 
                   {/* Suggestions */}
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-gray-300">Hiring Recommendations:</h4>
-                    <ul className="space-y-1">
-                      {gap.suggestions.map((suggestion, idx) => (
-                        <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
-                          <span className="text-blue-400 mt-1">•</span>
-                          {suggestion}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  {gap.suggestions && gap.suggestions.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-300">Hiring Recommendations:</h4>
+                      <ul className="space-y-1">
+                        {gap.suggestions.map((suggestion, idx) => (
+                          <li key={idx} className="text-xs text-gray-400 flex items-start gap-2">
+                            <span className="text-blue-400 mt-1">•</span>
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 {/* Action indicator */}
