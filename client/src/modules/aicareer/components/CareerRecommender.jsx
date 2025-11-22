@@ -1,12 +1,18 @@
 // CareerRecommender.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 
 const CareerRecommender = () => {
-  const recommendations = [
-    { id: 1, title: "Frontend Developer", match: "92%", description: "Build user interfaces and experiences", icon: "💻" },
-    { id: 2, title: "Backend Engineer", match: "87%", description: "Design and develop server-side systems", icon: "⚙️" },
-    { id: 3, title: "Data Scientist", match: "80%", description: "Extract insights from complex data", icon: "📊" },
-  ];
+  const { careerRecommendations } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const recommendations = careerRecommendations && careerRecommendations.length > 0 
+    ? careerRecommendations 
+    : [
+        { id: 1, title: "Frontend Developer", match: "92%", description: "Build user interfaces and experiences", icon: "💻" },
+        { id: 2, title: "Backend Engineer", match: "87%", description: "Design and develop server-side systems", icon: "⚙️" },
+        { id: 3, title: "Data Scientist", match: "80%", description: "Extract insights from complex data", icon: "📊" },
+      ];
 
   const getMatchColor = (match) => {
     const percentage = parseInt(match);

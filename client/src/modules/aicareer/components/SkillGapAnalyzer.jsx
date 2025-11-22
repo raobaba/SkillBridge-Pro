@@ -1,37 +1,43 @@
 // SkillGapAnalyzer.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components"
 
 const SkillGapAnalyzer = () => {
-  const gaps = [
-    { 
-      skill: "Docker", 
-      required: "Intermediate", 
-      current: "Beginner",
-      icon: "🐳",
-      category: "DevOps",
-      gapLevel: "High",
-      progress: 25
-    },
-    { 
-      skill: "AWS", 
-      required: "Intermediate", 
-      current: "Beginner",
-      icon: "☁️",
-      category: "Cloud",
-      gapLevel: "High",
-      progress: 30
-    },
-    { 
-      skill: "System Design", 
-      required: "Advanced", 
-      current: "Intermediate",
-      icon: "🏗️",
-      category: "Architecture",
-      gapLevel: "Medium",
-      progress: 60
-    },
-  ];
+  const { skillGaps } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const gaps = skillGaps && skillGaps.length > 0
+    ? skillGaps
+    : [
+        { 
+          skill: "Docker", 
+          required: "Intermediate", 
+          current: "Beginner",
+          icon: "🐳",
+          category: "DevOps",
+          gapLevel: "High",
+          progress: 25
+        },
+        { 
+          skill: "AWS", 
+          required: "Intermediate", 
+          current: "Beginner",
+          icon: "☁️",
+          category: "Cloud",
+          gapLevel: "High",
+          progress: 30
+        },
+        { 
+          skill: "System Design", 
+          required: "Advanced", 
+          current: "Intermediate",
+          icon: "🏗️",
+          category: "Architecture",
+          gapLevel: "Medium",
+          progress: 60
+        },
+      ];
 
   const getGapLevelColor = (level) => {
     switch (level) {

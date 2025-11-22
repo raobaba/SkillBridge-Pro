@@ -1,31 +1,37 @@
 // ResumeEnhancer.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components"
 
 const ResumeEnhancer = () => {
-  const suggestions = [
-    {
-      id: 1,
-      text: "Add more measurable achievements in your experience section.",
-      category: "Content",
-      priority: "High",
-      icon: "📊"
-    },
-    {
-      id: 2,
-      text: "Include technical keywords like React, Node.js, Docker.",
-      category: "Keywords",
-      priority: "Medium",
-      icon: "🔍"
-    },
-    {
-      id: 3,
-      text: "Tailor your resume summary to match job descriptions.",
-      category: "Customization",
-      priority: "High",
-      icon: "🎯"
-    },
-  ];
+  const { resumeSuggestions } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const suggestions = resumeSuggestions && resumeSuggestions.length > 0
+    ? resumeSuggestions
+    : [
+        {
+          id: 1,
+          text: "Add more measurable achievements in your experience section.",
+          category: "Content",
+          priority: "High",
+          icon: "📊"
+        },
+        {
+          id: 2,
+          text: "Include technical keywords like React, Node.js, Docker.",
+          category: "Keywords",
+          priority: "Medium",
+          icon: "🔍"
+        },
+        {
+          id: 3,
+          text: "Tailor your resume summary to match job descriptions.",
+          category: "Customization",
+          priority: "High",
+          icon: "🎯"
+        },
+      ];
 
   const getPriorityColor = (priority) => {
     switch (priority) {

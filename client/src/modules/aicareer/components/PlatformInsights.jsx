@@ -1,9 +1,15 @@
 // PlatformInsights.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components";
 
 const PlatformInsights = () => {
-  const insights = [
+  const { platformInsights } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const insights = platformInsights && platformInsights.length > 0
+    ? platformInsights
+    : [
     {
       id: 1,
       title: "User Engagement Patterns",

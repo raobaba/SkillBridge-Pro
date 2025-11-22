@@ -1,9 +1,15 @@
 // DeveloperMatcher.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components";
 
 const DeveloperMatcher = () => {
-  const matches = [
+  const { developerMatches } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const matches = developerMatches && developerMatches.length > 0
+    ? developerMatches
+    : [
     {
       id: 1,
       name: "Sarah Johnson",

@@ -1,9 +1,15 @@
 // TeamAnalyzer.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components";
 
 const TeamAnalyzer = () => {
-  const teamGaps = [
+  const { teamAnalysis } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const teamGaps = teamAnalysis && teamAnalysis.length > 0
+    ? teamAnalysis
+    : [
     {
       id: 1,
       skill: "Frontend Development",

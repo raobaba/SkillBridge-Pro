@@ -1,6 +1,6 @@
 // AiCareer.jsx
-import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import CareerRecommender from "../components/CareerRecommender";
 import ResumeEnhancer from "../components/ResumeEnhancer";
 import SkillGapAnalyzer from "../components/SkillGapAnalyzer";
@@ -13,16 +13,71 @@ import PlatformInsights from "../components/PlatformInsights";
 import Navbar from "../../../components/header";
 import { Footer } from "../../../components/Footer";
 import { CircularLoader } from "../../../components";
+import {
+  getCareerRecommendations,
+  enhanceResume,
+  analyzeSkillGap,
+  matchDevelopers,
+  optimizeProject,
+  getSkillTrends,
+  getPlatformInsights,
+  analyzeTeam,
+} from "../slice/aiCareerSlice";
 
 const AiCareer = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
-  const [loading, setLoading] = useState(true);
+  const aiCareerState = useSelector((state) => state.aiCareer || {});
+  
+  // Check if any data is loading
+  const isLoading = 
+    aiCareerState.careerRecommendationsLoading ||
+    aiCareerState.resumeSuggestionsLoading ||
+    aiCareerState.skillGapsLoading ||
+    aiCareerState.developerMatchesLoading ||
+    aiCareerState.projectOptimizationsLoading ||
+    aiCareerState.skillTrendsLoading ||
+    aiCareerState.platformInsightsLoading ||
+    aiCareerState.teamAnalysisLoading ||
+    aiCareerState.loading;
 
+  // Load data based on user role
   useEffect(() => {
-    // Simulate loading user data
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (!user?.role) return;
+
+    if (user.role === "developer") {
+      // Load developer-specific data
+      if (!aiCareerState.careerRecommendations || aiCareerState.careerRecommendations.length === 0) {
+        dispatch(getCareerRecommendations());
+      }
+      if (!aiCareerState.resumeSuggestions || aiCareerState.resumeSuggestions.length === 0) {
+        dispatch(enhanceResume());
+      }
+      if (!aiCareerState.skillGaps || aiCareerState.skillGaps.length === 0) {
+        dispatch(analyzeSkillGap());
+      }
+    } else if (user.role === "project-owner") {
+      // Load project owner-specific data
+      if (!aiCareerState.projectOptimizations || aiCareerState.projectOptimizations.length === 0) {
+        dispatch(optimizeProject());
+      }
+      if (!aiCareerState.teamAnalysis || aiCareerState.teamAnalysis.length === 0) {
+        dispatch(analyzeTeam());
+      }
+      if (!aiCareerState.developerMatches || aiCareerState.developerMatches.length === 0) {
+        dispatch(matchDevelopers());
+      }
+    } else if (user.role === "admin") {
+      // Load admin-specific data
+      if (!aiCareerState.skillTrends || aiCareerState.skillTrends.length === 0) {
+        dispatch(getSkillTrends());
+      }
+      if (!aiCareerState.platformInsights || aiCareerState.platformInsights.length === 0) {
+        dispatch(getPlatformInsights());
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role, dispatch]);
 
   const renderDeveloperTools = () => (
     <div className='w-full space-y-8'>
@@ -99,21 +154,19 @@ const AiCareer = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative">
-        <CircularLoader />
-      </div>
-    );
-  }
-
   return (
     <>
       <Navbar />
-      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-          {renderRoleBasedContent()}
-        </div>
+      <div className='min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative'>
+        {isLoading ? (
+          <div className="flex justify-center items-center min-h-screen">
+            <CircularLoader />
+          </div>
+        ) : (
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+            {renderRoleBasedContent()}
+          </div>
+        )}
       </div>
       <Footer />
     </>

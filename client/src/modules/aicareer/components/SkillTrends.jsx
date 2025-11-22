@@ -1,9 +1,15 @@
 // SkillTrends.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components";
 
 const SkillTrends = () => {
-  const trends = [
+  const { skillTrends } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const trends = skillTrends && skillTrends.length > 0
+    ? skillTrends
+    : [
     {
       id: 1,
       skill: "React",

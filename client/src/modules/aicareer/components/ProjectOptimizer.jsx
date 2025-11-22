@@ -1,9 +1,15 @@
 // ProjectOptimizer.jsx
 import React from "react";
+import { useSelector } from "react-redux";
 import { Button } from "../../../components";
 
 const ProjectOptimizer = () => {
-  const optimizations = [
+  const { projectOptimizations } = useSelector((state) => state.aiCareer || {});
+
+  // Use Redux state or fallback to static data
+  const optimizations = projectOptimizations && projectOptimizations.length > 0
+    ? projectOptimizations
+    : [
     {
       id: 1,
       title: "Improve Project Description",

@@ -10,6 +10,7 @@ import notificationReducer from "../../modules/notifications/slice/notificationS
 import portfolioSyncReducer from "../../modules/portfolioSync/slice/portfolioSyncSlice";
 import dashboardReducer from "../../modules/dashboard/slice/DashboardSlice";
 import taskReducer from "../../modules/dashboard/slice/taskSlice";
+import aiCareerReducer from "../../modules/aicareer/slice/aiCareerSlice";
 
 const appReducer = combineReducers({
   user: userReducer,
@@ -22,6 +23,7 @@ const appReducer = combineReducers({
   portfolioSync: portfolioSyncReducer,
   dashboard: dashboardReducer,
   task: taskReducer,
+  aiCareer: aiCareerReducer,
 });
 
 export const rootReducer = (state, action) => {
