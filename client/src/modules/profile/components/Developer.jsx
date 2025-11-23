@@ -54,7 +54,16 @@ import {
 } from "../../../components/Profile";
 import {
   getDeveloperAppliedProjects,
+  getDeveloperTasks,
 } from "../../project/slice/projectSlice";
+import {
+  getDeveloperEndorsements,
+  getDeveloperAchievements,
+} from "../../gamification/slice/gamificationSlice";
+import {
+  analyzeSkillGap,
+  getCareerRecommendations,
+} from "../../aicareer/slice/aiCareerSlice";
 
 // Reusable components to eliminate code repetition
 const SectionCard = memo(({ icon, title, children, className = "" }) => (
@@ -205,31 +214,7 @@ const ProgressBar = memo(({ progress, className = "" }) => (
 ));
 
 
-const ENDORSEMENTS_DATA = [
-  { skill: "React", endorsements: 15, rating: 4.8 },
-  { skill: "Node.js", endorsements: 12, rating: 4.7 },
-  { skill: "TypeScript", endorsements: 8, rating: 4.9 },
-  { skill: "AWS", endorsements: 6, rating: 4.5 },
-];
-
-const BADGES_DATA = [
-  { name: "Top Performer", description: "Consistently exceeds expectations", color: "bg-yellow-500" },
-  { name: "Team Player", description: "Excellent collaboration skills", color: "bg-blue-500" },
-  { name: "Problem Solver", description: "Quick to find innovative solutions", color: "bg-green-500" },
-  { name: "Mentor", description: "Helps others grow and learn", color: "bg-purple-500" },
-];
-
-const ONGOING_TASKS_DATA = [
-  { id: 1, task: "Implement user authentication", project: "Web Dashboard", progress: 75, deadline: "2025-02-01" },
-  { id: 2, task: "Optimize database queries", project: "API Backend", progress: 40, deadline: "2025-02-15" },
-  { id: 3, task: "Write unit tests", project: "Mobile App", progress: 90, deadline: "2025-01-25" },
-];
-
-const AI_INSIGHTS_DATA = [
-  { type: "skill_gap", title: "Skill Gap Analysis", content: "Consider learning Docker and Kubernetes for containerization", priority: "high" },
-  { type: "career", title: "Career Recommendation", content: "Your React skills are strong. Consider specializing in React Native for mobile development", priority: "medium" },
-  { type: "market", title: "Market Insight", content: "Full-stack developers with AI knowledge are in high demand", priority: "low" },
-];
+// Removed static data - now fetched from APIs
 
 const Developer = memo(function Developer({
   userData,
@@ -257,6 +242,18 @@ const Developer = memo(function Developer({
   const myApplicationsCount = useSelector((state) => state.project?.myApplicationsCount || 0);
   const applicationsLoading = useSelector((state) => state.project?.loading);
   const applicationsError = useSelector((state) => state.project?.error);
+  
+  // Redux selectors for endorsements, badges, tasks, and AI insights
+  const endorsements = useSelector((state) => state.gamification?.endorsements || []);
+  const endorsementsLoading = useSelector((state) => state.gamification?.endorsementsLoading || false);
+  const achievements = useSelector((state) => state.gamification?.achievements || []);
+  const achievementsLoading = useSelector((state) => state.gamification?.achievementsLoading || false);
+  const developerTasks = useSelector((state) => state.project?.developerTasks || []);
+  const tasksLoading = useSelector((state) => state.project?.loading || false);
+  const skillGaps = useSelector((state) => state.aiCareer?.skillGaps || []);
+  const skillGapsLoading = useSelector((state) => state.aiCareer?.skillGapsLoading || false);
+  const careerRecommendations = useSelector((state) => state.aiCareer?.careerRecommendations || []);
+  const careerRecommendationsLoading = useSelector((state) => state.aiCareer?.careerRecommendationsLoading || false);
 
   // Details modal state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -272,10 +269,114 @@ const Developer = memo(function Developer({
     setDetailsItem(null);
   };
 
-  // Fetch applied projects on component mount
+  // Fetch all data on component mount
   useEffect(() => {
     dispatch(getDeveloperAppliedProjects());
+    dispatch(getDeveloperEndorsements(10));
+    dispatch(getDeveloperAchievements());
+    dispatch(getDeveloperTasks({ status: 'in-progress', limit: 10 }));
+    dispatch(analyzeSkillGap());
+    dispatch(getCareerRecommendations());
   }, [dispatch]);
+  
+  // Transform endorsements from API
+  const endorsementsData = useMemo(() => {
+    if (!endorsements || endorsements.length === 0) return [];
+    
+    // Group endorsements by skill
+    const skillMap = {};
+    endorsements.forEach(endorsement => {
+      const skill = endorsement.skill || 'Unknown';
+      if (!skillMap[skill]) {
+        skillMap[skill] = {
+          skill,
+          endorsements: 0,
+          totalRating: 0,
+          count: 0
+        };
+      }
+      skillMap[skill].endorsements += 1;
+      skillMap[skill].totalRating += endorsement.rating || 0;
+      skillMap[skill].count += 1;
+    });
+    
+    // Convert to array and calculate average ratings
+    return Object.values(skillMap)
+      .map(item => ({
+        skill: item.skill,
+        endorsements: item.endorsements,
+        rating: item.count > 0 ? Number((item.totalRating / item.count).toFixed(1)) : 0
+      }))
+      .sort((a, b) => b.endorsements - a.endorsements)
+      .slice(0, 4);
+  }, [endorsements]);
+  
+  // Transform badges from achievements
+  const badgesData = useMemo(() => {
+    if (!achievements || achievements.length === 0) {
+      // Fallback to user badges if available
+      const userBadges = userData?.badges || [];
+      if (Array.isArray(userBadges) && userBadges.length > 0) {
+        return userBadges.map((badge, index) => ({
+          name: badge.name || badge || `Badge ${index + 1}`,
+          description: badge.description || "Achievement unlocked",
+          color: badge.color || ["bg-yellow-500", "bg-blue-500", "bg-green-500", "bg-purple-500"][index % 4]
+        }));
+      }
+      return [];
+    }
+    
+    return achievements.slice(0, 4).map((achievement, index) => ({
+      name: achievement.name || achievement.title || `Achievement ${index + 1}`,
+      description: achievement.description || "Achievement unlocked",
+      color: achievement.color || ["bg-yellow-500", "bg-blue-500", "bg-green-500", "bg-purple-500"][index % 4]
+    }));
+  }, [achievements, userData]);
+  
+  // Transform tasks from API
+  const ongoingTasksData = useMemo(() => {
+    if (!developerTasks || developerTasks.length === 0) return [];
+    
+    return developerTasks
+      .filter(task => task.status === 'in-progress' || task.status === 'assigned')
+      .slice(0, 3)
+      .map(task => ({
+        id: task.id,
+        task: task.title || task.name || 'Task',
+        project: task.project?.title || task.projectName || 'Project',
+        progress: task.progress || 0,
+        deadline: task.dueDate || task.deadline || null
+      }));
+  }, [developerTasks]);
+  
+  // Transform AI insights from skill gaps and career recommendations
+  const aiInsightsData = useMemo(() => {
+    const insights = [];
+    
+    // Add skill gap insights
+    if (skillGaps && skillGaps.length > 0) {
+      const topSkillGap = skillGaps[0];
+      insights.push({
+        type: "skill_gap",
+        title: "Skill Gap Analysis",
+        content: topSkillGap.recommendation || `Consider learning ${topSkillGap.skill || 'new skills'} to improve your profile`,
+        priority: topSkillGap.gapLevel?.toLowerCase() || "high"
+      });
+    }
+    
+    // Add career recommendations
+    if (careerRecommendations && careerRecommendations.length > 0) {
+      const topRecommendation = careerRecommendations[0];
+      insights.push({
+        type: "career",
+        title: "Career Recommendation",
+        content: topRecommendation.reason || topRecommendation.description || "Explore new career opportunities",
+        priority: "medium"
+      });
+    }
+    
+    return insights.slice(0, 3);
+  }, [skillGaps, careerRecommendations]);
 
 
   // Transform applications data for display
@@ -433,11 +534,23 @@ const Developer = memo(function Developer({
           {/* Endorsements & Ratings */}
           <SectionCard
             icon={<Star className='w-8 h-8 mr-2 text-yellow-400' />}
-            title={`Endorsements & Ratings (${ENDORSEMENTS_DATA.length})`}
+            title={`Endorsements & Ratings (${endorsementsData.length})`}
           >
             <div className='space-y-4'>
+              {endorsementsLoading ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <div className='animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4'></div>
+                  <p>Loading endorsements...</p>
+                </div>
+              ) : endorsementsData.length === 0 ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <Star className='w-12 h-12 mx-auto mb-4 opacity-50' />
+                  <p>No endorsements yet</p>
+                  <p className='text-sm mt-1'>Endorsements will appear here once you receive them</p>
+                </div>
+              ) : (
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                {ENDORSEMENTS_DATA.map((skill) => (
+                  {endorsementsData.map((skill, index) => (
                   <div key={skill.id} className='bg-white/5 rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-colors'>
                     <div className='flex justify-between items-center mb-2'>
                       <span className='font-medium text-lg'>{skill.skill}</span>
@@ -461,6 +574,7 @@ const Developer = memo(function Developer({
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </SectionCard>
 
@@ -636,7 +750,19 @@ const Developer = memo(function Developer({
             className="lg:block"
           >
             <div className='space-y-3'>
-              {BADGES_DATA.map((badge, index) => (
+              {achievementsLoading ? (
+                <div className='text-center py-4 text-gray-400'>
+                  <div className='animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2'></div>
+                  <p className='text-sm'>Loading achievements...</p>
+                </div>
+              ) : badgesData.length === 0 ? (
+                <div className='text-center py-4 text-gray-400'>
+                  <Award className='w-8 h-8 mx-auto mb-2 opacity-50' />
+                  <p className='text-sm'>No badges yet</p>
+                  <p className='text-xs mt-1'>Complete projects to earn badges</p>
+                </div>
+              ) : (
+                badgesData.map((badge, index) => (
                 <div key={index} className='flex items-start space-x-3'>
                   <div className={`w-8 h-8 rounded-full ${badge.color} flex items-center justify-center`}>
                     <Award className='w-4 h-4 text-white' />
@@ -646,7 +772,8 @@ const Developer = memo(function Developer({
                     <div className='text-xs text-gray-400'>{badge.description}</div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </SectionCard>
           <InfoCard
@@ -695,7 +822,19 @@ const Developer = memo(function Developer({
             title="Ongoing Tasks"
           >
             <div className='space-y-4'>
-              {ONGOING_TASKS_DATA.map((task) => (
+              {tasksLoading ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <div className='animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4'></div>
+                  <p>Loading tasks...</p>
+                </div>
+              ) : ongoingTasksData.length === 0 ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <Clock className='w-12 h-12 mx-auto mb-4 opacity-50' />
+                  <p>No ongoing tasks</p>
+                  <p className='text-sm mt-1'>Tasks will appear here when assigned</p>
+                </div>
+              ) : (
+                ongoingTasksData.map((task) => (
                 <div key={task.id} className='bg-white/5 rounded-lg p-4 border border-white/10'>
                   <div className='flex justify-between items-start mb-2'>
                     <h3 className='font-medium'>{task.task}</h3>
@@ -708,9 +847,12 @@ const Developer = memo(function Developer({
                     </div>
                     <ProgressBar progress={task.progress} />
                   </div>
-                  <div className='text-sm text-gray-500'>Deadline: {task.deadline}</div>
+                  <div className='text-sm text-gray-500'>
+                    {task.deadline ? `Deadline: ${new Date(task.deadline).toLocaleDateString()}` : 'No deadline'}
                 </div>
-              ))}
+                </div>
+                ))
+              )}
             </div>
           </SectionCard>
 
@@ -720,7 +862,19 @@ const Developer = memo(function Developer({
             title="AI Insights"
           >
             <div className='space-y-4'>
-              {AI_INSIGHTS_DATA.map((insight, index) => (
+              {(skillGapsLoading || careerRecommendationsLoading) ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <div className='animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-4'></div>
+                  <p>Loading AI insights...</p>
+                </div>
+              ) : aiInsightsData.length === 0 ? (
+                <div className='text-center py-8 text-gray-400'>
+                  <Brain className='w-12 h-12 mx-auto mb-4 opacity-50' />
+                  <p>No AI insights available</p>
+                  <p className='text-sm mt-1'>Complete more projects to get personalized insights</p>
+                </div>
+              ) : (
+                aiInsightsData.map((insight, index) => (
                 <div key={index} className={`bg-white/5 rounded-lg p-4 border border-white/10 ${insight.priority === 'high' ? 'border-red-400/30' :
                     insight.priority === 'medium' ? 'border-yellow-400/30' :
                       'border-green-400/30'
@@ -736,7 +890,8 @@ const Developer = memo(function Developer({
                   </div>
                   <p className='text-sm text-gray-300'>{insight.content}</p>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </SectionCard>
           {/* Confirm Modal */}

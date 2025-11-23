@@ -164,19 +164,6 @@ export default function AccountSettings({
     return "Strong";
   };
 
-  const securityFeatures = [
-    { icon: Shield, title: "Two-Factor Authentication", enabled: true, description: "Add an extra layer of security" },
-    { icon: Key, title: "Login Alerts", enabled: true, description: "Get notified of new logins" },
-    { icon: Lock, title: "Session Management", enabled: false, description: "Manage active sessions" },
-    { icon: Database, title: "Data Encryption", enabled: true, description: "Your data is encrypted" }
-  ];
-
-  const accountStats = [
-    { label: "Account Age", value: "2 years", icon: Calendar },
-    { label: "Last Login", value: "2 hours ago", icon: Clock },
-    { label: "Security Score", value: "85%", icon: Shield },
-    { label: "Active Sessions", value: "3", icon: Activity }
-  ];
 
   return (
     <section className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6 space-y-6">

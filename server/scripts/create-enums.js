@@ -1,6 +1,8 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '../services/user-service/.env') });
-const { Pool } = require('pg');
+const path = require("path");
+require("dotenv").config({
+  path: path.join(__dirname, "../services/user-service/.env"),
+});
+const { Pool } = require("pg");
 
 const dbConfig = {
   host: process.env.DB_HOST,
@@ -15,123 +17,167 @@ const pool = new Pool(dbConfig);
 
 async function createEnums() {
   try {
-    console.log('🔧 Creating required enum types...\n');
-    
+    console.log("🔧 Creating required enum types...\n");
+
     const client = await pool.connect();
-    
+
     const enums = [
       // User Service Enums
       {
-        name: 'role',
-        values: ['developer', 'project-owner', 'admin']
+        name: "role",
+        values: ["developer", "project-owner", "admin"],
       },
       {
-        name: 'notification_type',
+        name: "notification_type",
         values: [
-          'Project Match',
-          'Application Update',
-          'Invitation',
-          'Task Deadline',
-          'Chat Message',
-          'Endorsement',
-          'Review',
-          'Career Opportunity',
-          'New Applicant',
-          'Recommended Developer',
-          'Project Update',
-          'Billing Reminder',
-          'Project Milestone',
-          'Team Invitation',
-          'Budget Alert',
-          'Flagged User',
-          'Dispute Report',
-          'System Alert',
-          'Billing Alert',
-          'Moderation Task',
-          'Security Alert',
-          'Platform Health',
-          'User Verification',
-          'Feature Request',
-          'Compliance Alert',
-          'Other'
-        ]
+          "Project Match",
+          "Application Update",
+          "Invitation",
+          "Task Deadline",
+          "Chat Message",
+          "Endorsement",
+          "Review",
+          "Career Opportunity",
+          "New Applicant",
+          "Recommended Developer",
+          "Project Update",
+          "Billing Reminder",
+          "Project Milestone",
+          "Team Invitation",
+          "Budget Alert",
+          "Flagged User",
+          "Dispute Report",
+          "System Alert",
+          "Billing Alert",
+          "Moderation Task",
+          "Security Alert",
+          "Platform Health",
+          "User Verification",
+          "Feature Request",
+          "Compliance Alert",
+          "Other",
+        ],
       },
       {
-        name: 'notification_priority',
-        values: ['high', 'medium', 'low']
+        name: "notification_priority",
+        values: ["high", "medium", "low"],
       },
-      
+      {
+        name: "payment_status",
+        values: ["pending", "completed", "failed", "refunded", "cancelled"],
+      },
+      {
+        name: "subscription_status",
+        values: ["active", "cancelled", "expired", "suspended", "trial"],
+      },
+      {
+        name: "dispute_status",
+        values: ["pending", "investigating", "resolved", "rejected"],
+      },
+
       // Project Service Enums
       {
-        name: 'project_status',
-        values: ['draft', 'upcoming', 'active', 'paused', 'completed', 'cancelled']
+        name: "project_status",
+        values: [
+          "draft",
+          "upcoming",
+          "active",
+          "paused",
+          "completed",
+          "cancelled",
+        ],
       },
       {
-        name: 'priority',
-        values: ['low', 'medium', 'high', 'urgent']
+        name: "priority",
+        values: ["low", "medium", "high", "urgent"],
       },
       {
-        name: 'experience_level',
-        values: ['entry', 'junior', 'mid', 'senior', 'expert', 'lead']
+        name: "experience_level",
+        values: ["entry", "junior", "mid", "senior", "expert", "lead"],
       },
       {
-        name: 'applicant_status',
-        values: ['applied', 'reviewed', 'shortlisted', 'interviewed', 'interviewing', 'accepted', 'rejected', 'withdrawn']
+        name: "applicant_status",
+        values: [
+          "applied",
+          "reviewed",
+          "shortlisted",
+          "interviewed",
+          "interviewing",
+          "accepted",
+          "rejected",
+          "withdrawn",
+        ],
       },
       {
-        name: 'boost_plan',
-        values: ['basic', 'premium', 'spotlight', 'enterprise']
+        name: "boost_plan",
+        values: ["basic", "premium", "spotlight", "enterprise"],
       },
       {
-        name: 'filter_type',
-        values: ['status', 'priority', 'experience_level', 'work_arrangement', 'payment_term', 'currency', 'sort_option', 'skill', 'location', 'category', 'tag']
+        name: "filter_type",
+        values: [
+          "status",
+          "priority",
+          "experience_level",
+          "work_arrangement",
+          "payment_term",
+          "currency",
+          "sort_option",
+          "skill",
+          "location",
+          "category",
+          "tag",
+        ],
       },
-      
+
       // AI Career Enums (Project Service)
       {
-        name: 'recommendation_type',
-        values: ['career_path', 'skill_development', 'project_match', 'learning_path']
+        name: "recommendation_type",
+        values: [
+          "career_path",
+          "skill_development",
+          "project_match",
+          "learning_path",
+        ],
       },
       {
-        name: 'priority_level',
-        values: ['low', 'medium', 'high', 'critical']
+        name: "priority_level",
+        values: ["low", "medium", "high", "critical"],
       },
       {
-        name: 'impact_level',
-        values: ['low', 'medium', 'high', 'critical']
+        name: "impact_level",
+        values: ["low", "medium", "high", "critical"],
       },
-      
+
       // Chat Service Enums
       {
-        name: 'conversation_type',
-        values: ['direct', 'group', 'system', 'moderation']
+        name: "conversation_type",
+        values: ["direct", "group", "system", "moderation"],
       },
       {
-        name: 'conversation_status',
-        values: ['active', 'archived', 'deleted']
-      }
+        name: "conversation_status",
+        values: ["active", "archived", "deleted"],
+      },
     ];
-    
+
     for (const enumDef of enums) {
       try {
-        const values = enumDef.values.map(v => `'${v}'`).join(', ');
+        const values = enumDef.values.map((v) => `'${v}'`).join(", ");
         await client.query(`CREATE TYPE "${enumDef.name}" AS ENUM(${values});`);
         console.log(`   ✅ Created enum: ${enumDef.name}`);
       } catch (error) {
-        if (error.code === '42710') {
+        if (error.code === "42710") {
           console.log(`   ⚠️  Enum ${enumDef.name} already exists`);
         } else {
           console.log(`   ❌ Error creating ${enumDef.name}: ${error.message}`);
         }
       }
     }
-    
-    console.log('\n✅ All enum types ready for migrations!');
-    
+
+    console.log("\n✅ All enum types ready for migrations!");
+
     client.release();
-    
   } catch (error) {
-    console.error('\n❌ Error creating enums:', error.message);
+    console.error("\n❌ Error creating enums:", error.message);
     process.exit(1);
   } finally {
     await pool.end();

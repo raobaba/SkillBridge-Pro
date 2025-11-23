@@ -91,6 +91,8 @@ const ProjectModel = {
   addNotification: ProjectNotificationsModel.addNotification,
   addComment: ProjectCommentsModel.addComment,
   getProjectComments: ProjectCommentsModel.getCommentsByProjectId,
+  updateProjectComment: ProjectCommentsModel.updateComment,
+  deleteProjectComment: ProjectCommentsModel.deleteComment,
   addMilestone: ProjectMilestonesModel.addMilestone,
   addTask: ProjectTasksModel.addTask,
   
@@ -104,6 +106,9 @@ const ProjectModel = {
   
   // Search
   searchProjects: ProjectsModel.searchProjects,
+  
+  // Recommendations
+  getProjectRecommendations: ProjectsModel.getProjectRecommendations,
   
   // Statistics
   getProjectStats: ProjectsModel.getProjectStats,

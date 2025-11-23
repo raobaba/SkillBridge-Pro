@@ -953,8 +953,17 @@ const getUserTimeTracking = async (req, res) => {
     
     const { taskId, limit, startDate, endDate } = req.query;
     
+    // Validate taskId - only use if it's a valid number
+    let validatedTaskId = null;
+    if (taskId) {
+      const numTaskId = Number(taskId);
+      if (!isNaN(numTaskId) && numTaskId > 0) {
+        validatedTaskId = numTaskId;
+      }
+    }
+    
     const timeTracking = await TaskTimeTrackingModel.getTimeTrackingByUser(Number(userId), {
-      taskId: taskId ? Number(taskId) : null,
+      taskId: validatedTaskId,
       limit: limit ? Number(limit) : null,
       startDate: startDate ? new Date(startDate) : null,
       endDate: endDate ? new Date(endDate) : null,

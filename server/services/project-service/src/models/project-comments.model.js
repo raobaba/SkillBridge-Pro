@@ -1,5 +1,5 @@
 const { pgTable, serial, text, integer, timestamp, boolean } = require("drizzle-orm/pg-core");
-const { eq, and } = require("drizzle-orm");
+const { eq, and, desc } = require("drizzle-orm");
 
 const { db } = require("../config/database");
 
@@ -29,7 +29,7 @@ class ProjectCommentsModel {
       .select()
       .from(projectCommentsTable)
       .where(eq(projectCommentsTable.projectId, projectId))
-      .orderBy(projectCommentsTable.createdAt);
+      .orderBy(desc(projectCommentsTable.createdAt));
   }
 
   static async getCommentById(commentId) {
@@ -48,7 +48,18 @@ class ProjectCommentsModel {
       .orderBy(projectCommentsTable.createdAt);
   }
 
-  static async updateComment(commentId, content) {
+  static async updateComment(commentId, userId, content) {
+    // First verify the comment exists and belongs to the user
+    const existingComment = await this.getCommentById(commentId);
+    if (!existingComment) {
+      return null;
+    }
+    
+    // Check if user owns the comment
+    if (existingComment.userId !== userId) {
+      return null; // User doesn't have permission
+    }
+    
     const [row] = await db
       .update(projectCommentsTable)
       .set({ 
@@ -56,15 +67,32 @@ class ProjectCommentsModel {
         isEdited: true, 
         editedAt: new Date() 
       })
-      .where(eq(projectCommentsTable.id, commentId))
+      .where(and(
+        eq(projectCommentsTable.id, commentId),
+        eq(projectCommentsTable.userId, userId)
+      ))
       .returning();
     return row;
   }
 
-  static async deleteComment(commentId) {
+  static async deleteComment(commentId, userId) {
+    // First verify the comment exists and belongs to the user
+    const existingComment = await this.getCommentById(commentId);
+    if (!existingComment) {
+      return null;
+    }
+    
+    // Check if user owns the comment
+    if (existingComment.userId !== userId) {
+      return null; // User doesn't have permission
+    }
+    
     const [row] = await db
       .delete(projectCommentsTable)
-      .where(eq(projectCommentsTable.id, commentId))
+      .where(and(
+        eq(projectCommentsTable.id, commentId),
+        eq(projectCommentsTable.userId, userId)
+      ))
       .returning();
     return row;
   }

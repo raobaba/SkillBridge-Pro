@@ -5,6 +5,7 @@ import { persistStore } from "redux-persist";
 import Routing from "./router";
 import store from "../src/redux/store/configureStore";
 import AuthInitializer from "./components/AuthInitializer";
+import ErrorBoundary from "./components/ErrorBoundary";
 export const AppContext = createContext();
 
 const persistor = persistStore(store);
@@ -26,13 +27,15 @@ function App() {
   }, []);
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <AuthInitializer>
-          <Routing />
-        </AuthInitializer>
-      </PersistGate>
-    </Provider>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <AuthInitializer>
+            <Routing />
+          </AuthInitializer>
+        </PersistGate>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 

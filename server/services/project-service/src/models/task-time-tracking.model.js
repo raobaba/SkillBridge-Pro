@@ -112,7 +112,8 @@ class TaskTimeTrackingModel {
     const { taskId, limit } = options;
     const conditions = [eq(taskTimeTrackingTable.userId, userId)];
     
-    if (taskId) {
+    // Only add taskId filter if it's a valid number (not NaN or null)
+    if (taskId && !isNaN(taskId) && typeof taskId === 'number' && taskId > 0) {
       conditions.push(eq(taskTimeTrackingTable.taskId, taskId));
     }
     

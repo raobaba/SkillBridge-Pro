@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Button from '../../../components/Button';
 import Input from '../../../components/Input';
 import {
@@ -32,8 +32,9 @@ import {
   Award,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { getTaskComments } from "../../dashboard/slice/taskSlice";
 
 export default function MyTasksTab({
   assignedTasks = [],
@@ -62,10 +63,23 @@ export default function MyTasksTab({
   const user = useSelector((state) => state.user.user);
   const isDeveloper = userRole === "developer" || user?.role === "developer";
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   // Use props for activeTimer and taskComments, with local fallback
   const activeTimer = propActiveTimer;
   const taskComments = propTaskComments;
+  
+  // Fetch comments for all tasks when component mounts or tasks change
+  useEffect(() => {
+    if (assignedTasks && assignedTasks.length > 0) {
+      assignedTasks.forEach((task) => {
+        // Only fetch if comments haven't been loaded yet
+        if (task.id && (!taskComments[task.id] || taskComments[task.id].length === 0)) {
+          dispatch(getTaskComments(task.id));
+        }
+      });
+    }
+  }, [assignedTasks, dispatch]); // Removed taskComments from deps to avoid infinite loop
   
   // Time tracking handlers
   const handleStartTimer = async (taskId, description = "") => {
@@ -289,15 +303,20 @@ export default function MyTasksTab({
   };
 
   const toggleComments = async (taskId) => {
+    const isOpening = !showComments[taskId];
     setShowComments(prev => ({
       ...prev,
       [taskId]: !prev[taskId]
     }));
     
-    // Fetch comments if not already loaded
-    if (!taskComments[taskId] && !showComments[taskId]) {
-      // Comments will be loaded via useEffect or parent component
-      // For now, we'll rely on the parent to fetch them
+    // Fetch comments if opening and not already loaded
+    if (isOpening && (!taskComments[taskId] || !Array.isArray(taskComments[taskId]) || taskComments[taskId].length === 0)) {
+      try {
+        await dispatch(getTaskComments(taskId)).unwrap();
+      } catch (error) {
+        console.error("Failed to fetch comments:", error);
+        toast.error("Failed to load comments");
+      }
     }
   };
   

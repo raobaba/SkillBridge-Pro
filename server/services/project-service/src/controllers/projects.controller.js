@@ -2793,9 +2793,9 @@ const addProjectComment = async (req, res) => {
     
     const comment = await ProjectModel.addProjectComment({
       projectId: Number(projectId),
-      authorId: Number(authorId),
+      userId: Number(authorId), // Model expects userId, not authorId
       content,
-      parentCommentId: parentCommentId ? Number(parentCommentId) : null,
+      parentId: parentCommentId ? Number(parentCommentId) : null, // Model expects parentId, not parentCommentId
     });
     
     return res

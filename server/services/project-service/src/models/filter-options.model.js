@@ -93,22 +93,9 @@ class FilterOptionsModel {
 
       return filterOptions;
     } catch (error) {
-      console.error('Error getting filter options from database, falling back to static data:', error.message);
-      
-      // Fallback to static data when database table doesn't exist
-      return {
-        statuses: this.getStaticStatuses(),
-        priorities: this.getStaticPriorities(),
-        experienceLevels: this.getStaticExperienceLevels(),
-        workArrangements: this.getStaticWorkArrangements(),
-        paymentTerms: this.getStaticPaymentTerms(),
-        currencies: this.getStaticCurrencies(),
-        sortOptions: this.getStaticSortOptions(),
-        skills: this.getStaticSkills(),
-        locations: this.getStaticLocations(),
-        categories: this.getStaticCategories(),
-        tags: this.getStaticTags()
-      };
+      console.error('Error getting filter options from database:', error.message);
+      // Throw error instead of using fallback - database should be seeded
+      throw new Error(`Failed to fetch filter options from database: ${error.message}. Please ensure the database is seeded.`);
     }
   }
 
@@ -310,158 +297,8 @@ class FilterOptionsModel {
     return seedData;
   }
 
-  // Static fallback data
-  static getStaticStatuses() {
-    return [
-      { value: 'draft', label: 'Draft' },
-      { value: 'upcoming', label: 'Upcoming' },
-      { value: 'active', label: 'Active' },
-      { value: 'paused', label: 'Paused' },
-      { value: 'completed', label: 'Completed' },
-      { value: 'cancelled', label: 'Cancelled' }
-    ];
-  }
-
-  static getStaticPriorities() {
-    return [
-      { value: 'low', label: 'Low Priority' },
-      { value: 'medium', label: 'Medium Priority' },
-      { value: 'high', label: 'High Priority' }
-    ];
-  }
-
-  static getStaticExperienceLevels() {
-    return [
-      { value: 'entry', label: 'Entry Level' },
-      { value: 'mid', label: 'Mid Level' },
-      { value: 'senior', label: 'Senior Level' },
-      { value: 'lead', label: 'Lead/Principal' }
-    ];
-  }
-
-  static getStaticWorkArrangements() {
-    return [
-      { value: 'remote', label: 'Remote' },
-      { value: 'onsite', label: 'On-site' },
-      { value: 'hybrid', label: 'Hybrid' }
-    ];
-  }
-
-  static getStaticPaymentTerms() {
-    return [
-      { value: 'fixed', label: 'Fixed Price' },
-      { value: 'hourly', label: 'Hourly Rate' },
-      { value: 'milestone', label: 'Milestone-based' },
-      { value: 'retainer', label: 'Retainer' }
-    ];
-  }
-
-  static getStaticCurrencies() {
-    return [
-      { value: 'USD', label: 'US Dollar ($)' },
-      { value: 'EUR', label: 'Euro (€)' },
-      { value: 'GBP', label: 'British Pound (£)' },
-      { value: 'CAD', label: 'Canadian Dollar (C$)' },
-      { value: 'AUD', label: 'Australian Dollar (A$)' },
-      { value: 'INR', label: 'Indian Rupee (₹)' }
-    ];
-  }
-
-  static getStaticSortOptions() {
-    return [
-      { value: 'relevance', label: 'Most Relevant' },
-      { value: 'newest', label: 'Newest First' },
-      { value: 'deadline', label: 'Deadline' },
-      { value: 'budget', label: 'Budget (High to Low)' },
-      { value: 'rating', label: 'Rating' },
-      { value: 'applicants', label: 'Fewest Applicants' }
-    ];
-  }
-
-  static getStaticSkills() {
-    return [
-      'React', 'Node.js', 'Python', 'JavaScript', 'TypeScript', 'Vue.js', 'Angular',
-      'Express', 'Django', 'Flask', 'MongoDB', 'PostgreSQL', 'MySQL', 'Redis',
-      'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Terraform', 'Jenkins', 'Git',
-      'GraphQL', 'REST API', 'Microservices', 'Blockchain', 'Solidity',
-      'Machine Learning', 'TensorFlow', 'PyTorch', 'Data Science', 'AI', 'NLP',
-      'Java', 'C#', 'C++', 'Go', 'Rust', 'PHP', 'Ruby', 'Swift', 'Kotlin',
-      'HTML', 'CSS', 'SASS', 'LESS', 'Bootstrap', 'Tailwind CSS', 'Material-UI',
-      'Next.js', 'Nuxt.js', 'Svelte', 'Ember.js', 'Backbone.js', 'jQuery',
-      'Laravel', 'Symfony', 'CodeIgniter', 'Spring Boot', 'Hibernate', 'JPA',
-      'Elasticsearch', 'Apache Kafka', 'RabbitMQ', 'Apache Spark', 'Hadoop',
-      'Figma', 'Sketch', 'Adobe XD', 'InVision', 'Zeplin', 'Principle',
-      'Photoshop', 'Illustrator', 'After Effects', 'Premiere Pro', 'Final Cut Pro',
-      'WordPress', 'Drupal', 'Joomla', 'Magento', 'Shopify', 'WooCommerce',
-      'Firebase', 'Supabase', 'Appwrite', 'Hasura', 'Prisma', 'Sequelize',
-      'Jest', 'Mocha', 'Chai', 'Cypress', 'Selenium', 'Playwright', 'Puppeteer',
-      'Webpack', 'Vite', 'Parcel', 'Rollup', 'Babel', 'ESLint', 'Prettier',
-      'Linux', 'Windows', 'macOS', 'Ubuntu', 'CentOS', 'Debian', 'Red Hat',
-      'Nginx', 'Apache', 'IIS', 'CloudFlare', 'CDN', 'Load Balancing',
-      'Agile', 'Scrum', 'Kanban', 'DevOps', 'CI/CD', 'TDD', 'BDD', 'DDD'
-    ];
-  }
-
-  static getStaticLocations() {
-    return [
-      { value: 'Remote', label: 'Remote' },
-      { value: 'San Francisco, CA', label: 'San Francisco, CA' },
-      { value: 'New York, NY', label: 'New York, NY' },
-      { value: 'Austin, TX', label: 'Austin, TX' },
-      { value: 'Seattle, WA', label: 'Seattle, WA' },
-      { value: 'Los Angeles, CA', label: 'Los Angeles, CA' },
-      { value: 'Chicago, IL', label: 'Chicago, IL' },
-      { value: 'Boston, MA', label: 'Boston, MA' },
-      { value: 'Denver, CO', label: 'Denver, CO' },
-      { value: 'Miami, FL', label: 'Miami, FL' },
-      { value: 'London, UK', label: 'London, UK' },
-      { value: 'Berlin, Germany', label: 'Berlin, Germany' },
-      { value: 'Amsterdam, Netherlands', label: 'Amsterdam, Netherlands' },
-      { value: 'Toronto, Canada', label: 'Toronto, Canada' },
-      { value: 'Sydney, Australia', label: 'Sydney, Australia' },
-      { value: 'Singapore', label: 'Singapore' },
-      { value: 'Tokyo, Japan', label: 'Tokyo, Japan' },
-      { value: 'Bangalore, India', label: 'Bangalore, India' },
-      { value: 'Other', label: 'Other' }
-    ];
-  }
-
-  static getStaticCategories() {
-    return [
-      'Web Development',
-      'Mobile Development', 
-      'Desktop Application',
-      'Backend Development',
-      'Frontend Development',
-      'Full Stack Development',
-      'DevOps',
-      'Data Science',
-      'Machine Learning',
-      'AI Development',
-      'Blockchain',
-      'Game Development',
-      'UI/UX Design',
-      'Graphic Design',
-      'Content Writing',
-      'Digital Marketing',
-      'SEO',
-      'Video Editing',
-      'Audio Production',
-      'Translation',
-      'Research',
-      'Consulting',
-      'Other'
-    ];
-  }
-
-  static getStaticTags() {
-    return [
-      'Frontend', 'Backend', 'Full Stack', 'Mobile', 'Web', 'API', 'Database', 
-      'Cloud', 'DevOps', 'UI/UX', 'Design', 'Testing', 'Security', 'Performance',
-      'Scalability', 'Architecture', 'Integration', 'Automation', 'Analytics',
-      'E-commerce', 'SaaS', 'Startup', 'Enterprise', 'Open Source', 'Freelance'
-    ];
-  }
+  // Static fallback methods removed - all data should come from database
+  // If database is not seeded, the getAllFilterOptions method will throw an error
 }
 
 module.exports = {

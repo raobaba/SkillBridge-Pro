@@ -47,30 +47,9 @@ import {
   clearProjectOwnerData,
 } from "../slice/profileSlice";
 import { listApplicants } from "../../project/slice/projectSlice";
+import { getBillingData } from "../../billingsubscription/slice/billingSlice";
 
-// Static data for fallback/placeholder content
-const SUBSCRIPTION_DATA = {
-  plan: "Premium",
-  status: "Active",
-  features: [
-    "Unlimited project postings",
-    "Priority listing boost",
-    "Advanced analytics",
-    "Direct developer messaging",
-    "Custom branding",
-  ],
-  nextBilling: "2025-02-15",
-  price: "$99/month",
-};
-
-const SKILLS_DATA = [
-  "React",
-  "Node.js",
-  "MongoDB",
-  "AWS",
-  "Docker",
-  "Team Leadership",
-];
+// Removed static data - now fetched from APIs
 
 
 const ProjectOwner = memo(function ProjectOwner({
@@ -100,6 +79,10 @@ const ProjectOwner = memo(function ProjectOwner({
   const loadingStates = useSelector(selectProjectOwnerLoading);
   const errors = useSelector(selectProjectOwnerError);
   
+  // Billing/subscription data
+  const billingData = useSelector((state) => state.billing?.currentSubscription || {});
+  const billingLoading = useSelector((state) => state.billing?.loading || false);
+  
   // Filter setup
   const [filterValue, setFilter] = useState("All");
   const [projectApplicants, setProjectApplicants] = useState({});
@@ -124,12 +107,56 @@ const ProjectOwner = memo(function ProjectOwner({
   useEffect(() => {
     dispatch(fetchProjectOwnerProjects());
     dispatch(fetchProjectOwnerDevelopers());
+    dispatch(getBillingData());
     
     // Cleanup on unmount
     return () => {
       dispatch(clearProjectOwnerData());
     };
   }, [dispatch]);
+  
+  // Transform subscription data from API
+  const subscriptionData = useMemo(() => {
+    if (!billingData || Object.keys(billingData).length === 0) {
+      return {
+        plan: "Free",
+        status: "Active",
+        features: [],
+        nextBilling: null,
+        price: "$0/month",
+      };
+    }
+    
+    const planName = billingData.plan ? billingData.plan.charAt(0).toUpperCase() + billingData.plan.slice(1) : "Free";
+    const features = billingData.planFeatures || [];
+    const nextBilling = billingData.nextBillingDate || null;
+    const price = billingData.plan === "free" ? "$0/month" : 
+                  billingData.plan === "pro" ? "$19/month" :
+                  billingData.plan === "enterprise" ? "$99/month" : "$0/month";
+    
+    return {
+      plan: planName,
+      status: billingData.status || "Active",
+      features: Array.isArray(features) ? features : Object.values(features),
+      nextBilling,
+      price,
+    };
+  }, [billingData]);
+  
+  // Get skills from user data
+  const skillsData = useMemo(() => {
+    if (userData?.skills) {
+      if (Array.isArray(userData.skills)) {
+        return userData.skills;
+      } else if (typeof userData.skills === 'object') {
+        return Object.keys(userData.skills);
+      }
+    }
+    if (userData?.domainPreferences) {
+      return userData.domainPreferences.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+    return [];
+  }, [userData]);
 
   // Load applicants when projects are loaded
   useEffect(() => {
@@ -339,17 +366,9 @@ const ProjectOwner = memo(function ProjectOwner({
                                     </span>
                                   ))
                                 ) : (
-                                  <>
-                                    <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300">
-                                      React
-                                    </span>
-                                    <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300">
-                                      Node.js
-                                    </span>
-                                    <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300">
-                                      MongoDB
+                                  <span className="px-2 py-1 text-xs rounded-full bg-gray-500/20 border border-gray-400/30 text-gray-300">
+                                    No skills specified
                     </span>
-                                  </>
                                 )}
                               </div>
                             </div>
@@ -592,40 +611,57 @@ const ProjectOwner = memo(function ProjectOwner({
               <Crown className='w-5 h-5 text-yellow-400' />
               <h3 className='text-lg font-semibold'>Subscription</h3>
             </div>
+            {billingLoading ? (
+              <div className='text-center py-4 text-gray-400'>
+                <div className='animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto mb-2'></div>
+                <p className='text-sm'>Loading subscription...</p>
+              </div>
+            ) : (
+              <>
             <div className='space-y-3'>
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Plan</span>
                 <span className='px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 text-sm font-medium'>
-                  {SUBSCRIPTION_DATA.plan}
+                      {subscriptionData.plan}
                 </span>
               </div>
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Status</span>
-                <span className='px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-sm'>
-                  {SUBSCRIPTION_DATA.status}
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      subscriptionData.status === 'active' ? 'bg-green-500/20 text-green-300' :
+                      subscriptionData.status === 'cancelled' ? 'bg-red-500/20 text-red-300' :
+                      'bg-yellow-500/20 text-yellow-300'
+                    }`}>
+                      {subscriptionData.status}
                 </span>
               </div>
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Price</span>
-                <span className='text-sm font-medium'>{SUBSCRIPTION_DATA.price}</span>
+                    <span className='text-sm font-medium'>{subscriptionData.price}</span>
               </div>
+                  {subscriptionData.nextBilling && (
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Next Billing</span>
-                <span className='text-sm text-gray-400'>{SUBSCRIPTION_DATA.nextBilling}</span>
+                      <span className='text-sm text-gray-400'>{new Date(subscriptionData.nextBilling).toLocaleDateString()}</span>
               </div>
+                  )}
             </div>
             
+                {subscriptionData.features && subscriptionData.features.length > 0 && (
             <div className='mt-4 pt-4 border-t border-white/10'>
-              <h4 className='text-sm font-medium mb-2'>Premium Features</h4>
+                    <h4 className='text-sm font-medium mb-2'>Plan Features</h4>
               <div className='space-y-1'>
-                {SUBSCRIPTION_DATA.features.map((feature, idx) => (
+                      {subscriptionData.features.map((feature, idx) => (
                   <div key={idx} className='flex items-center text-xs text-gray-400'>
                     <CheckCircle className='w-3 h-3 mr-2 text-green-400' />
-                    {feature}
+                          {typeof feature === 'string' ? feature : feature.name || feature}
                   </div>
                 ))}
               </div>
             </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Skills & Expertise (Responsive Tags) */}
@@ -634,8 +670,14 @@ const ProjectOwner = memo(function ProjectOwner({
               <Zap className='w-5 h-5 text-purple-400' />
               <h3 className='text-lg font-semibold'>Skills & Expertise</h3>
             </div>
+            {skillsData.length === 0 ? (
+              <div className='text-center py-4 text-gray-400'>
+                <p className='text-sm'>No skills specified</p>
+                <p className='text-xs mt-1'>Add skills to your profile to improve matching</p>
+              </div>
+            ) : (
             <div className='flex flex-wrap gap-2'>
-              {SKILLS_DATA.map((skill, idx) => (
+                {skillsData.map((skill, idx) => (
                 <span
                   key={idx}
                   className='px-3 py-1 text-sm rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 hover:bg-purple-500/30 transition'
@@ -644,6 +686,7 @@ const ProjectOwner = memo(function ProjectOwner({
                 </span>
               ))}
             </div>
+            )}
           </div>
 
           {/* Organizational Stats */}
@@ -653,22 +696,36 @@ const ProjectOwner = memo(function ProjectOwner({
               <h3 className='text-lg font-semibold'>Organization Stats</h3>
             </div>
             <div className='space-y-3'>
+              {userData?.companySize && (
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Company Size</span>
-                <span className='text-sm font-medium'>50-100 employees</span>
+                  <span className='text-sm font-medium'>{userData.companySize}</span>
               </div>
+              )}
+              {userData?.industry && (
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Industry</span>
-                <span className='text-sm font-medium'>Technology</span>
+                  <span className='text-sm font-medium'>{userData.industry}</span>
               </div>
+              )}
+              {userData?.foundedYear && (
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Founded</span>
-                <span className='text-sm font-medium'>2018</span>
+                  <span className='text-sm font-medium'>{userData.foundedYear}</span>
               </div>
+              )}
+              {userData?.location && (
               <div className='flex justify-between items-center'>
                 <span className='text-sm text-gray-300'>Location</span>
-                <span className='text-sm font-medium'>San Francisco, CA</span>
+                  <span className='text-sm font-medium'>{userData.location}</span>
+                </div>
+              )}
+              {!userData?.companySize && !userData?.industry && !userData?.foundedYear && !userData?.location && (
+                <div className='text-center py-4 text-gray-400'>
+                  <p className='text-sm'>No organization information available</p>
+                  <p className='text-xs mt-1'>Update your profile to add organization details</p>
               </div>
+              )}
             </div>
           </div>
  {/* Developer Reviews */}

@@ -36,35 +36,9 @@ import {
 } from "../../../components/Profile";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchAdminAnalytics, fetchAllUsers, fetchDevelopers } from "../slice/profileSlice";
+import { getSkillTrends } from "../../aicareer/slice/aiCareerSlice";
 
-// Skill demand trends - can be enhanced with API later
-const SKILL_DEMAND_TRENDS = [
-  { skill: "React", demand: 85, growth: "+12%", color: "bg-blue-500" },
-  { skill: "Node.js", demand: 78, growth: "+8%", color: "bg-green-500" },
-  { skill: "Python", demand: 72, growth: "+15%", color: "bg-yellow-500" },
-  { skill: "AWS", demand: 68, growth: "+20%", color: "bg-orange-500" },
-  { skill: "Docker", demand: 61, growth: "+18%", color: "bg-purple-500" },
-];
-
-const PERMISSIONS_DATA = [
-  "Manage Users",
-  "Moderate Projects",
-  "View Reports",
-  "Handle Payments",
-];
-
-const SECURITY_SETTINGS_DATA = [
-  { label: "2FA Enabled", value: true },
-  { label: "Last Password Change", value: "2025-08-21" },
-  { label: "Active Sessions", value: "3 Devices" },
-];
-
-const ACTIVITY_FEED_DATA = [
-  "✅ Suspended user JohnDoe",
-  "⚡ Approved project FinTech App",
-  "🛡️ Resolved 3 reports",
-  "📊 Reviewed analytics dashboard",
-];
+// Removed static data - now fetched from APIs
 
 // Memoized action buttons component
 const ActionButtons = memo(({ row }) => (
@@ -117,6 +91,10 @@ const Admin = memo(function Admin({
   const developers = useSelector((state) => state.profile?.developers || []);
   const adminLoading = useSelector((state) => state.profile?.adminLoading || {});
   const adminError = useSelector((state) => state.profile?.adminError || {});
+  
+  // Skill trends from AI Career
+  const skillTrends = useSelector((state) => state.aiCareer?.skillTrends || []);
+  const skillTrendsLoading = useSelector((state) => state.aiCareer?.skillTrendsLoading || false);
 
   // Fetch admin data on component mount
   useEffect(() => {
@@ -129,7 +107,83 @@ const Admin = memo(function Admin({
     if (developers.length === 0 && !adminLoading.developers) {
       dispatch(fetchDevelopers({ limit: 200 }));
     }
-  }, [dispatch, adminAnalytics, allUsers.length, developers.length, adminLoading]);
+    if (skillTrends.length === 0 && !skillTrendsLoading) {
+      dispatch(getSkillTrends());
+    }
+  }, [dispatch, adminAnalytics, allUsers.length, developers.length, adminLoading, skillTrends.length, skillTrendsLoading]);
+  
+  // Transform skill trends from API
+  const skillDemandTrends = useMemo(() => {
+    if (!skillTrends || skillTrends.length === 0) return [];
+    
+    return skillTrends.slice(0, 5).map(trend => ({
+      skill: trend.skill,
+      demand: trend.demand || 0,
+      growth: trend.growth || "+0%",
+      color: trend.color || "bg-blue-500"
+    }));
+  }, [skillTrends]);
+  
+  // Get permissions from user data (admin role should have all permissions)
+  const permissionsData = useMemo(() => {
+    const defaultPermissions = [
+      "Manage Users",
+      "Moderate Projects",
+      "View Reports",
+      "Handle Payments",
+    ];
+    
+    // If user has custom permissions, use those, otherwise use defaults
+    if (userData?.permissions && Array.isArray(userData.permissions)) {
+      return userData.permissions;
+    }
+    
+    return defaultPermissions;
+  }, [userData]);
+  
+  // Get security settings from user data
+  const securitySettingsData = useMemo(() => {
+    const settings = [];
+    
+    if (userData?.twoFactorEnabled !== undefined) {
+      settings.push({ label: "2FA Enabled", value: userData.twoFactorEnabled });
+    }
+    
+    if (userData?.lastPasswordChange) {
+      settings.push({ 
+        label: "Last Password Change", 
+        value: new Date(userData.lastPasswordChange).toLocaleDateString() 
+      });
+    }
+    
+    // Active sessions would come from a separate API
+    // For now, we'll leave it empty or use a placeholder
+    settings.push({ label: "Active Sessions", value: "N/A" });
+    
+    return settings;
+  }, [userData]);
+  
+  // Get activity feed from admin analytics
+  const activityFeedData = useMemo(() => {
+    // This would ideally come from a separate activity log API
+    // For now, generate from moderation actions
+    const activities = [];
+    
+    if (adminAnalytics?.moderation) {
+      const mod = adminAnalytics.moderation;
+      if (mod.resolvedToday > 0) {
+        activities.push(`✅ Resolved ${mod.resolvedToday} issue(s)`);
+      }
+      if (mod.flaggedProjects > 0) {
+        activities.push(`🚩 ${mod.flaggedProjects} project(s) flagged`);
+      }
+      if (mod.flaggedUsers > 0) {
+        activities.push(`👤 ${mod.flaggedUsers} user(s) flagged`);
+      }
+    }
+    
+    return activities;
+  }, [adminAnalytics]);
 
   // Transform analytics data to system analytics format
   const SYSTEM_ANALYTICS_DATA = useMemo(() => {
@@ -430,8 +484,15 @@ const Admin = memo(function Admin({
             <h2 className='text-xl font-semibold mb-4 flex items-center'>
               <TrendingUp className='w-8 h-8 mr-2 text-green-400' /> Skill Demand Trends
             </h2>
-            <div className='space-y-4'>
-              {SKILL_DEMAND_TRENDS.map((skill, index) => (
+            {skillTrendsLoading ? (
+              <div className="flex justify-center py-8">
+                <CircularLoader />
+              </div>
+            ) : skillDemandTrends.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">No skill trends data available</p>
+            ) : (
+              <div className='space-y-4'>
+                {skillDemandTrends.map((skill, index) => (
                 <div key={index} className='bg-white/5 rounded-lg p-4 border border-white/10'>
                   <div className='flex justify-between items-center mb-2'>
                     <span className='font-medium'>{skill.skill}</span>
@@ -447,8 +508,9 @@ const Admin = memo(function Admin({
                     />
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Flagged Projects */}
@@ -550,7 +612,7 @@ const Admin = memo(function Admin({
           <InfoCard
             icon={<Shield className='w-5 h-5 text-yellow-400' />}
             title='Permissions & Access'
-            items={PERMISSIONS_DATA.map((perm) => `🔑 ${perm}`)}
+            items={permissionsData.map((perm) => `🔑 ${perm}`)}
             fallback='No permissions assigned.'
           />
 
@@ -558,7 +620,7 @@ const Admin = memo(function Admin({
           <InfoCard
             icon={<Key className='w-5 h-5 text-yellow-400' />}
             title='Security Settings'
-            items={SECURITY_SETTINGS_DATA.map((s) => ({
+            items={securitySettingsData.map((s) => ({
               label: s.label,
               value:
                 typeof s.value === "boolean"
@@ -575,7 +637,7 @@ const Admin = memo(function Admin({
           <InfoCard
             icon={<Activity className='w-5 h-5 text-yellow-400' />}
             title='Recent Activity'
-            items={ACTIVITY_FEED_DATA}
+            items={activityFeedData}
             fallback='No recent activity.'
           />
 
@@ -659,32 +721,30 @@ const Admin = memo(function Admin({
               <Database className='w-5 h-5 text-green-400 mr-2' />
               System Health
             </h3>
-            <div className='space-y-3'>
-              <div className='flex justify-between items-center'>
-                <span className='text-sm text-gray-300'>API Status</span>
-                <span className='px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs'>
-                  Healthy
-                </span>
+            {adminLoading.analytics ? (
+              <div className="flex justify-center py-4">
+                <CircularLoader />
               </div>
-              <div className='flex justify-between items-center'>
-                <span className='text-sm text-gray-300'>Database</span>
-                <span className='px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs'>
-                  Online
-                </span>
+            ) : (
+              <div className='space-y-3'>
+                {adminAnalytics?.systemHealth ? (
+                  Object.entries(adminAnalytics.systemHealth).map(([service, status]) => (
+                    <div key={service} className='flex justify-between items-center'>
+                      <span className='text-sm text-gray-300 capitalize'>{service.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        status === 'healthy' || status === 'online' || status === 'active' ? 'bg-green-500/20 text-green-300' :
+                        status === 'warning' || status === 'slow' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-red-500/20 text-red-300'
+                      }`}>
+                        {typeof status === 'string' ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown'}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400 text-center py-4 text-sm">System health data not available</p>
+                )}
               </div>
-              <div className='flex justify-between items-center'>
-                <span className='text-sm text-gray-300'>CDN</span>
-                <span className='px-2 py-1 rounded-full bg-green-500/20 text-green-300 text-xs'>
-                  Active
-                </span>
-              </div>
-              <div className='flex justify-between items-center'>
-                <span className='text-sm text-gray-300'>Email Service</span>
-                <span className='px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300 text-xs'>
-                  Slow
-                </span>
-              </div>
-            </div>
+            )}
           </div>
           {/* Billing Reports */}
           <div className='bg-white/5 border border-white/10 rounded-xl p-6'>

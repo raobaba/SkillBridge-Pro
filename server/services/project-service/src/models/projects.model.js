@@ -329,6 +329,86 @@ class ProjectsModel {
     }).where(eq(projectsTable.id, projectId));
   }
 
+  // Get project recommendations for a user
+  static async getProjectRecommendations(userId, limit = 10) {
+    try {
+      // Get user's applied project IDs to exclude them from recommendations
+      const { projectApplicantsTable } = require("./project-applicants.model");
+      const appliedProjects = await db
+        .select({ projectId: projectApplicantsTable.projectId })
+        .from(projectApplicantsTable)
+        .where(eq(projectApplicantsTable.userId, userId));
+      
+      const appliedProjectIds = appliedProjects.map(ap => ap.projectId);
+
+      // Build conditions for recommendations
+      const conditions = [
+        eq(projectsTable.isDeleted, false),
+        or(
+          eq(projectsTable.status, 'active'),
+          eq(projectsTable.status, 'upcoming')
+        )
+      ];
+
+      // Exclude projects user has already applied to
+      if (appliedProjectIds.length > 0) {
+        // Use NOT IN with proper SQL
+        conditions.push(sql`${projectsTable.id} NOT IN (${sql.join(appliedProjectIds.map(id => sql`${id}`), sql`, `)})`);
+      }
+
+      const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0];
+
+      // Get recommended projects ordered by match score, rating, and recency
+      const recommendedProjects = await db
+        .select()
+        .from(projectsTable)
+        .where(whereClause)
+        .orderBy(
+          desc(projectsTable.matchScoreAvg),
+          desc(projectsTable.ratingAvg),
+          desc(projectsTable.createdAt)
+        )
+        .limit(limit);
+
+      // Get tags and skills for each project
+      const projectsWithMetadata = await Promise.all(
+        recommendedProjects.map(async (project) => {
+          const [projectSkills, projectTags] = await Promise.all([
+            // Join with skills table to get skill names
+            db.select({ 
+              name: skillsTable.name,
+              category: skillsTable.category 
+            })
+            .from(projectSkillsTable)
+            .innerJoin(skillsTable, eq(projectSkillsTable.skillId, skillsTable.id))
+            .where(eq(projectSkillsTable.projectId, project.id)),
+            
+            // Join with tags table to get tag names
+            db.select({ 
+              name: tagsTable.name,
+              category: tagsTable.category 
+            })
+            .from(projectTagsTable)
+            .innerJoin(tagsTable, eq(projectTagsTable.tagId, tagsTable.id))
+            .where(eq(projectTagsTable.projectId, project.id))
+          ]);
+
+          return {
+            ...project,
+            skills: projectSkills.map(s => s.name),
+            tags: projectTags.map(t => t.name),
+            matchScore: project.matchScoreAvg || 0
+          };
+        })
+      );
+
+      return projectsWithMetadata;
+    } catch (error) {
+      console.error('Error getting project recommendations:', error);
+      throw error;
+    }
+  }
+
   // Search projects with filters
   static async searchProjects(filters = {}) {
     const {

@@ -231,7 +231,9 @@ export const addTaskComment = createAsyncThunk(
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
       const response = await addTaskCommentApi(taskId, data);
-      return { taskId, comment: response.data };
+      // Ensure we return the comment data properly
+      const comment = response?.data || response;
+      return { taskId, comment };
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to add comment" }
@@ -245,7 +247,9 @@ export const getTaskComments = createAsyncThunk(
   async (taskId, { rejectWithValue }) => {
     try {
       const response = await getTaskCommentsApi(taskId);
-      return { taskId, comments: response.data };
+      // Ensure comments is always an array
+      const comments = Array.isArray(response.data) ? response.data : [];
+      return { taskId, comments };
     } catch (error) {
       return rejectWithValue(
         error?.response?.data || { message: "Failed to fetch comments" }
@@ -603,27 +607,38 @@ const taskSlice = createSlice({
     builder
       .addCase(addTaskComment.fulfilled, (state, action) => {
         const { taskId, comment } = action.payload;
-        if (!state.taskComments[taskId]) {
+        // Ensure taskComments[taskId] is always an array
+        if (!state.taskComments[taskId] || !Array.isArray(state.taskComments[taskId])) {
           state.taskComments[taskId] = [];
         }
-        state.taskComments[taskId].push(comment.data || comment);
+        // Extract the comment data properly
+        const commentData = comment?.data || comment;
+        if (commentData) {
+          state.taskComments[taskId].push(commentData);
+        }
       })
       .addCase(getTaskComments.fulfilled, (state, action) => {
-        state.taskComments[action.payload.taskId] = action.payload.comments;
+        const { taskId, comments } = action.payload;
+        // Ensure comments is always an array
+        state.taskComments[taskId] = Array.isArray(comments) ? comments : [];
       })
       .addCase(updateTaskComment.fulfilled, (state, action) => {
         const updatedComment = action.payload.data || action.payload;
         // Find and update comment in all task comments
         Object.keys(state.taskComments).forEach(taskId => {
-          const index = state.taskComments[taskId].findIndex(c => c.id === updatedComment.id);
-          if (index > -1) {
-            state.taskComments[taskId][index] = updatedComment;
+          // Ensure it's an array before using array methods
+          if (Array.isArray(state.taskComments[taskId])) {
+            const index = state.taskComments[taskId].findIndex(c => c.id === updatedComment.id);
+            if (index > -1) {
+              state.taskComments[taskId][index] = updatedComment;
+            }
           }
         });
       })
       .addCase(deleteTaskComment.fulfilled, (state, action) => {
         const { taskId, commentId } = action.payload;
-        if (state.taskComments[taskId]) {
+        // Ensure it's an array before filtering
+        if (state.taskComments[taskId] && Array.isArray(state.taskComments[taskId])) {
           state.taskComments[taskId] = state.taskComments[taskId].filter(c => c.id !== commentId);
         }
       });

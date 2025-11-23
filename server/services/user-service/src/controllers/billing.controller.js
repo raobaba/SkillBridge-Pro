@@ -52,29 +52,54 @@ const getBillingData = async (req, res, next) => {
     // Get payment methods
     const paymentMethods = await PaymentMethodsModel.getPaymentMethodsByUserId(userId);
 
+    // Get plan details from database if subscription exists
+    let planDetails = null;
+    if (subscription?.plan) {
+      planDetails = await SubscriptionPlansModel.getPlanByName(subscription.plan);
+    }
+    
+    // If no plan found, get Free plan as default
+    if (!planDetails && (!subscription || !subscription.plan)) {
+      planDetails = await SubscriptionPlansModel.getPlanByName('Free');
+    }
+    
     // Format subscription data
-    const subscriptionData = subscription ? {
+    const subscriptionData = subscription && planDetails ? {
       plan: subscription.plan?.toLowerCase() || "free",
       status: subscription.status || "active",
-      aiCredits: getAICreditsForPlan(subscription.plan),
+      aiCredits: planDetails.aiCredits || 0,
       enhancedTools: subscription.plan?.toLowerCase() !== "free",
       matchmakingBoost: userRole === "project-owner" || userRole === "project_owner",
       projectVisibility: subscription.plan?.toLowerCase() !== "free" ? "premium" : "standard",
       nextBillingDate: subscription.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toISOString().split('T')[0] : null,
       autoRenew: subscription.status === "active",
       startDate: subscription.currentPeriodStart ? new Date(subscription.currentPeriodStart).toISOString().split('T')[0] : null,
-      planFeatures: getPlanFeatures(subscription.plan),
+      planFeatures: {
+        aiCredits: planDetails.aiCredits || 0,
+        maxProjects: planDetails.maxProjects,
+        maxApplications: planDetails.maxApplications,
+        supportLevel: subscription.plan?.toLowerCase() === "enterprise" ? "24/7" : subscription.plan?.toLowerCase() === "pro" ? "priority" : "community",
+        analytics: subscription.plan?.toLowerCase() !== "free",
+        customBranding: subscription.plan?.toLowerCase() === "enterprise",
+      },
     } : {
       plan: "free",
       status: "active",
-      aiCredits: 100,
+      aiCredits: planDetails?.aiCredits || 100,
       enhancedTools: false,
       matchmakingBoost: false,
       projectVisibility: "standard",
       nextBillingDate: null,
       autoRenew: false,
       startDate: null,
-      planFeatures: getPlanFeatures("Free"),
+      planFeatures: {
+        aiCredits: planDetails?.aiCredits || 100,
+        maxProjects: planDetails?.maxProjects || 3,
+        maxApplications: planDetails?.maxApplications || 10,
+        supportLevel: "community",
+        analytics: false,
+        customBranding: false,
+      },
     };
 
     // Format billing history
@@ -143,9 +168,8 @@ const purchaseSubscription = async (req, res, next) => {
       return next(new HttpException(400, "Plan ID is required"));
     }
 
-    // Get plan details (from static plans for now)
-    const plans = getSubscriptionPlansStatic();
-    const selectedPlan = plans.find(p => p.id === planId);
+    // Get plan details from database
+    const selectedPlan = await SubscriptionPlansModel.getPlanById(planId);
     
     if (!selectedPlan) {
       return next(new HttpException(404, "Plan not found"));
@@ -155,9 +179,9 @@ const purchaseSubscription = async (req, res, next) => {
     const billingRecord = await BillingHistoryModel.createBillingRecord({
       userId,
       amount: selectedPlan.price.toString(),
-      currency: "USD",
+      currency: selectedPlan.currency || "USD",
       status: "completed", // In production, this would be pending until payment confirmation
-      description: `${selectedPlan.name} Plan - Monthly Subscription`,
+      description: `${selectedPlan.name} Plan - ${selectedPlan.period === 'forever' ? 'Forever' : 'Monthly'} Subscription`,
       invoiceId: `INV-${selectedPlan.name.toUpperCase()}-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
       paymentMethodId: paymentMethodId || null,
       type: "subscription",
@@ -230,19 +254,26 @@ const purchaseSubscription = async (req, res, next) => {
         subscription: {
           plan: subscription?.plan?.toLowerCase() || selectedPlan.name.toLowerCase(),
           status: "active",
-          aiCredits: selectedPlan.aiCredits,
-          enhancedTools: planId > 1,
-          matchmakingBoost: planId > 1,
-          projectVisibility: planId > 1 ? "premium" : "standard",
+          aiCredits: selectedPlan.aiCredits || 0,
+          enhancedTools: selectedPlan.name?.toLowerCase() !== "free",
+          matchmakingBoost: selectedPlan.name?.toLowerCase() !== "free",
+          projectVisibility: selectedPlan.name?.toLowerCase() !== "free" ? "premium" : "standard",
           nextBillingDate: nextMonth.toISOString().split('T')[0],
           autoRenew: true,
           startDate: now.toISOString().split('T')[0],
-          planFeatures: getPlanFeatures(selectedPlan.name),
+          planFeatures: {
+            aiCredits: selectedPlan.aiCredits || 0,
+            maxProjects: selectedPlan.maxProjects,
+            maxApplications: selectedPlan.maxApplications,
+            supportLevel: selectedPlan.name?.toLowerCase() === "enterprise" ? "24/7" : selectedPlan.name?.toLowerCase() === "pro" ? "priority" : "community",
+            analytics: selectedPlan.name?.toLowerCase() !== "free",
+            customBranding: selectedPlan.name?.toLowerCase() === "enterprise",
+          },
         },
         billingHistory: {
           id: billingRecord.id,
           date: billingRecord.createdAt.toISOString().split('T')[0],
-          amount: `$${selectedPlan.price.toFixed(2)}`,
+          amount: `$${parseFloat(selectedPlan.price).toFixed(2)}`,
           status: "Paid",
           description: `${selectedPlan.name} Plan - Monthly Subscription`,
           invoiceId: billingRecord.invoiceId,
@@ -486,11 +517,27 @@ const setDefaultPaymentMethod = async (req, res, next) => {
  */
 const getSubscriptionPlans = async (req, res, next) => {
   try {
-    const plans = getSubscriptionPlansStatic();
+    // Get plans from database
+    const plans = await SubscriptionPlansModel.getAllPlans();
+    
+    // Format plans to match expected structure
+    const formattedPlans = plans.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      price: parseFloat(plan.price),
+      period: plan.period,
+      features: typeof plan.features === 'string' ? JSON.parse(plan.features) : plan.features,
+      aiCredits: plan.aiCredits || 0,
+      maxProjects: plan.maxProjects,
+      maxApplications: plan.maxApplications,
+      popular: plan.name.toLowerCase() === 'pro', // Mark Pro as popular
+      currency: plan.currency || 'USD',
+      isActive: plan.isActive,
+    }));
     
     res.status(200).json({
       success: true,
-      data: plans,
+      data: formattedPlans,
     });
   } catch (error) {
     console.error("Get subscription plans error:", error);
@@ -549,7 +596,14 @@ const cancelSubscription = async (req, res, next) => {
           projectVisibility: "standard",
           nextBillingDate: null,
           autoRenew: false,
-          planFeatures: getPlanFeatures("Free"),
+          planFeatures: {
+            aiCredits: 100,
+            maxProjects: 3,
+            maxApplications: 10,
+            supportLevel: "community",
+            analytics: false,
+            customBranding: false,
+          },
         },
       },
     });
@@ -823,107 +877,7 @@ const getAdminDashboard = async (req, res, next) => {
   }
 };
 
-// Helper functions
-function getSubscriptionPlansStatic() {
-  return [
-    {
-      id: 1,
-      name: "Free",
-      price: 0,
-      period: "forever",
-      features: [
-        "Basic profile creation",
-        "Limited project matching",
-        "Basic chat functionality",
-        "Community support",
-      ],
-      aiCredits: 100,
-      maxProjects: 3,
-      maxApplications: 10,
-      popular: false,
-    },
-    {
-      id: 2,
-      name: "Pro",
-      price: 19,
-      period: "month",
-      features: [
-        "Advanced AI matching",
-        "Unlimited project posts",
-        "Priority support",
-        "Advanced analytics",
-        "Portfolio sync",
-        "Skill gap analysis",
-      ],
-      aiCredits: 1000,
-      maxProjects: -1,
-      maxApplications: -1,
-      popular: true,
-    },
-    {
-      id: 3,
-      name: "Enterprise",
-      price: 99,
-      period: "month",
-      features: [
-        "Everything in Pro",
-        "Team management",
-        "Custom integrations",
-        "Dedicated support",
-        "Advanced security",
-        "Custom branding",
-      ],
-      aiCredits: 5000,
-      maxProjects: -1,
-      maxApplications: -1,
-      popular: false,
-    },
-  ];
-}
-
-function getAICreditsForPlan(plan) {
-  const planMap = {
-    Free: 100,
-    Pro: 1000,
-    Enterprise: 5000,
-    free: 100,
-    pro: 1000,
-    enterprise: 5000,
-  };
-  return planMap[plan] || 100;
-}
-
-function getPlanFeatures(plan) {
-  const planName = plan?.toLowerCase() || "free";
-  if (planName === "enterprise" || planName === "enterprise") {
-    return {
-      aiCredits: 5000,
-      maxProjects: -1,
-      maxApplications: -1,
-      supportLevel: "24/7",
-      analytics: true,
-      customBranding: true,
-    };
-  } else if (planName === "pro" || planName === "pro") {
-    return {
-      aiCredits: 1000,
-      maxProjects: -1,
-      maxApplications: -1,
-      supportLevel: "priority",
-      analytics: true,
-      customBranding: false,
-    };
-  } else {
-    return {
-      aiCredits: 100,
-      maxProjects: 3,
-      maxApplications: 10,
-      supportLevel: "community",
-      analytics: false,
-      customBranding: false,
-    };
-  }
-}
+// Helper functions removed - now using database queries via SubscriptionPlansModel
 
 async function getAdminBillingData() {
   try {

@@ -9,6 +9,7 @@ import { Badge } from "./Badge";
 import { StackOverflowIcon } from "./StackOverflow";
 import { Footer } from "./Footer";
 import ErrorState from "./ErrorState";
+import ErrorBoundary from "./ErrorBoundary";
 import FilterSummary from "./FilterSummary";
 import Modal from "./Modal";
 import ConfirmModal from "./Modal/ConfirmModal";
@@ -28,6 +29,7 @@ export {
   StackOverflowIcon,
   Footer,
   ErrorState,
+  ErrorBoundary,
   FilterSummary,
   Modal,
   ConfirmModal,

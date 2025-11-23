@@ -172,6 +172,24 @@ export default function DeveloperView() {
     }
   }, [activeTab, dispatch]);
 
+  // Fetch comments for all tasks when tasks are loaded and tab is active
+  useEffect(() => {
+    if (activeTab === "collaboration" && developerTasks && developerTasks.length > 0) {
+      // Get all task IDs that need comments
+      const taskIds = developerTasks
+        .map(task => task.id)
+        .filter(id => id != null);
+      
+      // Fetch comments for tasks that don't have them loaded yet
+      taskIds.forEach((taskId) => {
+        const existingComments = taskComments[taskId];
+        if (!existingComments || !Array.isArray(existingComments)) {
+          dispatch(getTaskComments(taskId));
+        }
+      });
+    }
+  }, [activeTab, developerTasks?.length, dispatch]); // Use length to avoid re-fetching on every task change
+
   // Auto-refresh data every 5 minutes
   useEffect(() => {
     const refreshInterval = setInterval(() => {
