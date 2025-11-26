@@ -29,17 +29,17 @@ export const Footer = () => {
               </p>
               <div className='flex justify-center md:justify-start space-x-4 sm:space-x-3'>
                 <div className="group cursor-pointer">
-                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300 group-hover:scale-110">
+                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300">
                     <Github className='w-5 h-5 sm:w-4 sm:h-4 text-gray-300 group-hover:text-white transition-colors duration-300' />
                   </div>
                 </div>
                 <div className="group cursor-pointer">
-                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300 group-hover:scale-110">
+                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300">
                     <Linkedin className='w-5 h-5 sm:w-4 sm:h-4 text-gray-300 group-hover:text-white transition-colors duration-300' />
                   </div>
                 </div>
                 <div className="group cursor-pointer">
-                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300 group-hover:scale-110">
+                  <div className="w-10 h-10 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:from-blue-500 hover:to-purple-600 transition-all duration-300">
                     <Mail className='w-5 h-5 sm:w-4 sm:h-4 text-gray-300 group-hover:text-white transition-colors duration-300' />
                   </div>
                 </div>

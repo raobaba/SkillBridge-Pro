@@ -1271,14 +1271,14 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                   <div className='space-y-3'>
                     <Button
                       onClick={() => handleTabChange("create")}
-                      className='w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                      className='w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2'
                     >
                       <Plus className='w-4 h-4' />
                       Create New Project
                     </Button>
                     <Button
                       onClick={() => setShowInviteDevelopersModal(true)}
-                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2'
                     >
                       <Users className='w-4 h-4' />
                       Invite Developers
@@ -1294,14 +1294,14 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                           );
                         }
                       }}
-                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2'
                     >
                       <Award className='w-4 h-4' />
                       Boost Project Visibility
                     </Button>
                     <Button
                       onClick={() => handleTabChange("analytics")}
-                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                      className='w-full bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2'
                     >
                       <TrendingUp className='w-4 h-4' />
                       View Analytics
@@ -1382,7 +1382,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 </span>
                 <Button
                   onClick={() => handleTabChange("create")}
-                  className='bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                  className='bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2'
                 >
                   <Plus className='w-4 h-4' />
                   New Project
@@ -1398,7 +1398,7 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
                 </p>
                 <Button
                   onClick={() => handleTabChange("create")}
-                  className='mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 mx-auto'
+                  className='mt-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2 mx-auto'
                 >
                   <Plus className='w-4 h-4' />
                   Create Project
@@ -2344,21 +2344,21 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
               <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <Button
                   onClick={handleAnalyticsExport}
-                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300  flex items-center gap-2'
                 >
                   <TrendingUp className='w-4 h-4' />
                   Export Data
                 </Button>
                 <Button
                   onClick={handleGenerateReport}
-                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300  flex items-center gap-2'
                 >
                   <BarChart3 className='w-4 h-4' />
                   Generate Report
                 </Button>
                 <Button
                   onClick={handleShareInsights}
-                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2'
+                  className='w-full bg-white/10 hover:bg-white/20 text-white p-4 rounded-xl transition-all duration-300  flex items-center gap-2'
                 >
                   <Sparkles className='w-4 h-4' />
                   Share Insights

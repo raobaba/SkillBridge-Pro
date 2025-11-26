@@ -65,7 +65,7 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
   const renderDeveloperCard = (developer) => (
     <div
       key={developer.id}
-      className="bg-white/5 border border-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/10 hover:scale-[1.02] cursor-pointer"
+      className="bg-white/5 border border-white/10 rounded-xl p-6 transition-all duration-300 hover:bg-white/10 cursor-pointer"
       onClick={() => setSelectedDeveloper(developer)}
     >
       <div className="flex items-start justify-between mb-4">
@@ -76,11 +76,11 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
               <img
                 src={developer.avatarUrl}
                 alt={developer.name}
-                className="w-14 h-14 rounded-full border-2 border-white/20 object-cover shadow-lg group-hover:scale-110 transition-transform duration-300"
+                className="w-14 h-14 rounded-full border-2 border-white/20 object-cover shadow-lg transition-transform duration-300"
                 onError={() => setAvatarErrors(prev => ({ ...prev, [developer.id]: true }))}
               />
             ) : (
-              <div className="w-14 h-14 rounded-full border-2 border-white/20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300 ring-1 ring-white/10">
+              <div className="w-14 h-14 rounded-full border-2 border-white/20 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-xl shadow-lg transition-transform duration-300 ring-1 ring-white/10">
                 {developer.name ? developer.name.charAt(0).toUpperCase() : <User className="w-7 h-7" />}
               </div>
             )}
@@ -220,11 +220,11 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
               <img
                 src={developer.avatarUrl}
                 alt={developer.name}
-                className="w-20 h-20 rounded-full border-4 border-white/30 object-cover shadow-xl group-hover:scale-105 transition-transform duration-300"
+                className="w-20 h-20 rounded-full border-4 border-white/30 object-cover shadow-xl transition-transform duration-300"
                 onError={() => setAvatarErrors(prev => ({ ...prev, [developer.id]: true }))}
               />
             ) : (
-              <div className="w-20 h-20 rounded-full border-4 border-white/30 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-3xl shadow-xl group-hover:scale-105 transition-transform duration-300 ring-2 ring-white/20">
+              <div className="w-20 h-20 rounded-full border-4 border-white/30 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-3xl shadow-xl transition-transform duration-300 ring-2 ring-white/20">
                 {developer.name ? developer.name.charAt(0).toUpperCase() : <User className="w-10 h-10" />}
               </div>
             )}
@@ -254,7 +254,7 @@ const ProjectOwnerPortfolioSync = ({ user }) => {
         <Button
           variant="outline"
           onClick={() => setSelectedDeveloper(null)}
-          className="hover:scale-105 transition-transform duration-300"
+          className="transition-transform duration-300"
         >
           <EyeOff className="w-4 h-4 mr-2" />
           Close

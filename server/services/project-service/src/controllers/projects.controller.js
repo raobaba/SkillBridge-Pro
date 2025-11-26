@@ -2372,19 +2372,79 @@ const addUpdate = async (req, res) => {
 const addReview = async (req, res) => {
   try {
     const reviewerId = req.user?.userId;
-    const { projectId, rating, comment } = req.body;
+    const { projectId, rating, comment, developerId, endorseSkills, categories } = req.body;
     if (!reviewerId || !projectId || !rating)
       return sendError(
         res,
         "reviewerId, projectId and rating are required",
         400
       );
+    
+    // Add the review
     const row = await ProjectModel.addReview({
       projectId: Number(projectId),
       reviewerId: Number(reviewerId),
       rating: Number(rating),
       comment,
     });
+
+    // If endorsements are provided, create them
+    if (endorseSkills && Array.isArray(endorseSkills) && endorseSkills.length > 0) {
+      try {
+        // Get developer ID - either from request body or from project applicants
+        let targetDeveloperId = developerId;
+        
+        if (!targetDeveloperId) {
+          // Try to get developer from project applicants (accepted/shortlisted)
+          const applicants = await ProjectModel.getProjectApplicants(Number(projectId));
+          const acceptedDeveloper = applicants.find(
+            app => app.status === 'accepted' || app.status === 'shortlisted'
+          );
+          if (acceptedDeveloper) {
+            targetDeveloperId = acceptedDeveloper.userId;
+          }
+        }
+
+        if (targetDeveloperId) {
+          // Create endorsements directly in database (shared database access)
+          // Insert each skill as a separate endorsement
+          for (const skill of endorseSkills) {
+            try {
+              await db.execute(sql`
+                INSERT INTO endorsements (
+                  developer_id, endorser_id, project_id, skill, rating, message, categories, created_at, updated_at
+                ) VALUES (
+                  ${Number(targetDeveloperId)},
+                  ${Number(reviewerId)},
+                  ${Number(projectId)},
+                  ${String(skill)},
+                  ${Number(rating)},
+                  ${comment || null},
+                  ${categories ? JSON.stringify(categories) : null},
+                  NOW(),
+                  NOW()
+                )
+              `);
+            } catch (insertError) {
+              // If table doesn't exist yet, log warning but don't fail
+              if (insertError.message.includes('does not exist') || insertError.code === '42P01') {
+                console.warn("Endorsements table does not exist yet. Please run migrations.");
+              } else {
+                console.error(`Error creating endorsement for skill ${skill}:`, insertError.message);
+              }
+            }
+          }
+          
+          console.log(`Created ${endorseSkills.length} endorsement(s) for developer ${targetDeveloperId}`);
+        } else {
+          console.warn("Could not determine developer ID for endorsements");
+        }
+      } catch (endorsementError) {
+        // Log error but don't fail the review submission
+        console.error("Error creating endorsements (non-blocking):", endorsementError);
+      }
+    }
+
     return res
       .status(201)
       .json({

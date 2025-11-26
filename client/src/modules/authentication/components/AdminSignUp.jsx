@@ -61,7 +61,7 @@ const AdminSignUp = ({ formData, errors, handleChange, showPassword, setShowPass
       <Button
         type='submit'
         disabled={loading}
-        className='w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
+        className='w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 py-3 rounded-lg transition-all font-medium text-sm'
       >
         {loading ? "Creating Account..." : "Create Admin Account"}
       </Button>

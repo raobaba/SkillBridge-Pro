@@ -331,7 +331,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                       <div className="space-y-3">
                         <Button
                           onClick={() => handleProjectAction('invite')}
-                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2"
                           leftIcon={Users}
                         >
                           Invite Developers
@@ -339,7 +339,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         
                         <Button
                           onClick={() => handleProjectAction('boost')}
-                          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white p-3 rounded-xl transition-all duration-300 flex items-center gap-2"
                           leftIcon={Zap}
                         >
                           Boost Visibility
@@ -347,7 +347,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         
                         <Button
                           onClick={() => handleProjectAction(formData.status === 'Active' ? 'pause' : 'resume')}
-                          className={`w-full p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2 ${
+                          className={`w-full p-3 rounded-xl transition-all duration-300 flex items-center gap-2 ${
                             formData.status === 'Active'
                               ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
                               : 'bg-green-500/20 text-green-400 border border-green-500/30'
@@ -359,7 +359,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         
                         <Button
                           onClick={() => handleProjectAction('close')}
-                          className="w-full bg-blue-500/20 text-blue-400 border border-blue-500/30 p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          className="w-full bg-blue-500/20 text-blue-400 border border-blue-500/30 p-3 rounded-xl transition-all duration-300 flex items-center gap-2"
                           leftIcon={CheckCircle}
                         >
                           Close Project
@@ -367,7 +367,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                         
                         <Button
                           onClick={() => handleProjectAction('delete')}
-                          className="w-full bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                          className="w-full bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-xl transition-all duration-300 flex items-center gap-2"
                           leftIcon={Trash2}
                         >
                           Delete Project
@@ -384,7 +384,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                     {formData.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className={`px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r ${skillColors[idx % skillColors.length]} flex items-center gap-1 hover:scale-105 transition-transform duration-300`}
+                        className={`px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r ${skillColors[idx % skillColors.length]} flex items-center gap-1 transition-transform duration-300`}
                       >
                         <Tag className="w-3 h-3" />
                         {tag}
@@ -429,7 +429,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
                   <div className="flex justify-end">
                     <Button
                       onClick={handleSave}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" />
                       Save Changes
@@ -597,7 +597,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </Button>
               <Button
                 onClick={handleInvite}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+                className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-300"
               >
                 Send Invite
               </Button>
@@ -648,7 +648,7 @@ const ProjectManagementPanel = ({ project, onClose, onSave }) => {
               </Button>
               <Button
                 onClick={handleBoost}
-                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+                className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white px-4 py-2 rounded-lg transition-all duration-300"
               >
                 Boost Now
               </Button>

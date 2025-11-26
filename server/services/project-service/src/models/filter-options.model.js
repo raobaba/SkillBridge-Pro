@@ -94,8 +94,11 @@ class FilterOptionsModel {
       return filterOptions;
     } catch (error) {
       console.error('Error getting filter options from database:', error.message);
+      console.error('Full error:', error);
       // Throw error instead of using fallback - database should be seeded
-      throw new Error(`Failed to fetch filter options from database: ${error.message}. Please ensure the database is seeded.`);
+      const errorMessage = error.message || 'Unknown error';
+      const errorDetails = error.detail || error.code || '';
+      throw new Error(`Failed to fetch filter options from database: ${errorMessage}${errorDetails ? ` (${errorDetails})` : ''}. Please ensure the database is seeded and the filter_options table exists with the correct schema.`);
     }
   }
 

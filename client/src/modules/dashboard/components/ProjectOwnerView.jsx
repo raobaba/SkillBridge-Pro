@@ -967,7 +967,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>{ownerStats.highPriorityCount || 0} high priority</p>
               </div>
-              <Briefcase className='w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform' />
+              <Briefcase className='w-8 h-8 text-blue-400 transition-transform' />
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all group'>
@@ -979,7 +979,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>{ownerStats.pendingReviews} pending</p>
               </div>
-              <UserPlus className='w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform' />
+              <UserPlus className='w-8 h-8 text-purple-400 transition-transform' />
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all group'>
@@ -991,7 +991,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>{ownerStats.activeHires} active</p>
               </div>
-              <Users className='w-8 h-8 text-yellow-400 group-hover:scale-110 transition-transform' />
+              <Users className='w-8 h-8 text-yellow-400 transition-transform' />
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all group'>
@@ -1003,7 +1003,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>{ownerStats.remainingBudget} remaining</p>
               </div>
-              <DollarSign className='w-8 h-8 text-green-400 group-hover:scale-110 transition-transform' />
+              <DollarSign className='w-8 h-8 text-green-400 transition-transform' />
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all group'>
@@ -1015,7 +1015,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>Avg {ownerStats.avgProjectDuration}</p>
               </div>
-              <TrendingUp className='w-8 h-8 text-orange-400 group-hover:scale-110 transition-transform' />
+              <TrendingUp className='w-8 h-8 text-orange-400 transition-transform' />
             </div>
           </div>
           <div className='bg-white/5 border border-white/10 rounded-xl p-4 hover:border-white/20 transition-all group'>
@@ -1027,7 +1027,7 @@ export default function ProjectOwnerView() {
                 </p>
                 <p className='text-xs text-gray-500'>Urgent: {ownerStats.urgentPositionsCount || 0}</p>
               </div>
-              <Target className='w-8 h-8 text-pink-400 group-hover:scale-110 transition-transform' />
+              <Target className='w-8 h-8 text-pink-400 transition-transform' />
             </div>
           </div>
         </div>
@@ -1485,7 +1485,7 @@ export default function ProjectOwnerView() {
                     key={index}
                     onClick={() => navigate(link.path)}
                     variant="ghost"
-                    className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                    className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300  hover:shadow-lg ${
                       link.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                       link.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
                       link.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :
@@ -1494,7 +1494,7 @@ export default function ProjectOwnerView() {
                       'bg-orange-500/20 hover:bg-orange-500/30'
                     }`}
                   >
-                    <div className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
+                    <div className={`p-3 rounded-lg transition-transform ${
                       link.color === 'blue' ? 'bg-blue-500/30' :
                       link.color === 'green' ? 'bg-green-500/30' :
                       link.color === 'purple' ? 'bg-purple-500/30' :

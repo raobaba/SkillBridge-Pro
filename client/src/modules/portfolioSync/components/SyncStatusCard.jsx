@@ -92,7 +92,7 @@ export default function SyncStatusCard({
           <Button
             onClick={handleSyncClick}
             disabled={syncing || connectedIntegrations === 0}
-            className='w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 transition-all duration-300'
+            className='w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600  transition-all duration-300'
           >
             {syncing ? (
               <>
@@ -241,7 +241,7 @@ export default function SyncStatusCard({
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start hover:scale-105 transition-transform duration-300"
+            className="w-full justify-start  transition-transform duration-300"
           >
             <Download className="w-4 h-4 mr-2" />
             Export Portfolio Data
@@ -250,7 +250,7 @@ export default function SyncStatusCard({
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start hover:scale-105 transition-transform duration-300"
+            className="w-full justify-start  transition-transform duration-300"
           >
             <Upload className="w-4 h-4 mr-2" />
             Import Settings
@@ -259,7 +259,7 @@ export default function SyncStatusCard({
           <Button
             variant="outline"
             size="sm"
-            className="w-full justify-start hover:scale-105 transition-transform duration-300"
+            className="w-full justify-start  transition-transform duration-300"
           >
             <Shield className="w-4 h-4 mr-2" />
             Manage Permissions

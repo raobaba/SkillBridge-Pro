@@ -85,7 +85,7 @@ const ProjectOwnerSignUp = ({ formData, errors, handleChange, showPassword, setS
       <Button
         type='submit'
         disabled={loading}
-        className='w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
+        className='w-full bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 py-3 rounded-lg transition-all font-medium text-sm'
       >
         {loading ? "Creating Account..." : "Create Project Owner Account"}
       </Button>

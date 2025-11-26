@@ -209,7 +209,7 @@ const ProjectOwnerNotifications = ({ user }) => {
               <Button
                 variant="outline"
                 onClick={handleMarkAllRead}
-                className="hover:scale-105 transition-transform duration-300"
+                className="transition-transform duration-300"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Mark All Read
@@ -217,7 +217,7 @@ const ProjectOwnerNotifications = ({ user }) => {
               <Button
                 variant="outline"
                 onClick={() => setShowArchived(!showArchived)}
-                className="hover:scale-105 transition-transform duration-300"
+                className="transition-transform duration-300"
               >
                 <Archive className="w-4 h-4 mr-2" />
                 {showArchived ? "Show Active" : "Show Archived"}
@@ -266,7 +266,7 @@ const ProjectOwnerNotifications = ({ user }) => {
                 key={tab}
                 variant={activeTab === tab ? "default" : "outline"}
                 onClick={() => setActiveTab(tab)}
-                className={`text-sm hover:scale-105 transition-all duration-300 ${
+                className={`text-sm transition-all duration-300 ${
                   activeTab === tab 
                     ? "bg-gradient-to-r from-blue-500 to-purple-500" 
                     : ""
@@ -309,14 +309,14 @@ const ProjectOwnerNotifications = ({ user }) => {
                 key={notif.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`bg-white/5 border border-white/10 rounded-xl p-5 transition-all duration-300 hover:bg-white/10 hover:scale-[1.02] group ${
+                className={`bg-white/5 border border-white/10 rounded-xl p-5 transition-all duration-300 hover:bg-white/10 group ${
                   notif.read ? "opacity-60" : "opacity-100"
                 }`}
               >
                 <div className="flex items-start gap-4">
                   {/* Icon with Priority Indicator */}
                   <div className="relative">
-                    <div className="p-3 rounded-xl bg-gradient-to-r from-slate-700 to-slate-600 group-hover:scale-110 transition-transform duration-300">
+                    <div className="p-3 rounded-xl bg-gradient-to-r from-slate-700 to-slate-600 transition-transform duration-300">
                       {getTypeIcon(notif.type)}
                     </div>
                     {!notif.read && (
@@ -357,7 +357,7 @@ const ProjectOwnerNotifications = ({ user }) => {
                           <Button
                             size="sm"
                             onClick={() => handleMarkRead(notif.id)}
-                            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 transition-all duration-300"
+                            className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />
                             Mark Read
@@ -366,7 +366,7 @@ const ProjectOwnerNotifications = ({ user }) => {
                         
                         <Button
                           size="sm"
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 transition-all duration-300"
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                         >
                           {notif.action}
                         </Button>
@@ -375,7 +375,7 @@ const ProjectOwnerNotifications = ({ user }) => {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteNotification(notif.id)}
-                          className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:scale-105 transition-all duration-300"
+                          className="border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all duration-300"
                         >
                           <XCircle className="w-4 h-4" />
                         </Button>

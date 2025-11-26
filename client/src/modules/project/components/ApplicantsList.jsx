@@ -703,7 +703,7 @@ const ApplicantsList = () => {
           {filteredAndSortedApplicants.map((app) => (
             <div
               key={app.id}
-              className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 hover:scale-[1.02] transition-all duration-300 group"
+              className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition-all duration-300 group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">

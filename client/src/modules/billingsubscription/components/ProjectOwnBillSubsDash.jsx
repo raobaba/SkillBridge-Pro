@@ -203,7 +203,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
               </h2>
             </div>
             <Button 
-              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'
+              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center gap-2'
             >
               <Plus className='w-4 h-4' />
               Add Project
@@ -219,7 +219,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
               projectListings.map((project, idx) => (
               <div
                 key={project.id}
-                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
+                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden'
                 style={{
                   animationDelay: `${idx * 150}ms`,
                   animation: "fadeInUp 0.6s ease-out forwards",
@@ -228,7 +228,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-3'>
-                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center'>
                         <Building2 className='w-4 h-4 text-blue-400' />
                       </div>
                       <div>
@@ -266,7 +266,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                     {!project.boosted && (
                       <Button 
                         variant='ghost'
-                        className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                        className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center'
                         onClick={() => handleUpgradeVisibility(project.id, 'premium')}
                         disabled={billingState.loading}
                         title="Boost project visibility"
@@ -295,7 +295,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
               <h2 className='text-2xl font-bold text-white'>Payment Methods</h2>
             </div>
             <Button 
-              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 flex items-center gap-2'
+              className='px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-semibold rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all duration-300 flex items-center gap-2'
             >
               <Plus className='w-4 h-4' />
               Add Method
@@ -311,7 +311,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
               paymentMethods.map((method, idx) => (
               <div
                 key={method.id}
-                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
+                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden'
                 style={{
                   animationDelay: `${idx * 150}ms`,
                   animation: "fadeInUp 0.6s ease-out forwards",
@@ -320,7 +320,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-3'>
-                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-indigo-600/20 rounded-lg flex items-center justify-center'>
                         <CreditCard className='w-4 h-4 text-blue-400' />
                       </div>
                       <div>
@@ -355,7 +355,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                   <div className='flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300'>
                     <Button 
                       variant='ghost'
-                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center hover:scale-110 transition-transform duration-300'
+                      className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center'
                     >
                       <Settings className='w-3 h-3 text-blue-400' />
                     </Button>
@@ -384,7 +384,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
             {billingHistory.map((item, idx) => (
               <div
                 key={item.id}
-                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
+                className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden'
                 style={{
                   animationDelay: `${idx * 150}ms`,
                   animation: "fadeInUp 0.6s ease-out forwards",
@@ -393,7 +393,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                 <div className='flex items-center justify-between'>
                   <div className='flex items-center gap-6'>
                     <div className='flex items-center gap-3'>
-                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center'>
                         <Calendar className='w-4 h-4 text-blue-400' />
                       </div>
                       <div>
@@ -405,7 +405,7 @@ const ProjectOwnBillSubsDash = ({ data }) => {
                     </div>
 
                     <div className='flex items-center gap-3'>
-                      <div className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
+                      <div className='w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center'>
                         <DollarSign className='w-4 h-4 text-emerald-400' />
                       </div>
                       <div>

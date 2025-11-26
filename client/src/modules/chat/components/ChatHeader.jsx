@@ -148,7 +148,7 @@ const ChatHeader = ({ user, permissions }) => {
           {/* Enhanced User Info */}
           <div className="flex items-center gap-4">
             <div className="relative group">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg transition-transform duration-300">
                 {user?.name?.charAt(0) || '?'}
               </div>
               {/* Enhanced Online status dot */}
@@ -218,7 +218,7 @@ const ChatHeader = ({ user, permissions }) => {
                 onClick={() => handleCall('Voice')}
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
                 title="Voice Call"
               >
                 <Phone className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
@@ -231,7 +231,7 @@ const ChatHeader = ({ user, permissions }) => {
                 onClick={() => handleCall('Video')}
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
                 title="Video Call"
               >
                 <Video className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors duration-300" />
@@ -244,7 +244,7 @@ const ChatHeader = ({ user, permissions }) => {
                 onClick={() => console.log('Resolve flagged chat')}
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-300 hover:scale-110 group"
+                className="p-2 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 transition-all duration-300 group"
                 title="Resolve Flagged Chat"
               >
                 <Star className="w-5 h-5 text-gray-300 group-hover:text-green-400 transition-colors duration-300" />
@@ -257,7 +257,7 @@ const ChatHeader = ({ user, permissions }) => {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 variant="ghost"
                 size="sm"
-                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+                className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
                 title="More options"
               >
                 <MoreVertical className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors duration-300" />

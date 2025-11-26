@@ -22,13 +22,13 @@ const Button = ({
     link: "bg-transparent text-blue-600 underline hover:text-blue-800",
     "apply-grid": isApplied 
       ? "bg-green-500/20 text-green-400 cursor-not-allowed" 
-      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105",
+      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white",
     "apply-list": isApplied 
       ? "bg-green-500/20 text-green-400 cursor-not-allowed" 
-      : "bg-blue-500 hover:bg-blue-600 text-white hover:scale-105",
+      : "bg-blue-500 hover:bg-blue-600 text-white",
     "apply-modal": isApplied 
       ? "bg-green-500/20 text-green-400 cursor-not-allowed" 
-      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105",
+      : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white",
   };
 
   // Size classes

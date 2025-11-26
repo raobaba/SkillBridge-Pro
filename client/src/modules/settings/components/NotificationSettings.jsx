@@ -328,7 +328,7 @@ export default function NotificationSettings() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 group-hover:scale-110 transition-transform duration-300`}>
+                  <div className={`p-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 transition-transform duration-300`}>
                     <Icon className={`w-4 h-4 ${color}`} />
                   </div>
                   <div>
@@ -494,7 +494,7 @@ export default function NotificationSettings() {
           variant="outline"
           onClick={handleResetToDefault}
           disabled={notificationLoading}
-          className="flex items-center gap-2 hover:scale-105 transition-transform duration-300 disabled:opacity-50"
+          className="flex items-center gap-2  transition-transform duration-300 disabled:opacity-50"
         >
           <RotateCcw className="w-4 h-4" />
           Reset to Default
@@ -502,7 +502,7 @@ export default function NotificationSettings() {
         <Button
           onClick={handleSaveNotifications}
           disabled={notificationLoading}
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 flex items-center gap-2 hover:scale-105 transition-all duration-300 disabled:opacity-50"
+          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 flex items-center gap-2  transition-all duration-300 disabled:opacity-50"
         >
           {notificationLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />

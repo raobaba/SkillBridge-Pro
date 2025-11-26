@@ -651,7 +651,7 @@ const AdminPortfolioSync = ({ user }) => {
               key={tab.id}
               variant={activeTab === tab.id ? "default" : "outline"}
               onClick={() => setActiveTab(tab.id)}
-              className={`text-sm hover:scale-105 transition-all duration-300 ${
+              className={`text-sm transition-all duration-300 ${
                 activeTab === tab.id 
                   ? "bg-gradient-to-r from-blue-500 to-purple-500" 
                   : ""

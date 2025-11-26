@@ -757,7 +757,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                         onClick={handleAddSkill} 
                         leftIcon={Plus} 
                         variant="outline"
-                        className="hover:scale-105 transition-transform duration-300"
+                        className="transition-transform duration-300"
                       >
                         Add
                       </Button>
@@ -784,7 +784,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                       {formData.skills.map((skill, idx) => (
                         <span
                           key={idx}
-                          className={`px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r ${skillColors[idx % skillColors.length]} flex items-center gap-1 hover:scale-105 transition-transform duration-300`}
+                          className={`px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r ${skillColors[idx % skillColors.length]} flex items-center gap-1  transition-transform duration-300`}
                         >
                           <Tag className="w-3 h-3" />
                           {skill}
@@ -826,7 +826,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                         onClick={handleAddTag} 
                         leftIcon={Plus} 
                         variant="outline"
-                        className="hover:scale-105 transition-transform duration-300"
+                        className="transition-transform duration-300"
                       >
                         Add
                       </Button>
@@ -853,7 +853,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                       {formData.tags.map((tag, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r from-purple-500 to-pink-500 flex items-center gap-1 hover:scale-105 transition-transform duration-300"
+                          className="px-3 py-1 rounded-full text-xs text-white bg-gradient-to-r from-purple-500 to-pink-500 flex items-center gap-1  transition-transform duration-300"
                         >
                           <Tag className="w-3 h-3" />
                           {tag}
@@ -1050,7 +1050,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                 </h3>
                 
                 <div className="space-y-4">
-                  <label className="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105">
+                  <label className="flex items-center gap-2 cursor-pointer px-4 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300">
                     <UploadCloud className="w-5 h-5" />
                     Upload Files
                     <input 
@@ -1094,7 +1094,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                   variant="default" 
                   size="lg"
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 transition-all duration-300"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
                 >
                   {isSubmitting ? (
                     <>
@@ -1113,7 +1113,7 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
                   type="button" 
                   variant="outline" 
                   size="lg"
-                  className="flex-1 hover:scale-105 transition-transform duration-300"
+                  className="flex-1 transition-transform duration-300"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Save as Draft

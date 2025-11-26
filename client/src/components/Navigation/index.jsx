@@ -254,7 +254,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
               <div className="flex items-center space-x-4">
                 <Button
                   onClick={() => navigate(user ? "/dashboard" : "/auth")}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-4 py-2 rounded-lg font-medium transition-all duration-300"
                 >
                   Go to Dashboard
                 </Button>
@@ -311,7 +311,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <Link to="/dashboard" className="flex items-center space-x-2 cursor-pointer">
+            <Link to="/" className="flex items-center space-x-2 cursor-pointer">
               <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
                 <Code className="w-5 h-5 text-white" />
               </div>
@@ -648,7 +648,7 @@ const Navigation = ({ isHome = false, isSearchBar = false }) => {
                   key={index}
                   onClick={() => navigate(item.path)}
                   variant="ghost"
-                  className={`p-3 rounded-lg transition-all duration-200 hover:scale-105 ${
+                  className={`p-3 rounded-lg transition-all duration-200 ${
                     item.color === 'blue' ? 'bg-blue-500/20 hover:bg-blue-500/30' :
                     item.color === 'green' ? 'bg-green-500/20 hover:bg-green-500/30' :
                     item.color === 'purple' ? 'bg-purple-500/20 hover:bg-purple-500/30' :

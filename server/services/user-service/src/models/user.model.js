@@ -792,8 +792,8 @@ class UserModel {
     const achievementsCount = badgesCount;
 
     // Get endorsements count
-    // Assuming endorsements are stored somewhere - for now using a placeholder
-    const endorsementsCount = 0; // TODO: Implement endorsements table/query
+    const { EndorsementsModel } = require("./endorsements.model");
+    const endorsementsCount = await EndorsementsModel.getDeveloperEndorsementCount(userId);
 
     // Calculate reputation (based on XP, ratings, completed projects)
     const reputation = Math.round(
@@ -883,22 +883,13 @@ class UserModel {
 
   /**
    * Get endorsements for a developer
-   * For now, returns empty array as endorsements table doesn't exist yet
-   * TODO: Create endorsements table if needed
+   * @param {number} userId - Developer user ID
+   * @param {number} limit - Maximum number of endorsements to return
+   * @returns {Promise<Array>} Array of endorsements
    */
   static async getDeveloperEndorsements(userId, limit = 10) {
-    // TODO: Implement endorsements table and query
-    // For now, return empty array
-    // Endorsements could be stored in a separate table like:
-    // CREATE TABLE endorsements (
-    //   id SERIAL PRIMARY KEY,
-    //   developer_id INTEGER REFERENCES users(id),
-    //   endorser_id INTEGER REFERENCES users(id),
-    //   skill TEXT,
-    //   message TEXT,
-    //   created_at TIMESTAMP
-    // );
-    return [];
+    const { EndorsementsModel } = require("./endorsements.model");
+    return await EndorsementsModel.getDeveloperEndorsements(userId, limit);
   }
 
   /**

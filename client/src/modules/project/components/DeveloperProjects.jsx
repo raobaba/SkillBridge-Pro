@@ -1403,7 +1403,7 @@ const DeveloperProjects = ({
                         className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-300 ${
                           getApplicationStatus(project.id)
                             ? "bg-green-500/20 text-green-400 cursor-not-allowed"
-                            : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white hover:scale-105"
+                            : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
                         }`}
                       >
                         {getApplicationStatus(project.id)

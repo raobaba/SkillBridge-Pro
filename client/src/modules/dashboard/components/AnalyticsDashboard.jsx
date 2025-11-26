@@ -1147,7 +1147,7 @@ export default function AnalyticsDashboard() {
                 key={index}
                 onClick={() => navigate(link.path)}
                 variant='ghost'
-                className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg ${
+                className={`group flex flex-col items-center space-y-3 p-4 rounded-xl transition-all duration-300 hover:shadow-lg ${
                   link.color === "blue"
                     ? "bg-blue-500/20 hover:bg-blue-500/30"
                     : link.color === "red"
@@ -1164,7 +1164,7 @@ export default function AnalyticsDashboard() {
                 }`}
               >
                 <div
-                  className={`p-3 rounded-lg group-hover:scale-110 transition-transform ${
+                  className={`p-3 rounded-lg transition-transform ${
                     link.color === "blue"
                       ? "bg-blue-500/30"
                       : link.color === "red"

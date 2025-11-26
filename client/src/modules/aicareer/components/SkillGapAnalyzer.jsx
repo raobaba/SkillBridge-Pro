@@ -74,7 +74,7 @@ const SkillGapAnalyzer = () => {
           gaps.map((gap, idx) => (
             <div
               key={idx}
-              className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden'
+              className='group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden'
               style={{
                 animationDelay: `${idx * 150}ms`,
                 animation: "fadeInUp 0.6s ease-out forwards",
@@ -87,7 +87,7 @@ const SkillGapAnalyzer = () => {
               <div className='relative z-10'>
                 {/* Header with icon and skill name */}
                 <div className='flex items-center gap-3 mb-4'>
-                  <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300'>
+                  <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl'>
                     {gap.icon}
                   </div>
                   <div className='flex-1'>
@@ -190,7 +190,7 @@ const SkillGapAnalyzer = () => {
                   <div className='grid grid-cols-12 gap-4 items-center'>
                     {/* Skill */}
                     <div className='col-span-3 flex items-center gap-3'>
-                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-lg group-hover:scale-110 transition-transform duration-300'>
+                      <div className='w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-lg  transition-transform duration-300'>
                         {gap.icon}
                       </div>
                       <div>
@@ -273,7 +273,7 @@ const SkillGapAnalyzer = () => {
           <p className='text-xs text-gray-400'>
             Focus on high-priority skills to accelerate your career growth
           </p>
-          <Button className='px-6 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25'>
+          <Button className='px-6 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300'>
             View Learning Path
           </Button>
         </div>

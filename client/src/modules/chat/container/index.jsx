@@ -1024,7 +1024,7 @@ const ChatContainer = () => {
                 className="flex items-center gap-2 group hover:opacity-80 transition-opacity"
                 title="Go back to Dashboard"
               >
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center shadow-lg transition-transform">
                   <Code className="w-5 h-5 text-white" />
                 </div>
                 <div className="hidden sm:block">

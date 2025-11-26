@@ -100,7 +100,7 @@ const ResetPassword = () => {
           <Button
             type='submit'
             disabled={loading}
-            className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm transform hover:scale-[1.02] active:scale-[0.98]'
+            className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 py-3 rounded-lg transition-all font-medium text-sm'
           >
             {loading ? "Resetting..." : "Reset Password"}
           </Button>

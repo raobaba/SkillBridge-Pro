@@ -596,7 +596,7 @@ const DeveloperPortfolioSync = ({ user }) => {
               <Button
                 onClick={handleSync}
                 disabled={syncing}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:scale-105 transition-all duration-300"
+                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600  transition-all duration-300"
               >
                 {syncing ? (
                   <>
@@ -682,7 +682,7 @@ const DeveloperPortfolioSync = ({ user }) => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowSyncHistory(!showSyncHistory)}
-                  className="hover:scale-105 transition-transform duration-300"
+                  className=" transition-transform duration-300"
                 >
                   {showSyncHistory ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
                   {showSyncHistory ? "Hide History" : "Show History"}
@@ -693,13 +693,13 @@ const DeveloperPortfolioSync = ({ user }) => {
                 {Object.entries(integrations).map(([type, data]) => (
                   <div
                     key={type}
-                    className={`bg-white/5 border border-white/10 rounded-xl p-4 transition-all duration-300 hover:bg-white/10 hover:scale-[1.02] group ${
+                    className={`bg-white/5 border border-white/10 rounded-xl p-4 transition-all duration-300 hover:bg-white/10 group ${
                       data.connected ? "ring-1 ring-green-500/30" : ""
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 group-hover:scale-110 transition-transform duration-300`}>
+                        <div className={`p-2 rounded-lg bg-gradient-to-r from-slate-700 to-slate-600 transition-transform duration-300`}>
                           {integrationIcon(type)}
                         </div>
                         <div>

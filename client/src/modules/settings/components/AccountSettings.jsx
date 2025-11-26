@@ -294,7 +294,7 @@ export default function AccountSettings({
             variant="default" 
             size="lg"
             disabled={passwordLoading}
-            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 hover:scale-105 transition-all duration-300"
+            className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 transition-all duration-300"
           >
             {passwordLoading ? (
               <>
@@ -313,7 +313,7 @@ export default function AccountSettings({
             type="button" 
             variant="outline" 
             size="lg"
-            className="flex-1 hover:scale-105 transition-transform duration-300"
+            className="flex-1 transition-transform duration-300"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset
@@ -330,7 +330,7 @@ export default function AccountSettings({
             
             <div className="grid grid-cols-1 gap-3">
               <Button
-                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left w-full"
+                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 text-left w-full"
               >
                 <div className="flex items-center gap-2">
                   <Shield className="w-4 h-4 text-green-400" />
@@ -339,7 +339,7 @@ export default function AccountSettings({
               </Button>
               
               <Button
-                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 hover:scale-105 text-left w-full"
+                className="bg-white/5 hover:bg-white/10 p-3 rounded-lg border border-white/10 transition-all duration-300 text-left w-full"
               >
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-purple-400" />

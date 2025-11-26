@@ -33,6 +33,7 @@
     "db:seed:empty-tables": "node scripts/seed-empty-tables.js",
     "db:check:empty-tables": "node scripts/check-empty-tables.js",
     "db:reset:table-checks": "node scripts/reset-all-table-checks.js",
+    "db:create:endorsements": "node scripts/create-endorsements-table.js",
     "db:seed:user": "echo 'Use db:seed for comprehensive seeding'",
     "db:seed:project": "echo 'Use db:seed for comprehensive seeding'",
     

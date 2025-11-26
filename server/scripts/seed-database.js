@@ -247,6 +247,76 @@ async function seedDatabase() {
     
     // 4. Create filter options (Essential - Standalone reference table for filters)
     console.log('\n4️⃣ Creating filter options...');
+    
+    // First, check if the table exists, if not create it
+    const tableExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'filter_options'
+      );
+    `);
+    
+    if (!tableExists.rows[0].exists) {
+      console.log('   📋 Creating filter_options table...');
+      // Create the enum type first if it doesn't exist (in public schema)
+      try {
+        await client.query(`
+          CREATE TYPE public.filter_type AS ENUM (
+            'status', 'priority', 'experience_level', 'work_arrangement',
+            'payment_term', 'currency', 'sort_option', 'skill',
+            'location', 'category', 'tag'
+          );
+        `);
+        console.log('   ✅ filter_type enum created');
+      } catch (enumError) {
+        if (enumError.code !== '42P07') { // 42P07 = duplicate_object
+          console.log('   ⚠️  Enum might already exist, continuing...');
+        }
+      }
+      
+      // Create the table with explicit schema
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS public.filter_options (
+          id SERIAL PRIMARY KEY,
+          type public.filter_type NOT NULL,
+          value TEXT NOT NULL,
+          label TEXT NOT NULL,
+          category TEXT,
+          country TEXT,
+          region TEXT,
+          description TEXT,
+          is_active BOOLEAN DEFAULT true NOT NULL,
+          sort_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      console.log('   ✅ filter_options table created');
+    } else {
+      // Table exists, but verify enum exists
+      try {
+        const enumExists = await client.query(`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_type WHERE typname = 'filter_type'
+          );
+        `);
+        if (!enumExists.rows[0].exists) {
+          console.log('   📋 Creating filter_type enum (table exists but enum missing)...');
+          await client.query(`
+            CREATE TYPE public.filter_type AS ENUM (
+              'status', 'priority', 'experience_level', 'work_arrangement',
+              'payment_term', 'currency', 'sort_option', 'skill',
+              'location', 'category', 'tag'
+            );
+          `);
+          console.log('   ✅ filter_type enum created');
+        }
+      } catch (enumError) {
+        console.log('   ⚠️  Could not verify/create enum, but continuing...');
+      }
+    }
+    
     const filterOptions = [
       // Status options
       { type: 'status', value: 'draft', label: 'Draft', sortOrder: 1 },
@@ -340,7 +410,20 @@ async function seedDatabase() {
       { type: 'location', value: 'Bangalore, India', label: 'Bangalore, India', country: 'India', region: 'Asia', sortOrder: 16 },
     ];
     
-    // Check if filter_options table exists and has data, if not insert
+    // Verify table structure is correct
+    try {
+      const tableCheck = await client.query(`
+        SELECT column_name, data_type, udt_name 
+        FROM information_schema.columns 
+        WHERE table_schema = 'public' AND table_name = 'filter_options'
+        ORDER BY ordinal_position;
+      `);
+      console.log(`   ✅ Verified table structure (${tableCheck.rows.length} columns)`);
+    } catch (verifyError) {
+      console.log(`   ⚠️  Could not verify table structure: ${verifyError.message}`);
+    }
+    
+    // Check if filter_options table has data, if not insert
     const existingOptions = await client.query(
       'SELECT COUNT(*) as count FROM filter_options WHERE is_active = true'
     );
@@ -349,7 +432,8 @@ async function seedDatabase() {
       for (const option of filterOptions) {
         await client.query(
           `INSERT INTO filter_options (type, value, label, category, country, region, is_active, sort_order) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT DO NOTHING`,
           [
             option.type, 
             option.value, 
@@ -366,7 +450,6 @@ async function seedDatabase() {
     } else {
       console.log(`   ⚠️  Filter options already exist (${existingOptions.rows[0].count} active options), skipping...`);
     }
-    console.log(`   ✅ Created ${filterOptions.length} filter options`);
     
     console.log('\n🎉 Database seeding completed successfully!');
     console.log(`\n📊 Summary:`);

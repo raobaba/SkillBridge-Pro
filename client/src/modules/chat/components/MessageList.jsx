@@ -160,7 +160,7 @@ const MessageList = ({ messages, isLoading = false, typingUsers = new Set(), cur
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 right-4 p-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-50"
+          className="absolute bottom-4 right-4 p-3 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50"
           title="Scroll to bottom"
         >
           <ArrowDown className="w-5 h-5 text-white" />

@@ -308,7 +308,7 @@ const Navbar = ({
                     Sign In
                   </Button>
                   <Button 
-                    className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transform hover:scale-105'
+                    className='bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700'
                   >
                     Get Started
                   </Button>

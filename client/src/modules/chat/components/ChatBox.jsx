@@ -92,7 +92,7 @@ const ChatBox = ({ onSend, onTyping, typingUsers }) => {
               onClick={handleFileUpload}
               variant="ghost"
               size="sm"
-              className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+              className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
               title="Attach file"
             >
               <Paperclip className="w-4 h-4 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
@@ -124,7 +124,7 @@ const ChatBox = ({ onSend, onTyping, typingUsers }) => {
               onClick={handleEmojiClick}
               variant="ghost"
               size="sm"
-              className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+              className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
               title="Add emoji"
             >
               <Smile className="w-4 h-4 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
@@ -135,7 +135,7 @@ const ChatBox = ({ onSend, onTyping, typingUsers }) => {
               onClick={handleVoiceToggle}
               variant="ghost"
               size="sm"
-              className={`p-1.5 rounded-lg transition-all duration-300 hover:scale-110 group ${isRecording
+              className={`p-1.5 rounded-lg transition-all duration-300 group ${isRecording
                   ? "bg-gradient-to-br from-red-500/30 via-pink-500/30 to-red-500/30 animate-pulse"
                   : "bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30"
                 }`}
@@ -153,7 +153,7 @@ const ChatBox = ({ onSend, onTyping, typingUsers }) => {
               onClick={handleSend}
               disabled={!message?.trim()}
               className={`p-1.5 rounded-lg transition-all duration-300 ${message?.trim()
-                  ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95"
+                  ? "bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 hover:shadow-lg hover:shadow-blue-500/25"
                   : "bg-gray-600/50 opacity-50 cursor-not-allowed"
                 }`}
               title="Send message"

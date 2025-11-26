@@ -58,7 +58,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               onClick={handleNewChat}
               variant="ghost"
               size="sm"
-              className="h-[42px] p-2 rounded-xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group flex-shrink-0 flex items-center justify-center"
+              className="h-[42px] p-2 rounded-xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group flex-shrink-0 flex items-center justify-center"
               title="New Chat"
             >
               <Plus className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />
@@ -271,7 +271,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               {!search && (
                 <Button
                   onClick={handleNewChat}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25"
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25"
                 >
                   Start New Chat
                 </Button>
@@ -287,7 +287,7 @@ const ChatSidebar = ({ users = [], onSelectUser, activeUser, userRole, permissio
               onClick={() => console.log("Settings clicked")}
               variant="ghost"
               size="sm"
-              className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 hover:scale-110 group"
+              className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 hover:from-blue-500/30 hover:via-purple-500/30 hover:to-pink-500/30 transition-all duration-300 group"
               title="Settings"
             >
               <Settings className="w-5 h-5 text-gray-300 group-hover:text-blue-300 transition-colors duration-300" />

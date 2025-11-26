@@ -302,7 +302,8 @@ const Developer = memo(function Developer({
     
     // Convert to array and calculate average ratings
     return Object.values(skillMap)
-      .map(item => ({
+      .map((item, index) => ({
+        id: `skill-${item.skill}-${index}`,
         skill: item.skill,
         endorsements: item.endorsements,
         rating: item.count > 0 ? Number((item.totalRating / item.count).toFixed(1)) : 0

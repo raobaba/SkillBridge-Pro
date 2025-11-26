@@ -285,7 +285,7 @@ export const getHeroButtons = () => {
       label: "Start Collaborating",
       path: "/auth",
       icon: ArrowRight,
-      className: "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl",
+      className: "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl",
       action: "navigate",
     },
     {
@@ -304,7 +304,7 @@ export const getCTAButtons = () => {
     {
       label: "Start Free Today",
       path: "/auth",
-      className: "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105",
+      className: "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300",
       action: "navigate",
     },
     {

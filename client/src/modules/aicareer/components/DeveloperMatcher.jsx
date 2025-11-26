@@ -63,7 +63,7 @@ const DeveloperMatcher = () => {
           matches.map((match, idx) => (
           <div
             key={match.id}
-            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
+            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden"
             style={{
               animationDelay: `${idx * 150}ms`,
               animation: 'fadeInUp 0.6s ease-out forwards'
@@ -77,7 +77,7 @@ const DeveloperMatcher = () => {
               {/* Header with avatar and match score */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center text-2xl">
                     {match.icon}
                   </div>
                   <div>
@@ -172,7 +172,7 @@ const DeveloperMatcher = () => {
             AI analyzes skills, experience, and availability to find your perfect match
           </p>
           <Button 
-            className="px-6 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/25"
+            className="px-6 py-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300  hover:shadow-lg hover:shadow-blue-500/25"
           >
             View All Matches
           </Button>

@@ -21,6 +21,10 @@ const {
   SubscriptionPlansModel,
   SuspendedAccountsModel,
 } = require("./billing.model");
+const {
+  endorsementsTable,
+  EndorsementsModel,
+} = require("./endorsements.model");
 
 module.exports = {
   userTable,
@@ -44,4 +48,6 @@ module.exports = {
   DisputesModel,
   SubscriptionPlansModel,
   SuspendedAccountsModel,
+  endorsementsTable,
+  EndorsementsModel,
 };

@@ -42,7 +42,7 @@ const CareerRecommender = () => {
           recommendations.map((rec, index) => (
           <div
             key={rec.id}
-            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
+            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden"
             style={{
               animationDelay: `${index * 150}ms`,
               animation: 'fadeInUp 0.6s ease-out forwards'
@@ -56,7 +56,7 @@ const CareerRecommender = () => {
               {/* Icon and title */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl group-hover:scale-110 transition-transform duration-300">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-lg flex items-center justify-center text-2xl">
                     {rec.icon}
                   </div>
                   <div>
@@ -88,7 +88,7 @@ const CareerRecommender = () => {
                   </div>
 
                 </div>
-                <div className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r ${getMatchColor(rec.match)} text-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105`}>
+                <div className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r ${getMatchColor(rec.match)} text-white shadow-lg group-hover:shadow-xl transition-all duration-300`}>
                   {rec.match}
                 </div>
               </div>

@@ -70,7 +70,7 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
           history.map((item, idx) => (
           <div
             key={item.id}
-            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/20 cursor-pointer overflow-hidden"
+            className="group relative bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 cursor-pointer overflow-hidden"
             style={{
               animationDelay: `${idx * 150}ms`,
               animation: 'fadeInUp 0.6s ease-out forwards'
@@ -86,7 +86,7 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
                 <div className="flex items-center gap-6">
                   {/* Date */}
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
                       <Calendar className="w-4 h-4 text-blue-400" />
                     </div>
                     <div>
@@ -99,7 +99,7 @@ const BillingHistory = ({ userRole = 'developer', billingHistory = [] }) => {
 
                   {/* Amount */}
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500/20 to-green-600/20 rounded-lg flex items-center justify-center">
                       <DollarSign className="w-4 h-4 text-emerald-400" />
                     </div>
                     <div>
