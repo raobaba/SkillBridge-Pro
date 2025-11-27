@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import Button from '../../../components/Button';
 import { CreditCard, Wallet, Shield, Star, Plus, Trash2, Edit } from "lucide-react";
 import { getPaymentMethods, deletePaymentMethod, setDefaultPaymentMethod } from "../slice/billingSlice";
@@ -26,7 +27,7 @@ const PaymentMethods = ({ userRole = 'developer', paymentMethods: propPaymentMet
         dispatch(getPaymentMethods());
       } catch (error) {
         console.error('Failed to delete payment method:', error);
-        alert('Failed to delete payment method. Please try again.');
+        toast.error('Failed to delete payment method. Please try again.');
       }
     }
   };
@@ -38,7 +39,7 @@ const PaymentMethods = ({ userRole = 'developer', paymentMethods: propPaymentMet
       dispatch(getPaymentMethods());
     } catch (error) {
       console.error('Failed to set default payment method:', error);
-      alert('Failed to set default payment method. Please try again.');
+      toast.error('Failed to set default payment method. Please try again.');
     }
   };
 

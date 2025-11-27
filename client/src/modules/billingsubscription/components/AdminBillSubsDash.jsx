@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import Button from '../../../components/Button';
 import { getBillingData, getAdminDashboard, getDisputes, getSuspendedAccounts, resolveDispute, suspendAccount, unsuspendAccount } from "../slice/billingSlice";
 import {
@@ -54,7 +55,7 @@ const AdminBillSubsDash = ({ data }) => {
         dispatch(getDisputes()); // Refresh disputes
       } catch (error) {
         console.error('Failed to resolve dispute:', error);
-        alert('Failed to resolve dispute. Please try again.');
+        toast.error('Failed to resolve dispute. Please try again.');
       }
     }
   };
@@ -70,7 +71,7 @@ const AdminBillSubsDash = ({ data }) => {
       dispatch(getSuspendedAccounts()); // Refresh suspended accounts
     } catch (error) {
       console.error('Failed to suspend account:', error);
-      alert('Failed to suspend account. Please try again.');
+      toast.error('Failed to suspend account. Please try again.');
     }
   };
 
@@ -80,7 +81,7 @@ const AdminBillSubsDash = ({ data }) => {
       dispatch(getSuspendedAccounts()); // Refresh suspended accounts
     } catch (error) {
       console.error('Failed to unsuspend account:', error);
-      alert('Failed to unsuspend account. Please try again.');
+      toast.error('Failed to unsuspend account. Please try again.');
     }
   };
 

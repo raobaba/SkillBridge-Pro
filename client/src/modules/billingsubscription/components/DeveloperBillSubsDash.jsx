@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import Button from '../../../components/Button';
 import { getBillingData, cancelSubscription, purchaseSubscription, getSubscriptionPlans } from "../slice/billingSlice";
 import { 
@@ -42,7 +43,7 @@ const DeveloperBillSubsDash = ({ data }) => {
         // Optionally show success message
       } catch (error) {
         console.error('Failed to cancel subscription:', error);
-        alert('Failed to cancel subscription. Please try again.');
+        toast.error('Failed to cancel subscription. Please try again.');
       }
     }
   };
@@ -53,7 +54,7 @@ const DeveloperBillSubsDash = ({ data }) => {
       // Optionally show success message
     } catch (error) {
       console.error('Failed to purchase subscription:', error);
-      alert('Failed to purchase subscription. Please try again.');
+      toast.error('Failed to purchase subscription. Please try again.');
     }
   };
 

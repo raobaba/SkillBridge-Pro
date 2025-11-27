@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import { X, CreditCard, Plus, CheckCircle, AlertCircle, Loader } from "lucide-react";
 import { Button } from "../../../components";
 import { 
@@ -52,7 +53,7 @@ const PurchaseModal = ({ isOpen, onClose, plan, onSuccess }) => {
       });
     } catch (error) {
       console.error('Failed to add payment method:', error);
-      alert('Failed to add payment method. Please try again.');
+      toast.error('Failed to add payment method. Please try again.');
     }
   };
 
@@ -69,12 +70,12 @@ const PurchaseModal = ({ isOpen, onClose, plan, onSuccess }) => {
         })).unwrap();
         // Refresh billing data to get updated subscription
         await dispatch(getBillingData());
-        alert('Subscription updated successfully! You now have access to Free plan features.');
+        toast.success('Subscription updated successfully! You now have access to Free plan features.');
         onSuccess && onSuccess();
         onClose();
       } catch (error) {
         console.error('Failed to purchase subscription:', error);
-        alert(error?.message || 'Failed to purchase subscription. Please try again.');
+        toast.error(error?.message || 'Failed to purchase subscription. Please try again.');
       } finally {
         setIsProcessing(false);
       }
@@ -83,13 +84,13 @@ const PurchaseModal = ({ isOpen, onClose, plan, onSuccess }) => {
 
     // For paid plans, require payment method
     if (!selectedPaymentMethod && paymentMethods.length === 0) {
-      alert('Please add a payment method before purchasing a paid plan.');
+      toast.warning('Please add a payment method before purchasing a paid plan.');
       setShowAddPaymentForm(true);
       return;
     }
 
     if (!selectedPaymentMethod) {
-      alert('Please select a payment method.');
+      toast.warning('Please select a payment method.');
       return;
     }
 
@@ -101,12 +102,12 @@ const PurchaseModal = ({ isOpen, onClose, plan, onSuccess }) => {
       })).unwrap();
       // Refresh billing data to get updated subscription with new features
       await dispatch(getBillingData());
-      alert(`Congratulations! You've successfully upgraded to the ${plan.name} plan. You now have access to all premium features including unlimited projects!`);
+      toast.success(`Congratulations! You've successfully upgraded to the ${plan.name} plan. You now have access to all premium features including unlimited projects!`);
       onSuccess && onSuccess();
       onClose();
     } catch (error) {
       console.error('Failed to purchase subscription:', error);
-      alert(error?.message || 'Failed to purchase subscription. Please try again.');
+      toast.error(error?.message || 'Failed to purchase subscription. Please try again.');
     } finally {
       setIsProcessing(false);
     }
