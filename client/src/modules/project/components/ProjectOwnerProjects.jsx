@@ -50,8 +50,14 @@ import {
   updateApplicantStatus,
 } from "../slice/projectSlice";
 import { createGroupConversation } from "../../chat/slice/chatSlice";
+import { useSelector } from "react-redux";
+import { getProjectLimit, getRemainingProjectSlots } from "../../billingsubscription/utils/subscriptionLimits";
+import { getBillingData } from "../../billingsubscription/slice/billingSlice";
+import { Crown, AlertCircle } from "lucide-react";
 
 const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
+  const billingState = useSelector((state) => state.billing || {});
+  const currentSubscription = billingState.currentSubscription || {};
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -97,6 +103,13 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
   // Listen for inline AI assistant open events from fields
   // No container-level assistant now
+
+  // Load billing data on mount for project owners
+  useEffect(() => {
+    if (!billingState.currentSubscription?.plan) {
+      dispatch(getBillingData());
+    }
+  }, [dispatch, billingState.currentSubscription?.plan]);
 
   // Load project data when component mounts
   useEffect(() => {
@@ -1070,6 +1083,56 @@ const ProjectOwnerProjects = ({ user, projects, dispatch, error, message }) => {
 
           {/* Removed container-level AI Assistant button; inline field AI triggers are used instead */}
         </div>
+
+        {/* Project Limit Alert */}
+        {(() => {
+          const projectLimit = getProjectLimit(currentSubscription);
+          const remainingSlots = getRemainingProjectSlots(currentSubscription, dashboardStats.totalProjects);
+          const isAtLimit = remainingSlots === 0;
+          const isUnlimited = projectLimit === Infinity;
+          
+          if (isUnlimited) return null;
+          
+          return (
+            <div className={`mb-6 rounded-xl p-4 border-2 ${
+              isAtLimit 
+                ? 'bg-red-500/10 border-red-500/30' 
+                : remainingSlots <= 2
+                ? 'bg-yellow-500/10 border-yellow-500/30'
+                : 'bg-blue-500/10 border-blue-500/30'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {isAtLimit ? (
+                    <AlertCircle className="w-6 h-6 text-red-400" />
+                  ) : (
+                    <Crown className="w-6 h-6 text-yellow-400" />
+                  )}
+                  <div>
+                    <p className="text-white font-semibold">
+                      {isAtLimit 
+                        ? 'Project Limit Reached' 
+                        : `${remainingSlots} Project ${remainingSlots === 1 ? 'Slot' : 'Slots'} Remaining`}
+                    </p>
+                    <p className="text-gray-300 text-sm">
+                      {isAtLimit 
+                        ? `You've reached your limit of ${projectLimit} projects on the ${currentSubscription.plan || 'Free'} plan. Upgrade to post more projects.`
+                        : `You can post ${remainingSlots} more ${remainingSlots === 1 ? 'project' : 'projects'} on your current plan.`}
+                    </p>
+                  </div>
+                </div>
+                {isAtLimit && (
+                  <Button
+                    onClick={() => navigate('/billing-subscription')}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                  >
+                    Upgrade Now
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Dashboard Stats */}
         <div className='grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8'>

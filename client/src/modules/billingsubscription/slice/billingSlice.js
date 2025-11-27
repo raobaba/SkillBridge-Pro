@@ -424,6 +424,8 @@ const billingSlice = createSlice({
         if (action.payload.billingHistory) {
           state.billingHistory = [action.payload.billingHistory, ...state.billingHistory];
         }
+        // Refresh billing data to get updated subscription info
+        // This will be called by the component after purchase
       })
       .addCase(purchaseSubscription.rejected, (state, action) => {
         state.loading = false;

@@ -1,5 +1,5 @@
 // components/ProjectForm.jsx
-import React, { useState, forwardRef, useImperativeHandle } from "react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { 
   Plus, 
@@ -48,10 +48,14 @@ import {
   Sparkles
 } from "lucide-react";
 import { Input, Button } from "../../../components";
-import { createProject, generateProjectDescription, generateRequirements, generateBenefits, generateBudgetSuggestions, updateProject } from "../slice/projectSlice";
+import { createProject, generateProjectDescription, generateRequirements, generateBenefits, generateBudgetSuggestions, updateProject, listProjects } from "../slice/projectSlice";
 import { getSearchSuggestionsApi } from "../slice/projectAction";
+import { canPostProject, getProjectLimit, getRemainingProjectSlots } from "../../billingsubscription/utils/subscriptionLimits";
+import UpgradePrompt from "../../billingsubscription/components/UpgradePrompt";
+import { getBillingData } from "../../billingsubscription/slice/billingSlice";
 
-const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, editingProject, showPreview: externalShowPreview, showAdvanced: externalShowAdvanced }, ref) => {
+const ProjectForm = forwardRef(({ dispatch: propDispatch, onProjectCreated, onProjectUpdated, editingProject, showPreview: externalShowPreview, showAdvanced: externalShowAdvanced }, ref) => {
+  const dispatch = propDispatch || useDispatch();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -102,8 +106,23 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
   const [generatingReq, setGeneratingReq] = useState(false);
   const [generatingBenefits, setGeneratingBenefits] = useState(false);
   const projectState = useSelector((state) => state.project);
+  const billingState = useSelector((state) => state.billing || {});
+  const { user } = useSelector((state) => state.user);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const isEditMode = Boolean(editingProject && editingProject.id);
+  
+  // Get current subscription and project count
+  const currentSubscription = billingState.currentSubscription || {};
+  const projects = projectState.projects || [];
+  const currentProjectCount = projects.length;
+
+  // Load billing data for project owners on mount
+  useEffect(() => {
+    if ((user?.role === 'project-owner' || user?.role === 'project_owner') && !billingState.currentSubscription?.plan) {
+      dispatch(getBillingData());
+    }
+  }, [user?.role, dispatch, billingState.currentSubscription?.plan]);
 
   const statuses = ["Active", "Draft", "Upcoming", "Paused", "Completed"];
   const priorities = ["High", "Medium", "Low"];
@@ -244,6 +263,16 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
       return;
     }
     
+    // Check project limit for project owners (only on create, not edit)
+    if (!isEditMode && (user?.role === 'project-owner' || user?.role === 'project_owner')) {
+      const canPost = canPostProject(currentSubscription, currentProjectCount);
+      if (!canPost) {
+        const limit = getProjectLimit(currentSubscription);
+        setShowUpgradePrompt(true);
+        return;
+      }
+    }
+    
     setIsSubmitting(true);
     
     try {
@@ -330,6 +359,10 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
       if (isEditMode) {
         onProjectUpdated && onProjectUpdated();
       } else {
+        // Refresh projects list to update count for project owners
+        if ((user?.role === 'project-owner' || user?.role === 'project_owner') && (user?.id || user?.userId)) {
+          dispatch(listProjects({ ownerId: user.id || user.userId }));
+        }
         onProjectCreated && onProjectCreated();
       }
       
@@ -481,6 +514,56 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
         <div className="xl:col-span-2">
           <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Project Limit Indicator for Project Owners */}
+              {!isEditMode && (user?.role === 'project-owner' || user?.role === 'project_owner') && (() => {
+                const projectLimit = getProjectLimit(currentSubscription);
+                const remainingSlots = getRemainingProjectSlots(currentSubscription, currentProjectCount);
+                const isUnlimited = projectLimit === Infinity;
+                
+                if (isUnlimited) return null;
+                
+                return (
+                  <div className={`rounded-xl p-4 border-2 ${
+                    remainingSlots === 0 
+                      ? 'bg-red-500/10 border-red-500/30' 
+                      : remainingSlots <= 2
+                      ? 'bg-yellow-500/10 border-yellow-500/30'
+                      : 'bg-blue-500/10 border-blue-500/30'
+                  }`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {remainingSlots === 0 ? (
+                          <AlertCircle className="w-5 h-5 text-red-400" />
+                        ) : (
+                          <Info className="w-5 h-5 text-blue-400" />
+                        )}
+                        <div>
+                          <p className="text-white font-semibold text-sm">
+                            {remainingSlots === 0 
+                              ? 'Project Limit Reached' 
+                              : `${remainingSlots} Project ${remainingSlots === 1 ? 'Slot' : 'Slots'} Remaining`}
+                          </p>
+                          <p className="text-gray-300 text-xs">
+                            {remainingSlots === 0 
+                              ? `You've reached your limit of ${projectLimit} projects. Upgrade to post more.`
+                              : `You can post ${remainingSlots} more ${remainingSlots === 1 ? 'project' : 'projects'} on your ${currentSubscription.plan || 'Free'} plan.`}
+                          </p>
+                        </div>
+                      </div>
+                      {remainingSlots === 0 && (
+                        <Button
+                          type="button"
+                          onClick={() => window.location.href = '/billing-subscription'}
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm px-4 py-2"
+                        >
+                          Upgrade
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              
               {/* Basic Information */}
               <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                 <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
@@ -1174,6 +1257,19 @@ const ProjectForm = forwardRef(({ dispatch, onProjectCreated, onProjectUpdated, 
           </div>
         )}
       </div>
+
+      {/* Upgrade Prompt for Project Limit */}
+      {!isEditMode && (user?.role === 'project-owner' || user?.role === 'project_owner') && (
+        <UpgradePrompt
+          isOpen={showUpgradePrompt}
+          onClose={() => setShowUpgradePrompt(false)}
+          title="Project Limit Reached"
+          message={`You've reached your limit of ${getProjectLimit(currentSubscription)} projects on the ${currentSubscription.plan || 'Free'} plan.`}
+          feature="projects"
+          currentLimit={getProjectLimit(currentSubscription)}
+          upgradeLimit={Infinity}
+        />
+      )}
     </div>
   );
 });

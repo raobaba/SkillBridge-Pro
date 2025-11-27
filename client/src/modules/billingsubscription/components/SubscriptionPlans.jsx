@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { CheckCircle } from "lucide-react";
 import { Button } from "../../../components";
-import { getSubscriptionPlans, purchaseSubscription } from "../slice/billingSlice";
+import { getSubscriptionPlans, getBillingData } from "../slice/billingSlice";
+import PurchaseModal from "./PurchaseModal";
 
 const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const dispatch = useDispatch();
@@ -10,6 +11,8 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
   const subscriptionPlans = billingState.subscriptionPlans || [];
   const currentSubscription = billingState.currentSubscription || {};
   const loading = billingState.loading || false;
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   useEffect(() => {
     if (subscriptionPlans.length === 0 && !loading) {
@@ -30,14 +33,15 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
     current: currentSubscription?.plan?.toLowerCase() === plan.name.toLowerCase(),
   }));
 
-  const handlePurchase = async (planId) => {
-    try {
-      await dispatch(purchaseSubscription({ planId, paymentMethodId: null })).unwrap();
-      // Optionally show success message
-    } catch (error) {
-      console.error('Failed to purchase subscription:', error);
-      // Optionally show error message
-    }
+  const handlePurchaseClick = (plan) => {
+    setSelectedPlan(plan);
+    setShowPurchaseModal(true);
+  };
+
+  const handlePurchaseSuccess = () => {
+    dispatch(getBillingData());
+    setShowPurchaseModal(false);
+    setSelectedPlan(null);
   };
 
   return (
@@ -105,7 +109,7 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
                     : "bg-white/10 hover:bg-white/20"
                 }`}
                 disabled={plan.current || loading}
-                onClick={() => !plan.current && handlePurchase(plan.id)}
+                onClick={() => !plan.current && handlePurchaseClick(plan)}
               >
                 {loading ? 'Processing...' : plan.current ? 'Current Plan' : plan.popular ? 'Get Started' : 'Choose Plan'}
               </Button>
@@ -113,6 +117,19 @@ const SubscriptionPlans = ({ userRole = 'developer' }) => {
           ))
         )}
       </div>
+
+      {/* Purchase Modal */}
+      {showPurchaseModal && selectedPlan && (
+        <PurchaseModal
+          isOpen={showPurchaseModal}
+          onClose={() => {
+            setShowPurchaseModal(false);
+            setSelectedPlan(null);
+          }}
+          plan={selectedPlan}
+          onSuccess={handlePurchaseSuccess}
+        />
+      )}
     </div>
   );
 };
